@@ -301,11 +301,11 @@ Carbon uses Tauri as a native layer through official plugins. `tauri/` contains 
 
 Desktop and phone layouts differ too much to stretch one layout over both. Carbon shares everything that does not depend on screen size and keeps the layout separate.
 
-| Part                                           | Shared?                                   |
-| ---------------------------------------------- | ----------------------------------------- |
-| Core (`@carbon/core`)                          | Fully shared                              |
-| Feature logic (hooks, state, data loading)     | Shared                                    |
-| Small components (buttons, list items, inputs) | Shared, adapted with Tailwind             |
+| Part                                           | Shared?                               |
+| ---------------------------------------------- | ------------------------------------- |
+| Core (`@carbon/core`)                          | Fully shared                          |
+| Feature logic (hooks, state, data loading)     | Shared                                |
+| Small components (buttons, list items, inputs) | Shared, adapted with Tailwind         |
 | Shell (how panels and navigation are arranged) | One per form factor, in `src/shells/` |
 
 - Only the desktop shell exists for now. A mobile shell is an idea, not a plan.
@@ -383,7 +383,7 @@ Three rules that keep a second shell cheap:
 - **Core:** `bun test` with in-memory fakes for `FileSystem` and `IndexStore`. Fixture vaults for link resolution and rename.
 - **Parser:** a shared corpus of Markdown samples with expected links and tags, used by both parser tests and editor tests.
 - **Benchmarks:** a generator creates vaults with N notes, links and tags. Results are compared with the budgets in section 1.
-- **UI:** component and logic tests. End-to-end tests are added before 0.1.
+- **UI:** component and logic tests. The runner is not chosen yet (open question 7). End-to-end tests are added before 0.1.
 - **CI:** type check, lint, tests, and a build on Linux and Windows.
 
 ## 12. Decision log
@@ -400,7 +400,7 @@ Three rules that keep a second shell cheap:
 | ADR-008 | Index stored outside the vault, in the app cache directory                                               | Accepted                   | Avoids sync conflicts on a binary file                                                                                                                |
 | ADR-009 | SQLite with FTS5 for index and search, behind the `IndexStore` interface                                 | Accepted, pending M0 check | One engine for links, tags and search                                                                                                                 |
 | ADR-010 | Tailwind CSS for styling                                                                                 | Accepted                   | Fast to build UI with                                                                                                                                 |
-| ADR-011 | Bun as package manager, script runner and test runner                                                    | Accepted                   | One fast tool. Fall back to another tool only where Bun does not work                                                                                 |
+| ADR-011 | Bun as package manager and script runner. `bun test` runs the core tests; the UI test runner is open     | Accepted, test runner open | One fast tool. Fall back to another tool only where Bun does not work. See open question 7                                                            |
 | ADR-012 | One Markdown grammar (Lezer) shared by editor and index                                                  | Accepted                   | No drift between what is shown and what is indexed                                                                                                    |
 | ADR-013 | Obsidian vault compatibility is not a goal for v0.1                                                      | Accepted                   | Keeps scope small. Listed under ideas                                                                                                                 |
 | ADR-014 | One monorepo with one Tauri project for all platforms                                                    | Accepted                   | Tauri builds every target from one project. Core and UI change in one commit. One CI and one issue list for a solo developer                          |
@@ -416,3 +416,4 @@ Three rules that keep a second shell cheap:
 4. **Stable note IDs.** Path-based identity is simple but loses links on external renames. Option: detect renames by content hash.
 5. **Native hot paths.** At what measured numbers is it worth adding a Rust command (see section 7)?
 6. **Income model.** The app stays free under MIT. Optional paid services (hosted sync, publishing) are an idea, not a plan.
+7. **Test runner.** `bun test` or Vitest. The core is plain TypeScript and runs on `bun test` today. Vitest may suit UI tests better: its browser mode runs CodeMirror in a real engine, and it reuses the Vite config. Options: keep `bun test` everywhere, use Vitest only for `src/`, or move everything to Vitest. The test APIs are nearly identical, so switching later is cheap.
