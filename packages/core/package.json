@@ -1,0 +1,14 @@
+{
+  "name": "@carbon/core",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Carbon core: vault, parser, index, links and search. No React, no Tauri",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  }
+}
