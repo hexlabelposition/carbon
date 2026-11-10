@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { VaultCheck } from "./VaultCheck";
 
 type Theme = "system" | "dark" | "light";
 
@@ -38,6 +39,8 @@ function App() {
           ))}
         </div>
       </header>
+
+      <VaultCheck />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Surfaces</h2>
