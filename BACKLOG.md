@@ -23,7 +23,7 @@ Done when: the Tauri window opens on Linux, React calls a function from `@carbon
 - [x] **C-001** (P0) Create the monorepo with Bun workspaces
 - [x] **C-002** (P0) Scaffold the Tauri 2 app with React + TypeScript + Vite in the repository root, rename `src-tauri/` to `tauri/`
 - [x] **C-003** (P0) Set up Tailwind CSS with theme variables (dark and light)
-- [ ] **C-004** (P0) Create `packages/core`: public API skeleton, platform interfaces (`FileSystem`, `Watcher`, `IndexStore`)
+- [x] **C-004** (P0) Create `packages/core`: public API skeleton, platform interfaces (`FileSystem`, `Watcher`, `IndexStore`)
 - [ ] **C-005** (P0) Tauri adapters in `src/platform`, add the `fs`, `sql`, `dialog` plugins
 - [ ] **C-006** (P0) In-memory fakes for the platform interfaces, first core test with `bun test`
 - [ ] **C-007** (P0) Measure: read 10k files through the `fs` plugin (time, best concurrency)
