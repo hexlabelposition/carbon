@@ -5,6 +5,17 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default"
+    "opener:default",
+    "dialog:allow-open",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-dir",
+    "fs:allow-stat",
+    "fs:allow-rename",
+    "fs:allow-remove",
+    "fs:allow-watch",
+    "fs:allow-unwatch",
+    "sql:default",
+    "sql:allow-execute"
   ]
 }
