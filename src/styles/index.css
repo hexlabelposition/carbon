@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+@import "./tokens.css";
+@import "./markdown.css";
+
+/* `dark:` follows the resolved theme, not only the system setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Map the tokens to Tailwind. `inline` keeps the var() reference, so the
+ * utilities switch with the theme at runtime.
+ */
+@theme inline {
+  --color-backdrop: var(--cb-backdrop);
+  --color-bg: var(--cb-bg);
+  --color-panel: var(--cb-panel);
+  --color-raise: var(--cb-raise);
+  --color-selected: var(--cb-selected);
+  --color-code: var(--cb-code);
+  --color-line: var(--cb-line);
+  --color-line-strong: var(--cb-line-strong);
+  --color-fg: var(--cb-fg);
+  --color-muted: var(--cb-muted);
+  --color-faint: var(--cb-faint);
+  --color-link: var(--cb-link);
+  --color-highlight: var(--cb-highlight);
+  --color-solid: var(--cb-solid);
+  --color-on-solid: var(--cb-on-solid);
+  --color-danger: var(--cb-danger);
+  --color-on-danger: var(--cb-on-danger);
+
+  --shadow-dialog: var(--cb-shadow-dialog);
+}
+
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Type scale: interface */
+  --text-label: 11px;
+  --text-label--line-height: 1.4;
+  --text-small: 12px;
+  --text-small--line-height: 1.4;
+  --text-ui: 13px;
+  --text-ui--line-height: 1.4;
+
+  /* Type scale: note content */
+  --text-note: 15px;
+  --text-note--line-height: 1.65;
+  --text-h3: 16px;
+  --text-h3--line-height: 1.4;
+  --text-h2: 20px;
+  --text-h2--line-height: 1.3;
+  --text-h1: 30px;
+  --text-h1--line-height: 1.2;
+
+  /* Radii: small and strict */
+  --radius-sm: 4px; /* inline code, segments, kbd */
+  --radius-md: 6px; /* rows, buttons, inputs, cards */
+  --radius-lg: 10px; /* dialogs */
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--cb-fg);
+    background: var(--cb-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--cb-highlight);
+  }
+}

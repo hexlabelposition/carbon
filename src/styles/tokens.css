@@ -1,0 +1,88 @@
+/*
+ * Carbon design tokens.
+ *
+ * Raw values live here as --cb-* custom properties. Components never use hex
+ * values directly: they use the Tailwind utilities mapped in index.css
+ * (bg-panel, text-muted, border-line, ...) or var(--cb-*) in plain CSS.
+ *
+ * Theme selection:
+ *   <html>                      follows the system setting
+ *   <html data-theme="dark">    forces dark
+ *   <html data-theme="light">   forces light
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces, from the window background up */
+  --cb-backdrop: #d9dadc; /* behind dialogs */
+  --cb-bg: #ffffff; /* editor, dialogs */
+  --cb-panel: #f6f6f7; /* sidebars, bars, inputs */
+  --cb-raise: #ececee; /* hover */
+  --cb-selected: #e9eaec; /* current item */
+  --cb-code: #f4f4f5; /* code blocks and inline code */
+
+  /* Lines */
+  --cb-line: #e3e4e6; /* hairlines between regions */
+  --cb-line-strong: #c9cbcf; /* control borders */
+
+  /* Text. All three pass 4.5:1 on bg and panel */
+  --cb-fg: #17181a;
+  --cb-muted: #4f5359;
+  --cb-faint: #666b71;
+
+  /* Accent */
+  --cb-link: #2c5a96;
+  --cb-highlight: #d3d5d8; /* search match background */
+
+  /* Solid control: active segment, switch on */
+  --cb-solid: #17181a;
+  --cb-on-solid: #ffffff;
+
+  --cb-danger: #c42b1c;
+  --cb-on-danger: #ffffff;
+
+  --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --cb-backdrop: #08090a;
+    --cb-bg: #0e0f10;
+    --cb-panel: #131415;
+    --cb-raise: #1b1c1e;
+    --cb-selected: #202224;
+    --cb-code: #161718;
+    --cb-line: #232527;
+    --cb-line-strong: #34373a;
+    --cb-fg: #e7e8ea;
+    --cb-muted: #a4a7ac;
+    --cb-faint: #8b8f94;
+    --cb-link: #a9c1de;
+    --cb-highlight: #2e3033;
+    --cb-solid: #e7e8ea;
+    --cb-on-solid: #0e0f10;
+    --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --cb-backdrop: #08090a;
+  --cb-bg: #0e0f10;
+  --cb-panel: #131415;
+  --cb-raise: #1b1c1e;
+  --cb-selected: #202224;
+  --cb-code: #161718;
+  --cb-line: #232527;
+  --cb-line-strong: #34373a;
+  --cb-fg: #e7e8ea;
+  --cb-muted: #a4a7ac;
+  --cb-faint: #8b8f94;
+  --cb-link: #a9c1de;
+  --cb-highlight: #2e3033;
+  --cb-solid: #e7e8ea;
+  --cb-on-solid: #0e0f10;
+  --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+}
