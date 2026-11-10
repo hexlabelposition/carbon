@@ -13,9 +13,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "gen:vault": "bun scripts/generate-vault.ts",
     "tauri": "tauri",
     "test": "bun test",
-    "typecheck": "tsc && bun run --filter '*' typecheck"
+    "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && bun run --filter '*' typecheck"
   },
   "dependencies": {
     "@carbon/core": "workspace:*",
