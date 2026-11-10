@@ -21,10 +21,10 @@ Tasks for Carbon, grouped by milestone. Architecture background is in [ARCHITECT
 Done when: the Tauri window opens on Linux, React calls a function from `@carbon/core` that reads a real file through the Tauri adapter, the two measurements below are recorded, and CI is green.
 
 - [x] **C-001** (P0) Create the monorepo with Bun workspaces
-- [ ] **C-002** (P0) Scaffold the Tauri 2 app with React + TypeScript + Vite in `app/`, rename `src-tauri/` to `tauri/`
+- [x] **C-002** (P0) Scaffold the Tauri 2 app with React + TypeScript + Vite in the repository root, rename `src-tauri/` to `tauri/`
 - [ ] **C-003** (P0) Set up Tailwind CSS with theme variables (dark and light)
 - [ ] **C-004** (P0) Create `packages/core`: public API skeleton, platform interfaces (`FileSystem`, `Watcher`, `IndexStore`)
-- [ ] **C-005** (P0) Tauri adapters in `app/src/platform`, add the `fs`, `sql`, `dialog` plugins
+- [ ] **C-005** (P0) Tauri adapters in `src/platform`, add the `fs`, `sql`, `dialog` plugins
 - [ ] **C-006** (P0) In-memory fakes for the platform interfaces, first core test with `bun test`
 - [ ] **C-007** (P0) Measure: read 10k files through the `fs` plugin (time, best concurrency)
 - [ ] **C-008** (P0) Measure: SQL plugin with FTS5 (is it available, bulk insert speed for 10k notes)
@@ -50,7 +50,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 
 **UI**
 
-- [ ] **C-110** (P0) Desktop shell in `app/src/shells/desktop`; feature logic lives in hooks, not in layout components
+- [ ] **C-110** (P0) Desktop shell in `src/shells/desktop`; feature logic lives in hooks, not in layout components
 - [ ] **C-111** (P0) Start screen: open vault, create vault, recent vaults
 - [ ] **C-112** (P0) File tree sidebar with create, rename, delete, drag to move
 - [ ] **C-113** (P0) CodeMirror 6 editor with Markdown highlighting

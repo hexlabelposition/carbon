@@ -70,15 +70,14 @@ One repository, one Tauri project for every platform.
 
 ```
 carbon/
-  package.json          # Bun workspaces
+  package.json          # the Carbon application and Bun workspaces root
   packages/
     core/               # @carbon/core: vault, parser, index, search, links
-  app/                  # the Carbon application
-    src/
-      features/         # editor, file tree, backlinks, search, tags, graph
-      shells/           # layout per form factor (desktop first)
-      platform/         # Tauri adapters for the core (file system, database)
-    tauri/              # Tauri: config and plugin registration only
+  src/                  # the Carbon application
+    features/           # editor, file tree, backlinks, search, tags, graph
+    shells/             # layout per form factor (desktop first)
+    platform/           # Tauri adapters for the core (file system, database)
+  tauri/                # Tauri: config and plugin registration only
   README.md
   ARCHITECTURE.md
   BACKLOG.md
