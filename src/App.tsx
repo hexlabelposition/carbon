@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ReadBench } from "./bench/ReadBench";
 import { VaultCheck } from "./VaultCheck";
 
 type Theme = "system" | "dark" | "light";
@@ -20,7 +21,7 @@ function App() {
   }
 
   return (
-    <main className="mx-auto flex max-w-[720px] flex-col gap-10 px-8 py-10">
+    <main className="mx-auto flex max-w-180 flex-col gap-10 px-8 py-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <span className="font-semibold">Carbon design tokens</span>
         <div className="inline-flex rounded-md border border-line-strong bg-panel p-0.5" role="group" aria-label="Theme">
@@ -30,7 +31,7 @@ function App() {
               type="button"
               aria-pressed={theme === t}
               onClick={() => apply(t)}
-              className={`h-[26px] rounded-sm px-3 capitalize ${
+              className={`h-6.5 rounded-sm px-3 capitalize ${
                 theme === t ? "bg-solid font-medium text-on-solid" : "text-muted hover:text-fg"
               }`}
             >
@@ -41,6 +42,8 @@ function App() {
       </header>
 
       <VaultCheck />
+
+      <ReadBench />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Surfaces</h2>

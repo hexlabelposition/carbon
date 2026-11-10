@@ -31,7 +31,7 @@ Done when: the Tauri window opens on Linux, React calls a function from `@carbon
 - [ ] **C-009** (P0) Decide the index engine from C-007 and C-008 (ADR-009, open question 1)
 - [x] **C-010** (P0) Add the MIT LICENSE file
 - [ ] **C-011** (P0) CI: type check, lint, tests, build on Linux and Windows
-- [ ] **C-012** (P1) Test vault generator: N notes with random links and tags
+- [x] **C-012** (P1) Test vault generator: N notes with random links and tags
 - [ ] **C-013** (P2) Contributing guide and code style notes
 
 ## M1. Vault and editor
@@ -188,5 +188,6 @@ Tracked in [ARCHITECTURE.md, open questions](ARCHITECTURE.md#13-open-questions).
 | ----------------------------------------- | ----------------- |
 | Index engine (SQLite plugin or in-memory) | End of M0 (C-009) |
 | State management library                  | M1 UI work        |
+| Test runner (`bun test` or Vitest)        | First UI tests    |
 | Graph renderer                            | M5 (C-502)        |
 | Stable note IDs for external renames      | After v0.1        |
