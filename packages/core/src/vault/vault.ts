@@ -57,7 +57,7 @@ class Notes {
   ) {}
 
   /** Reads the text of a note. `path` is relative to the vault root. */
-  read(path: NotePath): Promise<string> {
+  async read(path: NotePath): Promise<string> {
     return this.platform.fs.readText(resolveInVault(this.root, path));
   }
 }
