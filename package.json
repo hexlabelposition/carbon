@@ -1,0 +1,11 @@
+{
+  "name": "carbon",
+  "private": true,
+  "description": "Fast, local-first notes with links",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "packages/*"
+  ]
+}

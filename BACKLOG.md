@@ -20,7 +20,7 @@ Tasks for Carbon, grouped by milestone. Architecture background is in [ARCHITECT
 
 Done when: the Tauri window opens on Linux, React calls a function from `@carbon/core` that reads a real file through the Tauri adapter, the two measurements below are recorded, and CI is green.
 
-- [ ] **C-001** (P0) Create the monorepo with Bun workspaces
+- [x] **C-001** (P0) Create the monorepo with Bun workspaces
 - [ ] **C-002** (P0) Scaffold the Tauri 2 app with React + TypeScript + Vite in `app/`, rename `src-tauri/` to `tauri/`
 - [ ] **C-003** (P0) Set up Tailwind CSS with theme variables (dark and light)
 - [ ] **C-004** (P0) Create `packages/core`: public API skeleton, platform interfaces (`FileSystem`, `Watcher`, `IndexStore`)
