@@ -1,5 +1,5 @@
 import type { NotePath, Vault } from "@carbon/core";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAppSettings } from "../settings/app-settings";
 import { findNode, isWithin, rebase } from "../vault/paths";
 import { ActiveNoteContext, type ActiveNote } from "./active-note";
@@ -54,6 +54,9 @@ export function ActiveNoteProvider({
     };
   }, [vault, first]);
 
+  /** How the mounted editor writes its unsaved edits, if there is one. */
+  const flusher = useRef<(() => Promise<void>) | null>(null);
+
   const active = useMemo<ActiveNote>(
     () => ({
       path,
@@ -69,6 +72,13 @@ export function ActiveNoteProvider({
         setPath((current) =>
           current !== null && isWithin(current, removed) ? null : current,
         ),
+      onFlush: (flush) => {
+        flusher.current = flush;
+        return () => {
+          if (flusher.current === flush) flusher.current = null;
+        };
+      },
+      flush: () => flusher.current?.() ?? Promise.resolve(),
     }),
     [path],
   );

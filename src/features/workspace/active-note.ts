@@ -11,6 +11,16 @@ export interface ActiveNote {
   moved(from: string, to: string): void;
   /** Tells that a note or folder was deleted. */
   removed(path: string): void;
+  /**
+   * The editor registers how to write its unsaved edits. Returns a function
+   * that takes the registration back.
+   */
+  onFlush(flush: () => Promise<void>): () => void;
+  /**
+   * Writes the unsaved edits of the open note. Await it before moving,
+   * renaming or deleting files, so the edits go to the file they belong to.
+   */
+  flush(): Promise<void>;
 }
 
 export const ActiveNoteContext = createContext<ActiveNote | null>(null);

@@ -21,6 +21,8 @@ interface MarkdownEditorProps {
   label: string;
   /** Called with the whole text after every edit. */
   onChange?: (text: string) => void;
+  /** Called when the user asks to save: Ctrl+S, or Cmd+S on a Mac. */
+  onSave?: () => void;
 }
 
 /** A CodeMirror 6 editor for one Markdown text. */
@@ -28,13 +30,16 @@ export function MarkdownEditor({
   initialText,
   label,
   onChange,
+  onSave,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
-  // The latest callback, so a new one does not rebuild the editor.
+  // The latest callbacks, so new ones do not rebuild the editor.
   const changed = useRef(onChange);
+  const save = useRef(onSave);
   useEffect(() => {
     changed.current = onChange;
-  }, [onChange]);
+    save.current = onSave;
+  }, [onChange, onSave]);
 
   useEffect(() => {
     if (host.current === null) return;
@@ -52,7 +57,19 @@ export function MarkdownEditor({
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves
           // the focus out of the editor instead.
-          keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+          keymap.of([
+            {
+              key: "Mod-s",
+              preventDefault: true,
+              run: () => {
+                save.current?.();
+                return true;
+              },
+            },
+            ...defaultKeymap,
+            ...historyKeymap,
+            indentWithTab,
+          ]),
           EditorView.contentAttributes.of({ "aria-label": label }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {

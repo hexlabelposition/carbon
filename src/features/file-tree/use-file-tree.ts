@@ -140,6 +140,9 @@ export function useFileTree(vault: Vault): FileTree {
     setError(null);
     setTrashFailure(null);
     try {
+      // The open note may have edits that are not written yet; they must
+      // reach its file before the file is moved, renamed or deleted.
+      await active.flush();
       await action();
     } catch (reason) {
       setError(messageOf(reason));

@@ -57,7 +57,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 - [ ] **C-114** (P0) Live preview: headings, bold, italic, strikethrough, inline code
 - [ ] **C-115** (P0) Live preview: lists, task checkboxes (clickable), quotes, horizontal rule
 - [ ] **C-116** (P0) Live preview: code blocks with syntax highlighting
-- [ ] **C-117** (P0) Autosave with debounce, unsaved indicator
+- [x] **C-117** (P0) Autosave with debounce, unsaved indicator
 - [ ] **C-118** (P0) Reload an open note when it changes on disk; conflict dialog if it has unsaved edits
 - [ ] **C-119** (P1) Tabs and back / forward navigation history
 - [ ] **C-120** (P1) Live preview: tables
