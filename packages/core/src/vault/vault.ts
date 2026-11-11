@@ -72,6 +72,18 @@ class Notes {
   async read(path: NotePath): Promise<string> {
     return this.platform.fs.readText(resolveInVault(this.root, path));
   }
+
+  /**
+   * Replaces the text of a note, or creates the note if it does not exist.
+   * The write is atomic: after a crash the file holds either the old text or
+   * the new one, never a part of it. The folder must already exist.
+   */
+  async write(path: NotePath, content: string): Promise<void> {
+    await this.platform.fs.writeTextAtomic(
+      resolveInVault(this.root, path),
+      content,
+    );
+  }
 }
 
 export type { Notes };

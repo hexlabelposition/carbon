@@ -41,7 +41,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 **Core**
 
 - [x] **C-101** (P0) Open a folder as a vault, return the file tree
-- [ ] **C-102** (P0) Read notes; write notes atomically (temp file + rename)
+- [x] **C-102** (P0) Read notes; write notes atomically (temp file + rename)
 - [ ] **C-103** (P0) Create, rename, move, delete notes and folders
 - [ ] **C-104** (P0) Watch the vault, debounce, emit added / changed / removed
 - [ ] **C-105** (P0) Reject a write when the file on disk changed (hash check)

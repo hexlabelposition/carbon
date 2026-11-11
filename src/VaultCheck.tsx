@@ -2,6 +2,8 @@ import { Vault, type TreeNode } from "@carbon/core";
 import { useState } from "react";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 
+const WRITE_CHECK_FILE = "carbon-write-check.md";
+
 /**
  * Temporary M0 check: reads a real file through `@carbon/core` and the Tauri
  * adapters. It goes away with the rest of this preview in M1 (C-110).
@@ -45,6 +47,17 @@ export function VaultCheck() {
       return vault.notes.read(path);
     });
 
+  /** Writes one fixed file, so the check cannot damage real notes. */
+  const writeNote = () =>
+    run(async () => {
+      if (!vault) return "Open a vault first";
+      const text = `# Carbon write check\n\nWritten at ${new Date().toISOString()}\n`;
+      await vault.notes.write(WRITE_CHECK_FILE, text);
+      const readBack = await vault.notes.read(WRITE_CHECK_FILE);
+      const same = readBack === text ? "the same text" : "DIFFERENT text";
+      return `Wrote ${WRITE_CHECK_FILE}, read back ${same}\n\n${readBack}`;
+    });
+
   const button =
     "h-[26px] rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint";
 
@@ -70,6 +83,14 @@ export function VaultCheck() {
           onClick={readNote}
         >
           Read note
+        </button>
+        <button
+          type="button"
+          className={button}
+          disabled={!vault}
+          onClick={writeNote}
+        >
+          Write check file
         </button>
       </div>
       {output && (
