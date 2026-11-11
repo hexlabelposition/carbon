@@ -32,7 +32,7 @@ Done when: the Tauri window opens on Linux, React calls a function from `@carbon
 - [x] **C-010** (P0) Add the MIT LICENSE file
 - [x] **C-011** (P0) CI: type check, lint, tests, build on Linux and Windows
 - [x] **C-012** (P1) Test vault generator: N notes with random links and tags
-- [ ] **C-013** (P2) Contributing guide and code style notes
+- [x] **C-013** (P2) Contributing guide and code style notes
 
 ## M1. Vault and editor
 

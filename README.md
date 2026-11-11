@@ -83,11 +83,12 @@ carbon/
   BACKLOG.md
 ```
 
-## Development (once the scaffold exists)
+## Development
 
 Prerequisites:
 
 - Bun
+- Node.js. The type checker, linter and Vite run on it.
 - Rust toolchain. Tauri needs it to build the app. You do not write Rust for Carbon.
 - Tauri system dependencies for your OS (see the Tauri prerequisites guide)
 
@@ -106,6 +107,7 @@ bun run format        # format with Prettier
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): how Carbon is built and why
 - [BACKLOG.md](BACKLOG.md): milestones and tasks
+- [CONTRIBUTING.md](CONTRIBUTING.md): setup, code style and commit rules
 
 ## Roadmap in one glance
 
