@@ -30,7 +30,7 @@ Done when: the Tauri window opens on Linux, React calls a function from `@carbon
 - [ ] **C-008** (P0) Measure: SQL plugin with FTS5 (is it available, bulk insert speed for 10k notes)
 - [ ] **C-009** (P0) Decide the index engine from C-007 and C-008 (ADR-009, open question 1)
 - [x] **C-010** (P0) Add the MIT LICENSE file
-- [ ] **C-011** (P0) CI: type check, lint, tests, build on Linux and Windows
+- [x] **C-011** (P0) CI: type check, lint, tests, build on Linux and Windows
 - [x] **C-012** (P1) Test vault generator: N notes with random links and tags
 - [ ] **C-013** (P2) Contributing guide and code style notes
 
