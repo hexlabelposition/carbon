@@ -275,6 +275,7 @@ Carbon uses Tauri as a native layer through official plugins. `tauri/` contains 
 | Read, write, list, rename, watch files | `fs` (file watching needs its `watch` feature enabled) |
 | SQLite index                           | `sql` with the `sqlite` feature                        |
 | Pick a vault folder                    | `dialog`                                               |
+| Keep access to picked folders          | `persisted-scope`                                      |
 | Open external links                    | `opener`                                               |
 | App settings                           | `fs`: `settings.json` in the app config directory      |
 | Updates (later)                        | `updater`                                              |

@@ -1,3 +1,4 @@
+import { AppSettingsProvider } from "./features/settings/AppSettingsProvider";
 import { VaultProvider } from "./features/vault/VaultProvider";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 import { DesktopShell } from "./shells/desktop/DesktopShell";
@@ -8,9 +9,11 @@ import { DesktopShell } from "./shells/desktop/DesktopShell";
  */
 function App() {
   return (
-    <VaultProvider platform={tauriPlatform} pickFolder={pickVaultFolder}>
-      <DesktopShell />
-    </VaultProvider>
+    <AppSettingsProvider store={tauriPlatform.settings}>
+      <VaultProvider platform={tauriPlatform} pickFolder={pickVaultFolder}>
+        <DesktopShell />
+      </VaultProvider>
+    </AppSettingsProvider>
   );
 }
 

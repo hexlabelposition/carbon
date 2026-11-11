@@ -19,6 +19,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
+        // Picking a vault folder grants access to it for one run of the app.
+        // This keeps the grant, so a recent vault opens after a restart.
+        // It must come after the `fs` plugin.
+        .plugin(tauri_plugin_persisted_scope::init())
         .invoke_handler(tauri::generate_handler![move_to_trash])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

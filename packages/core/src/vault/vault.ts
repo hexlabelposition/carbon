@@ -4,7 +4,7 @@ import type { NotePath } from "../types";
 import { Folders } from "./folders";
 import { Notes } from "./notes";
 import { OwnChanges } from "./own-changes";
-import { normalizeRoot } from "./path";
+import { checkVaultName, normalizeRoot } from "./path";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
 
@@ -96,6 +96,29 @@ export class Vault {
       // changes. The UI can tell the user through `watching`.
     }
     return vault;
+  }
+
+  /**
+   * Creates the folder `name` inside the folder `parent` and opens it as a
+   * new, empty vault. Rejects if the name is not a valid folder name (see
+   * `checkVaultName`) or something with that name already exists.
+   */
+  static async create(
+    parent: string,
+    name: string,
+    platform: Platform,
+    options: VaultOptions = {},
+  ): Promise<Vault> {
+    checkVaultName(name);
+    // Not `normalizeRoot(parent)`: a drive root such as "/" or "C:/" is a
+    // fine place for a vault folder, though it is not a vault itself.
+    const folder = parent.replaceAll("\\", "/").replace(/\/+$/, "");
+    const root = normalizeRoot(`${folder}/${name}`);
+    if (await platform.fs.exists(root)) {
+      throw new Error(`Already exists: ${root}`);
+    }
+    await platform.fs.mkdir(root);
+    return Vault.open(root, platform, options);
   }
 
   /**

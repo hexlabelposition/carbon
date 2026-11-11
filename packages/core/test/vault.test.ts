@@ -25,6 +25,64 @@ describe("Vault.open", () => {
   });
 });
 
+describe("Vault.create", () => {
+  test("creates the folder and opens it as an empty vault", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.create("/vault/projects/", "Diary", platform);
+    expect(vault.root).toBe("/vault/projects/Diary");
+    expect(await vault.tree()).toEqual([]);
+    expect((await platform.fs.stat("/vault/projects/Diary")).kind).toBe("dir");
+  });
+
+  test("creates the parent folders that are missing", async () => {
+    const vault = await Vault.create(
+      "/new/place",
+      "Diary",
+      createMemoryPlatform(files),
+    );
+    expect(vault.root).toBe("/new/place/Diary");
+  });
+
+  test.each([
+    ["/", "/Diary"],
+    ["C:\\", "C:/Diary"],
+  ])("accepts the drive root %p as the place", async (parent, root) => {
+    const vault = await Vault.create(parent, "Diary", createMemoryPlatform());
+    expect(vault.root).toBe(root);
+  });
+
+  test("rejects when a folder or file with that name exists", async () => {
+    const platform = createMemoryPlatform(files);
+    await expect(Vault.create("/vault", "projects", platform)).rejects.toThrow(
+      "Already exists",
+    );
+    await expect(Vault.create("/vault", "Inbox.md", platform)).rejects.toThrow(
+      "Already exists",
+    );
+    expect(await platform.fs.readText("/vault/Inbox.md")).toBe("# Inbox");
+  });
+
+  test.each([
+    "",
+    " ",
+    " Diary",
+    "Diary ",
+    ".hidden",
+    "..",
+    "a/b",
+    "a\\b",
+    "a:b",
+    "what?",
+    "Diary.",
+  ])("rejects the name %p and creates nothing", async (name) => {
+    const platform = createMemoryPlatform(files);
+    await expect(Vault.create("/vault", name, platform)).rejects.toThrow(
+      "Invalid vault name",
+    );
+    expect(await platform.fs.list("/vault")).toHaveLength(2);
+  });
+});
+
 describe("vault.notes.read", () => {
   test("reads a note by its vault-relative path", async () => {
     const vault = await Vault.open("/vault", createMemoryPlatform(files));

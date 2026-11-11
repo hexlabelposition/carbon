@@ -11,6 +11,22 @@ export function normalizeRoot(root: string): string {
 }
 
 /**
+ * Rejects a name that cannot be used for a new vault folder: it must be
+ * one visible folder name that every supported system accepts.
+ */
+export function checkVaultName(name: string): void {
+  const invalid =
+    name !== name.trim() ||
+    name === "" ||
+    name.startsWith(".") ||
+    name.endsWith(".") ||
+    /[\\/:*?"<>|]/.test(name);
+  if (invalid) {
+    throw new Error(`Invalid vault name: ${JSON.stringify(name)}`);
+  }
+}
+
+/**
  * Turns a vault-relative path into an absolute one. Rejects anything that
  * could point outside the vault.
  */
