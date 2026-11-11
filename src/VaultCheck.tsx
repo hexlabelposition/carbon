@@ -13,6 +13,7 @@ export function VaultCheck() {
   const [vault, setVault] = useState<Vault | null>(null);
   const [path, setPath] = useState("README.md");
   const [output, setOutput] = useState("");
+  const [changes, setChanges] = useState<string[]>([]);
 
   async function run(action: () => Promise<string>) {
     try {
@@ -31,12 +32,19 @@ export function VaultCheck() {
       const opened = await Vault.open(root, tauriPlatform);
       vault?.close();
       setVault(opened);
+      setChanges([]);
+      opened.on("changed", ({ kind, path }) => {
+        const time = new Date().toLocaleTimeString();
+        setChanges((list) =>
+          [`${time}  ${kind}  ${path}`, ...list].slice(0, 50),
+        );
+      });
       const start = performance.now();
       const tree = await opened.tree();
       const ms = Math.round(performance.now() - start);
       const { folders, notes, files } = count(tree);
       return (
-        `Opened ${opened.root}\n` +
+        `Opened ${opened.root}, watching: ${opened.watching ? "yes" : "NO"}\n` +
         `Tree in ${ms} ms: ${folders} folders, ${notes} notes, ${files} other files\n\n` +
         outline(tree).slice(0, 40).join("\n")
       );
@@ -166,6 +174,13 @@ export function VaultCheck() {
           Run operations check
         </button>
       </div>
+      {vault && (
+        <pre className="max-h-40 overflow-auto rounded-md border border-line bg-code px-3 py-2 font-mono text-small whitespace-pre-wrap">
+          {changes.length > 0
+            ? changes.join("\n")
+            : "Outside changes appear here. Edit, add or delete a file in the vault with another program."}
+        </pre>
+      )}
       {output && (
         <pre className="max-h-60 overflow-auto rounded-md border border-line bg-code px-3 py-2 font-mono text-small whitespace-pre-wrap">
           {output}

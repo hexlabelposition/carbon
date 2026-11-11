@@ -2,6 +2,7 @@ import type { NotePath } from "../types";
 import {
   expectFree,
   expectKind,
+  makeFolders,
   moveEntry,
   type VaultContext,
 } from "./entries";
@@ -26,8 +27,10 @@ export class Notes {
    * the new one, never a part of it. The folder must already exist.
    */
   async write(path: NotePath, content: string): Promise<void> {
-    const { root, fs } = this.context;
-    await fs.writeTextAtomic(resolveInVault(root, path), content);
+    const { root, fs, own } = this.context;
+    const target = resolveInVault(root, path);
+    await fs.writeTextAtomic(target, content);
+    await own.wrote(target);
   }
 
   /**
@@ -35,11 +38,12 @@ export class Notes {
    * something already exists at `path`.
    */
   async create(path: NotePath, content = ""): Promise<void> {
-    const { root, fs } = this.context;
+    const { root, fs, own } = this.context;
     const target = resolveNewInVault(root, path);
     await expectFree(this.context, path);
-    await fs.mkdir(parentOf(target));
+    await makeFolders(this.context, parentOf(target));
     await fs.writeTextAtomic(target, content);
+    await own.wrote(target);
   }
 
   /**
@@ -53,8 +57,10 @@ export class Notes {
 
   /** Deletes a note for good. Moving to the system trash comes in C-106. */
   async remove(path: NotePath): Promise<void> {
-    const { root, fs } = this.context;
+    const { root, fs, own } = this.context;
+    const target = resolveInVault(root, path);
     await expectKind(this.context, path, "file");
-    await fs.remove(resolveInVault(root, path));
+    await fs.remove(target);
+    own.removed(target);
   }
 }

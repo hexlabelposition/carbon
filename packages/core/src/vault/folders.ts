@@ -1,6 +1,7 @@
 import {
   expectFree,
   expectKind,
+  makeFolders,
   moveEntry,
   type VaultContext,
 } from "./entries";
@@ -15,10 +16,9 @@ export class Folders {
    * something already exists at `path`.
    */
   async create(path: string): Promise<void> {
-    const { root, fs } = this.context;
-    const target = resolveNewInVault(root, path);
+    const target = resolveNewInVault(this.context.root, path);
     await expectFree(this.context, path);
-    await fs.mkdir(target);
+    await makeFolders(this.context, target);
   }
 
   /**
@@ -35,8 +35,10 @@ export class Folders {
    * system trash comes in C-106.
    */
   async remove(path: string): Promise<void> {
-    const { root, fs } = this.context;
+    const { root, fs, own } = this.context;
+    const target = resolveInVault(root, path);
     await expectKind(this.context, path, "dir");
-    await fs.remove(resolveInVault(root, path), { recursive: true });
+    await fs.remove(target, { recursive: true });
+    own.removed(target);
   }
 }
