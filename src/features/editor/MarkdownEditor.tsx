@@ -10,6 +10,7 @@ import { EditorState, Transaction } from "@codemirror/state";
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
+import { livePreview } from "./live-preview";
 
 interface MarkdownEditorProps {
   /**
@@ -57,6 +58,7 @@ export function MarkdownEditor({
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
           markdown({ base: markdownLanguage }),
           syntaxHighlighting(markdownHighlight),
+          livePreview,
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves
           // the focus out of the editor instead.
