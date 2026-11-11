@@ -1,4 +1,4 @@
-import type { RecentVault } from "@carbon/core";
+import type { NotePath, RecentVault } from "@carbon/core";
 import { createContext, useContext } from "react";
 
 /** The app settings as the UI sees them. */
@@ -13,6 +13,8 @@ export interface AppSettingsState {
    */
   addRecentVault(root: string): Promise<void>;
   removeRecentVault(root: string): Promise<void>;
+  /** Remembers the open note of a vault; `null` when none is open. */
+  setLastOpenedNote(root: string, note: NotePath | null): Promise<void>;
 }
 
 export const AppSettingsContext = createContext<AppSettingsState | null>(null);

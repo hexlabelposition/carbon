@@ -1,6 +1,10 @@
 import { lazy, Suspense, useState } from "react";
+import { FileTree } from "../../features/file-tree/FileTree";
+import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { useVaultSession } from "../../features/vault/vault-session";
+import { useActiveNote } from "../../features/workspace/active-note";
+import { ActiveNoteProvider } from "../../features/workspace/ActiveNoteProvider";
 import { Sidebar } from "./Sidebar";
 import { StatusBar, StatusButton } from "./StatusBar";
 import { useSidebar } from "./use-sidebar";
@@ -18,6 +22,7 @@ const DevPanel = import.meta.env.DEV
  */
 export function DesktopShell() {
   const { vault, close } = useVaultSession();
+  const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
   const [devOpen, setDevOpen] = useState(false);
 
@@ -37,7 +42,14 @@ export function DesktopShell() {
             <StartScreen />
           </main>
         ) : (
-          <>
+          <ActiveNoteProvider
+            key={vault.root}
+            vault={vault}
+            initial={
+              recentVaults.find((v) => v.path === vault.root)?.lastOpenedNote ??
+              null
+            }
+          >
             {!sidebar.collapsed && (
               <Sidebar
                 fraction={sidebar.fraction}
@@ -58,15 +70,13 @@ export function DesktopShell() {
                   </>
                 }
               >
-                {/* The file tree is mounted here in C-112. */}
-                <Placeholder>The file tree will be here.</Placeholder>
+                <FileTree vault={vault} />
               </Sidebar>
             )}
             <main className="min-w-0 flex-1 overflow-auto">
-              {/* The editor is mounted here in C-113. */}
-              <Placeholder>No note is open.</Placeholder>
+              <NoteArea />
             </main>
-          </>
+          </ActiveNoteProvider>
         )}
       </div>
 
@@ -103,6 +113,18 @@ export function DesktopShell() {
         )}
       </StatusBar>
     </div>
+  );
+}
+
+/** The editor is mounted here in C-113. */
+function NoteArea() {
+  const { path } = useActiveNote();
+  return (
+    <Placeholder>
+      {path === null
+        ? "No note is open."
+        : `${path} is open. The editor will be here.`}
+    </Placeholder>
   );
 }
 

@@ -1,5 +1,6 @@
 import {
   AppSettings,
+  type NotePath,
   type RecentVault,
   type SettingsStore,
 } from "@carbon/core";
@@ -70,10 +71,27 @@ export function AppSettingsProvider({
     (root: string) => change((s) => s.removeRecentVault(root)),
     [change],
   );
+  const setLastOpenedNote = useCallback(
+    (root: string, note: NotePath | null) =>
+      change((s) => s.setLastOpenedNote(root, note)),
+    [change],
+  );
 
   const state = useMemo<AppSettingsState>(
-    () => ({ loaded, recentVaults, addRecentVault, removeRecentVault }),
-    [loaded, recentVaults, addRecentVault, removeRecentVault],
+    () => ({
+      loaded,
+      recentVaults,
+      addRecentVault,
+      removeRecentVault,
+      setLastOpenedNote,
+    }),
+    [
+      loaded,
+      recentVaults,
+      addRecentVault,
+      removeRecentVault,
+      setLastOpenedNote,
+    ],
   );
 
   return <AppSettingsContext value={state}>{children}</AppSettingsContext>;
