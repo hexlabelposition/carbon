@@ -1,4 +1,6 @@
+import type { Vault } from "@carbon/core";
 import { lazy, Suspense, useState } from "react";
+import { NoteEditor } from "../../features/editor/NoteEditor";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
@@ -73,8 +75,8 @@ export function DesktopShell() {
                 <FileTree vault={vault} />
               </Sidebar>
             )}
-            <main className="min-w-0 flex-1 overflow-auto">
-              <NoteArea />
+            <main className="min-w-0 flex-1 overflow-hidden">
+              <NoteArea vault={vault} />
             </main>
           </ActiveNoteProvider>
         )}
@@ -116,15 +118,13 @@ export function DesktopShell() {
   );
 }
 
-/** The editor is mounted here in C-113. */
-function NoteArea() {
+/** The main area of the workspace: the open note, if there is one. */
+function NoteArea({ vault }: { vault: Vault }) {
   const { path } = useActiveNote();
-  return (
-    <Placeholder>
-      {path === null
-        ? "No note is open."
-        : `${path} is open. The editor will be here.`}
-    </Placeholder>
+  return path === null ? (
+    <Placeholder>No note is open.</Placeholder>
+  ) : (
+    <NoteEditor key={path} vault={vault} path={path} />
   );
 }
 

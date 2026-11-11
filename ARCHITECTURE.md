@@ -100,7 +100,7 @@ carbon/
       desktop/              # desktop layout: sidebars, tabs, panels
     platform/               # Tauri implementations of the core interfaces
     workers/                # parsing worker
-    dev/                    # dev builds only: vault check, measurements, style preview
+    dev/                    # dev builds only: measurements, style preview
   tauri/                    # Tauri: config, capabilities, plugin registration, small commands
 ```
 

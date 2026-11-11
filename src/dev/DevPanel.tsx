@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ReadBench } from "./bench/ReadBench";
 import { SqlBench } from "./bench/SqlBench";
-import { VaultCheck } from "./VaultCheck";
 
 type Theme = "system" | "dark" | "light";
 
@@ -16,9 +15,8 @@ const SURFACES = [
 const TEXTS = ["text-fg", "text-muted", "text-faint", "text-link"];
 
 /**
- * Development tools, mounted by the shell in dev builds only: the vault
- * check, the M0 measurements, and a preview of the design tokens and
- * Markdown styles. The preview goes away with C-116, when the editor shows
+ * Development tools, mounted by the shell in dev builds only: the M0
+ * measurements, and a preview of the design tokens and Markdown styles. The preview goes away with C-116, when the editor shows
  * the same styles on real notes.
  */
 function DevPanel() {
@@ -57,8 +55,6 @@ function DevPanel() {
           ))}
         </div>
       </header>
-
-      <VaultCheck />
 
       <ReadBench />
 
