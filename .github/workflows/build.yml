@@ -1,0 +1,66 @@
+name: Build
+
+# The slow part of CI, kept apart so that changes that cannot affect the
+# build (documentation) skip it. The quick checks are in ci.yml.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Debug info is not needed to check that the app compiles. Leaving it out
+  # makes the build faster and the cache smaller.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+          - name: Windows
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Install Tauri system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri -> target
+          # Pull requests read the cache from main but do not write their own.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # A debug build without installers: CI checks that the app compiles.
+      # Release bundles are built in M6 (C-604, C-608).
+      - name: Build the app
+        run: bun tauri build --debug --no-bundle
