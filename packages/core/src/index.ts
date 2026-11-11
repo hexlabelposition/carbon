@@ -2,6 +2,7 @@
 
 export { Vault } from "./vault/vault";
 export type { Notes, VaultEvents } from "./vault/vault";
+export type { FileNode, FolderNode, TreeNode } from "./vault/tree";
 
 export type {
   Entry,

@@ -2,6 +2,7 @@ import { Emitter } from "../events";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
 import { normalizeRoot, resolveInVault } from "./path";
+import { scanTree, type TreeNode } from "./tree";
 
 export interface VaultEvents {
   /** A file was added, changed or removed outside the editor. */
@@ -13,18 +14,20 @@ export interface VaultEvents {
 }
 
 /**
- * The single entry point for the UI. Later milestones add `tree()`,
- * `links`, `search`, `tags` and `graph` (ARCHITECTURE.md, section 6).
+ * The single entry point for the UI. Later milestones add `links`,
+ * `search`, `tags` and `graph` (ARCHITECTURE.md, section 6).
  */
 export class Vault {
   /** Absolute path of the vault folder, `/` separated. */
   readonly root: string;
   readonly notes: Notes;
 
+  private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
 
   private constructor(root: string, platform: Platform) {
     this.root = root;
+    this.platform = platform;
     this.notes = new Notes(root, platform);
   }
 
@@ -35,6 +38,15 @@ export class Vault {
       throw new Error(`Vault root is not a folder: ${normalized}`);
     }
     return new Vault(normalized, platform);
+  }
+
+  /**
+   * The folders and files of the vault, without hidden ones. Each call lists
+   * the disk again; the tree is cached once the watcher keeps it fresh
+   * (C-104).
+   */
+  tree(): Promise<TreeNode[]> {
+    return scanTree(this.platform.fs, this.root);
   }
 
   /** Subscribes to a vault event. Returns a function that unsubscribes. */

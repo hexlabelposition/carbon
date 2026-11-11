@@ -1,4 +1,4 @@
-import { Vault } from "@carbon/core";
+import { Vault, type TreeNode } from "@carbon/core";
 import { useState } from "react";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 
@@ -28,7 +28,15 @@ export function VaultCheck() {
       const opened = await Vault.open(root, tauriPlatform);
       vault?.close();
       setVault(opened);
-      return `Opened ${opened.root}`;
+      const start = performance.now();
+      const tree = await opened.tree();
+      const ms = Math.round(performance.now() - start);
+      const { folders, notes, files } = count(tree);
+      return (
+        `Opened ${opened.root}\n` +
+        `Tree in ${ms} ms: ${folders} folders, ${notes} notes, ${files} other files\n\n` +
+        outline(tree).slice(0, 40).join("\n")
+      );
     });
 
   const readNote = () =>
@@ -70,5 +78,28 @@ export function VaultCheck() {
         </pre>
       )}
     </section>
+  );
+}
+
+function count(nodes: TreeNode[]) {
+  const total = { folders: 0, notes: 0, files: 0 };
+  const visit = (list: TreeNode[]) => {
+    for (const node of list) {
+      if (node.kind === "folder") {
+        total.folders++;
+        visit(node.children);
+      } else if (node.kind === "note") total.notes++;
+      else total.files++;
+    }
+  };
+  visit(nodes);
+  return total;
+}
+
+function outline(nodes: TreeNode[], indent = ""): string[] {
+  return nodes.flatMap((node) =>
+    node.kind === "folder"
+      ? [`${indent}${node.name}/`, ...outline(node.children, `${indent}  `)]
+      : [`${indent}${node.name}`],
   );
 }
