@@ -1,5 +1,8 @@
 // Public API of @carbon/core. The UI imports only from here.
 
+export { AppSettings } from "./config/app-settings";
+export type { RecentVault } from "./config/app-settings";
+
 export { Vault } from "./vault/vault";
 export type { VaultEvents, VaultOptions } from "./vault/vault";
 export type { VaultChange } from "./vault/watch";
@@ -19,6 +22,7 @@ export type {
   IndexStore,
   Platform,
   RemoveOptions,
+  SettingsStore,
   Stat,
   Trash,
   Watcher,

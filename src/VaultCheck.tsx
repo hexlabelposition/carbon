@@ -1,4 +1,5 @@
 import {
+  AppSettings,
   contentHash,
   Vault,
   WriteConflictError,
@@ -48,9 +49,15 @@ export function VaultCheck() {
       const tree = await opened.tree();
       const ms = Math.round(performance.now() - start);
       const { folders, notes, files } = count(tree);
+      const settings = await AppSettings.load(tauriPlatform.settings);
+      await settings.addRecentVault(opened.root);
+      const recent = settings.recentVaults.map(
+        (v) => `  ${v.path}  (last note: ${v.lastOpenedNote ?? "none"})`,
+      );
       return (
         `Opened ${opened.root}, watching: ${opened.watching ? "yes" : "NO"}\n` +
-        `Tree in ${ms} ms: ${folders} folders, ${notes} notes, ${files} other files\n\n` +
+        `Tree in ${ms} ms: ${folders} folders, ${notes} notes, ${files} other files\n` +
+        `Recent vaults:\n${recent.join("\n")}\n\n` +
         outline(tree).slice(0, 40).join("\n")
       );
     });
@@ -58,7 +65,10 @@ export function VaultCheck() {
   const readNote = () =>
     run(async () => {
       if (!vault) return "Open a vault first";
-      return vault.notes.read(path);
+      const text = await vault.notes.read(path);
+      const settings = await AppSettings.load(tauriPlatform.settings);
+      await settings.setLastOpenedNote(vault.root, path);
+      return text;
     });
 
   /** Writes one fixed file, so the check cannot damage real notes. */

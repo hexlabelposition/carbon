@@ -46,7 +46,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 - [x] **C-104** (P0) Watch the vault, debounce, emit added / changed / removed
 - [x] **C-105** (P0) Reject a write when the file on disk changed (hash check)
 - [x] **C-106** (P1) Delete to system trash
-- [ ] **C-107** (P1) App settings: recent vaults, last opened note
+- [x] **C-107** (P1) App settings: recent vaults, last opened note
 
 **UI**
 

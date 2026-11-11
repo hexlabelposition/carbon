@@ -17,6 +17,10 @@
     "fs:allow-remove",
     "fs:allow-watch",
     "fs:allow-unwatch",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPCONFIG" }, { "path": "$APPCONFIG/**" }]
+    },
     "sql:default",
     "sql:allow-execute"
   ]

@@ -84,7 +84,7 @@ carbon/
   packages/
     core/                   # @carbon/core
       src/
-        platform/           # interfaces: FileSystem, Watcher, IndexStore, Trash
+        platform/           # interfaces: FileSystem, Watcher, IndexStore, Trash, SettingsStore
         vault/              # open vault, read/write, tree, external changes
         parser/             # links, tags, frontmatter, headings, plain text
         index/              # schema, indexer, startup scan
@@ -235,7 +235,7 @@ interface IndexStore {
 
 ### config
 
-- App settings (recent vaults, theme) in the app config directory.
+- App settings (recent vaults, last opened note, theme) in the app config directory, through the `SettingsStore` interface.
 - Vault settings in `.carbon/config.json`.
 
 ## 6. Public API and events
@@ -275,7 +275,7 @@ Carbon uses Tauri as a native layer through official plugins. `tauri/` contains 
 | SQLite index                           | `sql` with the `sqlite` feature                        |
 | Pick a vault folder                    | `dialog`                                               |
 | Open external links                    | `opener`                                               |
-| App settings                           | `store` or a JSON file through `fs`                    |
+| App settings                           | `fs`: `settings.json` in the app config directory      |
 | Updates (later)                        | `updater`                                              |
 | Move to the system trash               | no plugin: the `move_to_trash` command (ADR-019)       |
 
