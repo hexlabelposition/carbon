@@ -1,4 +1,9 @@
-import { Vault, type TreeNode } from "@carbon/core";
+import {
+  contentHash,
+  Vault,
+  WriteConflictError,
+  type TreeNode,
+} from "@carbon/core";
 import { useState } from "react";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 
@@ -60,11 +65,25 @@ export function VaultCheck() {
   const writeNote = () =>
     run(async () => {
       if (!vault) return "Open a vault first";
+      const base = await vault.notes
+        .read(WRITE_CHECK_FILE)
+        .then(contentHash, () => null);
       const text = `# Carbon write check\n\nWritten at ${new Date().toISOString()}\n`;
-      await vault.notes.write(WRITE_CHECK_FILE, text);
+      await vault.notes.write(WRITE_CHECK_FILE, text, base);
       const readBack = await vault.notes.read(WRITE_CHECK_FILE);
       const same = readBack === text ? "the same text" : "DIFFERENT text";
-      return `Wrote ${WRITE_CHECK_FILE}, read back ${same}\n\n${readBack}`;
+      // `base` is now outdated, so a second write from it must be rejected.
+      const rejected = await vault.notes
+        .write(WRITE_CHECK_FILE, "must not be written", base)
+        .then(
+          () => false,
+          (error: unknown) => error instanceof WriteConflictError,
+        );
+      return (
+        `Wrote ${WRITE_CHECK_FILE}, read back ${same}\n` +
+        `Write from an outdated version: ${rejected ? "rejected" : "NOT REJECTED"}\n\n` +
+        readBack
+      );
     });
 
   /**

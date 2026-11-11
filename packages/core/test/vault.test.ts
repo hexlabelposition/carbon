@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Vault } from "../src/index";
+import { contentHash, Vault, WriteConflictError } from "../src/index";
 import { createMemoryPlatform } from "./fakes";
 
 const files = {
@@ -51,23 +51,25 @@ describe("vault.notes.read", () => {
 });
 
 describe("vault.notes.write", () => {
+  const inbox = contentHash("# Inbox");
+
   test("replaces the text of an existing note", async () => {
     const vault = await Vault.open("/vault", createMemoryPlatform(files));
-    await vault.notes.write("Inbox.md", "# Inbox\n\nNew line");
+    await vault.notes.write("Inbox.md", "# Inbox\n\nNew line", inbox);
     expect(await vault.notes.read("Inbox.md")).toBe("# Inbox\n\nNew line");
   });
 
   test("creates a note that does not exist yet", async () => {
     const vault = await Vault.open("/vault", createMemoryPlatform(files));
-    await vault.notes.write("projects/New.md", "new");
+    await vault.notes.write("projects/New.md", "new", null);
     expect(await vault.notes.read("projects/New.md")).toBe("new");
   });
 
   test("keeps empty and non-ASCII text as is", async () => {
     const vault = await Vault.open("/vault", createMemoryPlatform(files));
-    await vault.notes.write("Inbox.md", "");
+    const empty = await vault.notes.write("Inbox.md", "", inbox);
     expect(await vault.notes.read("Inbox.md")).toBe("");
-    await vault.notes.write("Inbox.md", "Заметка 📝\r\n");
+    await vault.notes.write("Inbox.md", "Заметка 📝\r\n", empty);
     expect(await vault.notes.read("Inbox.md")).toBe("Заметка 📝\r\n");
   });
 
@@ -81,16 +83,20 @@ describe("vault.notes.write", () => {
     };
     const vault = await Vault.open("/vault", platform);
 
-    await vault.notes.write("projects/Carbon.md", "x");
+    await vault.notes.write(
+      "projects/Carbon.md",
+      "x",
+      contentHash(files["/vault/projects/Carbon.md"]),
+    );
 
     expect(calls).toEqual(["/vault/projects/Carbon.md"]);
   });
 
   test("rejects when the folder does not exist", async () => {
     const vault = await Vault.open("/vault", createMemoryPlatform(files));
-    await expect(vault.notes.write("missing/New.md", "x")).rejects.toThrow(
-      "ENOENT",
-    );
+    await expect(
+      vault.notes.write("missing/New.md", "x", null),
+    ).rejects.toThrow("ENOENT");
   });
 
   test("rejects a path that could leave the vault and writes nothing", async () => {
@@ -98,9 +104,93 @@ describe("vault.notes.write", () => {
     const vault = await Vault.open("/vault", platform);
 
     await expect(
-      vault.notes.write("../outside/secret.md", "overwritten"),
+      vault.notes.write(
+        "../outside/secret.md",
+        "overwritten",
+        contentHash("secret"),
+      ),
     ).rejects.toThrow("Invalid vault path");
     expect(await platform.fs.readText("/outside/secret.md")).toBe("secret");
+  });
+});
+
+describe("vault.notes.write, when the disk changed", () => {
+  const inbox = contentHash("# Inbox");
+
+  test("resolves with the hash to base the next write on", async () => {
+    const vault = await Vault.open("/vault", createMemoryPlatform(files));
+    const first = await vault.notes.write("Inbox.md", "one", inbox);
+    expect(first).toBe(contentHash("one"));
+    await vault.notes.write("Inbox.md", "two", first);
+    expect(await vault.notes.read("Inbox.md")).toBe("two");
+  });
+
+  test("rejects when the note was changed by someone else", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.open("/vault", platform);
+    await platform.fs.writeTextAtomic("/vault/Inbox.md", "theirs");
+
+    const write = vault.notes.write("Inbox.md", "mine", inbox);
+
+    await expect(write).rejects.toBeInstanceOf(WriteConflictError);
+    await expect(write).rejects.toMatchObject({ path: "Inbox.md" });
+    expect(await vault.notes.read("Inbox.md")).toBe("theirs");
+  });
+
+  test("rejects a second save based on an outdated version", async () => {
+    const vault = await Vault.open("/vault", createMemoryPlatform(files));
+    await vault.notes.write("Inbox.md", "one", inbox);
+
+    await expect(
+      vault.notes.write("Inbox.md", "two", inbox),
+    ).rejects.toBeInstanceOf(WriteConflictError);
+    expect(await vault.notes.read("Inbox.md")).toBe("one");
+  });
+
+  test("rejects when the note was deleted by someone else", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.open("/vault", platform);
+    await platform.fs.remove("/vault/Inbox.md");
+
+    await expect(
+      vault.notes.write("Inbox.md", "mine", inbox),
+    ).rejects.toBeInstanceOf(WriteConflictError);
+    expect(await platform.fs.exists("/vault/Inbox.md")).toBe(false);
+  });
+
+  test("rejects creating a note that someone else created first", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.open("/vault", platform);
+    await platform.fs.writeTextAtomic("/vault/New.md", "theirs");
+
+    await expect(
+      vault.notes.write("New.md", "mine", null),
+    ).rejects.toBeInstanceOf(WriteConflictError);
+    expect(await vault.notes.read("New.md")).toBe("theirs");
+  });
+
+  test("accepts a write when the disk already holds the same text", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.open("/vault", platform);
+    await platform.fs.writeTextAtomic("/vault/Inbox.md", "same edit");
+    const before = await platform.fs.stat("/vault/Inbox.md");
+
+    const hash = await vault.notes.write("Inbox.md", "same edit", inbox);
+
+    expect(hash).toBe(contentHash("same edit"));
+    // Nothing was written: the file is the one the other program left.
+    expect(await platform.fs.stat("/vault/Inbox.md")).toEqual(before);
+  });
+
+  test("a note changed and changed back is not a conflict", async () => {
+    const platform = createMemoryPlatform(files);
+    const vault = await Vault.open("/vault", platform);
+    await platform.fs.writeTextAtomic("/vault/Inbox.md", "theirs");
+    await platform.fs.writeTextAtomic("/vault/Inbox.md", "# Inbox");
+
+    await vault.notes.write("Inbox.md", "mine", inbox);
+
+    expect(await vault.notes.read("Inbox.md")).toBe("mine");
   });
 });
 

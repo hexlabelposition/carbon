@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from "bun:test";
-import { Vault, type VaultChange } from "../src/index";
+import { contentHash, Vault, type VaultChange } from "../src/index";
 import { createMemoryPlatform, type MemoryPlatform } from "./fakes";
 
 const DELAY = 100;
+const INBOX_HASH = contentHash("# Inbox");
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -175,7 +176,7 @@ describe("outside changes", () => {
 describe("the vault's own changes", () => {
   test("write is not reported", async () => {
     const { vault, changes, outside } = await openVault();
-    await vault.notes.write("Inbox.md", "saved");
+    await vault.notes.write("Inbox.md", "saved", INBOX_HASH);
     outside.echo(
       ["removed", "/vault/Inbox.md"],
       ["created", "/vault/Inbox.md"],
@@ -241,7 +242,7 @@ describe("the vault's own changes", () => {
 
   test("an outside edit right after a save is still reported", async () => {
     const { vault, changes, outside } = await openVault();
-    await vault.notes.write("Inbox.md", "saved");
+    await vault.notes.write("Inbox.md", "saved", INBOX_HASH);
     outside.echo(["modified", "/vault/Inbox.md"]);
     await outside.modify("/vault/Inbox.md", "theirs");
     await wait(DELAY);
@@ -250,7 +251,7 @@ describe("the vault's own changes", () => {
 
   test("an outside delete of a note the vault wrote is reported", async () => {
     const { vault, changes, outside } = await openVault();
-    await vault.notes.write("Inbox.md", "saved");
+    await vault.notes.write("Inbox.md", "saved", INBOX_HASH);
     await outside.remove("/vault/Inbox.md");
     await wait(DELAY);
     expect(changes).toEqual([{ kind: "removed", path: "Inbox.md" }]);
