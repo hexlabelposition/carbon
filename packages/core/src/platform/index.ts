@@ -2,7 +2,13 @@ import type { FileSystem } from "./file-system";
 import type { IndexStore } from "./index-store";
 import type { Watcher } from "./watcher";
 
-export type { Entry, EntryKind, FileSystem, Stat } from "./file-system";
+export type {
+  Entry,
+  EntryKind,
+  FileSystem,
+  RemoveOptions,
+  Stat,
+} from "./file-system";
 export type { IndexStore } from "./index-store";
 export type { FsEvent, FsEventKind, Watcher } from "./watcher";
 

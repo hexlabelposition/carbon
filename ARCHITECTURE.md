@@ -179,8 +179,10 @@ interface FileSystem {
   writeTextAtomic(path: string, content: string): Promise<void>;
   list(dir: string): Promise<Entry[]>;
   stat(path: string): Promise<Stat>;
+  exists(path: string): Promise<boolean>;
+  mkdir(path: string): Promise<void>;
   rename(from: string, to: string): Promise<void>;
-  remove(path: string): Promise<void>;
+  remove(path: string, options?: { recursive?: boolean }): Promise<void>;
 }
 
 interface Watcher {
@@ -247,6 +249,7 @@ vault.tree()
 vault.notes.read(path)
 vault.notes.write(path, content, baseHash)
 vault.notes.create(path) / rename(from, to) / remove(path)
+vault.folders.create(path) / rename(from, to) / remove(path)
 
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.search.query(text) / titles(text)

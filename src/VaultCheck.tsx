@@ -3,6 +3,7 @@ import { useState } from "react";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 
 const WRITE_CHECK_FILE = "carbon-write-check.md";
+const OPERATIONS_CHECK_FOLDER = "carbon-operations-check";
 
 /**
  * Temporary M0 check: reads a real file through `@carbon/core` and the Tauri
@@ -58,6 +59,70 @@ export function VaultCheck() {
       return `Wrote ${WRITE_CHECK_FILE}, read back ${same}\n\n${readBack}`;
     });
 
+  /**
+   * Creates, renames, moves and deletes inside one folder of its own. If
+   * that folder already exists the check stops before touching anything.
+   */
+  const runOperations = () =>
+    run(async () => {
+      if (!vault) return "Open a vault first";
+      const dir = OPERATIONS_CHECK_FOLDER;
+      const log: string[] = [];
+      const step = async (name: string, action: () => Promise<unknown>) => {
+        await action();
+        log.push(`ok  ${name}`);
+      };
+      const fails = async (name: string, action: () => Promise<unknown>) => {
+        const failed = await action().then(
+          () => false,
+          () => true,
+        );
+        log.push(`${failed ? "ok " : "BAD"} ${name}`);
+      };
+      try {
+        await step("create folder", () => vault.folders.create(dir));
+        await step("create note with new subfolder", () =>
+          vault.notes.create(`${dir}/a/One.md`, "one"),
+        );
+        await step("create second note", () =>
+          vault.notes.create(`${dir}/Two.md`, "two"),
+        );
+        await fails("create over an existing note is rejected", () =>
+          vault.notes.create(`${dir}/Two.md`),
+        );
+        await step("rename note", () =>
+          vault.notes.rename(`${dir}/Two.md`, `${dir}/Three.md`),
+        );
+        await step("rename note, case only", () =>
+          vault.notes.rename(`${dir}/Three.md`, `${dir}/THREE.md`),
+        );
+        await step("move note into a folder", () =>
+          vault.notes.rename(`${dir}/THREE.md`, `${dir}/a/THREE.md`),
+        );
+        await fails("rename over an existing note is rejected", () =>
+          vault.notes.rename(`${dir}/a/One.md`, `${dir}/a/THREE.md`),
+        );
+        await step("rename folder", () =>
+          vault.folders.rename(`${dir}/a`, `${dir}/b`),
+        );
+        await step("read moved note", async () => {
+          const text = await vault.notes.read(`${dir}/b/THREE.md`);
+          if (text !== "two") throw new Error(`Unexpected text: ${text}`);
+        });
+        await step("delete note", () => vault.notes.remove(`${dir}/b/One.md`));
+        await step("delete folder with contents", () =>
+          vault.folders.remove(dir),
+        );
+        const left = (await vault.tree()).some((n) => n.name === dir);
+        log.push(`${left ? "BAD" : "ok "} nothing is left behind`);
+      } catch (error) {
+        log.push(
+          `FAILED: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      return log.join("\n");
+    });
+
   const button =
     "h-[26px] rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint";
 
@@ -91,6 +156,14 @@ export function VaultCheck() {
           onClick={writeNote}
         >
           Write check file
+        </button>
+        <button
+          type="button"
+          className={button}
+          disabled={!vault}
+          onClick={runOperations}
+        >
+          Run operations check
         </button>
       </div>
       {output && (

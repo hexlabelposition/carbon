@@ -1,7 +1,9 @@
 // Public API of @carbon/core. The UI imports only from here.
 
 export { Vault } from "./vault/vault";
-export type { Notes, VaultEvents } from "./vault/vault";
+export type { VaultEvents } from "./vault/vault";
+export type { Folders } from "./vault/folders";
+export type { Notes } from "./vault/notes";
 export type { FileNode, FolderNode, TreeNode } from "./vault/tree";
 
 export type {
@@ -12,6 +14,7 @@ export type {
   FsEventKind,
   IndexStore,
   Platform,
+  RemoveOptions,
   Stat,
   Watcher,
 } from "./platform";

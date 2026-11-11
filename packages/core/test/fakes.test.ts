@@ -29,7 +29,7 @@ describe("MemoryFileSystem", () => {
     await expect(fs.writeTextAtomic("/v/new/b.md", "")).rejects.toThrow(
       "ENOENT",
     );
-    fs.mkdir("/v/new");
+    await fs.mkdir("/v/new");
     await fs.writeTextAtomic("/v/new/b.md", "b");
     expect(await fs.readText("/v/new/b.md")).toBe("b");
   });
@@ -52,6 +52,25 @@ describe("MemoryFileSystem", () => {
     await fs.remove("/v/sub/a.md");
     await fs.remove("/v/sub");
     expect(await fs.list("/v")).toEqual([]);
+  });
+
+  test("recursive remove deletes a folder with everything inside", async () => {
+    const fs = new MemoryFileSystem({
+      "/v/sub/a.md": "",
+      "/v/sub/deep/b.md": "",
+      "/v/subway.md": "",
+    });
+    await fs.remove("/v/sub", { recursive: true });
+    expect(await fs.exists("/v/sub/deep/b.md")).toBe(false);
+    expect(await fs.exists("/v/sub")).toBe(false);
+    expect(await fs.exists("/v/subway.md")).toBe(true);
+  });
+
+  test("mkdir creates missing parents and accepts an existing folder", async () => {
+    const fs = new MemoryFileSystem();
+    await fs.mkdir("/v/a/b");
+    await fs.mkdir("/v/a");
+    expect(await fs.list("/v/a")).toEqual([{ name: "b", kind: "dir" }]);
   });
 });
 

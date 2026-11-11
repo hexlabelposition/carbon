@@ -25,3 +25,25 @@ export function resolveInVault(root: string, path: NotePath): string {
   }
   return `${root}/${segments.join("/")}`;
 }
+
+/**
+ * Like `resolveInVault`, for a path that is about to be created. Hidden
+ * names are rejected: the entry would disappear from the tree at once.
+ */
+export function resolveNewInVault(root: string, path: NotePath): string {
+  const absolute = resolveInVault(root, path);
+  if (
+    path
+      .replaceAll("\\", "/")
+      .split("/")
+      .some((s) => s.startsWith("."))
+  ) {
+    throw new Error(`Hidden names are not allowed: ${JSON.stringify(path)}`);
+  }
+  return absolute;
+}
+
+/** The absolute path of the folder that contains `absolute`. */
+export function parentOf(absolute: string): string {
+  return absolute.slice(0, absolute.lastIndexOf("/"));
+}

@@ -1,5 +1,7 @@
 import type { Entry, FileSystem, Stat } from "@carbon/core";
 import {
+  exists,
+  mkdir,
   readDir,
   readTextFile,
   remove,
@@ -43,8 +45,10 @@ export const tauriFileSystem: FileSystem = {
     };
   },
 
+  exists: (path) => exists(path),
+  mkdir: (path) => mkdir(path, { recursive: true }),
   rename: (from, to) => rename(from, to),
-  remove: (path) => remove(path),
+  remove: (path, options) => remove(path, { recursive: options?.recursive }),
 };
 
 /**

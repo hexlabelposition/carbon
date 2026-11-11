@@ -1,7 +1,9 @@
 import { Emitter } from "../events";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
-import { normalizeRoot, resolveInVault } from "./path";
+import { Folders } from "./folders";
+import { Notes } from "./notes";
+import { normalizeRoot } from "./path";
 import { scanTree, type TreeNode } from "./tree";
 
 export interface VaultEvents {
@@ -21,6 +23,7 @@ export class Vault {
   /** Absolute path of the vault folder, `/` separated. */
   readonly root: string;
   readonly notes: Notes;
+  readonly folders: Folders;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -28,7 +31,8 @@ export class Vault {
   private constructor(root: string, platform: Platform) {
     this.root = root;
     this.platform = platform;
-    this.notes = new Notes(root, platform);
+    this.notes = new Notes({ root, fs: platform.fs });
+    this.folders = new Folders({ root, fs: platform.fs });
   }
 
   static async open(root: string, platform: Platform): Promise<Vault> {
@@ -61,29 +65,3 @@ export class Vault {
     this.emitter.clear();
   }
 }
-
-class Notes {
-  constructor(
-    private readonly root: string,
-    private readonly platform: Platform,
-  ) {}
-
-  /** Reads the text of a note. `path` is relative to the vault root. */
-  async read(path: NotePath): Promise<string> {
-    return this.platform.fs.readText(resolveInVault(this.root, path));
-  }
-
-  /**
-   * Replaces the text of a note, or creates the note if it does not exist.
-   * The write is atomic: after a crash the file holds either the old text or
-   * the new one, never a part of it. The folder must already exist.
-   */
-  async write(path: NotePath, content: string): Promise<void> {
-    await this.platform.fs.writeTextAtomic(
-      resolveInVault(this.root, path),
-      content,
-    );
-  }
-}
-
-export type { Notes };

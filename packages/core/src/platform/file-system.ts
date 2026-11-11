@@ -8,9 +8,25 @@ export interface FileSystem {
   writeTextAtomic(path: string, content: string): Promise<void>;
   /** Direct children of `dir`, not recursive. */
   list(dir: string): Promise<Entry[]>;
+  /** Rejects if nothing exists at `path`. */
   stat(path: string): Promise<Stat>;
+  exists(path: string): Promise<boolean>;
+  /** Creates a folder and any missing parents. Does nothing if it exists. */
+  mkdir(path: string): Promise<void>;
+  /**
+   * Moves a file or folder. What happens when `to` exists depends on the
+   * platform, so the caller checks first.
+   */
   rename(from: string, to: string): Promise<void>;
-  remove(path: string): Promise<void>;
+  /**
+   * Deletes a file or folder for good. A folder with anything inside is
+   * only deleted with `recursive`.
+   */
+  remove(path: string, options?: RemoveOptions): Promise<void>;
+}
+
+export interface RemoveOptions {
+  recursive?: boolean;
 }
 
 export type EntryKind = "file" | "dir";

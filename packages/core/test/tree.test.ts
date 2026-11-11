@@ -97,7 +97,7 @@ describe("vault.tree", () => {
 
   test("keeps empty folders", async () => {
     const platform = createMemoryPlatform({ "/vault/a.md": "" });
-    platform.fs.mkdir("/vault/empty/inside");
+    await platform.fs.mkdir("/vault/empty/inside");
     const vault = await Vault.open("/vault", platform);
 
     expect(outline(await vault.tree())).toEqual([
@@ -109,7 +109,7 @@ describe("vault.tree", () => {
 
   test("an empty vault has an empty tree", async () => {
     const platform = createMemoryPlatform();
-    platform.fs.mkdir("/vault");
+    await platform.fs.mkdir("/vault");
     const vault = await Vault.open("/vault", platform);
 
     expect(await vault.tree()).toEqual([]);

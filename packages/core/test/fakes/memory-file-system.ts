@@ -1,4 +1,4 @@
-import type { Entry, FileSystem, Stat } from "../../src/index";
+import type { Entry, FileSystem, RemoveOptions, Stat } from "../../src/index";
 
 interface FileNode {
   content: string;
@@ -18,13 +18,20 @@ export class MemoryFileSystem implements FileSystem {
   /** Seeds files from a `path -> content` map, creating parent folders. */
   constructor(files: Record<string, string> = {}) {
     for (const [path, content] of Object.entries(files)) {
-      this.mkdir(parentOf(path));
+      this.addDirs(parentOf(path));
       this.files.set(path, { content, mtime: ++this.clock });
     }
   }
 
-  /** Test helper: creates a folder and its parents. Not part of `FileSystem`. */
-  mkdir(dir: string): void {
+  async exists(path: string): Promise<boolean> {
+    return this.files.has(path) || this.dirs.has(path);
+  }
+
+  async mkdir(dir: string): Promise<void> {
+    this.addDirs(dir);
+  }
+
+  private addDirs(dir: string): void {
     for (let d = dir; !this.dirs.has(d); d = parentOf(d)) {
       if (this.files.has(d)) throw new Error(`ENOTDIR: ${d}`);
       this.dirs.add(d);
@@ -88,14 +95,18 @@ export class MemoryFileSystem implements FileSystem {
     }
   }
 
-  /** Removes a file or an empty folder, like the real adapter. */
-  async remove(path: string): Promise<void> {
+  async remove(path: string, options?: RemoveOptions): Promise<void> {
     if (this.files.delete(path)) return;
     this.dir(path);
-    if ((await this.list(path)).length > 0) {
+    if (!options?.recursive && (await this.list(path)).length > 0) {
       throw new Error(`ENOTEMPTY: ${path}`);
     }
-    this.dirs.delete(path);
+    for (const file of [...this.files.keys()]) {
+      if (isWithin(file, path)) this.files.delete(file);
+    }
+    for (const dir of [...this.dirs]) {
+      if (isWithin(dir, path)) this.dirs.delete(dir);
+    }
   }
 
   private file(path: string): FileNode {
