@@ -30,7 +30,7 @@ This document describes how Carbon is built and why. It is a living document: de
 | Typing                                         | no dropped frames (16 ms per frame) |
 | Idle memory                                    | < 250 MB                            |
 
-These numbers are first guesses. M0 includes two measurements (file scan speed and index write speed) that will confirm or correct them.
+These numbers started as guesses. The two M0 measurements (file read speed and index write speed) are in [section 7](#7-tauri-usage). They leave room in every budget they touch, so the targets stand.
 
 ## 2. High-level overview
 
@@ -197,7 +197,7 @@ interface IndexStore {
 }
 ```
 
-`IndexStore` exposes domain methods instead of SQL. That keeps the choice of storage engine an implementation detail (see open question 1).
+`IndexStore` exposes domain methods instead of SQL. That keeps the storage engine an implementation detail (ADR-009).
 
 ### vault
 
@@ -275,10 +275,45 @@ Carbon uses Tauri as a native layer through official plugins. `tauri/` contains 
 | App settings                           | `store` or a JSON file through `fs`                    |
 | Updates (later)                        | `updater`                                              |
 
-**Known limits to check in M0**
+**M0 measurements**
 
-- **File scan speed.** Each file read is one call across the WebView bridge. Reading 10k files must be measured. Mitigation: limited concurrency, read only changed files after the first run.
-- **SQL plugin.** Verify that FTS5 is available and that bulk inserts are fast enough. It has limited transaction control from JavaScript.
+Measured on 2026-11-11 on the author's Linux machine, with `bun tauri dev --release` and a generated vault (`bun gen:vault`): 10,000 notes, 19.4 MB, about 50,000 links. The measurement panels live in `src/bench`.
+
+_Reading files through the `fs` plugin (C-007)._ Each read is one call across the WebView bridge.
+
+| Step                                 | Time            |
+| ------------------------------------ | --------------- |
+| List all folders (251), 16 at a time | 27 to 52 ms     |
+| Read all notes, 1 at a time          | about 2,000 ms  |
+| Read all notes, 4 to 32 at a time    | 660 to 1,100 ms |
+| Read all notes, 64 to 256 at a time  | 610 to 710 ms   |
+
+- Concurrency helps up to about 64 reads in flight and is flat beyond that. The startup scan uses 64.
+- A full read of the vault costs well under a second, and later starts read only changed files.
+
+_SQLite through the `sql` plugin (C-008)._ SQLite 3.46.0 with FTS5 available. One run fills `notes`, `links` and the FTS5 table.
+
+| Rows per `INSERT` | Journal `delete`, 10k notes | Journal `wal`, 10k notes  |
+| ----------------- | --------------------------- | ------------------------- |
+| 1                 | about 558 s (extrapolated)  | about 94 s (extrapolated) |
+| 50                | 6.6 s                       | 3.2 s                     |
+| 200               | 2.4 s                       | 1.5 s                     |
+| 1,000             | 1.1 s                       | 0.9 s                     |
+
+| Query on the full index (WAL)           | Time       |
+| --------------------------------------- | ---------- |
+| Full-text search, 20 best hits          | 4 to 9 ms  |
+| Backlinks of one note                   | under 1 ms |
+| Reindex one note (3 deletes, 3 inserts) | 10 ms      |
+
+- The search numbers are a worst case: in the generated vault every word occurs in almost every note, so all 10,000 notes match and are ranked.
+- The plugin has no transaction API and uses a connection pool, so every statement is its own transaction. Row-by-row writes are unusable. Multi-row `INSERT` statements are fast.
+
+**What follows for the index store**
+
+- The database runs in WAL mode. The setting is stored in the database file, so it is set once at creation.
+- Bulk writes use multi-row `INSERT` statements of up to 1,000 rows.
+- Replacing one note takes several statements and is not atomic. A crash in between can leave that one note half indexed. This is acceptable because the index is a cache: the startup scan repairs it. If it ever hurts, "apply a batch in one transaction" is a small Rust command behind `IndexStore`.
 
 **Native code policy**
 
@@ -398,7 +433,7 @@ Three rules that keep a second shell cheap:
 | ADR-006 | No built-in sync in v0.1                                                                                 | Accepted                   | A vault is a folder, external tools already work                                                                                                      |
 | ADR-007 | MIT license                                                                                              | Accepted                   | Simple, familiar, maximum freedom for users and contributors                                                                                          |
 | ADR-008 | Index stored outside the vault, in the app cache directory                                               | Accepted                   | Avoids sync conflicts on a binary file                                                                                                                |
-| ADR-009 | SQLite with FTS5 for index and search, behind the `IndexStore` interface                                 | Accepted, pending M0 check | One engine for links, tags and search                                                                                                                 |
+| ADR-009 | SQLite with FTS5 for index and search, behind the `IndexStore` interface                                 | Accepted                   | One engine for links, tags and search. Confirmed by the M0 measurements: FTS5 is available, 10k notes are indexed in about 1 s (section 7)            |
 | ADR-010 | Tailwind CSS for styling                                                                                 | Accepted                   | Fast to build UI with                                                                                                                                 |
 | ADR-011 | Bun as package manager and script runner. `bun test` runs the core tests; the UI test runner is open     | Accepted, test runner open | One fast tool. Fall back to another tool only where Bun does not work. See open question 7                                                            |
 | ADR-012 | One Markdown grammar (Lezer) shared by editor and index                                                  | Accepted                   | No drift between what is shown and what is indexed                                                                                                    |
@@ -411,7 +446,7 @@ Three rules that keep a second shell cheap:
 
 ## 13. Open questions
 
-1. **Index engine.** If the M0 check shows the SQL plugin is too slow or lacks FTS5, the fallback is an in-memory index (plain Maps plus a JavaScript search library such as MiniSearch) saved to a cache file. `IndexStore` hides the difference.
+1. **Index engine.** Resolved in M0: SQLite with FTS5 through the `sql` plugin (ADR-009, measurements in section 7). An in-memory index stays possible behind `IndexStore` but is not planned.
 2. **Graph renderer.** Candidates: sigma.js, Pixi.js with d3-force, custom canvas. Decide with a 10k-node prototype.
 3. **State management.** Zustand or plain React context plus a query cache.
 4. **Stable note IDs.** Path-based identity is simple but loses links on external renames. Option: detect renames by content hash.

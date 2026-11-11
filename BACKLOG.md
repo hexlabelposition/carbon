@@ -26,9 +26,9 @@ Done when: the Tauri window opens on Linux, React calls a function from `@carbon
 - [x] **C-004** (P0) Create `packages/core`: public API skeleton, platform interfaces (`FileSystem`, `Watcher`, `IndexStore`)
 - [x] **C-005** (P0) Tauri adapters in `src/platform`, add the `fs`, `sql`, `dialog` plugins
 - [x] **C-006** (P0) In-memory fakes for the platform interfaces, first core test with `bun test`
-- [ ] **C-007** (P0) Measure: read 10k files through the `fs` plugin (time, best concurrency)
-- [ ] **C-008** (P0) Measure: SQL plugin with FTS5 (is it available, bulk insert speed for 10k notes)
-- [ ] **C-009** (P0) Decide the index engine from C-007 and C-008 (ADR-009, open question 1)
+- [x] **C-007** (P0) Measure: read 10k files through the `fs` plugin (time, best concurrency)
+- [x] **C-008** (P0) Measure: SQL plugin with FTS5 (is it available, bulk insert speed for 10k notes)
+- [x] **C-009** (P0) Decide the index engine from C-007 and C-008 (ADR-009, open question 1)
 - [x] **C-010** (P0) Add the MIT LICENSE file
 - [x] **C-011** (P0) CI: type check, lint, tests, build on Linux and Windows
 - [x] **C-012** (P1) Test vault generator: N notes with random links and tags
@@ -184,10 +184,9 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 
 Tracked in [ARCHITECTURE.md, open questions](ARCHITECTURE.md#13-open-questions).
 
-| Decision                                  | Needed before     |
-| ----------------------------------------- | ----------------- |
-| Index engine (SQLite plugin or in-memory) | End of M0 (C-009) |
-| State management library                  | M1 UI work        |
-| Test runner (`bun test` or Vitest)        | First UI tests    |
-| Graph renderer                            | M5 (C-502)        |
-| Stable note IDs for external renames      | After v0.1        |
+| Decision                             | Needed before  |
+| ------------------------------------ | -------------- |
+| State management library             | M1 UI work     |
+| Test runner (`bun test` or Vitest)   | First UI tests |
+| Graph renderer                       | M5 (C-502)     |
+| Stable note IDs for external renames | After v0.1     |
