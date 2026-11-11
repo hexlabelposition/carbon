@@ -1,7 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    /* Tests may use Bun APIs; the sources in ../src may not */
+    /* Language and environment: tests may use Bun APIs, the sources in
+       ../src may not */
     "types": ["bun"]
   },
   "include": [".", "../src"]

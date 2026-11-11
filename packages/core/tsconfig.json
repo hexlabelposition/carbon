@@ -1,23 +1,26 @@
 {
   "compilerOptions": {
+    /* Language and environment: no DOM and no ambient types, the core must
+       run in a Web Worker and in tests */
     "target": "ES2022",
-    /* No DOM and no ambient types: the core must run in a Web Worker and in tests */
     "lib": ["ES2022"],
     "types": [],
-    "module": "ESNext",
-    "skipLibCheck": true,
 
-    /* Bundler mode */
+    /* Modules */
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+
+    /* Emit */
     "noEmit": true,
 
-    /* Linting */
+    /* Type checking */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true
   },
   "include": ["src"]
 }

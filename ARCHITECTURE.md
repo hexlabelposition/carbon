@@ -407,6 +407,7 @@ Three rules that keep a second shell cheap:
 | ADR-015 | Platform order: Linux, then Windows for v0.1. Android, macOS and iOS are ideas                           | Accepted                   | Carbon solves its author's own needs first. No hardware to test Apple platforms                                                                       |
 | ADR-016 | Shared feature logic, separate layout shell per form factor                                              | Accepted                   | Layouts differ too much to share, logic does not                                                                                                      |
 | ADR-017 | Native code is added gradually as small Rust commands behind platform interfaces. No Go sidecar          | Accepted                   | Keeps one process and one bridge. Lets Rust be learned in small, isolated steps                                                                       |
+| ADR-018 | ESLint for linting, Prettier for formatting                                                              | Accepted                   | The standard, well-documented pair. ESLint also enforces the import rules from section 2: no Tauri outside `src/platform`, no React or Tauri in core  |
 
 ## 13. Open questions
 

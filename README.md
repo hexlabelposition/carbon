@@ -97,6 +97,9 @@ cd carbon
 bun install
 bun tauri dev         # run the app in dev mode
 bun test              # run core tests
+bun run typecheck     # type check the app, the core and the scripts
+bun run lint          # lint with ESLint
+bun run format        # format with Prettier
 ```
 
 ## Documentation

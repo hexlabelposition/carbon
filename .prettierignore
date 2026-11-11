@@ -1,0 +1,10 @@
+# Build output
+dist/
+tauri/target/
+
+# Generated files
+tauri/gen/
+
+# Lock files
+bun.lock
+tauri/Cargo.lock

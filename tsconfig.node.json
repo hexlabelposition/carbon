@@ -1,19 +1,25 @@
 {
   "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
+    /* Language and environment */
     "target": "ES2022",
     "lib": ["ES2022"],
     "types": ["node"],
+
+    /* Modules */
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true,
 
-    /* A referenced project may not disable emit; nothing is emitted in practice,
-       the typecheck script passes --noEmit */
+    /* Emit: a referenced project may not disable emit. Nothing is emitted in
+       practice, the typecheck script passes --noEmit */
+    "composite": true,
     "emitDeclarationOnly": true,
-    "outDir": "./node_modules/.tmp/tsc-node"
+    "outDir": "./node_modules/.tmp/tsc-node",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+
+    /* Type checking */
+    "strict": true,
+    "skipLibCheck": true
   },
   "include": ["vite.config.ts", "scripts"]
 }
