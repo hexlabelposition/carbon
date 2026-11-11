@@ -15,7 +15,9 @@ export function VaultCheck() {
     try {
       setOutput(await action());
     } catch (error) {
-      setOutput(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      setOutput(
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -29,24 +31,36 @@ export function VaultCheck() {
       return `Opened ${opened.root}`;
     });
 
-  const readNote = () => run(() => vault!.notes.read(path));
+  const readNote = () =>
+    run(async () => {
+      if (!vault) return "Open a vault first";
+      return vault.notes.read(path);
+    });
 
-  const button = "h-[26px] rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint";
+  const button =
+    "h-[26px] rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint";
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Vault check</h2>
+      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">
+        Vault check
+      </h2>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className={button} onClick={openVault}>
           Open vault
         </button>
         <input
           aria-label="Note path, relative to the vault"
-          className="h-[26px] min-w-0 flex-1 rounded-sm border border-line bg-bg px-2 font-mono text-small"
+          className="h-6.5 min-w-0 flex-1 rounded-sm border border-line bg-bg px-2 font-mono text-small"
           value={path}
           onChange={(e) => setPath(e.target.value)}
         />
-        <button type="button" className={button} disabled={!vault} onClick={readNote}>
+        <button
+          type="button"
+          className={button}
+          disabled={!vault}
+          onClick={readNote}
+        >
           Read note
         </button>
       </div>

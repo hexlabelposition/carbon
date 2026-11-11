@@ -4,7 +4,11 @@ import { MemoryFileSystem, MemoryIndexStore, MemoryWatcher } from "./fakes";
 
 describe("MemoryFileSystem", () => {
   test("lists direct children, folders included", async () => {
-    const fs = new MemoryFileSystem({ "/v/a.md": "", "/v/sub/b.md": "", "/v/sub/deep/c.md": "" });
+    const fs = new MemoryFileSystem({
+      "/v/a.md": "",
+      "/v/sub/b.md": "",
+      "/v/sub/deep/c.md": "",
+    });
     expect(await fs.list("/v")).toEqual([
       { name: "a.md", kind: "file" },
       { name: "sub", kind: "dir" },
@@ -22,14 +26,20 @@ describe("MemoryFileSystem", () => {
 
   test("write needs an existing parent folder", async () => {
     const fs = new MemoryFileSystem({ "/v/a.md": "" });
-    await expect(fs.writeTextAtomic("/v/new/b.md", "")).rejects.toThrow("ENOENT");
+    await expect(fs.writeTextAtomic("/v/new/b.md", "")).rejects.toThrow(
+      "ENOENT",
+    );
     fs.mkdir("/v/new");
     await fs.writeTextAtomic("/v/new/b.md", "b");
     expect(await fs.readText("/v/new/b.md")).toBe("b");
   });
 
   test("rename moves a folder with everything inside", async () => {
-    const fs = new MemoryFileSystem({ "/v/old/a.md": "a", "/v/old/deep/b.md": "b", "/v/older.md": "" });
+    const fs = new MemoryFileSystem({
+      "/v/old/a.md": "a",
+      "/v/old/deep/b.md": "b",
+      "/v/older.md": "",
+    });
     await fs.rename("/v/old", "/v/new");
     expect(await fs.readText("/v/new/deep/b.md")).toBe("b");
     await expect(fs.readText("/v/old/a.md")).rejects.toThrow("ENOENT");
@@ -76,12 +86,24 @@ describe("MemoryIndexStore", () => {
 
   test("finds backlinks and forgets removed notes", async () => {
     const index = new MemoryIndexStore();
-    const link = { target: "Inbox", alias: null, fragment: null, start: 4, end: 13 };
+    const link = {
+      target: "Inbox",
+      alias: null,
+      fragment: null,
+      start: 4,
+      end: 13,
+    };
     await index.replaceNote(note("Inbox.md"));
     await index.replaceNote(note("Carbon.md", { links: [link] }));
 
     expect(await index.backlinks("Inbox.md")).toEqual([
-      { source: "Carbon.md", sourceTitle: "Carbon", snippet: "", start: 4, end: 13 },
+      {
+        source: "Carbon.md",
+        sourceTitle: "Carbon",
+        snippet: "",
+        start: 4,
+        end: 13,
+      },
     ]);
     await index.removeNote("Carbon.md");
     expect(await index.backlinks("Inbox.md")).toEqual([]);
@@ -89,7 +111,9 @@ describe("MemoryIndexStore", () => {
 
   test("search ranks title matches first and respects the limit", async () => {
     const index = new MemoryIndexStore();
-    await index.replaceNote(note("Log.md", { plainText: "Notes about the index cache" }));
+    await index.replaceNote(
+      note("Log.md", { plainText: "Notes about the index cache" }),
+    );
     await index.replaceNote(note("Index.md", { plainText: "Nothing here" }));
 
     const hits = await index.search("INDEX", 10);

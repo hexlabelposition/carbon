@@ -5,7 +5,14 @@ import { VaultCheck } from "./VaultCheck";
 
 type Theme = "system" | "dark" | "light";
 
-const SURFACES = ["bg-backdrop", "bg-bg", "bg-panel", "bg-raise", "bg-selected", "bg-code"];
+const SURFACES = [
+  "bg-backdrop",
+  "bg-bg",
+  "bg-panel",
+  "bg-raise",
+  "bg-selected",
+  "bg-code",
+];
 const TEXTS = ["text-fg", "text-muted", "text-faint", "text-link"];
 
 /**
@@ -17,15 +24,20 @@ function App() {
 
   function apply(next: Theme) {
     setTheme(next);
-    if (next === "system") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = next;
+    if (next === "system")
+      document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", next);
   }
 
   return (
     <main className="mx-auto flex max-w-180 flex-col gap-10 px-8 py-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <span className="font-semibold">Carbon design tokens</span>
-        <div className="inline-flex rounded-md border border-line-strong bg-panel p-0.5" role="group" aria-label="Theme">
+        <div
+          className="inline-flex rounded-md border border-line-strong bg-panel p-0.5"
+          role="group"
+          aria-label="Theme"
+        >
           {(["system", "dark", "light"] as const).map((t) => (
             <button
               key={t}
@@ -33,7 +45,9 @@ function App() {
               aria-pressed={theme === t}
               onClick={() => apply(t)}
               className={`h-6.5 rounded-sm px-3 capitalize ${
-                theme === t ? "bg-solid font-medium text-on-solid" : "text-muted hover:text-fg"
+                theme === t
+                  ? "bg-solid font-medium text-on-solid"
+                  : "text-muted hover:text-fg"
               }`}
             >
               {t}
@@ -49,15 +63,22 @@ function App() {
       <SqlBench />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Surfaces</h2>
+        <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">
+          Surfaces
+        </h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {SURFACES.map((c) => (
-            <div key={c} className={`${c} rounded-md border border-line px-3 py-4 font-mono text-small`}>
+            <div
+              key={c}
+              className={`${c} rounded-md border border-line px-3 py-4 font-mono text-small`}
+            >
               {c}
             </div>
           ))}
         </div>
-        <h2 className="mt-3 text-label font-semibold tracking-[0.06em] text-faint uppercase">Text</h2>
+        <h2 className="mt-3 text-label font-semibold tracking-[0.06em] text-faint uppercase">
+          Text
+        </h2>
         <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-md border border-line bg-panel px-3 py-4 font-mono text-small">
           {TEXTS.map((c) => (
             <span key={c} className={c}>
@@ -79,7 +100,8 @@ function App() {
           <dd>Budgets</dd>
         </dl>
         <p>
-          Carbon is fast by design. Every budget here is checked with benchmarks, and the reasoning lives in{" "}
+          Carbon is fast by design. Every budget here is checked with
+          benchmarks, and the reasoning lives in{" "}
           <a className="wikilink" href="#">
             Architecture notes
           </a>
@@ -92,20 +114,29 @@ function App() {
         <h2>Budgets</h2>
         <ul>
           <li>
-            App start to interactive, index already built: <strong>under 1 s</strong>
+            App start to interactive, index already built:{" "}
+            <strong>under 1 s</strong>
           </li>
           <li>
             Quick switcher response: <strong>under 16 ms</strong>
           </li>
           <li>
-            Heavy work stays off the UI thread, parsing runs in a <em>Web Worker</em>
+            Heavy work stays off the UI thread, parsing runs in a{" "}
+            <em>Web Worker</em>
           </li>
         </ul>
-        <blockquote>Files are the source of truth. The index is only a cache and can be rebuilt at any time.</blockquote>
+        <blockquote>
+          Files are the source of truth. The index is only a cache and can be
+          rebuilt at any time.
+        </blockquote>
         <h2>Next steps</h2>
         <ul className="tasks">
           <li className="done">
-            <input type="checkbox" defaultChecked aria-label="Generate a test vault with 10k notes" />
+            <input
+              type="checkbox"
+              defaultChecked
+              aria-label="Generate a test vault with 10k notes"
+            />
             Generate a test vault with 10k notes
           </li>
           <li>

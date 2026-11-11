@@ -37,13 +37,17 @@ describe("vault.notes.read", () => {
     await expect(vault.notes.read("Nope.md")).rejects.toThrow("ENOENT");
   });
 
-  test.each(["../outside/secret.md", "/outside/secret.md", "a/../../x", "", "a//b", "C:/x"])(
-    "rejects the path %p, which could leave the vault",
-    async (path) => {
-      const vault = await Vault.open("/vault", createMemoryPlatform(files));
-      await expect(vault.notes.read(path)).rejects.toThrow("Invalid vault path");
-    },
-  );
+  test.each([
+    "../outside/secret.md",
+    "/outside/secret.md",
+    "a/../../x",
+    "",
+    "a//b",
+    "C:/x",
+  ])("rejects the path %p, which could leave the vault", async (path) => {
+    const vault = await Vault.open("/vault", createMemoryPlatform(files));
+    await expect(vault.notes.read(path)).rejects.toThrow("Invalid vault path");
+  });
 });
 
 describe("vault.on", () => {

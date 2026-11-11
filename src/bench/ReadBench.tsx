@@ -29,15 +29,21 @@ export function ReadBench() {
       let start = performance.now();
       const paths = await scanMarkdown(fs, root, SCAN_CONCURRENCY);
       print(`${root}`);
-      print(`scan (list folders, ${SCAN_CONCURRENCY} at a time): ${ms(performance.now() - start)}, ${paths.length} notes`);
+      print(
+        `scan (list folders, ${SCAN_CONCURRENCY} at a time): ${ms(performance.now() - start)}, ${paths.length} notes`,
+      );
 
       // The first pass also fills the OS page cache, so it is reported apart.
       const first = await readAll(fs, paths, 16);
-      print(`first read (16 at a time):                ${ms(first.ms)}, ${first.chars} chars`);
+      print(
+        `first read (16 at a time):                ${ms(first.ms)}, ${first.chars} chars`,
+      );
 
       start = performance.now();
       await scanMarkdown(fs, root, SCAN_CONCURRENCY);
-      print(`scan again:                               ${ms(performance.now() - start)}`);
+      print(
+        `scan again:                               ${ms(performance.now() - start)}`,
+      );
 
       print("");
       print("concurrency       time   per note");
@@ -45,8 +51,11 @@ export function ReadBench() {
       for (const levels of [LEVELS, [...LEVELS].reverse()]) {
         for (const level of levels) {
           const { ms: time, chars } = await readAll(fs, paths, level);
-          if (chars !== first.chars) throw new Error(`Read ${chars} chars, expected ${first.chars}`);
-          print(`${String(level).padStart(11)} ${ms(time)} ${(time / paths.length).toFixed(3).padStart(7)} ms`);
+          if (chars !== first.chars)
+            throw new Error(`Read ${chars} chars, expected ${first.chars}`);
+          print(
+            `${String(level).padStart(11)} ${ms(time)} ${(time / paths.length).toFixed(3).padStart(7)} ms`,
+          );
         }
         print("");
       }
@@ -60,7 +69,9 @@ export function ReadBench() {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Read benchmark</h2>
+      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">
+        Read benchmark
+      </h2>
       <div>
         <button
           type="button"

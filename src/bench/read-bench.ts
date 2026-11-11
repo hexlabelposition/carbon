@@ -14,16 +14,25 @@ export async function mapPool<T, R>(
       results[i] = await fn(items[i]);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
   return results;
 }
 
 /** Absolute paths of every `.md` file under `root`. Hidden folders are skipped. */
-export async function scanMarkdown(fs: FileSystem, root: string, concurrency: number): Promise<string[]> {
+export async function scanMarkdown(
+  fs: FileSystem,
+  root: string,
+  concurrency: number,
+): Promise<string[]> {
   const files: string[] = [];
   let level = [root];
   while (level.length > 0) {
-    const listed = await mapPool(level, concurrency, async (dir) => ({ dir, entries: await fs.list(dir) }));
+    const listed = await mapPool(level, concurrency, async (dir) => ({
+      dir,
+      entries: await fs.list(dir),
+    }));
     level = [];
     for (const { dir, entries } of listed) {
       for (const entry of entries) {
@@ -44,9 +53,17 @@ export interface ReadResult {
   chars: number;
 }
 
-export async function readAll(fs: FileSystem, paths: readonly string[], concurrency: number): Promise<ReadResult> {
+export async function readAll(
+  fs: FileSystem,
+  paths: readonly string[],
+  concurrency: number,
+): Promise<ReadResult> {
   const start = performance.now();
-  const lengths = await mapPool(paths, concurrency, async (path) => (await fs.readText(path)).length);
+  const lengths = await mapPool(
+    paths,
+    concurrency,
+    async (path) => (await fs.readText(path)).length,
+  );
   const ms = performance.now() - start;
   return { concurrency, ms, chars: lengths.reduce((a, b) => a + b, 0) };
 }

@@ -7,7 +7,13 @@ interface Note {
   path: string;
   title: string;
   body: string;
-  links: { target: string; fragment: string | null; alias: string | null; start: number; end: number }[];
+  links: {
+    target: string;
+    fragment: string | null;
+    alias: string | null;
+    start: number;
+    end: number;
+  }[];
 }
 
 const WIKI_LINK = /\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
@@ -25,7 +31,13 @@ export async function loadNotes(fs: FileSystem, root: string): Promise<Note[]> {
       end: m.index + m[0].length,
     }));
     const name = path.slice(path.lastIndexOf("/") + 1, -".md".length);
-    return { id: 0, path: path.slice(root.length + 1), title: name, body, links };
+    return {
+      id: 0,
+      path: path.slice(root.length + 1),
+      title: name,
+      body,
+      links,
+    };
   }).then((notes) => notes.map((note, i) => ({ ...note, id: i + 1 })));
 }
 
@@ -65,7 +77,10 @@ async function insertRows(
   let calls = 0;
   for (let i = 0; i < rows.length; i += batch) {
     const chunk = rows.slice(i, i + batch);
-    await db.execute(`INSERT INTO ${table} VALUES ${Array(chunk.length).fill(tuple).join(",")}`, chunk.flat());
+    await db.execute(
+      `INSERT INTO ${table} VALUES ${Array(chunk.length).fill(tuple).join(",")}`,
+      chunk.flat(),
+    );
     calls++;
   }
   return calls;
@@ -79,17 +94,35 @@ export interface InsertResult {
 }
 
 /** Fills empty tables with `notes`, `batch` rows per INSERT. */
-export async function insertNotes(db: Database, notes: readonly Note[], batch: number): Promise<InsertResult> {
-  const noteRows = notes.map((n) => [n.id, n.path, n.title, 0, n.body.length, ""]);
+export async function insertNotes(
+  db: Database,
+  notes: readonly Note[],
+  batch: number,
+): Promise<InsertResult> {
+  const noteRows = notes.map((n) => [
+    n.id,
+    n.path,
+    n.title,
+    0,
+    n.body.length,
+    "",
+  ]);
   const ftsRows = notes.map((n) => [n.id, n.title, n.body]);
-  const linkRows = notes.flatMap((n) => n.links.map((l) => [n.id, l.target, l.alias, l.fragment, l.start, l.end]));
+  const linkRows = notes.flatMap((n) =>
+    n.links.map((l) => [n.id, l.target, l.alias, l.fragment, l.start, l.end]),
+  );
 
   const start = performance.now();
   const calls =
     (await insertRows(db, "bench_notes", 6, noteRows, batch)) +
     (await insertRows(db, "bench_fts(rowid, title, body)", 3, ftsRows, batch)) +
     (await insertRows(db, "bench_links", 6, linkRows, batch));
-  return { ms: performance.now() - start, notes: notes.length, links: linkRows.length, calls };
+  return {
+    ms: performance.now() - start,
+    notes: notes.length,
+    links: linkRows.length,
+    calls,
+  };
 }
 
 /** Replaces one note's rows, the way a save would. */
@@ -102,7 +135,10 @@ export async function reindexOne(db: Database, note: Note): Promise<number> {
   return performance.now() - start;
 }
 
-export async function median(times: number, fn: () => Promise<unknown>): Promise<number> {
+export async function median(
+  times: number,
+  fn: () => Promise<unknown>,
+): Promise<number> {
   const samples: number[] = [];
   for (let i = 0; i < times; i++) {
     const start = performance.now();
@@ -112,7 +148,10 @@ export async function median(times: number, fn: () => Promise<unknown>): Promise
   return samples.sort((a, b) => a - b)[Math.floor(times / 2)];
 }
 
-export function searchFts(db: Database, query: string): Promise<{ rowid: number; snippet: string }[]> {
+export function searchFts(
+  db: Database,
+  query: string,
+): Promise<{ rowid: number; snippet: string }[]> {
   return db.select(
     `SELECT rowid, snippet(bench_fts, 1, '[', ']', '…', 12) AS snippet
        FROM bench_fts WHERE bench_fts MATCH ? ORDER BY rank LIMIT 20`,
@@ -120,7 +159,10 @@ export function searchFts(db: Database, query: string): Promise<{ rowid: number;
   );
 }
 
-export function backlinks(db: Database, title: string): Promise<{ path: string }[]> {
+export function backlinks(
+  db: Database,
+  title: string,
+): Promise<{ path: string }[]> {
   return db.select(
     `SELECT n.path, l.pos_start FROM bench_links l JOIN bench_notes n ON n.id = l.source_id
       WHERE l.target_raw = ?`,

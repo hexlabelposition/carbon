@@ -14,7 +14,14 @@ import {
 /** Rows per INSERT. A batch of 1 is slow, so it runs on a sample. */
 const BATCHES = [1, 50, 200, 1000];
 const SAMPLE = 100;
-const QUERIES = ["index", "graph editor", "заметка", "пои*", '"local plan"', "nosuchword"];
+const QUERIES = [
+  "index",
+  "graph editor",
+  "заметка",
+  "пои*",
+  '"local plan"',
+  "nosuchword",
+];
 
 /**
  * Temporary M0 measurement (C-008): is FTS5 available in the `sql` plugin,
@@ -37,10 +44,16 @@ export function SqlBench() {
     try {
       const db = await openDatabase("bench.db");
       try {
-        const [{ version }] = await db.select<{ version: string }[]>("SELECT sqlite_version() AS version");
-        const options = await db.select<{ compile_options: string }[]>("PRAGMA compile_options");
+        const [{ version }] = await db.select<{ version: string }[]>(
+          "SELECT sqlite_version() AS version",
+        );
+        const options = await db.select<{ compile_options: string }[]>(
+          "PRAGMA compile_options",
+        );
         const fts5 = options.some((o) => o.compile_options === "ENABLE_FTS5");
-        print(`SQLite ${version}, ENABLE_FTS5 compile option: ${fts5 ? "yes" : "no"}`);
+        print(
+          `SQLite ${version}, ENABLE_FTS5 compile option: ${fts5 ? "yes" : "no"}`,
+        );
 
         await createTables(db);
         print("FTS5 table created: yes");
@@ -50,10 +63,14 @@ export function SqlBench() {
         print(`${notes.length} notes, ${chars} chars, from ${root}`);
 
         for (const journal of ["delete", "wal"]) {
-          const [{ journal_mode }] = await db.select<{ journal_mode: string }[]>(`PRAGMA journal_mode = ${journal}`);
+          const [{ journal_mode }] = await db.select<
+            { journal_mode: string }[]
+          >(`PRAGMA journal_mode = ${journal}`);
           print();
           print(`journal_mode = ${journal_mode}`);
-          print("rows per INSERT   notes   links   calls       time    per note   10k notes");
+          print(
+            "rows per INSERT   notes   links   calls       time    per note   10k notes",
+          );
           for (const batch of BATCHES) {
             await createTables(db);
             const subset = batch === 1 ? notes.slice(0, SAMPLE) : notes;
@@ -72,12 +89,18 @@ export function SqlBench() {
         for (const query of QUERIES) {
           const hits = await searchFts(db, query);
           const time = await median(7, () => searchFts(db, query));
-          print(`  search ${query.padEnd(14)} ${ms(time)}, ${hits.length} hits`);
+          print(
+            `  search ${query.padEnd(14)} ${ms(time)}, ${hits.length} hits`,
+          );
         }
         const target = notes[Math.floor(notes.length / 2)];
         const found = await backlinks(db, target.title);
-        print(`  backlinks              ${ms(await median(7, () => backlinks(db, target.title)))}, ${found.length} rows`);
-        print(`  reindex one note       ${ms(await median(7, () => reindexOne(db, target)))}`);
+        print(
+          `  backlinks              ${ms(await median(7, () => backlinks(db, target.title)))}, ${found.length} rows`,
+        );
+        print(
+          `  reindex one note       ${ms(await median(7, () => reindexOne(db, target)))}`,
+        );
 
         print();
         print("done");
@@ -96,11 +119,13 @@ export function SqlBench() {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">SQL benchmark</h2>
+      <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">
+        SQL benchmark
+      </h2>
       <div>
         <button
           type="button"
-          className="h-[26px] rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint"
+          className="h-6.5 rounded-sm border border-line-strong bg-panel px-3 disabled:text-faint"
           disabled={running}
           onClick={run}
         >

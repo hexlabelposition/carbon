@@ -13,7 +13,9 @@ const count = Number(countArg);
 const seed = Number(seedArg);
 
 if (!dir || !Number.isInteger(count) || count < 1 || !Number.isInteger(seed)) {
-  console.error("Usage: bun scripts/generate-vault.ts <dir> [notes=10000] [seed=1]");
+  console.error(
+    "Usage: bun scripts/generate-vault.ts <dir> [notes=10000] [seed=1]",
+  );
   process.exit(1);
 }
 if (existsSync(dir) && readdirSync(dir).length > 0) {
@@ -30,7 +32,8 @@ function random(): number {
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
-const int = (min: number, max: number) => min + Math.floor(random() * (max - min + 1));
+const int = (min: number, max: number) =>
+  min + Math.floor(random() * (max - min + 1));
 const pick = <T>(items: readonly T[]): T => items[int(0, items.length - 1)];
 const chance = (p: number) => random() < p;
 
@@ -47,7 +50,8 @@ const TAGS = Array.from({ length: 200 }, (_, i) =>
 );
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
-const words = (n: number) => Array.from({ length: n }, () => pick(WORDS)).join(" ");
+const words = (n: number) =>
+  Array.from({ length: n }, () => pick(WORDS)).join(" ");
 const sentence = () => `${capitalize(words(int(6, 16)))}.`;
 
 // About one folder per 40 notes, up to three levels deep. A tenth of the
@@ -55,7 +59,11 @@ const sentence = () => `${capitalize(words(int(6, 16)))}.`;
 const folders = [""];
 for (let i = 0; i < Math.max(1, Math.round(count / 40)); i++) {
   const parent = pick(folders);
-  folders.push(parent.split("/").length >= 3 ? `${pick(WORDS)}-${i}` : join(parent, `${pick(WORDS)}-${i}`));
+  folders.push(
+    parent.split("/").length >= 3
+      ? `${pick(WORDS)}-${i}`
+      : join(parent, `${pick(WORDS)}-${i}`),
+  );
 }
 
 const notes = Array.from({ length: count }, (_, i) => {
@@ -73,7 +81,8 @@ function link(): string {
 
 function paragraph(): string {
   const parts = Array.from({ length: int(2, 6) }, sentence);
-  for (let i = int(0, 2); i > 0; i--) parts.splice(int(0, parts.length), 0, `See ${link()}.`);
+  for (let i = int(0, 2); i > 0; i--)
+    parts.splice(int(0, parts.length), 0, `See ${link()}.`);
   if (chance(0.3)) parts.push(`#${pick(TAGS)}`);
   return parts.join(" ");
 }
@@ -82,7 +91,9 @@ function body(title: string): string {
   const out: string[] = [];
   if (chance(0.4)) {
     out.push("---");
-    out.push(`tags: [${Array.from({ length: int(1, 3) }, () => pick(TAGS)).join(", ")}]`);
+    out.push(
+      `tags: [${Array.from({ length: int(1, 3) }, () => pick(TAGS)).join(", ")}]`,
+    );
     if (chance(0.3)) out.push(`aliases: [${capitalize(words(2))}]`);
     out.push("---", "");
   }
@@ -91,7 +102,8 @@ function body(title: string): string {
     if (chance(0.7)) out.push(`## ${capitalize(words(int(1, 4)))}`, "");
     for (let p = int(1, 3); p > 0; p--) out.push(paragraph(), "");
     if (chance(0.3)) {
-      for (let item = int(2, 5); item > 0; item--) out.push(`- [${chance(0.5) ? "x" : " "}] ${words(int(3, 8))}`);
+      for (let item = int(2, 5); item > 0; item--)
+        out.push(`- [${chance(0.5) ? "x" : " "}] ${words(int(3, 8))}`);
       out.push("");
     }
   }
