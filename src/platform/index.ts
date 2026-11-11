@@ -7,6 +7,7 @@ import { tauriIndexStore } from "./index-store";
 import { tauriWatcher } from "./watcher";
 
 export { pickVaultFolder } from "./dialog";
+export { openDatabase, type Database } from "./sql";
 
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,

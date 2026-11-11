@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ReadBench } from "./bench/ReadBench";
+import { SqlBench } from "./bench/SqlBench";
 import { VaultCheck } from "./VaultCheck";
 
 type Theme = "system" | "dark" | "light";
@@ -44,6 +45,8 @@ function App() {
       <VaultCheck />
 
       <ReadBench />
+
+      <SqlBench />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">Surfaces</h2>
