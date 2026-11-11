@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { openDatabase, pickVaultFolder, tauriPlatform } from "../platform";
+import { openDatabase, pickVaultFolder, tauriPlatform } from "../../platform";
 import {
   backlinks,
   createTables,

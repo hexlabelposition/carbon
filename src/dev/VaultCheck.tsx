@@ -6,14 +6,14 @@ import {
   type TreeNode,
 } from "@carbon/core";
 import { useState } from "react";
-import { pickVaultFolder, tauriPlatform } from "./platform";
+import { pickVaultFolder, tauriPlatform } from "../platform";
 
 const WRITE_CHECK_FILE = "carbon-write-check.md";
 const OPERATIONS_CHECK_FOLDER = "carbon-operations-check";
 
 /**
- * Temporary M0 check: reads a real file through `@carbon/core` and the Tauri
- * adapters. It goes away with the rest of this preview in M1 (C-110).
+ * Temporary check of `@carbon/core` and the Tauri adapters on a real disk.
+ * Remove with C-113, when the file tree and the editor do the same for real.
  */
 export function VaultCheck() {
   const [vault, setVault] = useState<Vault | null>(null);

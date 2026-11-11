@@ -100,6 +100,7 @@ carbon/
       desktop/              # desktop layout: sidebars, tabs, panels
     platform/               # Tauri implementations of the core interfaces
     workers/                # parsing worker
+    dev/                    # dev builds only: vault check, measurements, style preview
   tauri/                    # Tauri: config, capabilities, plugin registration, small commands
 ```
 
@@ -281,7 +282,7 @@ Carbon uses Tauri as a native layer through official plugins. `tauri/` contains 
 
 **M0 measurements**
 
-Measured on 2026-11-11 on the author's Linux machine, with `bun tauri dev --release` and a generated vault (`bun gen:vault`): 10,000 notes, 19.4 MB, about 50,000 links. The measurement panels live in `src/bench`.
+Measured on 2026-11-11 on the author's Linux machine, with `bun tauri dev --release` and a generated vault (`bun gen:vault`): 10,000 notes, 19.4 MB, about 50,000 links. The measurement panels live in `src/dev/bench` and are shown in the dev panel of the shell.
 
 _Reading files through the `fs` plugin (C-007)._ Each read is one call across the WebView bridge.
 

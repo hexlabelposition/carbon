@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { pickVaultFolder, tauriPlatform } from "../platform";
+import { pickVaultFolder, tauriPlatform } from "../../platform";
 import { readAll, scanMarkdown } from "./read-bench";
 
 const LEVELS = [1, 2, 4, 8, 16, 32, 64, 128, 256];

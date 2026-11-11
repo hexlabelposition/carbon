@@ -1,5 +1,5 @@
 import type { FileSystem } from "@carbon/core";
-import type { Database } from "../platform";
+import type { Database } from "../../platform";
 import { mapPool, scanMarkdown } from "./read-bench";
 
 interface Note {

@@ -50,7 +50,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 
 **UI**
 
-- [ ] **C-110** (P0) Desktop shell in `src/shells/desktop`; feature logic lives in hooks, not in layout components
+- [x] **C-110** (P0) Desktop shell in `src/shells/desktop`; feature logic lives in hooks, not in layout components
 - [ ] **C-111** (P0) Start screen: open vault, create vault, recent vaults
 - [ ] **C-112** (P0) File tree sidebar with create, rename, delete, drag to move
 - [ ] **C-113** (P0) CodeMirror 6 editor with Markdown highlighting
