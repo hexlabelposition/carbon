@@ -1,4 +1,6 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
+import { useState } from "react";
+import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { useNoteDocument } from "./use-note-document";
 
@@ -12,7 +14,9 @@ interface NoteEditorProps {
  * with `key={path}`, so each note gets an editor of its own.
  */
 export function NoteEditor({ vault, path }: NoteEditorProps) {
-  const [note, { edited, saveNow }] = useNoteDocument(vault, path);
+  const [note, actions] = useNoteDocument(vault, path);
+  /** The user closed the conflict question without answering it. */
+  const [postponed, setPostponed] = useState(false);
 
   if (note.status === "loading") return null;
   if (note.status === "error") {
@@ -26,22 +30,43 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
     );
   }
 
+  const name = path.replace(/\.md$/i, "");
+  /** Answers the conflict question; a new conflict asks again. */
+  const answer = (resolve: () => void) => () => {
+    setPostponed(false);
+    resolve();
+  };
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line px-3">
         <span className="min-w-0 flex-1 truncate text-muted" title={path}>
-          {path.replace(/\.md$/i, "")}
+          {name}
         </span>
-        <SaveIndicator save={note.save} onRetry={saveNow} />
+        <SaveIndicator
+          save={note.save}
+          onRetry={actions.saveNow}
+          onResolve={() => setPostponed(false)}
+        />
       </header>
       <div className="min-h-0 flex-1">
         <MarkdownEditor
-          initialText={note.text}
+          text={note.text}
+          revision={note.revision}
           label={path}
-          onChange={edited}
-          onSave={saveNow}
+          onChange={actions.edited}
+          onSave={actions.saveNow}
         />
       </div>
+      {note.save.status === "conflict" && !postponed && (
+        <ConflictDialog
+          name={name}
+          deletedOnDisk={note.deletedOnDisk}
+          onKeepMine={answer(actions.keepMine)}
+          onUseDisk={answer(actions.useDisk)}
+          onLater={() => setPostponed(true)}
+        />
+      )}
     </div>
   );
 }
@@ -49,10 +74,15 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
 interface SaveIndicatorProps {
   save: SaveState;
   onRetry: () => void;
+  /** Opens the conflict question again. */
+  onResolve: () => void;
 }
 
+const indicatorButton =
+  "shrink-0 rounded-sm border border-line-strong px-1.5 hover:bg-raise";
+
 /** Tells whether the edits are on disk. Never by color alone. */
-function SaveIndicator({ save, onRetry }: SaveIndicatorProps) {
+function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   if (save.status === "saved") {
     return (
       <span role="status" className="shrink-0 text-small text-faint">
@@ -72,10 +102,14 @@ function SaveIndicator({ save, onRetry }: SaveIndicatorProps) {
     );
   }
   if (save.status === "conflict") {
-    // C-118 adds the dialog that resolves this.
     return (
-      <span role="alert" className="min-w-0 truncate text-small text-danger">
-        Not saved: the note was changed on disk
+      <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
+        <span className="truncate text-danger">
+          Not saved: the note was changed on disk
+        </span>
+        <button type="button" className={indicatorButton} onClick={onResolve}>
+          Resolve
+        </button>
       </span>
     );
   }
@@ -84,11 +118,7 @@ function SaveIndicator({ save, onRetry }: SaveIndicatorProps) {
       <span className="truncate text-danger" title={save.message}>
         Not saved: {save.message}
       </span>
-      <button
-        type="button"
-        className="shrink-0 rounded-sm border border-line-strong px-1.5 hover:bg-raise"
-        onClick={onRetry}
-      >
+      <button type="button" className={indicatorButton} onClick={onRetry}>
         Retry
       </button>
     </span>

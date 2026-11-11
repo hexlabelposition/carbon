@@ -9,7 +9,8 @@ export type SaveState =
   | { status: "unsaved" }
   /**
    * The note changed on disk since the editor read it. Nothing is written
-   * until that is resolved, so neither version is lost.
+   * until that is resolved with `keepMine` or `useDisk`, so neither
+   * version is lost.
    */
   | { status: "conflict" }
   /** The last write failed. The next edit or `flush` tries again. */
@@ -43,7 +44,7 @@ export class Autosave {
   private readonly maxDelayMs: number;
   private onState: ((state: SaveState) => void) | undefined;
 
-  private base: string;
+  private base: string | null;
   /** The newest text that is not written yet. */
   private pending: string | null = null;
   private pause: ReturnType<typeof setTimeout> | undefined;
@@ -92,6 +93,34 @@ export class Autosave {
       this.running = null;
     });
     return this.running;
+  }
+
+  /**
+   * Resolves a conflict in favor of the editor: its text replaces the
+   * version on disk. `diskHash` is the `contentHash` of that version as the
+   * user saw it, or `null` if the note was deleted. If the disk changes yet
+   * again before the write, that is a new conflict.
+   */
+  keepMine(diskHash: string | null): Promise<void> {
+    this.base = diskHash;
+    if (this.current.status === "conflict") {
+      this.set({ status: this.pending === null ? "saved" : "unsaved" });
+    }
+    return this.flush();
+  }
+
+  /**
+   * The editor now shows the version on disk, whose `contentHash` is
+   * `diskHash`: unsaved edits are dropped. Resolves a conflict in favor of
+   * the disk, and is also how a note that changed on disk is reloaded.
+   */
+  useDisk(diskHash: string): void {
+    clearTimeout(this.pause);
+    clearTimeout(this.deadline);
+    this.deadline = undefined;
+    this.pending = null;
+    this.base = diskHash;
+    this.set({ status: "saved" });
   }
 
   /**

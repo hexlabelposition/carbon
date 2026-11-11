@@ -146,6 +146,82 @@ describe("Autosave", () => {
     expect(states).toEqual(["unsaved", "conflict"]);
   });
 
+  test("keepMine writes the editor text over the other version", async () => {
+    const { platform, autosave, onDisk } = await setup();
+    await platform.fs.writeTextAtomic(FILE, "theirs");
+    autosave.edit("mine");
+    await autosave.flush();
+    autosave.edit("mine, more");
+
+    await autosave.keepMine(contentHash("theirs"));
+
+    expect(await onDisk()).toBe("mine, more");
+    expect(autosave.state).toEqual({ status: "saved" });
+    // Saving goes on as usual afterwards.
+    autosave.edit("mine, even more");
+    await wait(DELAY);
+    expect(await onDisk()).toBe("mine, even more");
+  });
+
+  test("keepMine brings back a note that was deleted", async () => {
+    const { platform, autosave, onDisk } = await setup();
+    await platform.fs.remove(FILE);
+    autosave.edit("mine");
+    await autosave.flush();
+    expect(autosave.state).toEqual({ status: "conflict" });
+
+    await autosave.keepMine(null);
+
+    expect(await onDisk()).toBe("mine");
+    expect(autosave.state).toEqual({ status: "saved" });
+  });
+
+  test("keepMine is a conflict again if the disk changed once more", async () => {
+    const { platform, autosave, onDisk } = await setup();
+    await platform.fs.writeTextAtomic(FILE, "theirs");
+    autosave.edit("mine");
+    await autosave.flush();
+    await platform.fs.writeTextAtomic(FILE, "theirs, again");
+
+    await autosave.keepMine(contentHash("theirs"));
+
+    expect(autosave.state).toEqual({ status: "conflict" });
+    expect(await onDisk()).toBe("theirs, again");
+  });
+
+  test("useDisk drops the unsaved edits and saves later ones on top", async () => {
+    const { platform, autosave, onDisk, states } = await setup();
+    await platform.fs.writeTextAtomic(FILE, "theirs");
+    autosave.edit("mine");
+    await autosave.flush();
+
+    autosave.useDisk(contentHash("theirs"));
+    expect(autosave.state).toEqual({ status: "saved" });
+    await wait(MAX_DELAY);
+    expect(await onDisk()).toBe("theirs");
+
+    autosave.edit("theirs, and mine");
+    await wait(DELAY);
+    expect(await onDisk()).toBe("theirs, and mine");
+    expect(states).toEqual([
+      "unsaved",
+      "conflict",
+      "saved",
+      "unsaved",
+      "saved",
+    ]);
+  });
+
+  test("useDisk before a pending write cancels that write", async () => {
+    const { platform, autosave, onDisk } = await setup();
+    autosave.edit("mine");
+    await platform.fs.writeTextAtomic(FILE, "theirs");
+    autosave.useDisk(contentHash("theirs"));
+    await wait(MAX_DELAY);
+    expect(await onDisk()).toBe("theirs");
+    expect(autosave.state).toEqual({ status: "saved" });
+  });
+
   test("a failed write is reported and the next edit tries again", async () => {
     const { platform, autosave, onDisk } = await setup();
     const write = platform.fs.writeTextAtomic.bind(platform.fs);

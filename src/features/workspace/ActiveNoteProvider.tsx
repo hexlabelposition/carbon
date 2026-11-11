@@ -42,15 +42,10 @@ export function ActiveNoteProvider({
         () => {},
       );
     }
-    const off = vault.on("changed", (change) => {
-      if (change.kind !== "removed") return;
-      setPath((current) =>
-        current !== null && isWithin(current, change.path) ? null : current,
-      );
-    });
+    // A note deleted by another program while it is open is handled by its
+    // editor, which knows whether there are unsaved edits to rescue.
     return () => {
       cancelled = true;
-      off();
     };
   }, [vault, first]);
 
