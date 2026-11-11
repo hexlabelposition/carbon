@@ -11,7 +11,7 @@ async function openVault() {
     "/outside/secret.md": "secret",
   });
   const vault = await Vault.open("/vault", platform);
-  return { vault, fs: platform.fs };
+  return { vault, fs: platform.fs, trash: platform.trash };
 }
 
 /** Every path in the tree, folders with a trailing slash. */
@@ -127,16 +127,37 @@ describe("vault.notes.rename", () => {
 });
 
 describe("vault.notes.remove", () => {
-  test("deletes a note", async () => {
-    const { vault } = await openVault();
+  test("moves a note to the trash", async () => {
+    const { vault, trash } = await openVault();
     await vault.notes.remove("projects/Carbon.md");
     expect(await paths(vault)).not.toContain("projects/Carbon.md");
+    expect(trash.items).toEqual(["/vault/projects/Carbon.md"]);
+  });
+
+  test("deletes a note for good when asked, past the trash", async () => {
+    const { vault, trash } = await openVault();
+    await vault.notes.remove("projects/Carbon.md", { permanent: true });
+    expect(await paths(vault)).not.toContain("projects/Carbon.md");
+    expect(trash.items).toEqual([]);
+  });
+
+  test("rejects and keeps the note when there is no trash", async () => {
+    const { vault, trash } = await openVault();
+    trash.available = false;
+    await expect(vault.notes.remove("Inbox.md")).rejects.toThrow("No trash");
+    expect(await vault.notes.read("Inbox.md")).toBe("# Inbox");
+    // The caller can still decide to delete for good.
+    await vault.notes.remove("Inbox.md", { permanent: true });
+    expect(await paths(vault)).not.toContain("Inbox.md");
   });
 
   test("rejects a missing note and refuses to delete a folder", async () => {
     const { vault } = await openVault();
     await expect(vault.notes.remove("Nope.md")).rejects.toThrow("ENOENT");
     await expect(vault.notes.remove("projects")).rejects.toThrow("Not a file");
+    await expect(
+      vault.notes.remove("projects", { permanent: true }),
+    ).rejects.toThrow("Not a file");
     expect(await vault.notes.read("projects/Carbon.md")).toBe("carbon");
   });
 });
@@ -192,10 +213,26 @@ describe("vault.folders", () => {
     expect(await vault.notes.read("projects/Carbon.md")).toBe("carbon");
   });
 
-  test("removes a folder with everything inside", async () => {
-    const { vault } = await openVault();
+  test("moves a folder with everything inside to the trash", async () => {
+    const { vault, trash } = await openVault();
     await vault.folders.remove("projects");
     expect(await paths(vault)).toEqual(["Inbox.md", "projects.md"]);
+    // One item: the folder can be restored as a whole.
+    expect(trash.items).toEqual(["/vault/projects"]);
+  });
+
+  test("deletes a folder with everything inside for good when asked", async () => {
+    const { vault, trash } = await openVault();
+    await vault.folders.remove("projects", { permanent: true });
+    expect(await paths(vault)).toEqual(["Inbox.md", "projects.md"]);
+    expect(trash.items).toEqual([]);
+  });
+
+  test("rejects and keeps the folder when there is no trash", async () => {
+    const { vault, trash } = await openVault();
+    trash.available = false;
+    await expect(vault.folders.remove("projects")).rejects.toThrow("No trash");
+    expect(await vault.notes.read("projects/Carbon.md")).toBe("carbon");
   });
 
   test("remove rejects a note, a missing folder and the vault root", async () => {

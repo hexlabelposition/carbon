@@ -77,7 +77,7 @@ carbon/
     features/           # editor, file tree, backlinks, search, tags, graph
     shells/             # layout per form factor (desktop first)
     platform/           # Tauri adapters for the core (file system, database)
-  tauri/                # Tauri: config and plugin registration only
+  tauri/                # Tauri: config, plugin registration, one small command
   README.md
   ARCHITECTURE.md
   BACKLOG.md

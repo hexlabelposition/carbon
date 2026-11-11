@@ -136,9 +136,11 @@ export function VaultCheck() {
           const text = await vault.notes.read(`${dir}/b/THREE.md`);
           if (text !== "two") throw new Error(`Unexpected text: ${text}`);
         });
-        await step("delete note", () => vault.notes.remove(`${dir}/b/One.md`));
-        await step("delete folder with contents", () =>
-          vault.folders.remove(dir),
+        await step("delete note to the system trash", () =>
+          vault.notes.remove(`${dir}/b/One.md`),
+        );
+        await step("delete folder with contents for good", () =>
+          vault.folders.remove(dir, { permanent: true }),
         );
         const left = (await vault.tree()).some((n) => n.name === dir);
         log.push(`${left ? "BAD" : "ok "} nothing is left behind`);

@@ -1,10 +1,11 @@
 import type { NotePath } from "../types";
 import { contentHash } from "../util/hash";
 import {
+  deleteEntry,
   expectFree,
-  expectKind,
   makeFolders,
   moveEntry,
+  type DeleteOptions,
   type VaultContext,
 } from "./entries";
 import { parentOf, resolveInVault, resolveNewInVault } from "./path";
@@ -94,12 +95,11 @@ export class Notes {
     await moveEntry(this.context, from, to, "file");
   }
 
-  /** Deletes a note for good. Moving to the system trash comes in C-106. */
-  async remove(path: NotePath): Promise<void> {
-    const { root, fs, own } = this.context;
-    const target = resolveInVault(root, path);
-    await expectKind(this.context, path, "file");
-    await fs.remove(target);
-    own.removed(target);
+  /**
+   * Deletes a note: moves it to the system trash, or deletes it for good
+   * with `permanent`. Rejects if the trash is not available.
+   */
+  async remove(path: NotePath, options?: DeleteOptions): Promise<void> {
+    await deleteEntry(this.context, path, "file", options);
   }
 }

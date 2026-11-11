@@ -1,11 +1,12 @@
 import {
+  deleteEntry,
   expectFree,
-  expectKind,
   makeFolders,
   moveEntry,
+  type DeleteOptions,
   type VaultContext,
 } from "./entries";
-import { resolveInVault, resolveNewInVault } from "./path";
+import { resolveNewInVault } from "./path";
 
 /** Folders of a vault. Paths are relative to the vault root. */
 export class Folders {
@@ -31,14 +32,11 @@ export class Folders {
   }
 
   /**
-   * Deletes a folder and everything inside it for good. Moving to the
-   * system trash comes in C-106.
+   * Deletes a folder and everything inside it: moves it to the system
+   * trash, or deletes it for good with `permanent`. Rejects if the trash is
+   * not available.
    */
-  async remove(path: string): Promise<void> {
-    const { root, fs, own } = this.context;
-    const target = resolveInVault(root, path);
-    await expectKind(this.context, path, "dir");
-    await fs.remove(target, { recursive: true });
-    own.removed(target);
+  async remove(path: string, options?: DeleteOptions): Promise<void> {
+    await deleteEntry(this.context, path, "dir", options);
   }
 }

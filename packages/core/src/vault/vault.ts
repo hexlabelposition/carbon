@@ -48,7 +48,7 @@ export class Vault {
   private cachedTree: Promise<TreeNode[]> | null = null;
 
   private constructor(root: string, platform: Platform, delayMs: number) {
-    const { fs, watcher } = platform;
+    const { fs, watcher, trash } = platform;
     const forgetTree = () => {
       this.cachedTree = null;
     };
@@ -56,8 +56,8 @@ export class Vault {
 
     this.root = root;
     this.platform = platform;
-    this.notes = new Notes({ root, fs, own });
-    this.folders = new Folders({ root, fs, own });
+    this.notes = new Notes({ root, fs, trash, own });
+    this.folders = new Folders({ root, fs, trash, own });
     this.watch = new VaultWatch({
       root,
       fs,

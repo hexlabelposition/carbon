@@ -4,6 +4,7 @@
 import type { Platform } from "@carbon/core";
 import { tauriFileSystem } from "./file-system";
 import { tauriIndexStore } from "./index-store";
+import { tauriTrash } from "./trash";
 import { tauriWatcher } from "./watcher";
 
 export { pickVaultFolder } from "./dialog";
@@ -13,4 +14,5 @@ export const tauriPlatform: Platform = {
   fs: tauriFileSystem,
   watcher: tauriWatcher,
   index: tauriIndexStore,
+  trash: tauriTrash,
 };

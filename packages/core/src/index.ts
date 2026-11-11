@@ -3,6 +3,7 @@
 export { Vault } from "./vault/vault";
 export type { VaultEvents, VaultOptions } from "./vault/vault";
 export type { VaultChange } from "./vault/watch";
+export type { DeleteOptions } from "./vault/entries";
 export type { Folders } from "./vault/folders";
 export { WriteConflictError } from "./vault/notes";
 export type { Notes } from "./vault/notes";
@@ -19,6 +20,7 @@ export type {
   Platform,
   RemoveOptions,
   Stat,
+  Trash,
   Watcher,
 } from "./platform";
 

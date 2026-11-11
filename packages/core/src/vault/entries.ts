@@ -1,4 +1,4 @@
-import type { EntryKind, FileSystem } from "../platform";
+import type { EntryKind, FileSystem, Trash } from "../platform";
 import type { OwnChanges } from "./own-changes";
 import { parentOf, resolveInVault, resolveNewInVault } from "./path";
 
@@ -7,8 +7,17 @@ export interface VaultContext {
   /** Absolute path of the vault folder, `/` separated. */
   root: string;
   fs: FileSystem;
+  trash: Trash;
   /** Every change the vault makes is recorded here (see `OwnChanges`). */
   own: OwnChanges;
+}
+
+export interface DeleteOptions {
+  /**
+   * Delete for good instead of moving to the system trash. Nothing brings
+   * the note or folder back after that.
+   */
+  permanent?: boolean;
 }
 
 /** Rejects unless `path` exists and is of the given kind. */
@@ -72,4 +81,23 @@ export async function moveEntry(
   await fs.rename(source, target);
   own.removed(source);
   await own.wrote(target);
+}
+
+/**
+ * Deletes a file or folder: to the system trash, or for good if asked. If
+ * the trash is not available the call rejects and nothing is deleted;
+ * deleting for good is never a silent fallback.
+ */
+export async function deleteEntry(
+  context: VaultContext,
+  path: string,
+  kind: EntryKind,
+  options: DeleteOptions = {},
+): Promise<void> {
+  const { root, fs, trash, own } = context;
+  const target = resolveInVault(root, path);
+  await expectKind(context, path, kind);
+  if (options.permanent) await fs.remove(target, { recursive: kind === "dir" });
+  else await trash.moveToTrash(target);
+  own.removed(target);
 }
