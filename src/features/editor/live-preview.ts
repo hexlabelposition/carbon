@@ -15,9 +15,10 @@ import type { SyntaxNode } from "@lezer/common";
  * hidden and only the formatting shows, except in the element the cursor is
  * in, which shows its raw Markdown so it can be edited.
  *
- * Covers headings, bold, italic, strikethrough, inline code, lists, task
- * checkboxes, quotes, horizontal rules and code blocks. Hiding is decoration only: the
- * text of the note changes only when the user types or ticks a task.
+ * Covers headings, bold, italic, strikethrough, inline code, wiki links,
+ * lists, task checkboxes, quotes, horizontal rules and code blocks. Hiding
+ * is decoration only: the text of the note changes only when the user
+ * types or ticks a task.
  */
 export const livePreview = [
   ViewPlugin.fromClass(
@@ -77,6 +78,8 @@ export const livePreview = [
       userSelect: "none",
     },
     ".cm-bullet": { color: "var(--cb-faint)" },
+    ".cm-wiki-link": { color: "var(--cb-link)" },
+    ".cm-wiki-link-separator": { color: "var(--cb-faint)" },
     ".cm-task": {
       width: "14px",
       height: "14px",
@@ -165,6 +168,16 @@ class LanguageWidget extends WidgetType {
   }
 }
 
+/** The " > " shown in place of the "#" between a note and its heading. */
+class SeparatorWidget extends WidgetType {
+  toDOM(): HTMLElement {
+    const separator = document.createElement("span");
+    separator.className = "cm-wiki-link-separator";
+    separator.textContent = " > ";
+    return separator;
+  }
+}
+
 /** The line shown in place of "---". */
 class RuleWidget extends WidgetType {
   toDOM(): HTMLElement {
@@ -176,6 +189,8 @@ class RuleWidget extends WidgetType {
 
 const hide = Decoration.replace({});
 const inlineCode = Decoration.mark({ class: "cm-inline-code" });
+const wikiLinkText = Decoration.mark({ class: "cm-wiki-link" });
+const headingSeparator = Decoration.replace({ widget: new SeparatorWidget() });
 const bullet = Decoration.replace({ widget: new BulletWidget() });
 const rule = Decoration.replace({ widget: new RuleWidget() });
 const taskDone = Decoration.mark({ class: "cm-task-done" });
@@ -294,6 +309,11 @@ function decorate(view: EditorView): DecorationSet {
           const line = state.doc.lineAt(node.from);
           if (!editing(line.from, line.to))
             hideHeadingMarks(state, node, ranges);
+        } else if (name === "WikiLink") {
+          if (!editing(node.from, node.to)) {
+            decorateWikiLink(state, node, ranges);
+          }
+          return false;
         } else if (name in INLINE_MARKS && !editing(node.from, node.to)) {
           for (const mark of node.getChildren(INLINE_MARKS[name])) {
             ranges.push(hide.range(mark.from, mark.to));
@@ -304,6 +324,43 @@ function decorate(view: EditorView): DecorationSet {
     done = to;
   }
   return Decoration.set(ranges, true);
+}
+
+/**
+ * A wiki link shows what it reads as, like `wikiLinkLabel`: its alias, or
+ * its note and heading as "Note > Heading". The rest of its Markdown is
+ * hidden; the text that stays is the text of the note, so the cursor
+ * moves through it as through any other word.
+ */
+function decorateWikiLink(
+  state: EditorState,
+  link: SyntaxNode,
+  ranges: Range<Decoration>[],
+): void {
+  const alias = link.getChild("WikiLinkAlias");
+  if (alias !== null && state.sliceDoc(alias.from, alias.to).trim() !== "") {
+    ranges.push(
+      hide.range(link.from, alias.from),
+      wikiLinkText.range(alias.from, alias.to),
+      hide.range(alias.to, link.to),
+    );
+    return;
+  }
+  const target = link.getChild("WikiLinkTarget");
+  const fragment = link.getChild("WikiLinkFragment");
+  for (const part of [target, fragment]) {
+    if (part !== null) ranges.push(wikiLinkText.range(part.from, part.to));
+  }
+  for (const mark of link.getChildren("WikiLinkMark")) {
+    const between =
+      target !== null &&
+      fragment !== null &&
+      mark.from === target.to &&
+      mark.to === fragment.from;
+    ranges.push((between ? headingSeparator : hide).range(mark.from, mark.to));
+  }
+  // A blank alias after "|": nothing to show.
+  if (alias !== null) ranges.push(hide.range(alias.from, alias.to));
 }
 
 /** Hides the "#" marks of a heading with the spaces that go with them. */
