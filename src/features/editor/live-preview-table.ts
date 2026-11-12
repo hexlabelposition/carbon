@@ -13,6 +13,7 @@ import {
   type DecorationSet,
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { wikiLinkLabel } from "./wiki-link";
 
 /**
  * Live preview of tables: a table is drawn as a table, except while the
@@ -327,6 +328,9 @@ function readInline(state: EditorState, node: SyntaxNode): Inline[] {
     text(pos, child.from);
     const tag = INLINE_TAGS[child.name];
     if (tag) content.push({ tag, children: readInline(state, child) });
+    else if (child.name === "WikiLink") {
+      content.push({ tag: "a", children: [wikiLinkLabel(state, child)] });
+    }
     // "\|" is how a cell holds a "|": the backslash is not shown.
     else if (child.name === "Escape") text(child.from + 1, child.to);
     else if (!HIDDEN.has(child.name)) text(child.from, child.to);

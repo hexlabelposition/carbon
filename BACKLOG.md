@@ -71,7 +71,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 
 **Core**
 
-- [ ] **C-201** (P0) Lezer Markdown extension for wiki links `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]`
+- [x] **C-201** (P0) Lezer Markdown extension for wiki links `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]`
 - [ ] **C-202** (P0) `parseNote`: title, headings, wiki links, Markdown links to local `.md` files, plain text
 - [ ] **C-203** (P0) Index store implementation for notes and links, kept in the app cache directory
 - [ ] **C-204** (P0) Startup scan: index only new and changed files, drop removed ones

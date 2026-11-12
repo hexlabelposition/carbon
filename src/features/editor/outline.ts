@@ -2,6 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { Facet, type EditorState } from "@codemirror/state";
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { wikiLinkLabel } from "./wiki-link";
 
 /** A heading of the note, as the outline shows it. */
 export interface Heading {
@@ -157,7 +158,10 @@ const MARKS = new Set([
   "Image",
 ]);
 
-/** "## Some *text* [link](x.md) ##" becomes "Some text link". */
+/**
+ * "## Some *text* [link](x.md) ##" becomes "Some text link", and
+ * "## About [[Note|it]]" becomes "About it".
+ */
 function headingText(state: EditorState, heading: SyntaxNode): string {
   let text = "";
   let at = heading.from;
@@ -165,6 +169,9 @@ function headingText(state: EditorState, heading: SyntaxNode): string {
     for (let child = node.firstChild; child; child = child.nextSibling) {
       if (MARKS.has(child.name)) {
         text += state.sliceDoc(at, child.from);
+        at = child.to;
+      } else if (child.name === "WikiLink") {
+        text += state.sliceDoc(at, child.from) + wikiLinkLabel(state, child);
         at = child.to;
       } else {
         walk(child);
