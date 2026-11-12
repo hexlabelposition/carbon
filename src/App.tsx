@@ -2,6 +2,10 @@ import { AppSettingsProvider } from "./features/settings/AppSettingsProvider";
 import { VaultProvider } from "./features/vault/VaultProvider";
 import { pickVaultFolder, tauriPlatform } from "./platform";
 import { DesktopShell } from "./shells/desktop/DesktopShell";
+import { createWorkerParser } from "./workers/worker-parser";
+
+/** The Tauri platform, with notes parsed in a worker. */
+const platform = { ...tauriPlatform, parser: createWorkerParser() };
 
 /**
  * Wires the platform into the features and picks the shell. There is one
@@ -10,7 +14,7 @@ import { DesktopShell } from "./shells/desktop/DesktopShell";
 function App() {
   return (
     <AppSettingsProvider store={tauriPlatform.settings}>
-      <VaultProvider platform={tauriPlatform} pickFolder={pickVaultFolder}>
+      <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
         <DesktopShell />
       </VaultProvider>
     </AppSettingsProvider>
