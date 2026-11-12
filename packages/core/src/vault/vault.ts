@@ -1,6 +1,6 @@
 import { Emitter } from "../events";
+import { Indexer } from "../index/indexer";
 import { IndexStore } from "../index/index-store";
-import { scanVault } from "../index/scan";
 import { inlineParser } from "../parser/parse-files";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
@@ -58,9 +58,9 @@ export class Vault {
   private isWatching = false;
   private cachedTree: Promise<TreeNode[]> | null = null;
   private closed = false;
-  /** The index, once the startup scan is done. */
-  private store: IndexStore | null = null;
-  /** The startup scan; see `indexed()`. */
+  /** Keeps the index up to date, once it is open. */
+  private indexer: Indexer | null = null;
+  /** Opening the index and the startup scan; see `indexed()`. */
   private indexing: Promise<void> = Promise.resolve();
 
   private constructor(root: string, platform: Platform, delayMs: number) {
@@ -68,10 +68,14 @@ export class Vault {
     const forgetTree = () => {
       this.cachedTree = null;
     };
-    const own = new OwnChanges(fs, () => {
-      forgetTree();
-      this.emitter.emit("tree", undefined);
-    });
+    const own = new OwnChanges(
+      fs,
+      () => {
+        forgetTree();
+        this.emitter.emit("tree", undefined);
+      },
+      (path) => this.indexer?.touched(path.slice(root.length + 1)),
+    );
 
     this.root = root;
     this.platform = platform;
@@ -85,7 +89,10 @@ export class Vault {
       own,
       delayMs,
       onActivity: forgetTree,
-      onChange: (change) => this.emitter.emit("changed", change),
+      onChange: (change) => {
+        this.indexer?.touched(change.path);
+        this.emitter.emit("changed", change);
+      },
     });
   }
 
@@ -164,12 +171,13 @@ export class Vault {
   }
 
   /**
-   * Resolves when the index has caught up with the vault after opening it.
-   * Rejects if the index could not be opened or brought up to date; the
-   * notes themselves work without it.
+   * Resolves when the index has caught up with the vault: the startup scan
+   * and every change seen so far are in it. Rejects if the index could not
+   * be opened or the startup scan failed; the notes work without it.
    */
-  indexed(): Promise<void> {
-    return this.indexing;
+  async indexed(): Promise<void> {
+    await this.indexing;
+    await this.indexer?.idle();
   }
 
   /** Subscribes to a vault event. Returns a function that unsubscribes. */
@@ -186,20 +194,17 @@ export class Vault {
    */
   private startIndexing(): void {
     const { platform, root } = this;
-    this.indexing = IndexStore.open(platform, root).then(async (store) => {
-      try {
-        await scanVault({
-          fs: platform.fs,
-          root,
-          store,
-          parser: platform.parser ?? inlineParser,
-          cancelled: () => this.closed,
-        });
-      } finally {
-        // Kept open for the queries of later tasks; closed with the vault.
-        if (this.closed) await store.close();
-        else this.store = store;
-      }
+    this.indexing = IndexStore.open(platform, root).then((store) => {
+      if (this.closed) return store.close();
+      // At once, so no change made from now on is missed: a change made
+      // before is seen by the scan.
+      this.indexer = new Indexer({
+        fs: platform.fs,
+        root,
+        store,
+        parser: platform.parser ?? inlineParser,
+      });
+      return this.indexer.scan();
     });
     // A failure is reported through `indexed()`, not as an unhandled one.
     this.indexing.catch(() => {});
@@ -211,7 +216,7 @@ export class Vault {
     this.isWatching = false;
     this.cachedTree = null;
     this.emitter.clear();
-    void this.store?.close().catch(() => {});
-    this.store = null;
+    void this.indexer?.close().catch(() => {});
+    this.indexer = null;
   }
 }

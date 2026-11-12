@@ -19,6 +19,8 @@ export class OwnChanges {
      * content of an existing file changed.
      */
     private readonly onStructure: () => void,
+    /** Called with the absolute path of every change the vault makes. */
+    private readonly onTouched: (path: string) => void = () => {},
   ) {}
 
   /**
@@ -28,12 +30,14 @@ export class OwnChanges {
   async wrote(path: string, existed = false): Promise<void> {
     this.states.set(path, await this.fs.stat(path));
     if (!existed) this.onStructure();
+    this.onTouched(path);
   }
 
   /** The vault deleted `path` or moved it away. */
   removed(path: string): void {
     this.states.set(path, "removed");
     this.onStructure();
+    this.onTouched(path);
   }
 
   /**
