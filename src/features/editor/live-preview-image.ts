@@ -160,6 +160,9 @@ export const imagePreview = [
       maxWidth: "100%",
       borderRadius: "6px",
     },
+    // The address of an image is one long word. Without this the line
+    // would break before it, at the "(", and leave "![]" alone on a line.
+    ".cm-image-source": { wordBreak: "break-all" },
     ".cm-image-missing": {
       padding: "1px 6px",
       border: "1px dashed var(--cb-line-strong)",
@@ -169,6 +172,8 @@ export const imagePreview = [
     },
   }),
 ];
+
+const imageSource = Decoration.mark({ class: "cm-image-source" });
 
 function decorate(view: EditorView): DecorationSet {
   const { state } = view;
@@ -193,12 +198,15 @@ function decorate(view: EditorView): DecorationSet {
         // What stands between "![" and "]".
         const alt = /^!\[(.*?)\]/s.exec(state.sliceDoc(node.from, node.to));
         const widget = new ImageWidget(target, alt?.[1] ?? "");
-        ranges.push(
-          editing(node.from, node.to)
-            ? // Being edited: the Markdown stays, the image follows it.
-              Decoration.widget({ widget, side: 1 }).range(node.to)
-            : Decoration.replace({ widget }).range(node.from, node.to),
-        );
+        if (editing(node.from, node.to)) {
+          // Being edited: the Markdown stays, the image follows it.
+          ranges.push(
+            imageSource.range(node.from, node.to),
+            Decoration.widget({ widget, side: 1 }).range(node.to),
+          );
+        } else {
+          ranges.push(Decoration.replace({ widget }).range(node.from, node.to));
+        }
       },
     });
   }
