@@ -3,10 +3,12 @@ import {
   exists,
   mkdir,
   readDir,
+  readFile,
   readTextFile,
   remove,
   rename,
   stat,
+  writeFile,
   writeTextFile,
 } from "@tauri-apps/plugin-fs";
 
@@ -18,6 +20,19 @@ export const tauriFileSystem: FileSystem = {
     const tmp = tempPathFor(path);
     try {
       await writeTextFile(tmp, content);
+      await rename(tmp, path);
+    } catch (error) {
+      await remove(tmp).catch(() => {});
+      throw error;
+    }
+  },
+
+  readBytes: (path) => readFile(path),
+
+  async writeBytesAtomic(path, bytes) {
+    const tmp = tempPathFor(path);
+    try {
+      await writeFile(tmp, bytes);
       await rename(tmp, path);
     } catch (error) {
       await remove(tmp).catch(() => {});

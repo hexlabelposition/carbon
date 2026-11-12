@@ -12,6 +12,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { livePreview } from "./live-preview";
+import { imageHost, imagePreview, type ImageHost } from "./live-preview-image";
 import { tablePreview } from "./live-preview-table";
 
 interface MarkdownEditorProps {
@@ -29,6 +30,8 @@ interface MarkdownEditorProps {
   onChange?: (text: string) => void;
   /** Called when the user asks to save: Ctrl+S, or Cmd+S on a Mac. */
   onSave?: () => void;
+  /** Shows the images of the note and saves pasted and dropped ones. */
+  images?: ImageHost;
 }
 
 /** A CodeMirror 6 editor for one Markdown text. */
@@ -38,14 +41,15 @@ export function MarkdownEditor({
   label,
   onChange,
   onSave,
+  images,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
   // The latest values, so new ones do not rebuild the editor.
-  const latest = useRef({ text, onChange, onSave });
+  const latest = useRef({ text, onChange, onSave, images });
   useEffect(() => {
-    latest.current = { text, onChange, onSave };
-  }, [text, onChange, onSave]);
+    latest.current = { text, onChange, onSave, images };
+  }, [text, onChange, onSave, images]);
 
   useEffect(() => {
     if (host.current === null) return;
@@ -62,6 +66,14 @@ export function MarkdownEditor({
           syntaxHighlighting(markdownHighlight),
           livePreview,
           tablePreview,
+          imagePreview,
+          imageHost.of({
+            load: (target) =>
+              latest.current.images?.load(target) ?? Promise.resolve(null),
+            save: (file) =>
+              latest.current.images?.save(file) ??
+              Promise.reject(new Error("Images cannot be saved here")),
+          }),
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves
           // the focus out of the editor instead.

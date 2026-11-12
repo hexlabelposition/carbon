@@ -251,6 +251,7 @@ vault.notes.read(path)
 vault.notes.write(path, content, baseHash)
 vault.notes.create(path) / rename(from, to) / remove(path)
 vault.folders.create(path) / rename(from, to) / remove(path)
+vault.attachments.read(path) / save(name, bytes) / find(note, target)
 
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.search.query(text) / titles(text)
@@ -260,6 +261,7 @@ vault.graph.global() / local(path, depth)
 vault.on('changed', ...)        // file added, changed or removed outside the editor
 vault.on('index:progress', ...)
 vault.on('index:ready', ...)
+vault.on('tree', ...)           // the app itself added, moved or deleted something
 vault.on('conflict', ...)       // open note changed on disk while it has unsaved edits
 ```
 

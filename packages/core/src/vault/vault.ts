@@ -1,4 +1,5 @@
 import { Emitter } from "../events";
+import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
 import { Folders } from "./folders";
@@ -18,6 +19,12 @@ export interface VaultEvents {
   "index:ready": undefined;
   /** An open note changed on disk while it has unsaved edits. */
   conflict: { path: NotePath };
+  /**
+   * This vault object added, moved or deleted a note, file or folder, so
+   * `tree()` now gives another result. Together with `changed`, which
+   * covers everyone else, it tells when to list the vault again.
+   */
+  tree: undefined;
 }
 
 export interface VaultOptions {
@@ -40,6 +47,7 @@ export class Vault {
   readonly root: string;
   readonly notes: Notes;
   readonly folders: Folders;
+  readonly attachments: Attachments;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -52,12 +60,16 @@ export class Vault {
     const forgetTree = () => {
       this.cachedTree = null;
     };
-    const own = new OwnChanges(fs, forgetTree);
+    const own = new OwnChanges(fs, () => {
+      forgetTree();
+      this.emitter.emit("tree", undefined);
+    });
 
     this.root = root;
     this.platform = platform;
     this.notes = new Notes({ root, fs, trash, own });
     this.folders = new Folders({ root, fs, trash, own });
+    this.attachments = new Attachments({ root, fs, trash, own });
     this.watch = new VaultWatch({
       root,
       fs,

@@ -69,7 +69,7 @@ export class Notes {
       throw new WriteConflictError(path);
     }
     await fs.writeTextAtomic(target, content);
-    await own.wrote(target);
+    await own.wrote(target, onDisk !== null);
     return hash;
   }
 

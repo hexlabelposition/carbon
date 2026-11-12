@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { useNoteDocument } from "./use-note-document";
+import { useNoteImages } from "./use-note-images";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -15,6 +16,7 @@ interface NoteEditorProps {
  */
 export function NoteEditor({ vault, path }: NoteEditorProps) {
   const [note, actions] = useNoteDocument(vault, path);
+  const images = useNoteImages(vault, path);
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
 
@@ -49,6 +51,23 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
           onResolve={() => setPostponed(false)}
         />
       </header>
+      {images.error !== null && (
+        <div
+          role="alert"
+          className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small"
+        >
+          <p className="min-w-0 flex-1 text-danger">
+            The image could not be saved: {images.error}
+          </p>
+          <button
+            type="button"
+            className={indicatorButton}
+            onClick={images.dismissError}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <MarkdownEditor
           text={note.text}
@@ -56,6 +75,7 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
           label={path}
           onChange={actions.edited}
           onSave={actions.saveNow}
+          images={images.host}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (

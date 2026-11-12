@@ -13,20 +13,27 @@ export class OwnChanges {
 
   constructor(
     private readonly fs: FileSystem,
-    /** Called after every change the vault makes. */
-    private readonly onChange: () => void,
+    /**
+     * Called after every change the vault makes to what the vault consists
+     * of: something was added, moved or deleted. Not called when only the
+     * content of an existing file changed.
+     */
+    private readonly onStructure: () => void,
   ) {}
 
-  /** The vault created, wrote or moved something to `path`. */
-  async wrote(path: string): Promise<void> {
+  /**
+   * The vault created, wrote or moved something to `path`. Pass `existed`
+   * when a file that was already there only got new content.
+   */
+  async wrote(path: string, existed = false): Promise<void> {
     this.states.set(path, await this.fs.stat(path));
-    this.onChange();
+    if (!existed) this.onStructure();
   }
 
   /** The vault deleted `path` or moved it away. */
   removed(path: string): void {
     this.states.set(path, "removed");
-    this.onChange();
+    this.onStructure();
   }
 
   /**

@@ -6,6 +6,10 @@ export interface FileSystem {
   readText(path: string): Promise<string>;
   /** Writes to a temp file, then renames it over the target. */
   writeTextAtomic(path: string, content: string): Promise<void>;
+  /** Reads a file as it is, for files that are not text: images. */
+  readBytes(path: string): Promise<Uint8Array>;
+  /** Like `writeTextAtomic`, for bytes. */
+  writeBytesAtomic(path: string, bytes: Uint8Array): Promise<void>;
   /** Direct children of `dir`, not recursive. */
   list(dir: string): Promise<Entry[]>;
   /** Rejects if nothing exists at `path`. */

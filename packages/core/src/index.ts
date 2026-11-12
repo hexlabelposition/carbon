@@ -10,6 +10,8 @@ export type { VaultChange } from "./vault/watch";
 export type { DeleteOptions } from "./vault/entries";
 export type { Folders } from "./vault/folders";
 export { WriteConflictError } from "./vault/notes";
+export { attachmentLink, ATTACHMENTS_FOLDER } from "./vault/attachments";
+export type { Attachments } from "./vault/attachments";
 export { Autosave } from "./vault/autosave";
 export type { AutosaveOptions, SaveState } from "./vault/autosave";
 export type { Notes } from "./vault/notes";

@@ -61,7 +61,7 @@ Done when: I can open a folder, browse notes, edit them with live preview, and n
 - [x] **C-118** (P0) Reload an open note when it changes on disk; conflict dialog if it has unsaved edits
 - [x] **C-119** (P1) Tabs and back / forward navigation history
 - [x] **C-120** (P1) Live preview: tables
-- [ ] **C-121** (P1) Local images render in the editor; paste or drop an image saves it into the vault
+- [x] **C-121** (P1) Local images render in the editor; paste or drop an image saves it into the vault
 - [ ] **C-122** (P2) Source mode toggle (raw Markdown)
 - [ ] **C-123** (P2) Outline panel (headings of the current note)
 

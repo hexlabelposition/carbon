@@ -80,9 +80,18 @@ export function useFileTree(vault: Vault): FileTree {
     useState<FileTree["trashFailure"]>(null);
   /** Raised to list the vault again: after a change, here or outside. */
   const [version, setVersion] = useState(0);
-  const reload = () => setVersion((v) => v + 1);
 
-  useEffect(() => vault.on("changed", () => setVersion((v) => v + 1)), [vault]);
+  useEffect(() => {
+    const reload = () => setVersion((v) => v + 1);
+    // "tree" is this app changing the vault, from the tree or from the
+    // editor saving an attachment; "changed" is everyone else.
+    const stopOwn = vault.on("tree", reload);
+    const stopOutside = vault.on("changed", reload);
+    return () => {
+      stopOwn();
+      stopOutside();
+    };
+  }, [vault]);
 
   useEffect(() => {
     // An older listing must not replace a newer one.
@@ -138,7 +147,7 @@ export function useFileTree(vault: Vault): FileTree {
       return next;
     });
 
-  /** Runs a change to the vault, reports a failure, then lists it again. */
+  /** Runs a change to the vault and reports a failure. */
   async function run(action: () => Promise<void>) {
     setError(null);
     setTrashFailure(null);
@@ -150,7 +159,6 @@ export function useFileTree(vault: Vault): FileTree {
     } catch (reason) {
       setError(messageOf(reason));
     }
-    reload();
   }
 
   /** Keeps everything that points at `from` pointing at it after a move. */

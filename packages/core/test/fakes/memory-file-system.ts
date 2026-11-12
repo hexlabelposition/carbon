@@ -1,7 +1,8 @@
 import type { Entry, FileSystem, RemoveOptions, Stat } from "../../src/index";
 
 interface FileNode {
-  content: string;
+  /** Text files hold a string, files written as bytes hold the bytes. */
+  content: string | Uint8Array;
   mtime: number;
 }
 
@@ -39,7 +40,20 @@ export class MemoryFileSystem implements FileSystem {
   }
 
   async readText(path: string): Promise<string> {
-    return this.file(path).content;
+    const { content } = this.file(path);
+    return typeof content === "string"
+      ? content
+      : new TextDecoder().decode(content);
+  }
+
+  async readBytes(path: string): Promise<Uint8Array> {
+    return toBytes(this.file(path).content);
+  }
+
+  async writeBytesAtomic(path: string, bytes: Uint8Array): Promise<void> {
+    if (this.dirs.has(path)) throw new Error(`EISDIR: ${path}`);
+    this.dir(parentOf(path));
+    this.files.set(path, { content: bytes.slice(), mtime: ++this.clock });
   }
 
   async writeTextAtomic(path: string, content: string): Promise<void> {
@@ -67,7 +81,11 @@ export class MemoryFileSystem implements FileSystem {
   async stat(path: string): Promise<Stat> {
     if (this.dirs.has(path)) return { kind: "dir", size: 0, mtime: 0 };
     const file = this.file(path);
-    return { kind: "file", size: byteLength(file.content), mtime: file.mtime };
+    return {
+      kind: "file",
+      size: toBytes(file.content).length,
+      mtime: file.mtime,
+    };
   }
 
   async rename(from: string, to: string): Promise<void> {
@@ -133,6 +151,8 @@ function isWithin(path: string, dir: string): boolean {
   return path === dir || path.startsWith(`${dir}/`);
 }
 
-function byteLength(text: string): number {
-  return new TextEncoder().encode(text).length;
+function toBytes(content: string | Uint8Array): Uint8Array {
+  return typeof content === "string"
+    ? new TextEncoder().encode(content)
+    : content;
 }
