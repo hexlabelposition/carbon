@@ -1,7 +1,5 @@
-import { parseNote } from "../parser/parse-note";
-import type { FileSystem, Stat } from "../platform";
+import type { FileSystem, NoteFile, NoteParser, Stat } from "../platform";
 import type { NotePath } from "../types";
-import { contentHash } from "../util/hash";
 import { mapPool } from "../util/pool";
 import { scanTree, type TreeNode } from "../vault/tree";
 import type { IndexEntry, IndexStore, NoteStamp } from "./index-store";
@@ -19,6 +17,8 @@ export interface ScanOptions {
   /** The vault folder, normalized. */
   root: string;
   store: IndexStore;
+  /** Parses and hashes the notes that are read. */
+  parser: NoteParser;
   /** After each batch: notes indexed so far, of the notes to index. */
   onProgress?: (progress: { done: number; total: number }) => void;
   /** Checked between steps: true stops the scan where it is. */
@@ -44,7 +44,7 @@ export interface ScanResult {
  * gone; the next scan tries it again.
  */
 export async function scanVault(options: ScanOptions): Promise<ScanResult> {
-  const { fs, root, store, onProgress } = options;
+  const { fs, root, store, parser, onProgress } = options;
   const cancelled = options.cancelled ?? (() => false);
   const result: ScanResult = { notes: 0, indexed: 0, removed: 0 };
 
@@ -81,19 +81,23 @@ export async function scanVault(options: ScanOptions): Promise<ScanResult> {
     const read = await mapPool(batch, FILE_CONCURRENCY, ({ path }) =>
       fs.readText(`${root}/${path}`).catch(() => null),
     );
-    const entries: IndexEntry[] = [];
+    const files: NoteFile[] = [];
+    const readStats: Stat[] = [];
     const unreadable: NotePath[] = [];
     batch.forEach(({ path, stat }, j) => {
       const text = read[j];
       if (text === null) {
         unreadable.push(path);
-        return;
+      } else {
+        files.push({ path, text });
+        readStats.push(stat);
       }
-      entries.push({
-        note: parseNote(path, text),
-        stamp: { mtime: stat.mtime, size: stat.size, hash: contentHash(text) },
-      });
     });
+    const parsed = await parser.parse(files);
+    const entries: IndexEntry[] = parsed.map(({ note, hash }, j) => ({
+      note,
+      stamp: { mtime: readStats[j].mtime, size: readStats[j].size, hash },
+    }));
     if (cancelled()) return result;
 
     await store.replaceNotes(entries);

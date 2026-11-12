@@ -200,6 +200,11 @@ interface SqlDatabase {
   select<Row>(sql: string, params?: SqlValue[]): Promise<Row[]>;
   close(): Promise<void>;
 }
+
+interface NoteParser {
+  // optional: parses and hashes a batch of notes, in a Web Worker in the app
+  parse(files: NoteFile[]): Promise<ParsedFile[]>;
+}
 ```
 
 The SQL of the index lives in the core (`index/`), behind the domain-shaped `IndexStore` class: the rest of the core and the UI see notes and links, not SQL. The platform only runs statements, so the schema and the queries are tested with `bun test` on Bun's SQLite in memory (ADR-021).

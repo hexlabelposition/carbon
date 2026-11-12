@@ -1,6 +1,7 @@
 import { Emitter } from "../events";
 import { IndexStore } from "../index/index-store";
 import { scanVault } from "../index/scan";
+import { inlineParser } from "../parser/parse-files";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
@@ -191,6 +192,7 @@ export class Vault {
           fs: platform.fs,
           root,
           store,
+          parser: platform.parser ?? inlineParser,
           cancelled: () => this.closed,
         });
       } finally {

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { contentHash, IndexStore, Vault } from "../src/index";
 import { scanVault } from "../src/index/scan";
+import { inlineParser } from "../src/parser/parse-files";
 import { createMemoryPlatform, type MemoryPlatform } from "./fakes";
 
 const ROOT = "/v";
@@ -14,7 +15,13 @@ async function setup(files: Record<string, string>) {
   const store = await IndexStore.open(platform, ROOT);
   const reads = countReads(platform);
   const scan = (options: Partial<Parameters<typeof scanVault>[0]> = {}) =>
-    scanVault({ fs: platform.fs, root: ROOT, store, ...options });
+    scanVault({
+      fs: platform.fs,
+      root: ROOT,
+      store,
+      parser: inlineParser,
+      ...options,
+    });
   return { platform, store, reads, scan };
 }
 
@@ -175,6 +182,32 @@ describe("scanVault", () => {
       { done: 450, total: 450 },
     ]);
     expect((await store.stamps()).size).toBe(450);
+  });
+
+  test("parses with the parser it is given, in batches", async () => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 250; i++) files[`n${i}.md`] = `# ${i}`;
+    const { store, scan } = await setup(files);
+    const batches: number[] = [];
+
+    await scan({
+      parser: {
+        parse: async (batch) => {
+          batches.push(batch.length);
+          return inlineParser.parse(batch);
+        },
+      },
+    });
+    expect(batches).toEqual([200, 50]);
+    expect((await store.headings("n7.md"))[0].text).toBe("7");
+  });
+
+  test("fails when the parser fails", async () => {
+    const { store, scan } = await setup({ "a.md": "# A" });
+    const failing = { parse: () => Promise.reject(new Error("worker gone")) };
+
+    await expect(scan({ parser: failing })).rejects.toThrow("worker gone");
+    expect((await store.stamps()).size).toBe(0);
   });
 
   test("stops when cancelled", async () => {

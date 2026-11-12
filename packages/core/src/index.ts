@@ -18,6 +18,7 @@ export type { Notes } from "./vault/notes";
 export type { FileNode, FolderNode, TreeNode } from "./vault/tree";
 export { contentHash } from "./util/hash";
 
+export { parseFiles } from "./parser/parse-files";
 export { markdownParser, parseNote } from "./parser/parse-note";
 export { wikiLink } from "./parser/wiki-link";
 
@@ -30,6 +31,9 @@ export type {
   FileSystem,
   FsEvent,
   FsEventKind,
+  NoteFile,
+  NoteParser,
+  ParsedFile,
   Platform,
   RemoveOptions,
   SettingsStore,
