@@ -21,7 +21,8 @@ const toolButton =
 /**
  * The file tree of the sidebar. Works with the mouse (click, drag to move)
  * and with the keyboard alone: arrows, Enter, F2, Delete, and Ctrl+X then
- * Ctrl+V to move.
+ * Ctrl+V to move. Ctrl+click, the middle button and Ctrl+Enter open a note
+ * in a new tab.
  */
 export function FileTree({ vault }: { vault: Vault }) {
   const tree = useFileTree(vault);
@@ -47,7 +48,7 @@ export function FileTree({ vault }: { vault: Vault }) {
     else if (event.key === "ArrowRight") tree.expandOrEnter();
     else if (event.key === "ArrowLeft") tree.collapseOrLeave();
     else if (event.key === "Enter" && row?.kind === "node") {
-      tree.activate(row.node);
+      tree.activate(row.node, command);
     } else if (event.key === "F2") tree.startRename();
     else if (event.key === "Delete") tree.remove();
     else if (command && event.key.toLowerCase() === "x") tree.cutSelected();
@@ -213,7 +214,15 @@ export function FileTree({ vault }: { vault: Vault }) {
                         : ""
                     } ${node.kind === "file" ? "text-muted" : ""}`}
                     style={{ ...indent, height: ROW_HEIGHT }}
-                    onClick={() => tree.activate(node)}
+                    onClick={(event) =>
+                      tree.activate(node, event.ctrlKey || event.metaKey)
+                    }
+                    onAuxClick={(event) => {
+                      // The middle button opens a note in a new tab.
+                      if (event.button === 1 && !isFolder) {
+                        tree.activate(node, true);
+                      }
+                    }}
                     onDragStart={(event) => {
                       event.dataTransfer.setData("text/plain", node.path);
                       event.dataTransfer.effectAllowed = "move";

@@ -7,7 +7,7 @@ import {
 } from "@carbon/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isWithin } from "../vault/paths";
-import { useActiveNote } from "../workspace/active-note";
+import { useWorkspace } from "../workspace/workspace";
 
 export type NoteDocument =
   | { status: "loading" }
@@ -70,7 +70,9 @@ export function useNoteDocument(
   vault: Vault,
   path: NotePath,
 ): [NoteDocument, NoteDocumentActions] {
-  const { onFlush, close } = useActiveNote();
+  const { onFlush, removed } = useWorkspace();
+  /** The note is gone from disk: it leaves the tabs and their history. */
+  const close = useCallback(() => removed(path), [removed, path]);
   const [loaded, setLoaded] = useState<{
     path: NotePath;
     value: NoteDocument;

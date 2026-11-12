@@ -5,10 +5,12 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { useVaultSession } from "../../features/vault/vault-session";
-import { useActiveNote } from "../../features/workspace/active-note";
-import { ActiveNoteProvider } from "../../features/workspace/ActiveNoteProvider";
+import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
+import { useWorkspace } from "../../features/workspace/workspace";
+import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { Sidebar } from "./Sidebar";
 import { StatusBar, StatusButton } from "./StatusBar";
+import { TabBar } from "./TabBar";
 import { useSidebar } from "./use-sidebar";
 
 // Dev builds only: in a release build the condition is false at build time
@@ -44,7 +46,7 @@ export function DesktopShell() {
             <StartScreen />
           </main>
         ) : (
-          <ActiveNoteProvider
+          <WorkspaceProvider
             key={vault.root}
             vault={vault}
             initial={
@@ -75,10 +77,10 @@ export function DesktopShell() {
                 <FileTree vault={vault} />
               </Sidebar>
             )}
-            <main className="min-w-0 flex-1 overflow-hidden">
+            <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <NoteArea vault={vault} />
             </main>
-          </ActiveNoteProvider>
+          </WorkspaceProvider>
         )}
       </div>
 
@@ -118,13 +120,33 @@ export function DesktopShell() {
   );
 }
 
-/** The main area of the workspace: the open note, if there is one. */
+/** The main area of the workspace: the tabs and the note that is shown. */
 function NoteArea({ vault }: { vault: Vault }) {
-  const { path } = useActiveNote();
-  return path === null ? (
-    <Placeholder>No note is open.</Placeholder>
-  ) : (
-    <NoteEditor key={path} vault={vault} path={path} />
+  const workspace = useWorkspace();
+  useWorkspaceShortcuts();
+  const { path } = workspace;
+
+  if (path === null) return <Placeholder>No note is open.</Placeholder>;
+  return (
+    <>
+      <TabBar
+        tabs={workspace.tabs.map((tab) => ({
+          id: tab.id,
+          label: nameOf(tab.path).replace(/\.md$/i, ""),
+          title: tab.path,
+        }))}
+        activeId={workspace.activeTabId}
+        canGoBack={workspace.canGoBack}
+        canGoForward={workspace.canGoForward}
+        onBack={workspace.back}
+        onForward={workspace.forward}
+        onActivate={workspace.activateTab}
+        onClose={workspace.closeTab}
+      />
+      <div className="min-h-0 flex-1">
+        <NoteEditor key={path} vault={vault} path={path} />
+      </div>
+    </>
   );
 }
 

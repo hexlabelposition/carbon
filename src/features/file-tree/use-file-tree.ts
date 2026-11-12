@@ -1,7 +1,7 @@
 import type { TreeNode, Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
-import { useActiveNote } from "../workspace/active-note";
+import { useWorkspace } from "../workspace/workspace";
 
 /** What is being typed into the tree: a new name, or a name for a new item. */
 export type TreeEdit =
@@ -34,8 +34,11 @@ export interface FileTree {
 
   isExpanded(path: string): boolean;
   select(path: string): void;
-  /** A click or Enter: opens a note, opens or closes a folder. */
-  activate(node: TreeNode): void;
+  /**
+   * A click or Enter: opens a note, opens or closes a folder. With
+   * `newTab` the note gets a tab of its own.
+   */
+  activate(node: TreeNode, newTab?: boolean): void;
   /** Moves the selection up (-1) or down (1) the visible rows. */
   step(delta: number): void;
   /** Arrow right: opens the folder, or goes to its first child. */
@@ -66,7 +69,7 @@ export interface FileTree {
 
 /** Everything the file tree does; the component only shows it. */
 export function useFileTree(vault: Vault): FileTree {
-  const active = useActiveNote();
+  const active = useWorkspace();
   const [tree, setTree] = useState<TreeNode[] | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(active.path);
@@ -247,9 +250,9 @@ export function useFileTree(vault: Vault): FileTree {
 
     isExpanded: (path) => expanded.has(path),
     select: setSelected,
-    activate(node) {
+    activate(node, newTab = false) {
       setSelected(node.path);
-      if (node.kind === "note") active.open(node.path);
+      if (node.kind === "note") active.open(node.path, { newTab });
       else if (node.kind === "folder") {
         if (expanded.has(node.path)) collapse(node.path);
         else expand(node.path);
