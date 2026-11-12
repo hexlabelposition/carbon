@@ -24,6 +24,12 @@ import {
   type ImageHost,
 } from "./live-preview-image";
 import { tablePreview } from "./live-preview-table";
+import {
+  outlineHost,
+  outlineTracker,
+  revealHeading,
+  type OutlineLink,
+} from "./outline";
 
 interface MarkdownEditorProps {
   /**
@@ -44,6 +50,8 @@ interface MarkdownEditorProps {
   images?: ImageHost;
   /** Shows the raw Markdown: no live preview, every mark visible. */
   sourceMode?: boolean;
+  /** Receives the headings of the note and lets them be gone to. */
+  outline?: OutlineLink;
 }
 
 /** Everything live preview adds; source mode leaves it out. */
@@ -63,16 +71,24 @@ export function MarkdownEditor({
   onSave,
   images,
   sourceMode = false,
+  outline,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
   /** Holds the live preview, so it can be turned off and on in place. */
   const preview = useRef(new Compartment());
   // The latest values, so new ones do not rebuild the editor.
-  const latest = useRef({ text, onChange, onSave, images, sourceMode });
+  const latest = useRef({
+    text,
+    onChange,
+    onSave,
+    images,
+    sourceMode,
+    outline,
+  });
   useEffect(() => {
-    latest.current = { text, onChange, onSave, images, sourceMode };
-  }, [text, onChange, onSave, images, sourceMode]);
+    latest.current = { text, onChange, onSave, images, sourceMode, outline };
+  }, [text, onChange, onSave, images, sourceMode, outline]);
 
   useEffect(() => {
     if (host.current === null) return;
@@ -101,6 +117,11 @@ export function MarkdownEditor({
               latest.current.images?.importFile(path) ??
               Promise.reject(new Error("Images cannot be saved here")),
             refuse: (reason) => latest.current.images?.refuse(reason),
+          }),
+          outlineTracker,
+          outlineHost.of({
+            headings: (list) => latest.current.outline?.headings(list),
+            current: (index) => latest.current.outline?.current(index),
           }),
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves
@@ -132,7 +153,11 @@ export function MarkdownEditor({
       }),
     });
     editor.current = view;
+    const disconnect = latest.current.outline?.connect((index) =>
+      revealHeading(view, index),
+    );
     return () => {
+      disconnect?.();
       editor.current = null;
       view.destroy();
     };

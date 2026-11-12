@@ -3,6 +3,8 @@ import { lazy, Suspense, useState } from "react";
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
+import { OutlinePanel } from "../../features/outline/OutlinePanel";
+import { useOutline } from "../../features/outline/use-outline";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { useVaultSession } from "../../features/vault/vault-session";
@@ -13,6 +15,7 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar, StatusButton } from "./StatusBar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
+import { useOutlinePanel } from "./use-outline-panel";
 import { useSidebar } from "./use-sidebar";
 
 // Dev builds only: in a release build the condition is false at build time
@@ -30,6 +33,7 @@ export function DesktopShell() {
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
+  const outlinePanel = useOutlinePanel();
   useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
@@ -81,7 +85,7 @@ export function DesktopShell() {
               </Sidebar>
             )}
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <NoteArea vault={vault} />
+              <NoteArea vault={vault} outlineOpen={outlinePanel.open} />
             </main>
           </WorkspaceProvider>
         )}
@@ -89,14 +93,24 @@ export function DesktopShell() {
 
       <StatusBar
         actions={
-          DevPanel !== null && (
-            <StatusButton
-              pressed={devOpen}
-              onClick={() => setDevOpen(!devOpen)}
-            >
-              Dev panel
-            </StatusButton>
-          )
+          <>
+            {vault !== null && !showDev && (
+              <StatusButton
+                pressed={outlinePanel.open}
+                onClick={outlinePanel.toggle}
+              >
+                Outline
+              </StatusButton>
+            )}
+            {DevPanel !== null && (
+              <StatusButton
+                pressed={devOpen}
+                onClick={() => setDevOpen(!devOpen)}
+              >
+                Dev panel
+              </StatusButton>
+            )}
+          </>
         }
       >
         {vault !== null && !showDev && (
@@ -123,11 +137,21 @@ export function DesktopShell() {
   );
 }
 
-/** The main area of the workspace: the tabs and the note that is shown. */
-function NoteArea({ vault }: { vault: Vault }) {
+interface NoteAreaProps {
+  vault: Vault;
+  /** Shows the outline of the note beside it. */
+  outlineOpen: boolean;
+}
+
+/**
+ * The main area of the workspace: the tabs, the note that is shown and,
+ * when it is open, the outline of the note.
+ */
+function NoteArea({ vault, outlineOpen }: NoteAreaProps) {
   const workspace = useWorkspace();
   useWorkspaceShortcuts();
   const sourceMode = useSourceMode();
+  const outline = useOutline();
   const { path } = workspace;
 
   if (path === null) return <Placeholder>No note is open.</Placeholder>;
@@ -147,14 +171,34 @@ function NoteArea({ vault }: { vault: Vault }) {
         onActivate={workspace.activateTab}
         onClose={workspace.closeTab}
       />
-      <div className="min-h-0 flex-1">
-        <NoteEditor
-          key={path}
-          vault={vault}
-          path={path}
-          sourceMode={sourceMode.on}
-          onToggleSourceMode={sourceMode.toggle}
-        />
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1">
+          <NoteEditor
+            key={path}
+            vault={vault}
+            path={path}
+            sourceMode={sourceMode.on}
+            onToggleSourceMode={sourceMode.toggle}
+            outline={outline.link}
+          />
+        </div>
+        {outlineOpen && (
+          <aside
+            aria-label="Outline"
+            className="flex w-60 shrink-0 flex-col border-l border-line bg-panel"
+          >
+            <div className="flex h-9 shrink-0 items-center border-b border-line px-3 font-semibold">
+              Outline
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <OutlinePanel
+                headings={outline.headings}
+                current={outline.current}
+                onReveal={outline.reveal}
+              />
+            </div>
+          </aside>
+        )}
       </div>
     </>
   );

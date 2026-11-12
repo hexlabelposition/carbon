@@ -2,6 +2,7 @@ import type { NotePath, SaveState, Vault } from "@carbon/core";
 import { useState } from "react";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
+import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
 import { useNoteImages } from "./use-note-images";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
@@ -12,6 +13,8 @@ interface NoteEditorProps {
   /** Shows the raw Markdown in place of live preview. */
   sourceMode: boolean;
   onToggleSourceMode: () => void;
+  /** Where the headings of the note go. */
+  outline?: OutlineLink;
 }
 
 /**
@@ -23,6 +26,7 @@ export function NoteEditor({
   path,
   sourceMode,
   onToggleSourceMode,
+  outline,
 }: NoteEditorProps) {
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
@@ -95,6 +99,7 @@ export function NoteEditor({
           onSave={actions.saveNow}
           images={images.host}
           sourceMode={sourceMode}
+          outline={outline}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (
