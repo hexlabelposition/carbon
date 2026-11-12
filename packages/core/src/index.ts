@@ -18,6 +18,7 @@ export type { Notes } from "./vault/notes";
 export type { FileNode, FolderNode, TreeNode } from "./vault/tree";
 export { contentHash } from "./util/hash";
 
+export { markdownParser, parseNote } from "./parser/parse-note";
 export { wikiLink } from "./parser/wiki-link";
 
 export type {
