@@ -7,7 +7,12 @@ import {
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { EditorState, Transaction } from "@codemirror/state";
+import {
+  Compartment,
+  EditorState,
+  Transaction,
+  type Extension,
+} from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
@@ -37,7 +42,17 @@ interface MarkdownEditorProps {
   onSave?: () => void;
   /** Shows the images of the note and saves pasted and dropped ones. */
   images?: ImageHost;
+  /** Shows the raw Markdown: no live preview, every mark visible. */
+  sourceMode?: boolean;
 }
+
+/** Everything live preview adds; source mode leaves it out. */
+const livePreviewExtensions: Extension = [
+  livePreview,
+  tablePreview,
+  imagePreview,
+];
+const noPreview: Extension = [];
 
 /** A CodeMirror 6 editor for one Markdown text. */
 export function MarkdownEditor({
@@ -47,14 +62,17 @@ export function MarkdownEditor({
   onChange,
   onSave,
   images,
+  sourceMode = false,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
+  /** Holds the live preview, so it can be turned off and on in place. */
+  const preview = useRef(new Compartment());
   // The latest values, so new ones do not rebuild the editor.
-  const latest = useRef({ text, onChange, onSave, images });
+  const latest = useRef({ text, onChange, onSave, images, sourceMode });
   useEffect(() => {
-    latest.current = { text, onChange, onSave, images };
-  }, [text, onChange, onSave, images]);
+    latest.current = { text, onChange, onSave, images, sourceMode };
+  }, [text, onChange, onSave, images, sourceMode]);
 
   useEffect(() => {
     if (host.current === null) return;
@@ -119,6 +137,23 @@ export function MarkdownEditor({
       view.destroy();
     };
   }, [label]);
+
+  useEffect(() => {
+    const view = editor.current;
+    if (view === null) return;
+    const extensions = sourceMode ? noPreview : livePreviewExtensions;
+    if (preview.current.get(view.state) === extensions) return;
+    view.dispatch({
+      effects: [
+        preview.current.reconfigure(extensions),
+        // Lines change height when the marks show or hide: keep the
+        // cursor where the user can see it.
+        EditorView.scrollIntoView(view.state.selection.main.head, {
+          y: "center",
+        }),
+      ],
+    });
+  }, [sourceMode]);
 
   // A new revision: show `text` in place of what the editor holds.
   useEffect(() => {

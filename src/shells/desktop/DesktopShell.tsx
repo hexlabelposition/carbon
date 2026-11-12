@@ -1,6 +1,7 @@
 import type { Vault } from "@carbon/core";
 import { lazy, Suspense, useState } from "react";
 import { NoteEditor } from "../../features/editor/NoteEditor";
+import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
@@ -126,6 +127,7 @@ export function DesktopShell() {
 function NoteArea({ vault }: { vault: Vault }) {
   const workspace = useWorkspace();
   useWorkspaceShortcuts();
+  const sourceMode = useSourceMode();
   const { path } = workspace;
 
   if (path === null) return <Placeholder>No note is open.</Placeholder>;
@@ -146,7 +148,13 @@ function NoteArea({ vault }: { vault: Vault }) {
         onClose={workspace.closeTab}
       />
       <div className="min-h-0 flex-1">
-        <NoteEditor key={path} vault={vault} path={path} />
+        <NoteEditor
+          key={path}
+          vault={vault}
+          path={path}
+          sourceMode={sourceMode.on}
+          onToggleSourceMode={sourceMode.toggle}
+        />
       </div>
     </>
   );

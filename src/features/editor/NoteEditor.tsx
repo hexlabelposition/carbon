@@ -4,17 +4,26 @@ import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { useNoteDocument } from "./use-note-document";
 import { useNoteImages } from "./use-note-images";
+import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 
 interface NoteEditorProps {
   vault: Vault;
   path: NotePath;
+  /** Shows the raw Markdown in place of live preview. */
+  sourceMode: boolean;
+  onToggleSourceMode: () => void;
 }
 
 /**
  * The editor of one note, with its name and save state above it. Mount it
  * with `key={path}`, so each note gets an editor of its own.
  */
-export function NoteEditor({ vault, path }: NoteEditorProps) {
+export function NoteEditor({
+  vault,
+  path,
+  sourceMode,
+  onToggleSourceMode,
+}: NoteEditorProps) {
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   /** The user closed the conflict question without answering it. */
@@ -50,6 +59,17 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
           onRetry={actions.saveNow}
           onResolve={() => setPostponed(false)}
         />
+        <button
+          type="button"
+          aria-pressed={sourceMode}
+          title={`Show raw Markdown (${SOURCE_MODE_SHORTCUT})`}
+          className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+            sourceMode ? "bg-selected text-fg" : "text-muted"
+          }`}
+          onClick={onToggleSourceMode}
+        >
+          Source
+        </button>
       </header>
       {images.error !== null && (
         <div
@@ -74,6 +94,7 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
           onChange={actions.edited}
           onSave={actions.saveNow}
           images={images.host}
+          sourceMode={sourceMode}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (
