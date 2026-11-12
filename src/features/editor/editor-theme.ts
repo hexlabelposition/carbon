@@ -30,9 +30,7 @@ export const editorTheme = EditorView.theme({
     caretColor: "var(--cb-fg)",
   },
   ".cm-line": { padding: "0" },
-  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--cb-fg)" },
-  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-    { backgroundColor: "var(--cb-highlight)" },
+  ".cm-content ::selection": { backgroundColor: "var(--cb-highlight)" },
 });
 
 /** Markdown highlighting: the text is styled, its marks are made quiet. */
@@ -65,11 +63,8 @@ export const markdownHighlight = HighlightStyle.define([
   },
   { tag: tags.link, color: "var(--cb-link)" },
   { tag: tags.url, color: "var(--cb-faint)" },
-  {
-    tag: tags.monospace,
-    fontFamily: "var(--font-mono)",
-    fontSize: "0.9em",
-  },
+  // Inline code and code blocks; their size is set where they are drawn.
+  { tag: tags.monospace, fontFamily: "var(--font-mono)" },
   { tag: tags.quote, color: "var(--cb-muted)" },
   // The marks themselves: #, *, >, -, ``` and the like.
   {
@@ -81,4 +76,9 @@ export const markdownHighlight = HighlightStyle.define([
     ],
     color: "var(--cb-faint)",
   },
+  // Code inside a block. Syntax highlighting stays monochrome, as in
+  // `styles/markdown.css`: three greys and the link color.
+  { tag: tags.comment, color: "var(--cb-faint)" },
+  { tag: tags.keyword, color: "var(--cb-muted)" },
+  { tag: [tags.string, tags.special(tags.string)], color: "var(--cb-link)" },
 ]);

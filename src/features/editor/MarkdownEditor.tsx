@@ -6,8 +6,9 @@ import {
 } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
 import { EditorState, Transaction } from "@codemirror/state";
-import { drawSelection, EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { livePreview } from "./live-preview";
@@ -53,10 +54,10 @@ export function MarkdownEditor({
         doc: latest.current.text,
         extensions: [
           history(),
-          drawSelection(),
           EditorView.lineWrapping,
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
-          markdown({ base: markdownLanguage }),
+          // The language of a code block is loaded when one first uses it.
+          markdown({ base: markdownLanguage, codeLanguages: languages }),
           syntaxHighlighting(markdownHighlight),
           livePreview,
           editorTheme,
