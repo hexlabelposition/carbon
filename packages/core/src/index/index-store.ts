@@ -112,14 +112,30 @@ export class IndexStore {
     return new IndexStore(db, true);
   }
 
-  /** The stamps of every indexed note: what the startup scan compares. */
-  async stamps(): Promise<Map<NotePath, NoteStamp>> {
+  /**
+   * The stamps of every indexed note, or of the notes inside `folder`:
+   * what a scan compares with the files.
+   */
+  async stamps(folder = ""): Promise<Map<NotePath, NoteStamp>> {
+    const prefix = folder === "" ? "" : `${folder}/`;
+    // Not LIKE: "%" and "_" are fine in a file name.
     const rows = await this.db.select<{ path: string } & NoteStamp>(
-      "SELECT path, mtime, size, hash FROM notes",
+      `SELECT path, mtime, size, hash FROM notes
+       WHERE substr(path, 1, length(?)) = ?`,
+      [prefix, prefix],
     );
     return new Map(
       rows.map(({ path, mtime, size, hash }) => [path, { mtime, size, hash }]),
     );
+  }
+
+  /** The stamp of one note, or `null` if it is not indexed. */
+  async stamp(path: NotePath): Promise<NoteStamp | null> {
+    const [row] = await this.db.select<NoteStamp>(
+      "SELECT mtime, size, hash FROM notes WHERE path = ?",
+      [path],
+    );
+    return row ?? null;
   }
 
   /**

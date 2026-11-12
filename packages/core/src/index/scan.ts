@@ -12,21 +12,27 @@ const FILE_CONCURRENCY = 64;
 /** Notes read, parsed and written together. */
 const BATCH = 200;
 
-export interface ScanOptions {
+/** What indexing needs: where the vault is, and where the index goes. */
+export interface IndexContext {
   fs: FileSystem;
   /** The vault folder, normalized. */
   root: string;
   store: IndexStore;
   /** Parses and hashes the notes that are read. */
   parser: NoteParser;
-  /** After each batch: notes indexed so far, of the notes to index. */
-  onProgress?: (progress: { done: number; total: number }) => void;
-  /** Checked between steps: true stops the scan where it is. */
+  /** Checked between steps: true stops the work where it is. */
   cancelled?: () => boolean;
 }
 
+export interface ScanOptions extends IndexContext {
+  /** A folder of the vault to scan instead of the whole vault. */
+  folder?: string;
+  /** After each batch: notes indexed so far, of the notes to index. */
+  onProgress?: (progress: { done: number; total: number }) => void;
+}
+
 export interface ScanResult {
-  /** Notes in the vault. */
+  /** Notes in the vault, or in the folder. */
   notes: number;
   /** Notes that were new or changed, and were indexed. */
   indexed: number;
@@ -35,42 +41,65 @@ export interface ScanResult {
 }
 
 /**
- * Brings the index up to date with the vault (ARCHITECTURE.md, section 5):
- * notes whose size or modification time differ from the index are read
- * and indexed again, notes that are gone are dropped, the rest is not
- * touched. On the first start every note is new.
- *
- * A note that cannot be read is left out of the index, as if it were
- * gone; the next scan tries it again.
+ * Brings the index up to date with the vault, or with one folder of it
+ * (ARCHITECTURE.md, section 5): notes that are gone are dropped, the rest
+ * go through `updateNotes`. On the first start every note is new.
  */
 export async function scanVault(options: ScanOptions): Promise<ScanResult> {
-  const { fs, root, store, parser, onProgress } = options;
+  const { fs, root, store, folder = "", onProgress } = options;
   const cancelled = options.cancelled ?? (() => false);
-  const result: ScanResult = { notes: 0, indexed: 0, removed: 0 };
 
   const [paths, known] = await Promise.all([
-    scanTree(fs, root).then(notePaths),
-    store.stamps(),
+    scanTree(fs, folder === "" ? root : `${root}/${folder}`).then((tree) =>
+      notePaths(tree, folder),
+    ),
+    store.stamps(folder),
   ]);
-  result.notes = paths.length;
-  if (cancelled()) return result;
+  if (cancelled()) return { notes: paths.length, indexed: 0, removed: 0 };
 
   const present = new Set(paths);
   const gone = [...known.keys()].filter((path) => !present.has(path));
+  await store.removeNotes(gone);
+  if (cancelled()) {
+    return { notes: paths.length, indexed: 0, removed: gone.length };
+  }
+
+  const updated = await updateNotes(options, paths, known, onProgress);
+  return {
+    notes: paths.length,
+    indexed: updated.indexed,
+    removed: gone.length + updated.removed,
+  };
+}
+
+/**
+ * Indexes the notes at `paths` whose size or modification time differ
+ * from `known`, the stamps the index has for them. A note that is gone,
+ * or cannot be read, is dropped from the index; the next scan tries it
+ * again.
+ */
+export async function updateNotes(
+  context: IndexContext,
+  paths: readonly NotePath[],
+  known: ReadonlyMap<NotePath, NoteStamp>,
+  onProgress?: ScanOptions["onProgress"],
+): Promise<{ indexed: number; removed: number }> {
+  const { fs, root, store, parser } = context;
+  const cancelled = context.cancelled ?? (() => false);
+  const result = { indexed: 0, removed: 0 };
+  const indexedOnly = (list: NotePath[]) =>
+    list.filter((path) => known.has(path));
 
   const stats = await mapPool(paths, FILE_CONCURRENCY, (path) =>
     fs.stat(`${root}/${path}`).catch(() => null),
   );
+  const gone: NotePath[] = [];
   const toIndex: { path: NotePath; stat: Stat }[] = [];
   paths.forEach((path, i) => {
     const stat = stats[i];
-    // Gone between listing and looking.
-    if (stat === null) gone.push(path);
+    if (stat === null || stat.kind !== "file") gone.push(path);
     else if (!sameFile(known.get(path), stat)) toIndex.push({ path, stat });
   });
-
-  const indexedOnly = (list: NotePath[]) =>
-    list.filter((path) => known.has(path));
   result.removed = indexedOnly(gone).length;
   await store.removeNotes(indexedOnly(gone));
   if (cancelled()) return result;
@@ -118,13 +147,14 @@ function sameFile(stamp: NoteStamp | undefined, stat: Stat): boolean {
   );
 }
 
-/** Every note in the tree, by path. */
-function notePaths(tree: TreeNode[]): NotePath[] {
+/** Every note in the tree of `folder`, by its path in the vault. */
+function notePaths(tree: TreeNode[], folder: string): NotePath[] {
+  const prefix = folder === "" ? "" : `${folder}/`;
   const paths: NotePath[] = [];
   const walk = (nodes: TreeNode[]) => {
     for (const node of nodes) {
       if (node.kind === "folder") walk(node.children);
-      else if (node.kind === "note") paths.push(node.path);
+      else if (node.kind === "note") paths.push(prefix + node.path);
     }
   };
   walk(tree);
