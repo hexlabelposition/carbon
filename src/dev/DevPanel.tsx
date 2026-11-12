@@ -17,8 +17,8 @@ const TEXTS = ["text-fg", "text-muted", "text-faint", "text-link"];
 /**
  * Development tools, mounted by the shell in dev builds only: the M0
  * measurements, and a preview of the design tokens and Markdown styles. The
- * preview is the reference for what the editor does not draw yet: tables
- * (C-120), wiki links, tags and frontmatter.
+ * preview is the reference for what the editor does not draw yet: wiki
+ * links, tags and frontmatter.
  */
 function DevPanel() {
   const [theme, setTheme] = useState<Theme>("system");
