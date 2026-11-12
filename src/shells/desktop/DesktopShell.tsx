@@ -11,6 +11,7 @@ import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { Sidebar } from "./Sidebar";
 import { StatusBar, StatusButton } from "./StatusBar";
 import { TabBar } from "./TabBar";
+import { useFileDropGuard } from "./use-file-drop-guard";
 import { useSidebar } from "./use-sidebar";
 
 // Dev builds only: in a release build the condition is false at build time
@@ -28,6 +29,7 @@ export function DesktopShell() {
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
+  useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;

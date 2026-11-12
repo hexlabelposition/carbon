@@ -62,6 +62,13 @@ export class MemoryFileSystem implements FileSystem {
     this.files.set(path, { content, mtime: ++this.clock });
   }
 
+  async importFile(source: string, target: string): Promise<void> {
+    const { content } = this.file(source);
+    if (await this.exists(target)) throw new Error(`EEXIST: ${target}`);
+    this.dir(parentOf(target));
+    this.files.set(target, { content, mtime: ++this.clock });
+  }
+
   async list(dir: string): Promise<Entry[]> {
     this.dir(dir);
     const entries: Entry[] = [];

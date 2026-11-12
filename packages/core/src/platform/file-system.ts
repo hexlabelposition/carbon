@@ -10,6 +10,13 @@ export interface FileSystem {
   readBytes(path: string): Promise<Uint8Array>;
   /** Like `writeTextAtomic`, for bytes. */
   writeBytesAtomic(path: string, bytes: Uint8Array): Promise<void>;
+  /**
+   * Copies a file from anywhere on the device to `target`, which must not
+   * exist yet. For a file the user handed to the app from outside the
+   * vault, by dropping it: `source` is the only path the core ever uses
+   * that it did not build itself.
+   */
+  importFile(source: string, target: string): Promise<void>;
   /** Direct children of `dir`, not recursive. */
   list(dir: string): Promise<Entry[]>;
   /** Rejects if nothing exists at `path`. */

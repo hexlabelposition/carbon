@@ -16,7 +16,7 @@ const IMAGE_TYPES: Record<string, string> = {
 
 export interface NoteImages {
   host: ImageHost;
-  /** Why the last pasted or dropped image could not be saved. */
+  /** Why the last pasted or dropped file was not taken, for the user. */
   error: string | null;
   dismissError(): void;
 }
@@ -41,8 +41,22 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
     };
   }, [vault, path]);
 
-  const host = useMemo<ImageHost>(
-    () => ({
+  const host = useMemo<ImageHost>(() => {
+    /** Runs a save; resolves with the address to write in the note. */
+    async function saved(save: () => Promise<string>): Promise<string> {
+      try {
+        const link = attachmentLink(path, await save());
+        setError(null);
+        return link;
+      } catch (reason) {
+        const message =
+          reason instanceof Error ? reason.message : String(reason);
+        setError(`The image could not be saved: ${message}`);
+        throw reason;
+      }
+    }
+
+    return {
       async load(target) {
         const file = await vault.attachments.find(path, target);
         if (file === null) return null;
@@ -59,20 +73,17 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
         return url;
       },
 
-      async save(image) {
-        try {
+      save: (image) =>
+        saved(async () => {
           const bytes = new Uint8Array(await image.arrayBuffer());
-          const saved = await vault.attachments.save(nameFor(image), bytes);
-          setError(null);
-          return attachmentLink(path, saved);
-        } catch (reason) {
-          setError(reason instanceof Error ? reason.message : String(reason));
-          throw reason;
-        }
-      },
-    }),
-    [vault, path],
-  );
+          return vault.attachments.save(nameFor(image), bytes);
+        }),
+
+      importFile: (source) => saved(() => vault.attachments.import(source)),
+
+      refuse: setError,
+    };
+  }, [vault, path]);
 
   return { host, error, dismissError: () => setError(null) };
 }

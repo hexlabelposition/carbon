@@ -24,6 +24,28 @@ export class Attachments {
    * is added to it ("photo.png", then "photo-1.png").
    */
   async save(fileName: string, bytes: Uint8Array): Promise<string> {
+    return this.add(fileName, (target) =>
+      this.context.fs.writeBytesAtomic(target, bytes),
+    );
+  }
+
+  /**
+   * Copies a file from outside the vault into the attachments folder, under
+   * its own name, and resolves with its path in the vault. `source` is an
+   * absolute path on the device, `/` separated. The file itself stays
+   * where it is.
+   */
+  async import(source: string): Promise<string> {
+    return this.add(source, (target) =>
+      this.context.fs.importFile(source, target),
+    );
+  }
+
+  /** Finds a free name in the attachments folder and puts a file there. */
+  private async add(
+    fileName: string,
+    put: (target: string) => Promise<void>,
+  ): Promise<string> {
     const { root, fs, own } = this.context;
     const name = safeName(fileName);
     const dot = name.lastIndexOf(".");
@@ -35,7 +57,7 @@ export class Attachments {
       const path = `${ATTACHMENTS_FOLDER}/${stem}${n === 0 ? "" : `-${n}`}${ending}`;
       const target = resolveNewInVault(root, path);
       if (await fs.exists(target)) continue;
-      await fs.writeBytesAtomic(target, bytes);
+      await put(target);
       await own.wrote(target);
       return path;
     }

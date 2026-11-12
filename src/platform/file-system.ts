@@ -1,4 +1,5 @@
 import type { Entry, FileSystem, Stat } from "@carbon/core";
+import { invoke } from "@tauri-apps/api/core";
 import {
   exists,
   mkdir,
@@ -28,6 +29,15 @@ export const tauriFileSystem: FileSystem = {
   },
 
   readBytes: (path) => readFile(path),
+
+  async importFile(source, target) {
+    try {
+      await invoke("import_file", { source, target });
+    } catch (reason) {
+      // A command rejects with a plain string, the core expects an `Error`.
+      throw new Error(String(reason), { cause: reason });
+    }
+  },
 
   async writeBytesAtomic(path, bytes) {
     const tmp = tempPathFor(path);

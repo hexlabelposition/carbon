@@ -67,6 +67,43 @@ describe("vault.attachments.save", () => {
   });
 });
 
+describe("vault.attachments.import", () => {
+  test("copies a file from outside the vault under its own name", async () => {
+    const { vault, fs } = await openVault();
+    const path = await vault.attachments.import("/outside/secret.png");
+    expect(path).toBe("attachments/secret.png");
+    expect(await fs.readText("/vault/attachments/secret.png")).toBe("secret");
+    // The file the user dropped stays where it was.
+    expect(await fs.readText("/outside/secret.png")).toBe("secret");
+  });
+
+  test("never overwrites: a taken name gets a number", async () => {
+    const { vault, fs } = await openVault();
+    await fs.mkdir("/downloads");
+    await fs.writeTextAtomic("/downloads/diagram.png", "another diagram");
+    const path = await vault.attachments.import("/downloads/diagram.png");
+    expect(path).toBe("attachments/diagram-1.png");
+    expect(await fs.readText("/vault/attachments/diagram.png")).toBe("diagram");
+  });
+
+  test("rejects when the file is not there, and adds nothing", async () => {
+    const { vault, fs } = await openVault();
+    await expect(vault.attachments.import("/outside/nope.png")).rejects.toThrow(
+      "ENOENT",
+    );
+    expect(await fs.list("/vault/attachments")).toHaveLength(1);
+  });
+
+  test("is not reported as an outside change", async () => {
+    const { vault } = await openVault();
+    const events: string[] = [];
+    vault.on("changed", (change) => events.push(change.path));
+    vault.on("tree", () => events.push("tree"));
+    await vault.attachments.import("/outside/secret.png");
+    expect(events).toEqual(["tree"]);
+  });
+});
+
 describe("vault.attachments.read", () => {
   test("rejects a path that could leave the vault", async () => {
     const { vault } = await openVault();

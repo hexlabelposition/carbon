@@ -22,6 +22,14 @@ export interface ImageHost {
    * to write in the note.
    */
   save(file: File): Promise<string>;
+  /**
+   * Saves an image that was dropped as a path: some systems give a file
+   * dragged from the file manager as its absolute path, not its content.
+   * Resolves with the address to write in the note.
+   */
+  importFile(path: string): Promise<string>;
+  /** Tells the user why something dropped on the note was not taken. */
+  refuse(reason: string): void;
 }
 
 /** The image host of an editor. Without one, images stay text. */
@@ -44,6 +52,11 @@ export const imagePreview = [
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
+      /**
+       * When something was last dropped that the page could not read. The
+       * WebView then inserts the dropped text itself, see `update`.
+       */
+      unreadableDropAt = 0;
 
       constructor(view: EditorView) {
         this.decorations = decorate(view);
@@ -57,29 +70,84 @@ export const imagePreview = [
           update.focusChanged ||
           syntaxTree(update.startState) !== syntaxTree(update.state);
         if (changed) this.decorations = decorate(update.view);
+
+        if (update.docChanged && Date.now() - this.unreadableDropAt < 1000) {
+          const inserted = droppedPathsIn(update);
+          if (inserted !== null) {
+            this.unreadableDropAt = 0;
+            // A view cannot be changed while it is being updated.
+            setTimeout(() => void replaceDroppedPaths(update.view, inserted));
+          }
+        }
       }
     },
-    { decorations: (plugin) => plugin.decorations },
+    {
+      decorations: (plugin) => plugin.decorations,
+      eventHandlers: {
+        paste(event, view) {
+          const host = view.state.facet(imageHost);
+          const images = [...(event.clipboardData?.files ?? [])].filter(
+            (file) => isImage(file.name, file.type),
+          );
+          if (host === null || images.length === 0) return false;
+          event.preventDefault();
+          void insertImages(
+            view,
+            images.map((image) => () => host.save(image)),
+          );
+          return true;
+        },
+
+        // Without this the editor would not be a place files can be
+        // dropped on.
+        dragover(event) {
+          if (!event.dataTransfer?.types.includes("Files")) return false;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+          return true;
+        },
+
+        drop(event, view) {
+          const dropped = readDrop(event.dataTransfer);
+          if (dropped === null) {
+            // Text, a link, or a file whose path the WebView keeps from
+            // the page: the text is inserted as usual, and `update` looks
+            // at what arrived.
+            this.unreadableDropAt = Date.now();
+            return false;
+          }
+          // Files are never left to the WebView: it would open them in
+          // place of the app.
+          event.preventDefault();
+          const host = view.state.facet(imageHost);
+          if (host === null) return true;
+
+          const saves = [
+            ...dropped.files
+              .filter((file) => isImage(file.name, file.type))
+              .map((file) => () => host.save(file)),
+            ...dropped.paths
+              .filter((path) => isImage(path))
+              .map((path) => () => host.importFile(path)),
+          ];
+          if (saves.length === 0) {
+            host.refuse(
+              dropped.files.length + dropped.paths.length === 0
+                ? "The dropped file could not be read."
+                : "Only images can be dropped into a note.",
+            );
+            return true;
+          }
+          // The images go where they were dropped, not where the cursor
+          // was.
+          const at = view.posAtCoords({ x: event.clientX, y: event.clientY });
+          if (at !== null) view.dispatch({ selection: { anchor: at } });
+          void insertImages(view, saves);
+          return true;
+        },
+      },
+    },
   ),
-  EditorView.domEventHandlers({
-    paste(event, view) {
-      const images = imagesIn(event.clipboardData);
-      if (images.length === 0) return false;
-      event.preventDefault();
-      void insertImages(view, images);
-      return true;
-    },
-    drop(event, view) {
-      const images = imagesIn(event.dataTransfer);
-      if (images.length === 0) return false;
-      event.preventDefault();
-      // The images go where they were dropped, not where the cursor was.
-      const at = view.posAtCoords({ x: event.clientX, y: event.clientY });
-      if (at !== null) view.dispatch({ selection: { anchor: at } });
-      void insertImages(view, images);
-      return true;
-    },
-  }),
   EditorView.baseTheme({
     ".cm-image": {
       display: "inline-block",
@@ -196,24 +264,136 @@ class ImageWidget extends WidgetType {
   }
 }
 
-function imagesIn(data: DataTransfer | null): File[] {
-  return [...(data?.files ?? [])].filter((file) =>
-    file.type.startsWith("image/"),
-  );
+/** File names the editor takes for images. */
+const IMAGE_NAME = /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i;
+
+/** Some systems give a dropped file no type: its name decides then. */
+function isImage(name: string, type = ""): boolean {
+  return type.startsWith("image/") || IMAGE_NAME.test(name);
 }
 
-/** Saves the images and writes a link to each at the cursor. */
-async function insertImages(view: EditorView, images: File[]): Promise<void> {
+/**
+ * The file paths written in `text`, one per line: "file://" addresses, and
+ * bare absolute paths if they name an image. `only` tells whether the text
+ * is nothing but such lines.
+ */
+function filePathsIn(text: string): { paths: string[]; only: boolean } {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  const paths: string[] = [];
+  for (const line of lines) {
+    if (line.startsWith("file://")) {
+      try {
+        paths.push(decodeURIComponent(new URL(line).pathname));
+      } catch {
+        // Not an address after all: skip it.
+      }
+    } else if (/^(\/|[A-Za-z]:[\\/])/.test(line) && IMAGE_NAME.test(line)) {
+      // A bare path, as some file managers give it.
+      paths.push(line.replaceAll("\\", "/"));
+    }
+  }
+  return { paths, only: lines.length > 0 && paths.length === lines.length };
+}
+
+/**
+ * The files of a drop, in the two forms systems hand them over: as files
+ * with their content, or as addresses in a list of links. `null` if the
+ * page can see no files in the drop.
+ */
+function readDrop(
+  data: DataTransfer | null,
+): { files: File[]; paths: string[] } | null {
+  if (data === null) return null;
+  const files = [...data.files];
+  const paths =
+    files.length > 0
+      ? []
+      : filePathsIn(data.getData("text/uri-list") || data.getData("text/plain"))
+          .paths;
+  const carriesFiles = data.types.includes("Files") || paths.length > 0;
+  return carriesFiles ? { files, paths } : null;
+}
+
+interface DroppedPaths {
+  /** Where the dropped text now stands in the note. */
+  from: number;
+  to: number;
+  text: string;
+  paths: string[];
+}
+
+/**
+ * Looks at what an update inserted: if it is nothing but file paths, that
+ * is a file dragged from the file manager on a system whose WebView hides
+ * the path from the page during the drop, then inserts it as text itself.
+ */
+function droppedPathsIn(update: ViewUpdate): DroppedPaths | null {
+  let found: DroppedPaths | null = null;
+  let insertions = 0;
+  update.changes.iterChanges((_fromA, _toA, from, to, inserted) => {
+    if (inserted.length === 0) return;
+    insertions++;
+    const text = inserted.toString();
+    const { paths, only } = filePathsIn(text);
+    if (only) found = { from, to, text, paths };
+  });
+  return insertions === 1 ? found : null;
+}
+
+/** Puts images in place of the paths the WebView inserted for a drop. */
+async function replaceDroppedPaths(
+  view: EditorView,
+  dropped: DroppedPaths,
+): Promise<void> {
   const host = view.state.facet(imageHost);
-  if (host === null) return;
-  for (const image of images) {
+  // Only if the text is still there, untouched.
+  if (
+    host === null ||
+    view.state.sliceDoc(dropped.from, dropped.to) !== dropped.text
+  ) {
+    return;
+  }
+  const images = dropped.paths.filter((path) => isImage(path));
+  view.dispatch({
+    changes: { from: dropped.from, to: dropped.to },
+    selection: { anchor: dropped.from },
+  });
+  if (images.length === 0) {
+    host.refuse("Only images can be dropped into a note.");
+    return;
+  }
+  const saved = await insertImages(
+    view,
+    images.map((path) => () => host.importFile(path)),
+  );
+  // Nothing could be copied: better the path back than nothing at all.
+  if (saved === 0) {
+    const at = view.state.selection.main.head;
+    view.dispatch({ changes: { from: at, insert: dropped.text } });
+  }
+}
+
+/**
+ * Saves the images one by one and writes a link to each at the cursor.
+ * Resolves with the number of images that were saved.
+ */
+async function insertImages(
+  view: EditorView,
+  saves: (() => Promise<string>)[],
+): Promise<number> {
+  let saved = 0;
+  for (const save of saves) {
     let target: string;
     try {
-      target = await host.save(image);
+      target = await save();
     } catch {
       // The host has told the user; the next image may still work.
       continue;
     }
+    saved++;
     // The cursor may have moved while the image was being saved.
     const at = view.state.selection.main.head;
     const text = `![](${target})`;
@@ -223,4 +403,5 @@ async function insertImages(view: EditorView, images: File[]): Promise<void> {
       scrollIntoView: true,
     });
   }
+  return saved;
 }

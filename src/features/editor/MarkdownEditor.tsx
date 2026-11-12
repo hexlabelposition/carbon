@@ -73,6 +73,10 @@ export function MarkdownEditor({
             save: (file) =>
               latest.current.images?.save(file) ??
               Promise.reject(new Error("Images cannot be saved here")),
+            importFile: (path) =>
+              latest.current.images?.importFile(path) ??
+              Promise.reject(new Error("Images cannot be saved here")),
+            refuse: (reason) => latest.current.images?.refuse(reason),
           }),
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves

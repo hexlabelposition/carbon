@@ -56,9 +56,7 @@ export function NoteEditor({ vault, path }: NoteEditorProps) {
           role="alert"
           className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small"
         >
-          <p className="min-w-0 flex-1 text-danger">
-            The image could not be saved: {images.error}
-          </p>
+          <p className="min-w-0 flex-1 text-danger">{images.error}</p>
           <button
             type="button"
             className={indicatorButton}
