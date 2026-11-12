@@ -14,5 +14,9 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.4"
+  },
+  "dependencies": {
+    "@lezer/highlight": "^1.2.5",
+    "@lezer/markdown": "^1.8.1"
   }
 }
