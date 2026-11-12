@@ -1,4 +1,6 @@
 import { Emitter } from "../events";
+import { IndexStore } from "../index/index-store";
+import { scanVault } from "../index/scan";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
@@ -54,6 +56,11 @@ export class Vault {
   private readonly watch: VaultWatch;
   private isWatching = false;
   private cachedTree: Promise<TreeNode[]> | null = null;
+  private closed = false;
+  /** The index, once the startup scan is done. */
+  private store: IndexStore | null = null;
+  /** The startup scan; see `indexed()`. */
+  private indexing: Promise<void> = Promise.resolve();
 
   private constructor(root: string, platform: Platform, delayMs: number) {
     const { fs, watcher, trash } = platform;
@@ -107,6 +114,7 @@ export class Vault {
       // Without a watcher the vault works, it only cannot see outside
       // changes. The UI can tell the user through `watching`.
     }
+    vault.startIndexing();
     return vault;
   }
 
@@ -154,6 +162,15 @@ export class Vault {
     return this.cachedTree;
   }
 
+  /**
+   * Resolves when the index has caught up with the vault after opening it.
+   * Rejects if the index could not be opened or brought up to date; the
+   * notes themselves work without it.
+   */
+  indexed(): Promise<void> {
+    return this.indexing;
+  }
+
   /** Subscribes to a vault event. Returns a function that unsubscribes. */
   on<K extends keyof VaultEvents>(
     event: K,
@@ -162,10 +179,37 @@ export class Vault {
     return this.emitter.on(event, listener);
   }
 
+  /**
+   * Opens the index and runs the startup scan in the background: the vault
+   * is usable at once, and the index catches up (ARCHITECTURE.md, 5).
+   */
+  private startIndexing(): void {
+    const { platform, root } = this;
+    this.indexing = IndexStore.open(platform, root).then(async (store) => {
+      try {
+        await scanVault({
+          fs: platform.fs,
+          root,
+          store,
+          cancelled: () => this.closed,
+        });
+      } finally {
+        // Kept open for the queries of later tasks; closed with the vault.
+        if (this.closed) await store.close();
+        else this.store = store;
+      }
+    });
+    // A failure is reported through `indexed()`, not as an unhandled one.
+    this.indexing.catch(() => {});
+  }
+
   close(): void {
+    this.closed = true;
     this.watch.stop();
     this.isWatching = false;
     this.cachedTree = null;
     this.emitter.clear();
+    void this.store?.close().catch(() => {});
+    this.store = null;
   }
 }
