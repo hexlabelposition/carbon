@@ -38,12 +38,9 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
 });
 
 /**
- * Images in the editor:
- *
- * - `![alt](file.png)` that points at a file of the vault is shown as the
- *   image. While the cursor is in it, its Markdown is shown as well.
- * - An image pasted from the clipboard or dropped from another program is
- *   saved into the vault, and a link to it is written at that place.
+ * Images in the editor: `![alt](file.png)` that points at a file of the
+ * vault is shown as the image. While the cursor is in it, its Markdown is
+ * shown as well.
  *
  * Images from the web are not loaded: the note stays local, and opening it
  * tells nobody that it was opened.
@@ -52,11 +49,6 @@ export const imagePreview = [
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
-      /**
-       * When something was last dropped that the page could not read. The
-       * WebView then inserts the dropped text itself, see `update`.
-       */
-      unreadableDropAt = 0;
 
       constructor(view: EditorView) {
         this.decorations = decorate(view);
@@ -70,7 +62,50 @@ export const imagePreview = [
           update.focusChanged ||
           syntaxTree(update.startState) !== syntaxTree(update.state);
         if (changed) this.decorations = decorate(update.view);
+      }
+    },
+    { decorations: (plugin) => plugin.decorations },
+  ),
+  EditorView.baseTheme({
+    ".cm-image": {
+      display: "inline-block",
+      maxWidth: "100%",
+      verticalAlign: "top",
+      cursor: "default",
+    },
+    ".cm-image img": {
+      display: "block",
+      maxWidth: "100%",
+      borderRadius: "6px",
+    },
+    // The address of an image is one long word. Without this the line
+    // would break before it, at the "(", and leave "![]" alone on a line.
+    ".cm-image-source": { wordBreak: "break-all" },
+    ".cm-image-missing": {
+      padding: "1px 6px",
+      border: "1px dashed var(--cb-line-strong)",
+      borderRadius: "4px",
+      fontSize: "13px",
+      color: "var(--cb-faint)",
+    },
+  }),
+];
 
+/**
+ * An image pasted from the clipboard or dropped from another program is
+ * saved into the vault, and a link to it is written at that place. Apart
+ * from `imagePreview`, so it works in source mode too.
+ */
+export const imageInput = [
+  ViewPlugin.fromClass(
+    class {
+      /**
+       * When something was last dropped that the page could not read. The
+       * WebView then inserts the dropped text itself, see `update`.
+       */
+      unreadableDropAt = 0;
+
+      update(update: ViewUpdate) {
         if (update.docChanged && Date.now() - this.unreadableDropAt < 1000) {
           const inserted = droppedPathsIn(update);
           if (inserted !== null) {
@@ -82,7 +117,6 @@ export const imagePreview = [
       }
     },
     {
-      decorations: (plugin) => plugin.decorations,
       eventHandlers: {
         paste(event, view) {
           const host = view.state.facet(imageHost);
@@ -148,29 +182,6 @@ export const imagePreview = [
       },
     },
   ),
-  EditorView.baseTheme({
-    ".cm-image": {
-      display: "inline-block",
-      maxWidth: "100%",
-      verticalAlign: "top",
-      cursor: "default",
-    },
-    ".cm-image img": {
-      display: "block",
-      maxWidth: "100%",
-      borderRadius: "6px",
-    },
-    // The address of an image is one long word. Without this the line
-    // would break before it, at the "(", and leave "![]" alone on a line.
-    ".cm-image-source": { wordBreak: "break-all" },
-    ".cm-image-missing": {
-      padding: "1px 6px",
-      border: "1px dashed var(--cb-line-strong)",
-      borderRadius: "4px",
-      fontSize: "13px",
-      color: "var(--cb-faint)",
-    },
-  }),
 ];
 
 const imageSource = Decoration.mark({ class: "cm-image-source" });

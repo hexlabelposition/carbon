@@ -12,7 +12,12 @@ import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { livePreview } from "./live-preview";
-import { imageHost, imagePreview, type ImageHost } from "./live-preview-image";
+import {
+  imageHost,
+  imageInput,
+  imagePreview,
+  type ImageHost,
+} from "./live-preview-image";
 import { tablePreview } from "./live-preview-table";
 
 interface MarkdownEditorProps {
@@ -64,9 +69,10 @@ export function MarkdownEditor({
           // The language of a code block is loaded when one first uses it.
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           syntaxHighlighting(markdownHighlight),
-          livePreview,
-          tablePreview,
-          imagePreview,
+          preview.current.of(
+            latest.current.sourceMode ? noPreview : livePreviewExtensions,
+          ),
+          imageInput,
           imageHost.of({
             load: (target) =>
               latest.current.images?.load(target) ?? Promise.resolve(null),
