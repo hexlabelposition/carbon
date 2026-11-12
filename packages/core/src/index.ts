@@ -21,6 +21,9 @@ export { contentHash } from "./util/hash";
 export { markdownParser, parseNote } from "./parser/parse-note";
 export { wikiLink } from "./parser/wiki-link";
 
+export { IndexStore, SCHEMA_VERSION, indexFileName } from "./index/index-store";
+export type { IndexEntry, NoteStamp } from "./index/index-store";
+
 export type {
   Entry,
   EntryKind,

@@ -46,7 +46,7 @@ flowchart TB
     Index["index: indexer and queries"]
     Links["links: resolution, backlinks, graph"]
     Search["search: full text, fuzzy titles"]
-    Ports["platform interfaces: FileSystem, Watcher, IndexStore"]
+    Ports["platform interfaces: FileSystem, Watcher, SqlDatabases"]
   end
   subgraph Platform["Platform adapters (src/platform)"]
     TauriFS["Tauri fs plugin"]
@@ -84,7 +84,7 @@ carbon/
   packages/
     core/                   # @carbon/core
       src/
-        platform/           # interfaces: FileSystem, Watcher, IndexStore, Trash, SettingsStore
+        platform/           # interfaces: FileSystem, Watcher, SqlDatabases, Trash, SettingsStore
         vault/              # open vault, read/write, tree, external changes
         parser/             # links, tags, frontmatter, headings, plain text
         index/              # schema, indexer, startup scan
@@ -93,7 +93,7 @@ carbon/
         config/             # vault and app settings
         index.ts            # public API
       test/
-        fakes/              # in-memory platform (file system, watcher, index, trash) for tests
+        fakes/              # in-memory platform (file system, watcher, SQLite, trash) for tests
   src/                      # the Carbon application: one Tauri project for all platforms
     features/               # editor, file-tree, backlinks, search, tags, graph, settings
     shells/
@@ -190,17 +190,19 @@ interface Watcher {
   watch(dir: string, onEvent: (e: FsEvent) => void): Promise<() => void>;
 }
 
-interface IndexStore {
-  // narrow, purpose-built methods, not raw SQL
-  replaceNote(note: ParsedNote): Promise<void>;
-  removeNote(path: string): Promise<void>;
-  backlinks(path: string): Promise<Backlink[]>;
-  search(query: string, limit: number): Promise<SearchHit[]>;
-  // ...
+interface SqlDatabases {
+  // a database file in the app cache directory
+  open(name: string): Promise<SqlDatabase>;
+}
+
+interface SqlDatabase {
+  execute(sql: string, params?: SqlValue[]): Promise<void>;
+  select<Row>(sql: string, params?: SqlValue[]): Promise<Row[]>;
+  close(): Promise<void>;
 }
 ```
 
-`IndexStore` exposes domain methods instead of SQL. That keeps the storage engine an implementation detail (ADR-009).
+The SQL of the index lives in the core (`index/`), behind the domain-shaped `IndexStore` class: the rest of the core and the UI see notes and links, not SQL. The platform only runs statements, so the schema and the queries are tested with `bun test` on Bun's SQLite in memory (ADR-021).
 
 ### vault
 
@@ -322,7 +324,7 @@ _SQLite through the `sql` plugin (C-008)._ SQLite 3.46.0 with FTS5 available. On
 
 - The database runs in WAL mode. The setting is stored in the database file, so it is set once at creation.
 - Bulk writes use multi-row `INSERT` statements of up to 1,000 rows.
-- Replacing one note takes several statements and is not atomic. A crash in between can leave that one note half indexed. This is acceptable because the index is a cache: the startup scan repairs it. If it ever hurts, "apply a batch in one transaction" is a small Rust command behind `IndexStore`.
+- Replacing one note takes several statements and is not atomic. A crash in between can leave that one note half indexed. This is acceptable because the index is a cache: the startup scan repairs it. If it ever hurts, "apply a batch in one transaction" is a small Rust command behind `SqlDatabase`.
 
 **Native code policy**
 
@@ -424,7 +426,7 @@ Three rules that keep a second shell cheap:
 
 ## 11. Testing and quality
 
-- **Core:** `bun test` with in-memory fakes for `FileSystem` and `IndexStore`. Fixture vaults for link resolution and rename.
+- **Core:** `bun test` with in-memory fakes for `FileSystem` and `SqlDatabases` (Bun's SQLite, in memory). Fixture vaults for link resolution and rename.
 - **Parser:** a shared corpus of Markdown samples with expected links and tags, used by both parser tests and editor tests.
 - **Benchmarks:** a generator creates vaults with N notes, links and tags. Results are compared with the budgets in section 1.
 - **UI:** component and logic tests. The runner is not chosen yet (open question 7). End-to-end tests are added before 0.1.
@@ -432,32 +434,33 @@ Three rules that keep a second shell cheap:
 
 ## 12. Decision log
 
-| ID      | Decision                                                                                                 | Status                     | Why                                                                                                                                                                                         |
-| ------- | -------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADR-001 | Core logic in a standalone TypeScript library (`@carbon/core`). Replaces the earlier plan of a Rust core | Accepted                   | One language for the whole app, fastest route to MVP, parser shared with the editor. Rust stays possible for hot paths behind the platform interfaces                                       |
-| ADR-002 | Tauri 2 as the desktop shell, used through official plugins only                                         | Accepted                   | System WebView means small binaries and lower memory than Electron. No custom Rust needed                                                                                                   |
-| ADR-003 | Markdown files are the source of truth, the index is a rebuildable cache                                 | Accepted                   | No lock-in, works with git and other editors                                                                                                                                                |
-| ADR-004 | React + TypeScript for the UI                                                                            | Accepted                   | Known stack, largest ecosystem                                                                                                                                                              |
-| ADR-005 | CodeMirror 6 with live preview                                                                           | Accepted                   | Proven for Markdown live preview, keeps files as clean Markdown                                                                                                                             |
-| ADR-006 | No built-in sync in v0.1                                                                                 | Accepted                   | A vault is a folder, external tools already work                                                                                                                                            |
-| ADR-007 | MIT license                                                                                              | Accepted                   | Simple, familiar, maximum freedom for users and contributors                                                                                                                                |
-| ADR-008 | Index stored outside the vault, in the app cache directory                                               | Accepted                   | Avoids sync conflicts on a binary file                                                                                                                                                      |
-| ADR-009 | SQLite with FTS5 for index and search, behind the `IndexStore` interface                                 | Accepted                   | One engine for links, tags and search. Confirmed by the M0 measurements: FTS5 is available, 10k notes are indexed in about 1 s (section 7)                                                  |
-| ADR-010 | Tailwind CSS for styling                                                                                 | Accepted                   | Fast to build UI with                                                                                                                                                                       |
-| ADR-011 | Bun as package manager and script runner. `bun test` runs the core tests; the UI test runner is open     | Accepted, test runner open | One fast tool. Fall back to another tool only where Bun does not work. See open question 7                                                                                                  |
-| ADR-012 | One Markdown grammar (Lezer) shared by editor and index                                                  | Accepted                   | No drift between what is shown and what is indexed                                                                                                                                          |
-| ADR-013 | Obsidian vault compatibility is not a goal for v0.1                                                      | Accepted                   | Keeps scope small. Listed under ideas                                                                                                                                                       |
-| ADR-014 | One monorepo with one Tauri project for all platforms                                                    | Accepted                   | Tauri builds every target from one project. Core and UI change in one commit. One CI and one issue list for a solo developer                                                                |
-| ADR-015 | Platform order: Linux, then Windows for v0.1. Android, macOS and iOS are ideas                           | Accepted                   | Carbon solves its author's own needs first. No hardware to test Apple platforms                                                                                                             |
-| ADR-016 | Shared feature logic, separate layout shell per form factor                                              | Accepted                   | Layouts differ too much to share, logic does not                                                                                                                                            |
-| ADR-017 | Native code is added gradually as small Rust commands behind platform interfaces. No Go sidecar          | Accepted                   | Keeps one process and one bridge. Lets Rust be learned in small, isolated steps                                                                                                             |
-| ADR-018 | ESLint for linting, Prettier for formatting                                                              | Accepted                   | The standard, well-documented pair. ESLint also enforces the import rules from section 2: no Tauri outside `src/platform`, no React or Tauri in core                                        |
-| ADR-019 | Deleting moves to the system trash through one custom Rust command (`move_to_trash`, the `trash` crate)  | Accepted                   | No official Tauri plugin has a trash. A deleted note must be recoverable, and a trash folder inside the vault would be synced and indexed                                                   |
-| ADR-020 | Files dropped from outside the vault are copied in by a custom Rust command (`import_file`)              | Accepted                   | On Linux the WebView gives a dropped file as a path, not as content, and the `fs` plugin may not read outside the opened folders. The command only writes new files inside an opened folder |
+| ID      | Decision                                                                                                  | Status                     | Why                                                                                                                                                                                         |
+| ------- | --------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-001 | Core logic in a standalone TypeScript library (`@carbon/core`). Replaces the earlier plan of a Rust core  | Accepted                   | One language for the whole app, fastest route to MVP, parser shared with the editor. Rust stays possible for hot paths behind the platform interfaces                                       |
+| ADR-002 | Tauri 2 as the desktop shell, used through official plugins only                                          | Accepted                   | System WebView means small binaries and lower memory than Electron. No custom Rust needed                                                                                                   |
+| ADR-003 | Markdown files are the source of truth, the index is a rebuildable cache                                  | Accepted                   | No lock-in, works with git and other editors                                                                                                                                                |
+| ADR-004 | React + TypeScript for the UI                                                                             | Accepted                   | Known stack, largest ecosystem                                                                                                                                                              |
+| ADR-005 | CodeMirror 6 with live preview                                                                            | Accepted                   | Proven for Markdown live preview, keeps files as clean Markdown                                                                                                                             |
+| ADR-006 | No built-in sync in v0.1                                                                                  | Accepted                   | A vault is a folder, external tools already work                                                                                                                                            |
+| ADR-007 | MIT license                                                                                               | Accepted                   | Simple, familiar, maximum freedom for users and contributors                                                                                                                                |
+| ADR-008 | Index stored outside the vault, in the app cache directory                                                | Accepted                   | Avoids sync conflicts on a binary file                                                                                                                                                      |
+| ADR-009 | SQLite with FTS5 for index and search, behind the `IndexStore` interface (refined by ADR-021)             | Accepted                   | One engine for links, tags and search. Confirmed by the M0 measurements: FTS5 is available, 10k notes are indexed in about 1 s (section 7)                                                  |
+| ADR-010 | Tailwind CSS for styling                                                                                  | Accepted                   | Fast to build UI with                                                                                                                                                                       |
+| ADR-011 | Bun as package manager and script runner. `bun test` runs the core tests; the UI test runner is open      | Accepted, test runner open | One fast tool. Fall back to another tool only where Bun does not work. See open question 7                                                                                                  |
+| ADR-012 | One Markdown grammar (Lezer) shared by editor and index                                                   | Accepted                   | No drift between what is shown and what is indexed                                                                                                                                          |
+| ADR-013 | Obsidian vault compatibility is not a goal for v0.1                                                       | Accepted                   | Keeps scope small. Listed under ideas                                                                                                                                                       |
+| ADR-014 | One monorepo with one Tauri project for all platforms                                                     | Accepted                   | Tauri builds every target from one project. Core and UI change in one commit. One CI and one issue list for a solo developer                                                                |
+| ADR-015 | Platform order: Linux, then Windows for v0.1. Android, macOS and iOS are ideas                            | Accepted                   | Carbon solves its author's own needs first. No hardware to test Apple platforms                                                                                                             |
+| ADR-016 | Shared feature logic, separate layout shell per form factor                                               | Accepted                   | Layouts differ too much to share, logic does not                                                                                                                                            |
+| ADR-017 | Native code is added gradually as small Rust commands behind platform interfaces. No Go sidecar           | Accepted                   | Keeps one process and one bridge. Lets Rust be learned in small, isolated steps                                                                                                             |
+| ADR-018 | ESLint for linting, Prettier for formatting                                                               | Accepted                   | The standard, well-documented pair. ESLint also enforces the import rules from section 2: no Tauri outside `src/platform`, no React or Tauri in core                                        |
+| ADR-019 | Deleting moves to the system trash through one custom Rust command (`move_to_trash`, the `trash` crate)   | Accepted                   | No official Tauri plugin has a trash. A deleted note must be recoverable, and a trash folder inside the vault would be synced and indexed                                                   |
+| ADR-020 | Files dropped from outside the vault are copied in by a custom Rust command (`import_file`)               | Accepted                   | On Linux the WebView gives a dropped file as a path, not as content, and the `fs` plugin may not read outside the opened folders. The command only writes new files inside an opened folder |
+| ADR-021 | The SQL of the index lives in the core; the platform provides only `SqlDatabases` (open, execute, select) | Accepted                   | The schema and queries are the riskiest part of the index and must be tested; in the core they run on Bun's SQLite in `bun test`. The engine stays replaceable behind `IndexStore`          |
 
 ## 13. Open questions
 
-1. **Index engine.** Resolved in M0: SQLite with FTS5 through the `sql` plugin (ADR-009, measurements in section 7). An in-memory index stays possible behind `IndexStore` but is not planned.
+1. **Index engine.** Resolved in M0: SQLite with FTS5 through the `sql` plugin (ADR-009, measurements in section 7). An in-memory index stays possible behind `IndexStore` but is not planned. The SQL lives in the core (ADR-021).
 2. **Graph renderer.** Candidates: sigma.js, Pixi.js with d3-force, custom canvas. Decide with a 10k-node prototype.
 3. **State management.** Zustand or plain React context plus a query cache.
 4. **Stable note IDs.** Path-based identity is simple but loses links on external renames. Option: detect renames by content hash.
