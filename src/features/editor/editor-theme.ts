@@ -19,6 +19,11 @@ export const editorTheme = EditorView.theme({
     fontFamily: "var(--font-sans)",
     lineHeight: "1.65",
     overflow: "auto",
+    // Inter raises a bracket that follows a tall character such as "!".
+    // The editor draws "![" and "]" as separate pieces, so only one of the
+    // two brackets was raised and the pair looked crooked. Markdown is
+    // shown as it is typed: no contextual alternates.
+    fontVariantLigatures: "no-contextual",
   },
   // A readable column in the middle; the space below lets the last line
   // be scrolled up from the bottom edge.
