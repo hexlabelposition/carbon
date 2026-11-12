@@ -24,6 +24,7 @@ import {
   imagePreview,
   type ImageHost,
 } from "./live-preview-image";
+import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
 import { tablePreview } from "./live-preview-table";
 import {
   outlineHost,
@@ -53,6 +54,8 @@ interface MarkdownEditorProps {
   sourceMode?: boolean;
   /** Receives the headings of the note and lets them be gone to. */
   outline?: OutlineLink;
+  /** Suggests notes to link to after "[[". */
+  links?: LinkHost;
 }
 
 /** Everything live preview adds; source mode leaves it out. */
@@ -73,6 +76,7 @@ export function MarkdownEditor({
   images,
   sourceMode = false,
   outline,
+  links,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
@@ -86,10 +90,19 @@ export function MarkdownEditor({
     images,
     sourceMode,
     outline,
+    links,
   });
   useEffect(() => {
-    latest.current = { text, onChange, onSave, images, sourceMode, outline };
-  }, [text, onChange, onSave, images, sourceMode, outline]);
+    latest.current = {
+      text,
+      onChange,
+      onSave,
+      images,
+      sourceMode,
+      outline,
+      links,
+    };
+  }, [text, onChange, onSave, images, sourceMode, outline, links]);
 
   useEffect(() => {
     if (host.current === null) return;
@@ -124,6 +137,13 @@ export function MarkdownEditor({
               latest.current.images?.importFile(path) ??
               Promise.reject(new Error("Images cannot be saved here")),
             refuse: (reason) => latest.current.images?.refuse(reason),
+          }),
+          linkCompletion,
+          linkHost.of({
+            notes: () => latest.current.links?.notes() ?? Promise.resolve([]),
+            get current() {
+              return latest.current.links?.current ?? "";
+            },
           }),
           outlineTracker,
           outlineHost.of({

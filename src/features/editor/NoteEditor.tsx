@@ -5,6 +5,7 @@ import { MarkdownEditor } from "./MarkdownEditor";
 import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
 import { useNoteImages } from "./use-note-images";
+import { useNoteLinks } from "./use-note-links";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 
 interface NoteEditorProps {
@@ -30,6 +31,7 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
+  const links = useNoteLinks(vault, path);
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
 
@@ -100,6 +102,7 @@ export function NoteEditor({
           images={images.host}
           sourceMode={sourceMode}
           outline={outline}
+          links={links}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (
