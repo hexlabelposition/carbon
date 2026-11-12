@@ -1,14 +1,14 @@
 import type { Platform } from "../../src/index";
 import { MemoryFileSystem } from "./memory-file-system";
-import { MemoryIndexStore } from "./memory-index-store";
 import { MemorySettingsStore } from "./memory-settings-store";
+import { MemorySqlDatabases } from "./memory-sql";
 import { MemoryTrash } from "./memory-trash";
 import { MemoryWatcher } from "./memory-watcher";
 
 export {
   MemoryFileSystem,
-  MemoryIndexStore,
   MemorySettingsStore,
+  MemorySqlDatabases,
   MemoryTrash,
   MemoryWatcher,
 };
@@ -17,7 +17,7 @@ export {
 export interface MemoryPlatform extends Platform {
   fs: MemoryFileSystem;
   watcher: MemoryWatcher;
-  index: MemoryIndexStore;
+  sql: MemorySqlDatabases;
   trash: MemoryTrash;
   settings: MemorySettingsStore;
 }
@@ -30,7 +30,7 @@ export function createMemoryPlatform(
   return {
     fs,
     watcher: new MemoryWatcher(),
-    index: new MemoryIndexStore(),
+    sql: new MemorySqlDatabases(),
     trash: new MemoryTrash(fs),
     settings: new MemorySettingsStore(),
   };

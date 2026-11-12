@@ -3,8 +3,8 @@
 
 import type { Platform } from "@carbon/core";
 import { tauriFileSystem } from "./file-system";
-import { tauriIndexStore } from "./index-store";
 import { tauriSettingsStore } from "./settings-store";
+import { tauriSqlDatabases } from "./sql";
 import { tauriTrash } from "./trash";
 import { tauriWatcher } from "./watcher";
 
@@ -14,7 +14,7 @@ export { openDatabase, type Database } from "./sql";
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,
   watcher: tauriWatcher,
-  index: tauriIndexStore,
+  sql: tauriSqlDatabases,
   trash: tauriTrash,
   settings: tauriSettingsStore,
 };

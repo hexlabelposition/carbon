@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { FsEvent, ParsedNote } from "../src/index";
-import { MemoryFileSystem, MemoryIndexStore, MemoryWatcher } from "./fakes";
+import type { FsEvent } from "../src/index";
+import { MemoryFileSystem, MemoryWatcher } from "./fakes";
 
 describe("MemoryFileSystem", () => {
   test("lists direct children, folders included", async () => {
@@ -87,58 +87,5 @@ describe("MemoryWatcher", () => {
 
     expect(seen).toEqual([{ kind: "modified", path: "/v/a.md" }]);
     expect(watcher.watchCount).toBe(0);
-  });
-});
-
-describe("MemoryIndexStore", () => {
-  const note = (path: string, extra: Partial<ParsedNote> = {}): ParsedNote => ({
-    path,
-    title: path.replace(/\.md$/, ""),
-    headings: [],
-    links: [],
-    tags: [],
-    aliases: [],
-    properties: {},
-    plainText: "",
-    ...extra,
-  });
-
-  test("finds backlinks and forgets removed notes", async () => {
-    const index = new MemoryIndexStore();
-    const link = {
-      target: "Inbox",
-      alias: null,
-      fragment: null,
-      start: 4,
-      end: 13,
-    };
-    await index.replaceNote(note("Inbox.md"));
-    await index.replaceNote(note("Carbon.md", { links: [link] }));
-
-    expect(await index.backlinks("Inbox.md")).toEqual([
-      {
-        source: "Carbon.md",
-        sourceTitle: "Carbon",
-        snippet: "",
-        start: 4,
-        end: 13,
-      },
-    ]);
-    await index.removeNote("Carbon.md");
-    expect(await index.backlinks("Inbox.md")).toEqual([]);
-  });
-
-  test("search ranks title matches first and respects the limit", async () => {
-    const index = new MemoryIndexStore();
-    await index.replaceNote(
-      note("Log.md", { plainText: "Notes about the index cache" }),
-    );
-    await index.replaceNote(note("Index.md", { plainText: "Nothing here" }));
-
-    const hits = await index.search("INDEX", 10);
-    expect(hits.map((h) => h.path)).toEqual(["Index.md", "Log.md"]);
-    expect(hits[1].snippet).toContain("index cache");
-    expect(await index.search("index", 1)).toHaveLength(1);
-    expect(await index.search("", 10)).toEqual([]);
   });
 });

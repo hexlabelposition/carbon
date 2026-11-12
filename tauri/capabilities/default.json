@@ -21,7 +21,12 @@
     "fs:allow-unwatch",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPCONFIG" }, { "path": "$APPCONFIG/**" }]
+      "allow": [
+        { "path": "$APPCONFIG" },
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPCACHE" },
+        { "path": "$APPCACHE/**" }
+      ]
     },
     "sql:default",
     "sql:allow-execute"

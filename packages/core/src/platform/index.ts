@@ -1,5 +1,5 @@
 import type { FileSystem } from "./file-system";
-import type { IndexStore } from "./index-store";
+import type { SqlDatabases } from "./sql";
 import type { SettingsStore } from "./settings-store";
 import type { Trash } from "./trash";
 import type { Watcher } from "./watcher";
@@ -11,7 +11,7 @@ export type {
   RemoveOptions,
   Stat,
 } from "./file-system";
-export type { IndexStore } from "./index-store";
+export type { SqlDatabase, SqlDatabases, SqlValue } from "./sql";
 export type { SettingsStore } from "./settings-store";
 export type { Trash } from "./trash";
 export type { FsEvent, FsEventKind, Watcher } from "./watcher";
@@ -20,7 +20,7 @@ export type { FsEvent, FsEventKind, Watcher } from "./watcher";
 export interface Platform {
   fs: FileSystem;
   watcher: Watcher;
-  index: IndexStore;
+  sql: SqlDatabases;
   trash: Trash;
   settings: SettingsStore;
 }
