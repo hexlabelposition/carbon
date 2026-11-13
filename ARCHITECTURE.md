@@ -159,7 +159,7 @@ headings(note_id INTEGER, level INTEGER, text TEXT, pos INTEGER)
 notes_fts  -- FTS5 virtual table over title and body
 ```
 
-`links.target_id` is `NULL` for unresolved links (the target note does not exist yet). Backlinks are a query on `links` by `target_id`.
+`links.target_id` is `NULL` for unresolved links (the target note does not exist yet). Backlinks are a query on `links` by `target_id`. Each link also keeps a snippet, the plain text of the paragraph, heading or table row around it, so listing backlinks reads no files.
 
 ### 4.4 Note identity and link resolution
 

@@ -22,6 +22,11 @@ export interface Link {
   /** Offsets of the whole link in the note text. */
   start: number;
   end: number;
+  /**
+   * The paragraph, heading or table row around the link, as plain text on
+   * one line, cut short far from the link: what a backlink shows.
+   */
+  snippet: string;
 }
 
 /** A link as the index has it: with the note it points to. */
@@ -48,8 +53,9 @@ export interface Backlink {
   /** The note that contains the link. */
   source: NotePath;
   sourceTitle: string;
-  /** Text around the link, for display. */
+  /** Text around the link, for display: `Link.snippet`. */
   snippet: string;
+  /** Offsets of the link in the source note. */
   start: number;
   end: number;
 }

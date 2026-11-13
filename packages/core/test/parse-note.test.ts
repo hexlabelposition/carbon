@@ -136,6 +136,54 @@ describe("parseNote", () => {
     ]);
   });
 
+  describe("snippets", () => {
+    const snippets = (text: string) =>
+      parse(text).links.map((link) => link.snippet);
+
+    test("are the plain text of the paragraph around the link", () => {
+      expect(
+        snippets("See **[[Note|the note]]**\nand `code` [b](b.md).\n\nOther"),
+      ).toEqual(["See the note and code b.", "See the note and code b."]);
+    });
+
+    test("of a heading, a list item, a quote and a table row", () => {
+      const text = [
+        "# About [[A]]",
+        "",
+        "- one",
+        "- two [[B]]",
+        "",
+        "> quoted [[C]]",
+        "",
+        "| x | y |",
+        "| - | - |",
+        "| left | [[D]] |",
+      ].join("\n");
+      expect(snippets(text)).toEqual([
+        "About A",
+        "two B",
+        "quoted C",
+        "left D",
+      ]);
+    });
+
+    test("are cut at a word far from the link", () => {
+      const words = (from: number) =>
+        Array.from({ length: 30 }, (_, i) => `w${from + i}`).join(" ");
+      const [snippet] = snippets(`${words(0)} [[Link]] ${words(100)}`);
+      expect(snippet).toStartWith("…");
+      expect(snippet).toEndWith("…");
+      expect(snippet).toContain("w29 Link w100");
+      expect(snippet).not.toContain("w0 ");
+      expect(snippet.length).toBeLessThan(180);
+      // Every word kept is whole.
+      const whole = new Set(`${words(0)} Link ${words(100)}`.split(" "));
+      for (const word of snippet.slice(1, -1).split(" ")) {
+        expect(whole.has(word)).toBe(true);
+      }
+    });
+  });
+
   test("tells wiki links from Markdown links", () => {
     const text = "[[A.md]] [a](A.md)";
     expect(parse(text).links.map((link) => link.kind)).toEqual([
@@ -219,6 +267,7 @@ describe("parseNote", () => {
           fragment: null,
           start: text.indexOf("[[Link]]"),
           end: text.length,
+          snippet: "Heading Link",
         },
       ]);
     });

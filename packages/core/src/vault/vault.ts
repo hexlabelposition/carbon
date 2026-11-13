@@ -1,6 +1,7 @@
 import { Emitter } from "../events";
 import { Indexer } from "../index/indexer";
 import { IndexStore } from "../index/index-store";
+import { Links } from "../links/links";
 import { inlineParser } from "../parser/parse-files";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
@@ -42,8 +43,8 @@ export interface VaultOptions {
 const DEFAULT_CHANGE_DELAY_MS = 100;
 
 /**
- * The single entry point for the UI. Later milestones add `links`,
- * `search`, `tags` and `graph` (ARCHITECTURE.md, section 6).
+ * The single entry point for the UI. Later milestones add `search`, `tags`
+ * and `graph` (ARCHITECTURE.md, section 6).
  */
 export class Vault {
   /** Absolute path of the vault folder, `/` separated. */
@@ -51,6 +52,7 @@ export class Vault {
   readonly notes: Notes;
   readonly folders: Folders;
   readonly attachments: Attachments;
+  readonly links: Links;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -60,6 +62,8 @@ export class Vault {
   private closed = false;
   /** Keeps the index up to date, once it is open. */
   private indexer: Indexer | null = null;
+  /** The index, once `startIndexing` has started to open it. */
+  private store: Promise<IndexStore> | null = null;
   /** Opening the index and the startup scan; see `indexed()`. */
   private indexing: Promise<void> = Promise.resolve();
 
@@ -82,6 +86,9 @@ export class Vault {
     this.notes = new Notes({ root, fs, trash, own });
     this.folders = new Folders({ root, fs, trash, own });
     this.attachments = new Attachments({ root, fs, trash, own });
+    this.links = new Links(
+      () => this.store ?? Promise.reject(new Error("The index is not open")),
+    );
     this.watch = new VaultWatch({
       root,
       fs,
@@ -194,7 +201,10 @@ export class Vault {
    */
   private startIndexing(): void {
     const { platform, root } = this;
-    this.indexing = IndexStore.open(platform, root).then((store) => {
+    this.store = IndexStore.open(platform, root);
+    // A failure is reported by `indexed()` and the queries, not here.
+    this.store.catch(() => {});
+    this.indexing = this.store.then((store) => {
       if (this.closed) return store.close();
       // At once, so no change made from now on is missed: a change made
       // before is seen by the scan.
@@ -218,5 +228,6 @@ export class Vault {
     this.emitter.clear();
     void this.indexer?.close().catch(() => {});
     this.indexer = null;
+    this.store = null;
   }
 }

@@ -1,6 +1,12 @@
 import type { Platform, SqlDatabase, SqlValue } from "../platform";
 import { linkKeys, matchKey, noteKeys } from "../links/resolve";
-import type { Heading, NotePath, OutgoingLink, ParsedNote } from "../types";
+import type {
+  Backlink,
+  Heading,
+  NotePath,
+  OutgoingLink,
+  ParsedNote,
+} from "../types";
 import { contentHash } from "../util/hash";
 import { normalizeRoot } from "../vault/path";
 
@@ -25,7 +31,7 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Notes, their headings, aliases and links. A link keeps its target as
@@ -71,7 +77,8 @@ const SCHEMA = [
      alias TEXT,
      fragment TEXT,
      pos_start INTEGER NOT NULL,
-     pos_end INTEGER NOT NULL
+     pos_end INTEGER NOT NULL,
+     snippet TEXT NOT NULL
    )`,
   `CREATE INDEX links_source ON links (source_id)`,
   `CREATE INDEX links_target_path ON links (target_path)`,
@@ -226,10 +233,28 @@ export class IndexStore {
   async outgoingLinks(path: NotePath): Promise<OutgoingLink[]> {
     return this.db.select<OutgoingLink>(
       `SELECT l.kind, l.target_raw AS target, l.alias, l.fragment,
-              l.pos_start AS start, l.pos_end AS "end", t.path AS resolved
+              l.pos_start AS start, l.pos_end AS "end", l.snippet,
+              t.path AS resolved
        FROM links l JOIN notes n ON n.id = l.source_id
        LEFT JOIN notes t ON t.id = l.target_id
        WHERE n.path = ? ORDER BY l.pos_start`,
+      [path],
+    );
+  }
+
+  /**
+   * The links in other notes that resolve to the note at `path`, by the
+   * path of their note, then in the order they are written. A note that
+   * links to itself is not its own backlink. Empty if it is not indexed.
+   */
+  async backlinks(path: NotePath): Promise<Backlink[]> {
+    return this.db.select<Backlink>(
+      `SELECT s.path AS source, s.title AS sourceTitle, l.snippet,
+              l.pos_start AS start, l.pos_end AS "end"
+       FROM notes t
+       JOIN links l ON l.target_id = t.id AND l.source_id <> t.id
+       JOIN notes s ON s.id = l.source_id
+       WHERE t.path = ? ORDER BY s.path, l.pos_start`,
       [path],
     );
   }
@@ -312,7 +337,7 @@ export class IndexStore {
     await insertRows(
       this.db,
       `links (source_id, kind, target_raw, target_path, target_name,
-              alias, fragment, pos_start, pos_end)`,
+              alias, fragment, pos_start, pos_end, snippet)`,
       entries.flatMap(({ note }) =>
         note.links.map((l) => {
           const keys = linkKeys(note.path, l);
@@ -326,6 +351,7 @@ export class IndexStore {
             l.fragment,
             l.start,
             l.end,
+            l.snippet,
           ];
         }),
       ),

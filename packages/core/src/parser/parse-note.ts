@@ -24,8 +24,9 @@ export const markdownParser = parser.configure([
  *   the tabs and the file tree show it.
  * - `headings`: every heading, also in quotes and lists, as text.
  * - `links`: wiki links, and Markdown links to local `.md` files, in the
- *   order they are written. A Markdown link keeps its address as written,
- *   relative to the note; resolving it is for the links module.
+ *   order they are written, with the text around them. A Markdown link
+ *   keeps its address as written, relative to the note; resolving it is
+ *   for the links module.
  * - `plainText`: the body without Markdown syntax, one block per line.
  *
  * Frontmatter is left out of everything. Tags, aliases and properties stay
@@ -51,10 +52,14 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
           pos: node.from,
         });
       } else if (name === "WikiLink") {
-        links.push(readWikiLink(body, node));
+        links.push({
+          ...readWikiLink(body, node),
+          snippet: snippetOf(read, node),
+        });
       } else if (name === "Link") {
         const link = readMarkdownLink(body, node, references, read);
-        if (link !== null) links.push(link);
+        if (link !== null)
+          links.push({ ...link, snippet: snippetOf(read, node) });
       }
     },
   });
@@ -91,7 +96,10 @@ function withoutFrontmatter(text: string): string {
   return blank + text.slice(match[0].length);
 }
 
-function readWikiLink(text: string, node: SyntaxNode): Link {
+/** A link as it is written; the snippet comes from the whole note. */
+type WrittenLink = Omit<Link, "snippet">;
+
+function readWikiLink(text: string, node: SyntaxNode): WrittenLink {
   const part = (name: string) => {
     const child = node.getChild(name);
     const value = child === null ? "" : text.slice(child.from, child.to).trim();
@@ -119,7 +127,7 @@ function readMarkdownLink(
   node: SyntaxNode,
   references: Map<string, string>,
   read: Reader,
-): Link | null {
+): WrittenLink | null {
   const marks = node.getChildren("LinkMark");
   // "[" and "]" around the text are the first two marks.
   if (marks.length < 2) return null;
@@ -155,6 +163,55 @@ function readMarkdownLink(
     start: node.from,
     end: node.to,
   };
+}
+
+/** Characters of context kept on each side of a link in its snippet. */
+const SNIPPET_CONTEXT = 80;
+
+/** The blocks a snippet is the text of; a table cell is too short. */
+const SNIPPET_BLOCKS = new Set([
+  "Paragraph",
+  "ATXHeading1",
+  "ATXHeading2",
+  "ATXHeading3",
+  "ATXHeading4",
+  "ATXHeading5",
+  "ATXHeading6",
+  "SetextHeading1",
+  "SetextHeading2",
+  "TableHeader",
+  "TableRow",
+]);
+
+/** See `Link.snippet`. */
+function snippetOf(read: Reader, link: SyntaxNode): string {
+  let block = link.parent;
+  while (block !== null && !SNIPPET_BLOCKS.has(block.name)) {
+    block = block.parent;
+  }
+  const [before, text, after] = read.around(block ?? link, link);
+  const collapse = (part: string) => part.replace(/\s+/g, " ");
+  return (
+    clipStart(collapse(before).trimStart()) +
+    collapse(text) +
+    clipEnd(collapse(after).trimEnd())
+  );
+}
+
+/** The end of `text`, cut at a space when it is too long. */
+function clipStart(text: string): string {
+  if (text.length <= SNIPPET_CONTEXT) return text;
+  const kept = text.slice(-SNIPPET_CONTEXT);
+  const space = kept.indexOf(" ");
+  return `…${space === -1 ? kept : kept.slice(space + 1)}`;
+}
+
+/** The start of `text`, cut at a space when it is too long. */
+function clipEnd(text: string): string {
+  if (text.length <= SNIPPET_CONTEXT) return text;
+  const kept = text.slice(0, SNIPPET_CONTEXT);
+  const space = kept.lastIndexOf(" ");
+  return `${space === -1 ? kept : kept.slice(0, space)}…`;
 }
 
 /** `[ref]: address` definitions, by their normalized label. */
@@ -235,9 +292,31 @@ const BLOCKS = new Set([
   "ListItem",
 ]);
 
+/** Put around the marked node by `Reader.around`; not in any note. */
+const OPEN = "\u{F0000}";
+const CLOSE = "\u{F0001}";
+
 /** Reads the text of nodes without their Markdown syntax. */
 class Reader {
+  /** The node `around` looks for. */
+  private mark: SyntaxNode | null = null;
+
   constructor(private readonly text: string) {}
+
+  /**
+   * The text of `block`, split into what comes before `node`, the text of
+   * `node`, and what comes after. Whitespace is kept as it is.
+   */
+  around(block: SyntaxNode, node: SyntaxNode): [string, string, string] {
+    const out: string[] = [];
+    this.mark = node;
+    if (block === node) this.read(node, out);
+    else this.collect(block, out, block.from, block.to);
+    this.mark = null;
+    const [before, rest = ""] = out.join("").split(OPEN);
+    const [text, after = ""] = rest.split(CLOSE);
+    return [before, text, after];
+  }
 
   /** The text of an inline run, such as a heading, on one line. */
   inline(node: SyntaxNode): string {
@@ -287,6 +366,19 @@ class Reader {
 
   /** Puts what `node` reads as into `out`. */
   private read(node: SyntaxNode, out: string[]) {
+    const mark = this.mark;
+    if (
+      mark !== null &&
+      node.name === mark.name &&
+      node.from === mark.from &&
+      node.to === mark.to
+    ) {
+      this.mark = null;
+      out.push(OPEN);
+      this.read(node, out);
+      out.push(CLOSE);
+      return;
+    }
     const source = this.text.slice(node.from, node.to);
     switch (node.name) {
       case "HardBreak":
