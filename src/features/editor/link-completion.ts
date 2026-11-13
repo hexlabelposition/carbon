@@ -8,6 +8,7 @@ import {
 import { Facet } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import type { Link, NotePath } from "@carbon/core";
+import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
 
 /** What the editor needs to suggest notes to link to, and to follow links. */
@@ -21,6 +22,8 @@ export interface LinkHost {
    * edited. Empty if it points to none.
    */
   headings(target: string): Promise<readonly Heading[]>;
+  /** What a hover over a link of the current note shows. */
+  preview(link: PreviewedLink): Promise<LinkPreview>;
   /** Opens the note a link of the current note points to. */
   follow(
     link: Pick<Link, "kind" | "target">,
@@ -123,6 +126,17 @@ async function suggestNotes(
   return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
 }
 
+/**
+ * A heading as it can be written after "#" in a wiki link: the characters
+ * that end the link or its parts are left out.
+ */
+export function asFragment(heading: string): string {
+  return heading
+    .replace(/[[\]|#]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Characters that end the heading of a wiki link. */
 const HEADING_END = /[[\]|\n]/;
 
@@ -184,17 +198,6 @@ function partEnd(
   while (end < line.to && !partEnds.test(state.sliceDoc(end, end + 1))) end++;
   const closed = closing.test(state.sliceDoc(end, end + 2));
   return { to: closed ? end : pos, closed };
-}
-
-/**
- * A heading as it can be written after "#" in a wiki link: the characters
- * that end the link or its parts are left out.
- */
-function asFragment(heading: string): string {
-  return heading
-    .replace(/[[\]|#]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function titleOf(path: NotePath): string {
