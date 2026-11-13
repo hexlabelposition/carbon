@@ -1,7 +1,12 @@
 import type { FileSystem, NoteParser } from "../platform";
 import type { NotePath } from "../types";
 import type { IndexStore } from "./index-store";
-import { scanVault, updateNotes, type IndexContext } from "./scan";
+import {
+  scanVault,
+  updateNotes,
+  type IndexContext,
+  type ScanOptions,
+} from "./scan";
 
 export interface IndexerOptions {
   fs: FileSystem;
@@ -30,9 +35,9 @@ export class Indexer {
   }
 
   /** Runs the startup scan. Paths touched meanwhile are handled after it. */
-  scan(): Promise<void> {
+  scan(onProgress?: ScanOptions["onProgress"]): Promise<void> {
     const scan = this.after(async () => {
-      await scanVault(this.context);
+      await scanVault({ ...this.context, onProgress });
     });
     // The work goes on after a failed scan; the failure is the caller's.
     this.work = scan.catch(() => {});

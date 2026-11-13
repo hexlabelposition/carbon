@@ -81,7 +81,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-208** (P0) Backlinks query with context snippet
 - [x] **C-209** (P0) Rename and move rewrite links in other notes
 - [x] **C-210** (P1) Unresolved links query
-- [ ] **C-211** (P1) Index progress and ready events
+- [x] **C-211** (P1) Index progress and ready events
 
 **UI**
 

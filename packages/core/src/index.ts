@@ -5,7 +5,7 @@ export type { RecentVault } from "./config/app-settings";
 
 export { Vault } from "./vault/vault";
 export { checkVaultName } from "./vault/path";
-export type { VaultEvents, VaultOptions } from "./vault/vault";
+export type { IndexStatus, VaultEvents, VaultOptions } from "./vault/vault";
 export type { VaultChange } from "./vault/watch";
 export type { DeleteOptions } from "./vault/entries";
 export type { Folders } from "./vault/folders";

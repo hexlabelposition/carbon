@@ -269,8 +269,9 @@ vault.tags.list() / notes(tag)
 vault.graph.global() / local(path, depth)
 
 vault.on('changed', ...)        // file added, changed or removed outside the editor
-vault.on('index:progress', ...)
-vault.on('index:ready', ...)
+vault.on('index:progress', ...) // startup scan: done of total new and changed notes
+vault.on('index:ready', ...)    // startup scan done
+vault.indexStatus               // scanning, ready or failed, for listeners that come late
 vault.on('tree', ...)           // the app itself added, moved or deleted something
 vault.on('conflict', ...)       // open note changed on disk while it has unsaved edits
 ```
@@ -397,7 +398,7 @@ Three rules that keep a second shell cheap:
 1. UI calls `Vault.open(path, platform)`.
 2. Core lists the tree and returns. The UI is usable.
 3. Core runs the startup scan in the background: changed files are read, parsed in the worker, written to the index. Emits `index:progress`, then `index:ready`.
-4. Features that need the index (search, backlinks, graph) show a loading state until `index:ready`.
+4. Features that need the index (search, backlinks, graph) show a loading state until `index:ready`. They read `vault.indexStatus` when they subscribe, since the scan may be done before they do.
 
 **Edit and save**
 

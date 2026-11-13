@@ -14,13 +14,31 @@ import { checkVaultName, normalizeRoot } from "./path";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
 
+/** Where the index of an open vault is; see `Vault.indexStatus`. */
+export type IndexStatus =
+  /**
+   * The startup scan is running: `done` of `total` new and changed notes
+   * are indexed. `total` is `null` until the scan has counted them.
+   */
+  | { state: "scanning"; done: number; total: number | null }
+  /** The startup scan is done; later changes are indexed as they come. */
+  | { state: "ready" }
+  /** The index could not be opened or scanned; the notes work without it. */
+  | { state: "failed"; error: unknown };
+
 export interface VaultEvents {
   /**
    * A note, another file or a folder was added, changed or removed by
    * something other than this vault object: another program, a sync tool.
    */
   changed: VaultChange;
+  /**
+   * The startup scan indexed another batch: `done` of `total` new and
+   * changed notes. The first one, with `done` 0, comes once they are
+   * counted.
+   */
   "index:progress": { done: number; total: number };
+  /** The startup scan is done. Not sent if it fails: see `indexStatus`. */
   "index:ready": undefined;
   /** An open note changed on disk while it has unsaved edits. */
   conflict: { path: NotePath };
@@ -65,6 +83,7 @@ export class Vault {
   private indexer: Indexer | null = null;
   /** The index, once `startIndexing` has started to open it. */
   private store: Promise<IndexStore> | null = null;
+  private status: IndexStatus = { state: "scanning", done: 0, total: null };
   /** Opening the index and the startup scan; see `indexed()`. */
   private indexing: Promise<void> = Promise.resolve();
 
@@ -197,6 +216,15 @@ export class Vault {
     await this.indexer?.idle();
   }
 
+  /**
+   * Where the index is now. The scan starts while `open` resolves, so
+   * events can come before anyone listens: read this after subscribing to
+   * `index:progress` and `index:ready`.
+   */
+  get indexStatus(): IndexStatus {
+    return this.status;
+  }
+
   /** Subscribes to a vault event. Returns a function that unsubscribes. */
   on<K extends keyof VaultEvents>(
     event: K,
@@ -214,18 +242,33 @@ export class Vault {
     this.store = IndexStore.open(platform, root);
     // A failure is reported by `indexed()` and the queries, not here.
     this.store.catch(() => {});
-    this.indexing = this.store.then((store) => {
-      if (this.closed) return store.close();
-      // At once, so no change made from now on is missed: a change made
-      // before is seen by the scan.
-      this.indexer = new Indexer({
-        fs: platform.fs,
-        root,
-        store,
-        parser: platform.parser ?? inlineParser,
-      });
-      return this.indexer.scan();
-    });
+    this.indexing = this.store
+      .then((store) => {
+        if (this.closed) return store.close();
+        // At once, so no change made from now on is missed: a change made
+        // before is seen by the scan.
+        this.indexer = new Indexer({
+          fs: platform.fs,
+          root,
+          store,
+          parser: platform.parser ?? inlineParser,
+        });
+        return this.indexer.scan((progress) => {
+          this.status = { state: "scanning", ...progress };
+          this.emitter.emit("index:progress", progress);
+        });
+      })
+      .then(
+        () => {
+          if (this.closed) return;
+          this.status = { state: "ready" };
+          this.emitter.emit("index:ready", undefined);
+        },
+        (error: unknown) => {
+          this.status = { state: "failed", error };
+          throw error;
+        },
+      );
     // A failure is reported through `indexed()`, not as an unhandled one.
     this.indexing.catch(() => {});
   }
