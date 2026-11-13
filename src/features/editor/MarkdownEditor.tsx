@@ -25,6 +25,7 @@ import {
   type ImageHost,
 } from "./live-preview-image";
 import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
+import { followOnClick, followOnModClick } from "./link-follow";
 import { tablePreview } from "./live-preview-table";
 import {
   outlineHost,
@@ -54,7 +55,7 @@ interface MarkdownEditorProps {
   sourceMode?: boolean;
   /** Receives the headings of the note and lets them be gone to. */
   outline?: OutlineLink;
-  /** Suggests notes to link to after "[[". */
+  /** Suggests notes to link to after "[[", and follows links. */
   links?: LinkHost;
 }
 
@@ -63,6 +64,7 @@ const livePreviewExtensions: Extension = [
   livePreview,
   tablePreview,
   imagePreview,
+  followOnClick,
 ];
 const noPreview: Extension = [];
 
@@ -139,11 +141,14 @@ export function MarkdownEditor({
             refuse: (reason) => latest.current.images?.refuse(reason),
           }),
           linkCompletion,
+          followOnModClick,
           linkHost.of({
             notes: () => latest.current.links?.notes() ?? Promise.resolve([]),
             get current() {
               return latest.current.links?.current ?? "";
             },
+            follow: (link, options) =>
+              latest.current.links?.follow(link, options),
           }),
           outlineTracker,
           outlineHost.of({

@@ -7,17 +7,25 @@ import {
 } from "@codemirror/autocomplete";
 import { Facet } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import type { NotePath } from "@carbon/core";
+import type { Link, NotePath } from "@carbon/core";
 
-/** What the editor needs to suggest notes to link to. */
+/** What the editor needs to suggest notes to link to, and to follow links. */
 export interface LinkHost {
   /** Every note of the vault. */
   notes(): Promise<readonly NotePath[]>;
   /** The note being edited: it is not suggested. */
   current: NotePath;
+  /** Opens the note a link of the current note points to. */
+  follow(
+    link: Pick<Link, "kind" | "target">,
+    options: { newTab: boolean },
+  ): void;
 }
 
-/** The link host of an editor. Without one, nothing is suggested. */
+/**
+ * The link host of an editor. Without one, nothing is suggested and no
+ * link is followed.
+ */
 export const linkHost = Facet.define<LinkHost, LinkHost | null>({
   combine: (hosts) => hosts[0] ?? null,
 });
