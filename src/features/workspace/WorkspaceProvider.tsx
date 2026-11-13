@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useAppSettings } from "../settings/app-settings";
 import { findNode } from "../vault/paths";
-import { WorkspaceContext, type Workspace } from "./workspace";
+import { WorkspaceContext, type Reveal, type Workspace } from "./workspace";
 import {
   activeTab,
   initialWorkspace,
@@ -68,6 +68,9 @@ export function WorkspaceProvider({
     };
   }, [vault, first]);
 
+  const [reveal, setReveal] = useState<Reveal | null>(null);
+  const nextReveal = useRef(1);
+
   /** How the mounted editor writes its unsaved edits, if there is one. */
   const flusher = useRef<(() => Promise<void>) | null>(null);
 
@@ -76,20 +79,39 @@ export function WorkspaceProvider({
   const actions = useMemo<
     Omit<
       Workspace,
-      "path" | "tabs" | "activeTabId" | "canGoBack" | "canGoForward"
+      "path" | "tabs" | "activeTabId" | "canGoBack" | "canGoForward" | "reveal"
     >
   >(
     () => ({
-      open: (note, options) =>
+      open: (note, options) => {
+        const at = options?.at;
+        setReveal(
+          at === undefined
+            ? null
+            : { path: note, at, id: nextReveal.current++ },
+        );
         dispatch({
           type: "open",
           path: note,
           newTab: options?.newTab ?? false,
-        }),
-      activateTab: (id) => dispatch({ type: "activate", id }),
-      closeTab: (id) => dispatch({ type: "close", id }),
-      back: () => dispatch({ type: "back" }),
-      forward: () => dispatch({ type: "forward" }),
+        });
+      },
+      activateTab: (id) => {
+        setReveal(null);
+        dispatch({ type: "activate", id });
+      },
+      closeTab: (id) => {
+        setReveal(null);
+        dispatch({ type: "close", id });
+      },
+      back: () => {
+        setReveal(null);
+        dispatch({ type: "back" });
+      },
+      forward: () => {
+        setReveal(null);
+        dispatch({ type: "forward" });
+      },
       moved: (from, to) => dispatch({ type: "moved", from, to }),
       removed: (removed) => dispatch({ type: "removed", path: removed }),
       onFlush: (flush) => {
@@ -112,8 +134,9 @@ export function WorkspaceProvider({
       canGoBack: active !== undefined && active.index > 0,
       canGoForward:
         active !== undefined && active.index < active.history.length - 1,
+      reveal: reveal?.path === path ? reveal : null,
     }),
-    [actions, path, state, active],
+    [actions, path, state, active, reveal],
   );
 
   return <WorkspaceContext value={workspace}>{children}</WorkspaceContext>;

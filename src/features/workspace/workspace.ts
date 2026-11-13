@@ -8,6 +8,15 @@ export interface TabInfo {
   path: NotePath;
 }
 
+/** A place in a note to show once the note is open. */
+export interface Reveal {
+  path: NotePath;
+  /** Offset in the text of the note. */
+  at: number;
+  /** Tells two requests for the same place apart. */
+  id: number;
+}
+
 /**
  * The notes that are open in a vault: tabs, each with its own back and
  * forward history, and the one note that is shown.
@@ -19,13 +28,19 @@ export interface Workspace {
   activeTabId: number | null;
   canGoBack: boolean;
   canGoForward: boolean;
+  /**
+   * Where the editor of the shown note should go, asked for by the last
+   * `open`. Any other step through the tabs drops it.
+   */
+  reveal: Reveal | null;
 
   /**
    * Shows a note: in the active tab, where it becomes the next step of the
    * tab's history, or in a new tab. If a tab already shows the note, that
-   * tab is activated instead.
+   * tab is activated instead. With `at`, the editor goes to that offset of
+   * the text.
    */
-  open(path: NotePath, options?: { newTab?: boolean }): void;
+  open(path: NotePath, options?: { newTab?: boolean; at?: number }): void;
   activateTab(id: number): void;
   closeTab(id: number): void;
   /** Moves the active tab one step through its history. */

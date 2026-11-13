@@ -1,5 +1,6 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
 import { useState } from "react";
+import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
 import type { OutlineLink } from "./outline";
@@ -32,6 +33,7 @@ export function NoteEditor({
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
+  const { reveal } = useWorkspace();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
 
@@ -94,6 +96,7 @@ export function NoteEditor({
           sourceMode={sourceMode}
           outline={outline}
           links={links.host}
+          reveal={reveal}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (

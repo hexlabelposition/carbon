@@ -57,6 +57,11 @@ interface MarkdownEditorProps {
   outline?: OutlineLink;
   /** Suggests notes to link to after "[[", and follows links. */
   links?: LinkHost;
+  /**
+   * A place to go to: the cursor moves to offset `at` and the editor
+   * scrolls it into view. A new `id` goes there again.
+   */
+  reveal?: { at: number; id: number } | null;
 }
 
 /** Everything live preview adds; source mode leaves it out. */
@@ -79,6 +84,7 @@ export function MarkdownEditor({
   sourceMode = false,
   outline,
   links,
+  reveal = null,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
@@ -211,6 +217,19 @@ export function MarkdownEditor({
       ],
     });
   }, [sourceMode]);
+
+  // After the editor is made, so a note opened at a place goes there.
+  useEffect(() => {
+    const view = editor.current;
+    if (view === null || reveal === null) return;
+    // The offset may come from an older version of the text.
+    const at = Math.min(reveal.at, view.state.doc.length);
+    view.dispatch({
+      selection: { anchor: at },
+      effects: EditorView.scrollIntoView(at, { y: "center" }),
+    });
+    view.focus();
+  }, [reveal]);
 
   // A new revision: show `text` in place of what the editor holds.
   useEffect(() => {
