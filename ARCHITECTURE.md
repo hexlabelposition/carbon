@@ -168,7 +168,7 @@ notes_fts  -- FTS5 virtual table over title and body
 - A wiki link with a folder, `[[folder/Name]]`, matches only the exact path from the vault root. A Markdown link, `[text](../Name.md)`, matches only its path relative to the note.
 - Matching ignores case (in every language) and the Unicode normalization form.
 - The index keeps the resolved target in `links.target_id`. When a note is added, removed or indexed again, only the links whose path or name keys could match it are resolved again.
-- Renaming or moving a note through Carbon rewrites links in the notes that point to it.
+- Renaming or moving a note or folder through Carbon rewrites links in the notes that point to it, and Markdown links inside the moved notes. A wiki link keeps its form: a bare name stays a name while it still finds the note, otherwise it becomes the path from the vault root. Links resolved through an alias are left as they are. A link to another note that the moved note now takes over by name (a shorter path with the same file name) is not changed.
 - Renames done outside Carbon are seen as delete + create; links become unresolved until fixed.
 
 ## 5. Core modules

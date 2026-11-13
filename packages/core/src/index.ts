@@ -24,6 +24,7 @@ export { wikiLink } from "./parser/wiki-link";
 
 export { IndexStore, SCHEMA_VERSION, indexFileName } from "./index/index-store";
 export type { Links } from "./links/links";
+export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";
 
 export type {

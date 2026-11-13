@@ -1,3 +1,4 @@
+import type { LinkRewriter, LinkUpdate } from "../links/rename";
 import type { NotePath } from "../types";
 import { contentHash } from "../util/hash";
 import {
@@ -26,7 +27,10 @@ export class WriteConflictError extends Error {
  * work for other files in the vault, such as images.
  */
 export class Notes {
-  constructor(private readonly context: VaultContext) {}
+  constructor(
+    private readonly context: VaultContext,
+    private readonly links: LinkRewriter,
+  ) {}
 
   /** Reads the text of a note. */
   async read(path: NotePath): Promise<string> {
@@ -87,12 +91,15 @@ export class Notes {
   }
 
   /**
-   * Renames a note or moves it to another folder. Rejects if the target is
-   * taken or its folder does not exist. Links in other notes are not
-   * updated yet (C-209).
+   * Renames a note or moves it to another folder, and rewrites the links
+   * that pointed to it (see `LinkRewriter`). Rejects if the target is
+   * taken or its folder does not exist. Waits for the index to catch up
+   * first: the links are found through it.
    */
-  async rename(from: NotePath, to: NotePath): Promise<void> {
+  async rename(from: NotePath, to: NotePath): Promise<LinkUpdate> {
+    const rewrite = await this.links.prepare(from, to, "file");
     await moveEntry(this.context, from, to, "file");
+    return rewrite.apply();
   }
 
   /**

@@ -2,6 +2,7 @@ import { Emitter } from "../events";
 import { Indexer } from "../index/indexer";
 import { IndexStore } from "../index/index-store";
 import { Links } from "../links/links";
+import { LinkRewriter } from "../links/rename";
 import { inlineParser } from "../parser/parse-files";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
@@ -83,8 +84,17 @@ export class Vault {
 
     this.root = root;
     this.platform = platform;
-    this.notes = new Notes({ root, fs, trash, own });
-    this.folders = new Folders({ root, fs, trash, own });
+    const rewriter = new LinkRewriter({
+      index: async () => {
+        await this.indexed();
+        if (this.store === null) throw new Error("The index is not open");
+        return this.store;
+      },
+      read: (path) => this.notes.read(path),
+      write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
+    });
+    this.notes = new Notes({ root, fs, trash, own }, rewriter);
+    this.folders = new Folders({ root, fs, trash, own }, rewriter);
     this.attachments = new Attachments({ root, fs, trash, own });
     this.links = new Links(
       () => this.store ?? Promise.reject(new Error("The index is not open")),

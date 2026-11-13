@@ -184,10 +184,11 @@ export function useFileTree(vault: Vault): FileTree {
     active.removed(path);
   }
 
-  function rename(node: TreeNode, to: string): Promise<void> {
-    return node.kind === "folder"
+  async function rename(node: TreeNode, to: string): Promise<void> {
+    // The links the rename rewrote, or could not, are not shown yet.
+    await (node.kind === "folder"
       ? vault.folders.rename(node.path, to)
-      : vault.notes.rename(node.path, to);
+      : vault.notes.rename(node.path, to));
   }
 
   function removeNode(node: TreeNode, permanent: boolean): Promise<void> {

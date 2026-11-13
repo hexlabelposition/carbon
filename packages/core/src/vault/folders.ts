@@ -6,11 +6,15 @@ import {
   type DeleteOptions,
   type VaultContext,
 } from "./entries";
+import type { LinkRewriter, LinkUpdate } from "../links/rename";
 import { resolveNewInVault } from "./path";
 
 /** Folders of a vault. Paths are relative to the vault root. */
 export class Folders {
-  constructor(private readonly context: VaultContext) {}
+  constructor(
+    private readonly context: VaultContext,
+    private readonly links: LinkRewriter,
+  ) {}
 
   /**
    * Creates a folder, with its parents if they are missing. Rejects if
@@ -24,11 +28,14 @@ export class Folders {
 
   /**
    * Renames a folder or moves it into another one, with everything inside.
-   * Rejects if the target is taken, its parent does not exist, or the target
-   * is inside the folder itself. Links are not updated yet (C-209).
+   * Rewrites the links to the notes inside, and the Markdown links in
+   * them, as `Notes.rename` does. Rejects if the target is taken, its
+   * parent does not exist, or the target is inside the folder itself.
    */
-  async rename(from: string, to: string): Promise<void> {
+  async rename(from: string, to: string): Promise<LinkUpdate> {
+    const rewrite = await this.links.prepare(from, to, "dir");
     await moveEntry(this.context, from, to, "dir");
+    return rewrite.apply();
   }
 
   /**

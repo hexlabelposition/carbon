@@ -260,6 +260,25 @@ export class IndexStore {
   }
 
   /**
+   * The notes with links that resolve to any of the notes at `targets`,
+   * themselves included: the notes whose links a rename may rewrite.
+   */
+  async linkSources(targets: readonly NotePath[]): Promise<NotePath[]> {
+    const sources = new Set<NotePath>();
+    for (const chunk of chunks([...new Set(targets)], PATHS_PER_QUERY)) {
+      const rows = await this.db.select<{ path: string }>(
+        `SELECT DISTINCT s.path FROM notes t
+         JOIN links l ON l.target_id = t.id
+         JOIN notes s ON s.id = l.source_id
+         WHERE t.path IN (${marks(chunk.length)})`,
+        chunk,
+      );
+      for (const { path } of rows) sources.add(path);
+    }
+    return [...sources].sort();
+  }
+
+  /**
    * The note that a link written in `source` points to, or `null`: for a
    * link that is not indexed yet, such as one being typed or clicked.
    */
