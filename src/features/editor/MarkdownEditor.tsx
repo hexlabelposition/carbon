@@ -27,6 +27,7 @@ import {
 import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
 import { linkPreview } from "./link-preview";
+import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
 import {
   outlineHost,
@@ -150,6 +151,7 @@ export function MarkdownEditor({
           linkCompletion,
           followOnModClick,
           linkPreview,
+          missingLinks,
           linkHost.of({
             notes: () => latest.current.links?.notes() ?? Promise.resolve([]),
             get current() {
@@ -157,6 +159,11 @@ export function MarkdownEditor({
             },
             headings: (target) =>
               latest.current.links?.headings(target) ?? Promise.resolve([]),
+            missing: (targets) =>
+              latest.current.links?.missing(targets) ??
+              Promise.resolve(new Set()),
+            onIndexChange: (listener) =>
+              latest.current.links?.onIndexChange(listener) ?? (() => {}),
             preview: (link) =>
               latest.current.links?.preview(link) ??
               Promise.reject(new Error("No preview here")),

@@ -9,6 +9,7 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { isMissing, missingChanged } from "./missing-links";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -35,6 +36,7 @@ export const livePreview = [
           update.viewportChanged ||
           update.selectionSet ||
           update.focusChanged ||
+          missingChanged(update) ||
           // Parsing a long note finishes in the background.
           syntaxTree(update.startState) !== syntaxTree(update.state);
         if (changed) this.decorations = decorate(update.view);
@@ -79,6 +81,12 @@ export const livePreview = [
     },
     ".cm-bullet": { color: "var(--cb-faint)" },
     ".cm-wiki-link": { color: "var(--cb-link)" },
+    // A link to a note that does not exist yet: not by color alone.
+    ".cm-wiki-link.cm-wiki-link-missing": {
+      color: "var(--cb-faint)",
+      textDecoration: "underline dotted",
+      textUnderlineOffset: "3px",
+    },
     ".cm-wiki-link-separator": { color: "var(--cb-faint)" },
     ".cm-task": {
       width: "14px",
@@ -190,6 +198,9 @@ class RuleWidget extends WidgetType {
 const hide = Decoration.replace({});
 const inlineCode = Decoration.mark({ class: "cm-inline-code" });
 const wikiLinkText = Decoration.mark({ class: "cm-wiki-link" });
+const missingLinkText = Decoration.mark({
+  class: "cm-wiki-link cm-wiki-link-missing",
+});
 const headingSeparator = Decoration.replace({ widget: new SeparatorWidget() });
 const bullet = Decoration.replace({ widget: new BulletWidget() });
 const rule = Decoration.replace({ widget: new RuleWidget() });
@@ -337,19 +348,23 @@ function decorateWikiLink(
   link: SyntaxNode,
   ranges: Range<Decoration>[],
 ): void {
+  const target = link.getChild("WikiLinkTarget");
+  const missing =
+    target !== null &&
+    isMissing(state, state.sliceDoc(target.from, target.to).trim());
+  const text = missing ? missingLinkText : wikiLinkText;
   const alias = link.getChild("WikiLinkAlias");
   if (alias !== null && state.sliceDoc(alias.from, alias.to).trim() !== "") {
     ranges.push(
       hide.range(link.from, alias.from),
-      wikiLinkText.range(alias.from, alias.to),
+      text.range(alias.from, alias.to),
       hide.range(alias.to, link.to),
     );
     return;
   }
-  const target = link.getChild("WikiLinkTarget");
   const fragment = link.getChild("WikiLinkFragment");
   for (const part of [target, fragment]) {
-    if (part !== null) ranges.push(wikiLinkText.range(part.from, part.to));
+    if (part !== null) ranges.push(text.range(part.from, part.to));
   }
   for (const mark of link.getChildren("WikiLinkMark")) {
     const between =

@@ -38,6 +38,23 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
         const headings = await vault.links.headings(note).catch(() => []);
         return headings.map(({ level, text }) => ({ level, text }));
       },
+      missing: async (targets) => {
+        const found = await Promise.all(
+          targets.map((target) =>
+            vault.links.resolve(path, { kind: "wiki", target }),
+          ),
+        );
+        return new Set(targets.filter((_, i) => found[i] === null));
+      },
+      onIndexChange: (listener) => {
+        const stops = [
+          vault.on("index:ready", listener),
+          vault.on("index:updated", listener),
+        ];
+        return () => {
+          for (const stop of stops) stop();
+        };
+      },
       preview: async (link) => {
         const note = await vault.links.resolve(path, link);
         if (note === null) return { path: null };

@@ -22,6 +22,16 @@ export interface LinkHost {
    * edited. Empty if it points to none.
    */
   headings(target: string): Promise<readonly Heading[]>;
+  /**
+   * Of the targets of wiki links of the current note, as written, the
+   * ones that find no note.
+   */
+  missing(targets: readonly string[]): Promise<ReadonlySet<string>>;
+  /**
+   * Calls `listener` whenever the notes that links find may have changed.
+   * Returns a function that stops it.
+   */
+  onIndexChange(listener: () => void): () => void;
   /** What a hover over a link of the current note shows. */
   preview(link: PreviewedLink): Promise<LinkPreview>;
   /** Opens the note a link of the current note points to. */
