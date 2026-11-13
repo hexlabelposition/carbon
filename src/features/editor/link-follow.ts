@@ -1,7 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { parseNote } from "@carbon/core";
+import { parseNote, type Link } from "@carbon/core";
 import type { SyntaxNode } from "@lezer/common";
 import { linkHost } from "./link-completion";
 
@@ -42,18 +42,30 @@ function follow(event: MouseEvent, view: EditorView, newTab: boolean): boolean {
   const host = view.state.facet(linkHost);
   const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
   if (host === null || pos === null) return false;
-  const node = linkNodeAt(view.state, pos);
-  if (node === null) return false;
-  // The core decides what the link points to, as the index does: web
-  // links, images and other files are not links to notes.
-  const link = parseNote(host.current, view.state.doc.toString()).links.find(
-    (found) => found.start === node.from,
-  );
+  const link = linkAt(view.state, pos, host.current);
   // "[[#Heading]]" points into this note: nothing to open.
-  if (link === undefined || link.target === "") return false;
+  if (link === null || link.target === "") return false;
   event.preventDefault();
   host.follow(link, { newTab });
   return true;
+}
+
+/**
+ * The link to a note that `pos` is in, or `null`. The core decides what a
+ * link points to, as the index does: web links, images and other files
+ * are not links to notes.
+ */
+export function linkAt(
+  state: EditorState,
+  pos: number,
+  current: string,
+): Link | null {
+  const node = linkNodeAt(state, pos);
+  if (node === null) return null;
+  const found = parseNote(current, state.doc.toString()).links.find(
+    (link) => link.start === node.from,
+  );
+  return found ?? null;
 }
 
 /** The wiki link or Markdown link that `pos` is in, or `null`. */
