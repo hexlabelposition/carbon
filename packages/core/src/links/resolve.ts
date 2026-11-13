@@ -66,3 +66,49 @@ function markdownKeys(source: NotePath, target: string): LinkKeys {
   const path = segments.join("/");
   return { path: path === "" ? null : matchKey(path), name: null };
 }
+
+/**
+ * Finds notes by link keys in a list of paths, the way the index does
+ * (`resolvedId` in `index-store.ts`) without the alias step: for a vault
+ * that is not in the index yet, such as the one after a rename.
+ */
+export class NoteFinder {
+  private readonly byPath = new Map<string, NotePath[]>();
+  private readonly byName = new Map<string, NotePath[]>();
+
+  constructor(paths: Iterable<NotePath>) {
+    for (const path of paths) {
+      const keys = noteKeys(path);
+      push(this.byPath, keys.path, path);
+      push(this.byName, keys.name, path);
+    }
+    for (const list of this.byPath.values()) list.sort(byText);
+    for (const list of this.byName.values()) list.sort(shortestFirst);
+  }
+
+  /**
+   * The note a link with these keys resolves to by path or file name, or
+   * `null`: then it resolves by alias, or not at all.
+   */
+  find(keys: LinkKeys): NotePath | null {
+    const byPath = keys.path === null ? undefined : this.byPath.get(keys.path);
+    if (byPath !== undefined) return byPath[0];
+    const byName = keys.name === null ? undefined : this.byName.get(keys.name);
+    return byName?.[0] ?? null;
+  }
+}
+
+function push<K, V>(map: Map<K, V[]>, key: K, value: V): void {
+  const list = map.get(key);
+  if (list === undefined) map.set(key, [value]);
+  else list.push(value);
+}
+
+function byText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** SQLite's `ORDER BY length(path), path`: length in characters. */
+function shortestFirst(a: string, b: string): number {
+  return [...a].length - [...b].length || byText(a, b);
+}

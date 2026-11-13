@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IndexStore, parseNote, type IndexEntry } from "../src/index";
-import { linkKeys } from "../src/links/resolve";
+import { linkKeys, NoteFinder } from "../src/links/resolve";
 import { createMemoryPlatform } from "./fakes";
 
 /** A note as the indexer would hand it over; aliases are not parsed yet. */
@@ -215,5 +215,33 @@ describe("link resolution", () => {
     expect(
       await store.resolve("x.md", { kind: "wiki", target: "Nothing" }),
     ).toBeNull();
+  });
+});
+
+describe("NoteFinder", () => {
+  /** Resolves `[[target]]`, written in `src.md`, among `paths`. */
+  const find = (paths: string[], target: string) =>
+    new NoteFinder(paths).find(linkKeys("src.md", { kind: "wiki", target }));
+
+  test("finds as the index does: path, then the shortest file name", () => {
+    expect(find(["a/Note.md", "Note.md"], "Note")).toBe("Note.md");
+    expect(find(["a/Note.md", "Note.md"], "a/Note")).toBe("a/Note.md");
+    expect(find(["deep/er/Note.md", "b/Note.md"], "note")).toBe("b/Note.md");
+    expect(find(["y/Twin.md", "x/Twin.md"], "Twin")).toBe("x/Twin.md");
+    expect(find(["y/x/Note.md"], "x/Note")).toBeNull();
+    expect(find(["Note.md"], "Other")).toBeNull();
+  });
+
+  test("agrees with the index on the same vault", async () => {
+    const paths = ["Note.md", "a/Note.md", "b/c/Note.md", "Café.md", "z/x.md"];
+    const targets = ["Note", "a/Note", "c/Note", "CAFÉ", "x", "z/x", "none"];
+    const { store } = await openStore(
+      ...paths.map((path) => note(path)),
+      note("src.md", targets.map((t) => `[[${t}]]`).join(" ")),
+    );
+    const indexed = (await store.outgoingLinks("src.md")).map(
+      (link) => link.resolved,
+    );
+    expect(targets.map((t) => find([...paths, "src.md"], t))).toEqual(indexed);
   });
 });
