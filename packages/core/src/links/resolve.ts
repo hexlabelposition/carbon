@@ -80,6 +80,30 @@ function markdownPath(source: NotePath, target: string): NotePath | null {
 }
 
 /**
+ * Endings of files that are never notes: images, documents, audio, video
+ * and archives. Endings that a note title may well have, such as ".js" in
+ * "Node.js", are not here.
+ */
+const FILE_ENDINGS = new Set(
+  [
+    "png jpg jpeg gif webp avif bmp svg ico tif tiff heic", // images
+    "pdf doc docx xls xlsx ppt pptx odt ods odp rtf epub", // documents
+    "mp3 wav ogg flac m4a opus mp4 webm mov mkv avi", // audio and video
+    "zip tar gz 7z rar", // archives
+  ].flatMap((group) => group.split(" ")),
+);
+
+/**
+ * True if a wiki link names a file that is not a note, as `[[file.pdf]]`
+ * does: when nothing is found for it, no note is made for it either.
+ */
+export function linksToFile(link: Pick<Link, "kind" | "target">): boolean {
+  if (link.kind !== "wiki") return false;
+  const ending = /\.([^./\s]+)$/.exec(link.target.trim())?.[1];
+  return ending !== undefined && FILE_ENDINGS.has(ending.toLowerCase());
+}
+
+/**
  * Finds notes by link keys in a list of paths, the way the index does
  * (`resolvedId` in `index-store.ts`) without the alias step: for a vault
  * that is not in the index yet, such as the one after a rename.

@@ -6,7 +6,7 @@ import type {
   NotePath,
   UnresolvedTarget,
 } from "../types";
-import { linkPath } from "./resolve";
+import { linkPath, linksToFile } from "./resolve";
 
 /** What `Links` needs from the vault. */
 export interface LinksContext {
@@ -67,9 +67,10 @@ export class Links {
    * The note to open for a link written in the note at `source`: the one
    * it points to, or a new, empty note where the link would find it by
    * path (`linkPath`). A wiki link by name, `[[Idea]]`, gets its note at
-   * the vault root. `null` if no note can be made for it, as for a link
-   * above the vault root. Rejects if the note cannot be created, such as
-   * for a name the file system refuses.
+   * the vault root. `null` if no note can be made for it: a link above the
+   * vault root, or to a file that is not a note, as `[[file.pdf]]`
+   * (`linksToFile`). Rejects if the note cannot be created, such as for a
+   * name the file system refuses.
    */
   async follow(
     source: NotePath,
@@ -78,7 +79,7 @@ export class Links {
     const found = await this.resolve(source, link);
     if (found !== null) return { path: found, created: false };
     const path = linkPath(source, link);
-    if (path === null) return null;
+    if (path === null || linksToFile(link)) return null;
     try {
       await this.context.createNote(path);
     } catch (error) {

@@ -68,6 +68,26 @@ describe("vault.links.follow", () => {
     vault.close();
   });
 
+  test("makes no note for a file that is not a note", async () => {
+    const { vault, platform } = await openVault({
+      "src.md": "",
+      "photo.png.md": "",
+    });
+    expect(await vault.links.follow("src.md", wiki("file.PDF"))).toBeNull();
+    expect(await platform.fs.exists("/v/file.PDF.md")).toBe(false);
+    // A note of that name is still found, and a title with a dot is a
+    // title: "Node.js" gets its note.
+    expect(await vault.links.follow("src.md", wiki("photo.png"))).toEqual({
+      path: "photo.png.md",
+      created: false,
+    });
+    expect(await vault.links.follow("src.md", wiki("Node.js"))).toEqual({
+      path: "Node.js.md",
+      created: true,
+    });
+    vault.close();
+  });
+
   test("rejects a name a new note cannot have", async () => {
     const { vault, platform } = await openVault({ "src.md": "" });
     await expect(vault.links.follow("src.md", wiki(".hidden"))).rejects.toThrow(
