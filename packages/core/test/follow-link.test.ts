@@ -92,3 +92,18 @@ describe("vault.links.follow", () => {
     vault.close();
   });
 });
+
+describe("vault.links.headings", () => {
+  test("the headings of a note, for links to them", async () => {
+    const { vault } = await openVault({
+      "Note.md": "# One\n\ntext\n\n## Two *b*",
+    });
+    await vault.indexed();
+    expect(await vault.links.headings("Note.md")).toEqual([
+      { level: 1, text: "One", pos: 0 },
+      { level: 2, text: "Two b", pos: 13 },
+    ]);
+    expect(await vault.links.headings("Missing.md")).toEqual([]);
+    vault.close();
+  });
+});

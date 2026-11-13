@@ -1,5 +1,11 @@
 import type { IndexStore } from "../index/index-store";
-import type { Backlink, Link, NotePath, UnresolvedTarget } from "../types";
+import type {
+  Backlink,
+  Heading,
+  Link,
+  NotePath,
+  UnresolvedTarget,
+} from "../types";
 import { linkPath } from "./resolve";
 
 /** What `Links` needs from the vault. */
@@ -35,6 +41,14 @@ export class Links {
   /** The notes that links point to but that do not exist, with the links. */
   async unresolved(): Promise<UnresolvedTarget[]> {
     return (await this.context.index()).unresolved();
+  }
+
+  /**
+   * The headings of the note at `path`, in order, that a link can point
+   * to with `[[Note#Heading]]`. Empty if the note is not indexed.
+   */
+  async headings(path: NotePath): Promise<Heading[]> {
+    return (await this.context.index()).headings(path);
   }
 
   /**
