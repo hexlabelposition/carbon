@@ -103,12 +103,13 @@ export class Vault {
 
     this.root = root;
     this.platform = platform;
+    const caughtUp = async () => {
+      await this.indexed();
+      if (this.store === null) throw new Error("The index is not open");
+      return this.store;
+    };
     const rewriter = new LinkRewriter({
-      index: async () => {
-        await this.indexed();
-        if (this.store === null) throw new Error("The index is not open");
-        return this.store;
-      },
+      index: caughtUp,
       read: (path) => this.notes.read(path),
       write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
     });
@@ -117,6 +118,7 @@ export class Vault {
     this.attachments = new Attachments({ root, fs, trash, own });
     this.links = new Links(
       () => this.store ?? Promise.reject(new Error("The index is not open")),
+      caughtUp,
     );
     this.watch = new VaultWatch({
       root,

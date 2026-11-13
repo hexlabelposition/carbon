@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { IndexStore, parseNote, type IndexEntry } from "../src/index";
+import { IndexStore, parseNote, Vault, type IndexEntry } from "../src/index";
 import { linkKeys, linkPath, NoteFinder } from "../src/links/resolve";
 import { createMemoryPlatform } from "./fakes";
 
@@ -258,5 +258,28 @@ describe("NoteFinder", () => {
       (link) => link.resolved,
     );
     expect(targets.map((t) => find([...paths, "src.md"], t))).toEqual(indexed);
+  });
+});
+
+describe("vault.links.resolve", () => {
+  test("waits for the index, so a note just written is found", async () => {
+    const platform = createMemoryPlatform({ "/v/a/src.md": "" });
+    await platform.fs.mkdir("/v");
+    const vault = await Vault.open("/v", platform, { changeDelayMs: 5 });
+    await vault.notes.write("a/New.md", "", null);
+    // No `indexed()` in between: the write is not in the index yet.
+    expect(
+      await vault.links.resolve("a/src.md", { kind: "wiki", target: "new" }),
+    ).toBe("a/New.md");
+    expect(
+      await vault.links.resolve("a/src.md", {
+        kind: "markdown",
+        target: "New.md",
+      }),
+    ).toBe("a/New.md");
+    expect(
+      await vault.links.resolve("a/src.md", { kind: "wiki", target: "None" }),
+    ).toBeNull();
+    vault.close();
   });
 });
