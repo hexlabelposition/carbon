@@ -9,6 +9,7 @@ import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { useOutline } from "../../features/outline/use-outline";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
+import { useIndexStatus } from "../../features/vault/use-index-status";
 import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
 import { useWorkspace } from "../../features/workspace/workspace";
@@ -145,6 +146,7 @@ export function DesktopShell() {
                 Changes made by other programs are not noticed
               </span>
             )}
+            <IndexState vault={vault} />
           </>
         )}
       </StatusBar>
@@ -216,6 +218,37 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
         )}
       </div>
     </>
+  );
+}
+
+/**
+ * What the index is doing, while it is not ready: how far the startup scan
+ * is, or that links and backlinks do not work without it. Nothing once it
+ * is ready.
+ */
+function IndexState({ vault }: { vault: Vault }) {
+  const status = useIndexStatus(vault);
+  if (status.state === "ready") return null;
+  if (status.state === "failed") {
+    const reason =
+      status.error instanceof Error
+        ? status.error.message
+        : String(status.error);
+    return (
+      <span className="shrink-0 text-danger" title={reason}>
+        The index is not available: links and backlinks do not work
+      </span>
+    );
+  }
+  const { done, total } = status;
+  // Nothing changed since the last start: ready a moment later.
+  if (total === 0) return null;
+  return (
+    <span role="status" className="shrink-0">
+      {total === null
+        ? "Indexing…"
+        : `Indexing ${done.toLocaleString()} of ${total.toLocaleString()} notes`}
+    </span>
   );
 }
 

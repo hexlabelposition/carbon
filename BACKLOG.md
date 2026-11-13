@@ -91,7 +91,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-223** (P0) Following a link to a missing note creates it
 - [x] **C-224** (P0) Backlinks panel for the current note
 - [x] **C-225** (P1) Heading autocomplete after `[[Note#`
-- [ ] **C-226** (P1) Indexing status in the status bar
+- [x] **C-226** (P1) Indexing status in the status bar
 - [ ] **C-227** (P2) Hover preview of the linked note
 - [ ] **C-228** (P2) Unlinked mentions (note title appears as plain text elsewhere)
 
