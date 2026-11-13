@@ -116,10 +116,12 @@ export class Vault {
     this.notes = new Notes({ root, fs, trash, own }, rewriter);
     this.folders = new Folders({ root, fs, trash, own }, rewriter);
     this.attachments = new Attachments({ root, fs, trash, own });
-    this.links = new Links(
-      () => this.store ?? Promise.reject(new Error("The index is not open")),
+    this.links = new Links({
+      index: () =>
+        this.store ?? Promise.reject(new Error("The index is not open")),
       caughtUp,
-    );
+      createNote: (path) => this.notes.create(path),
+    });
     this.watch = new VaultWatch({
       root,
       fs,
