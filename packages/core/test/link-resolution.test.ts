@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IndexStore, parseNote, type IndexEntry } from "../src/index";
-import { linkKeys, NoteFinder } from "../src/links/resolve";
+import { linkKeys, linkPath, NoteFinder } from "../src/links/resolve";
 import { createMemoryPlatform } from "./fakes";
 
 /** A note as the indexer would hand it over; aliases are not parsed yet. */
@@ -45,6 +45,21 @@ describe("link resolution", () => {
       expect(markdown("../../c.md")).toEqual({ path: "c.md", name: null });
       expect(markdown("/top/c.md")).toEqual({ path: "top/c.md", name: null });
       expect(markdown("../../../c.md")).toEqual({ path: null, name: null });
+    });
+
+    test("the path a link misses keeps its spelling", () => {
+      expect(
+        linkPath("dir/src.md", { kind: "wiki", target: "/New Note" }),
+      ).toBe("New Note.md");
+      expect(linkPath("dir/src.md", { kind: "wiki", target: "" })).toBe(
+        "dir/src.md",
+      );
+      expect(
+        linkPath("a/src.md", { kind: "markdown", target: "../B.MD" }),
+      ).toBe("B.MD");
+      expect(linkPath("src.md", { kind: "markdown", target: "../x.md" })).toBe(
+        null,
+      );
     });
 
     test("ignore case and Unicode form", () => {

@@ -36,24 +36,37 @@ export function linkKeys(
   source: NotePath,
   link: Pick<Link, "kind" | "target">,
 ): LinkKeys {
-  return link.kind === "wiki"
-    ? wikiKeys(source, link.target)
-    : markdownKeys(source, link.target);
-}
-
-function wikiKeys(source: NotePath, target: string): LinkKeys {
-  // "[[#Heading]]" points into the note it is written in.
-  if (target === "") return { path: matchKey(source), name: null };
-  const written = target.replace(/^\/+/, "");
-  const base = written.replace(/\.md$/i, "");
-  if (base === "") return { path: null, name: null };
+  const path = linkPath(source, link);
+  const base = link.target.replace(/^\/+/, "").replace(/\.md$/i, "");
+  const named = link.kind === "wiki" && base !== "" && !base.includes("/");
   return {
-    path: matchKey(`${base}.md`),
-    name: base.includes("/") ? null : matchKey(base),
+    path: path === null ? null : matchKey(path),
+    name: named ? matchKey(base) : null,
   };
 }
 
-function markdownKeys(source: NotePath, target: string): LinkKeys {
+/**
+ * The path a note must have for the link to find it by path, spelled as
+ * the link spells it: where to create the note a link is missing. `null`
+ * if no note can have one, as for a link above the vault root.
+ */
+export function linkPath(
+  source: NotePath,
+  link: Pick<Link, "kind" | "target">,
+): NotePath | null {
+  return link.kind === "wiki"
+    ? wikiPath(source, link.target)
+    : markdownPath(source, link.target);
+}
+
+function wikiPath(source: NotePath, target: string): NotePath | null {
+  // "[[#Heading]]" points into the note it is written in.
+  if (target === "") return source;
+  const base = target.replace(/^\/+/, "").replace(/\.md$/i, "");
+  return base === "" ? null : `${base}.md`;
+}
+
+function markdownPath(source: NotePath, target: string): NotePath | null {
   // A leading "/" is the vault root, as it is the site root on the web.
   const folder = target.startsWith("/") ? [] : source.split("/").slice(0, -1);
   const segments = [...folder];
@@ -61,10 +74,9 @@ function markdownKeys(source: NotePath, target: string): LinkKeys {
     if (segment === "" || segment === ".") continue;
     if (segment !== "..") segments.push(segment);
     // Above the vault root: the note cannot be in the vault.
-    else if (segments.pop() === undefined) return { path: null, name: null };
+    else if (segments.pop() === undefined) return null;
   }
-  const path = segments.join("/");
-  return { path: path === "" ? null : matchKey(path), name: null };
+  return segments.length === 0 ? null : segments.join("/");
 }
 
 /**
