@@ -1,5 +1,6 @@
 import type { Platform, SqlDatabase, SqlValue } from "../platform";
-import type { Heading, Link, NotePath, ParsedNote } from "../types";
+import { linkKeys, matchKey, noteKeys } from "../links/resolve";
+import type { Heading, NotePath, OutgoingLink, ParsedNote } from "../types";
 import { contentHash } from "../util/hash";
 import { normalizeRoot } from "../vault/path";
 
@@ -24,23 +25,28 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
- * Notes, their headings and their links, as the parser found them. Links
- * keep their target as written; resolving it is C-207, full-text search
- * C-301, tags and the rest of the frontmatter M4. Each adds its tables
- * with a new schema version.
+ * Notes, their headings, aliases and links. A link keeps its target as
+ * written, the keys it is matched by (`links/resolve.ts`), and the note it
+ * resolves to: `target_id` is `NULL` while that note does not exist.
+ * Full-text search is C-301, tags and the rest of the frontmatter M4. Each
+ * adds its tables with a new schema version.
  */
 const SCHEMA = [
   `CREATE TABLE notes (
      id INTEGER PRIMARY KEY,
      path TEXT NOT NULL UNIQUE,
      title TEXT NOT NULL,
+     path_key TEXT NOT NULL,
+     name_key TEXT NOT NULL,
      mtime INTEGER NOT NULL,
      size INTEGER NOT NULL,
      hash TEXT NOT NULL
    )`,
+  `CREATE INDEX notes_path_key ON notes (path_key)`,
+  `CREATE INDEX notes_name_key ON notes (name_key)`,
   `CREATE TABLE headings (
      note_id INTEGER NOT NULL,
      level INTEGER NOT NULL,
@@ -48,17 +54,52 @@ const SCHEMA = [
      pos INTEGER NOT NULL
    )`,
   `CREATE INDEX headings_note ON headings (note_id)`,
+  `CREATE TABLE aliases (
+     note_id INTEGER NOT NULL,
+     alias TEXT NOT NULL,
+     alias_key TEXT NOT NULL
+   )`,
+  `CREATE INDEX aliases_note ON aliases (note_id)`,
+  `CREATE INDEX aliases_key ON aliases (alias_key)`,
   `CREATE TABLE links (
      source_id INTEGER NOT NULL,
+     kind TEXT NOT NULL,
      target_raw TEXT NOT NULL,
+     target_path TEXT,
+     target_name TEXT,
+     target_id INTEGER,
      alias TEXT,
      fragment TEXT,
      pos_start INTEGER NOT NULL,
      pos_end INTEGER NOT NULL
    )`,
   `CREATE INDEX links_source ON links (source_id)`,
-  `CREATE INDEX links_target ON links (target_raw COLLATE NOCASE)`,
+  `CREATE INDEX links_target_path ON links (target_path)`,
+  `CREATE INDEX links_target_name ON links (target_name)`,
+  `CREATE INDEX links_target ON links (target_id)`,
 ];
+
+/**
+ * The id of the note that a link with these keys resolves to, or `NULL`:
+ * exact path, then file name, then alias, the shortest path first
+ * (ARCHITECTURE.md, section 4.4). Paths that differ only in case share a
+ * key; the order of the paths decides between them.
+ */
+function resolvedId(pathKey: string, nameKey: string): string {
+  return `COALESCE(
+    (SELECT id FROM notes WHERE path_key = ${pathKey}
+     ORDER BY path LIMIT 1),
+    (SELECT id FROM notes WHERE name_key = ${nameKey}
+     ORDER BY length(path), path LIMIT 1),
+    (SELECT n.id FROM aliases a JOIN notes n ON n.id = a.note_id
+     WHERE a.alias_key = ${nameKey}
+     ORDER BY length(n.path), n.path LIMIT 1)
+  )`;
+}
+
+/** Sets `target_id` of the links it is run on from their keys. */
+const RELINK = `UPDATE links
+  SET target_id = ${resolvedId("links.target_path", "links.target_name")}`;
 
 /**
  * Rows in one `INSERT`. The plugin makes every statement a transaction of
@@ -151,14 +192,20 @@ export class IndexStore {
     }
   }
 
-  /** Forgets notes and every row that belongs to them. */
+  /**
+   * Forgets notes and every row that belongs to them. Links to them from
+   * other notes resolve again: to another note of the same name, or to
+   * none.
+   */
   async removeNotes(paths: readonly NotePath[]): Promise<void> {
     for (const chunk of chunks([...new Set(paths)], PATHS_PER_QUERY)) {
+      const aliases = await this.aliasKeysOf(chunk);
       await this.deleteRowsOf(chunk);
       await this.db.execute(
         `DELETE FROM notes WHERE path IN (${marks(chunk.length)})`,
         chunk,
       );
+      await this.relinkTargets(chunk, aliases);
     }
   }
 
@@ -172,15 +219,35 @@ export class IndexStore {
     );
   }
 
-  /** The links of a note, in order. Empty if it is not indexed. */
-  async outgoingLinks(path: NotePath): Promise<Link[]> {
-    return this.db.select<Link>(
-      `SELECT l.target_raw AS target, l.alias, l.fragment,
-              l.pos_start AS start, l.pos_end AS "end"
+  /**
+   * The links of a note, in order, with the notes they resolve to. Empty
+   * if it is not indexed.
+   */
+  async outgoingLinks(path: NotePath): Promise<OutgoingLink[]> {
+    return this.db.select<OutgoingLink>(
+      `SELECT l.kind, l.target_raw AS target, l.alias, l.fragment,
+              l.pos_start AS start, l.pos_end AS "end", t.path AS resolved
        FROM links l JOIN notes n ON n.id = l.source_id
+       LEFT JOIN notes t ON t.id = l.target_id
        WHERE n.path = ? ORDER BY l.pos_start`,
       [path],
     );
+  }
+
+  /**
+   * The note that a link written in `source` points to, or `null`: for a
+   * link that is not indexed yet, such as one being typed or clicked.
+   */
+  async resolve(
+    source: NotePath,
+    link: Pick<OutgoingLink, "kind" | "target">,
+  ): Promise<NotePath | null> {
+    const keys = linkKeys(source, link);
+    const [row] = await this.db.select<{ path: string }>(
+      `SELECT path FROM notes WHERE id = ${resolvedId("?", "?")}`,
+      [keys.path, keys.name, keys.name],
+    );
+    return row?.path ?? null;
   }
 
   close(): Promise<void> {
@@ -189,20 +256,28 @@ export class IndexStore {
 
   private async replaceChunk(entries: readonly IndexEntry[]): Promise<void> {
     const paths = entries.map((entry) => entry.note.path);
+    // Links that matched an alias the note no longer has resolve again.
+    const oldAliases = await this.aliasKeysOf(paths);
     await this.deleteRowsOf(paths);
 
     // An upsert, not delete and insert: the note keeps its id.
     await insertRows(
       this.db,
-      "notes (path, title, mtime, size, hash)",
-      entries.map(({ note, stamp }) => [
-        note.path,
-        note.title,
-        stamp.mtime,
-        stamp.size,
-        stamp.hash,
-      ]),
+      "notes (path, title, path_key, name_key, mtime, size, hash)",
+      entries.map(({ note, stamp }) => {
+        const keys = noteKeys(note.path);
+        return [
+          note.path,
+          note.title,
+          keys.path,
+          keys.name,
+          stamp.mtime,
+          stamp.size,
+          stamp.hash,
+        ];
+      }),
       `ON CONFLICT (path) DO UPDATE SET title = excluded.title,
+         path_key = excluded.path_key, name_key = excluded.name_key,
          mtime = excluded.mtime, size = excluded.size, hash = excluded.hash`,
     );
 
@@ -229,25 +304,93 @@ export class IndexStore {
     );
     await insertRows(
       this.db,
-      "links (source_id, target_raw, alias, fragment, pos_start, pos_end)",
+      "aliases (note_id, alias, alias_key)",
       entries.flatMap(({ note }) =>
-        note.links.map((l) => [
-          idOf(note.path),
-          l.target,
-          l.alias,
-          l.fragment,
-          l.start,
-          l.end,
-        ]),
+        note.aliases.map((alias) => [idOf(note.path), alias, matchKey(alias)]),
       ),
     );
+    await insertRows(
+      this.db,
+      `links (source_id, kind, target_raw, target_path, target_name,
+              alias, fragment, pos_start, pos_end)`,
+      entries.flatMap(({ note }) =>
+        note.links.map((l) => {
+          const keys = linkKeys(note.path, l);
+          return [
+            idOf(note.path),
+            l.kind,
+            l.target,
+            keys.path,
+            keys.name,
+            l.alias,
+            l.fragment,
+            l.start,
+            l.end,
+          ];
+        }),
+      ),
+    );
+
+    // The links of these notes, and the links elsewhere that a new note,
+    // or a new alias, may take over.
+    await this.relink("source_id", [...ids.values()]);
+    const newAliases = entries.flatMap(({ note }) =>
+      note.aliases.map(matchKey),
+    );
+    await this.relinkTargets(paths, [...oldAliases, ...newAliases]);
   }
 
-  /** Deletes the headings and links of notes, not the notes themselves. */
+  /**
+   * Resolves again the links that could point to notes at `paths`, or to
+   * notes with the aliases `aliasKeys`: they are the only ones whose
+   * target may change when those notes come or go.
+   */
+  private async relinkTargets(
+    paths: readonly NotePath[],
+    aliasKeys: readonly string[],
+  ): Promise<void> {
+    const keys = paths.map(noteKeys);
+    await this.relink(
+      "target_path",
+      keys.map((k) => k.path),
+    );
+    await this.relink("target_name", [
+      ...keys.map((k) => k.name),
+      ...aliasKeys,
+    ]);
+  }
+
+  private async relink(
+    column: "source_id" | "target_path" | "target_name",
+    values: readonly SqlValue[],
+  ): Promise<void> {
+    for (const chunk of chunks([...new Set(values)], PATHS_PER_QUERY)) {
+      await this.db.execute(
+        `${RELINK} WHERE ${column} IN (${marks(chunk.length)})`,
+        chunk,
+      );
+    }
+  }
+
+  /** The alias keys of notes, as the index has them. */
+  private async aliasKeysOf(paths: readonly NotePath[]): Promise<string[]> {
+    const rows = await this.db.select<{ alias_key: string }>(
+      `SELECT a.alias_key FROM aliases a JOIN notes n ON n.id = a.note_id
+       WHERE n.path IN (${marks(paths.length)})`,
+      paths,
+    );
+    return rows.map((row) => row.alias_key);
+  }
+
+  /** Deletes the rows that belong to notes, not the notes themselves. */
   private async deleteRowsOf(paths: readonly NotePath[]): Promise<void> {
     const ofNotes = `(SELECT id FROM notes WHERE path IN (${marks(paths.length)}))`;
     await this.db.execute(
       `DELETE FROM headings WHERE note_id IN ${ofNotes}`,
+      paths,
+    );
+    await this.db.execute(
+      `DELETE FROM aliases WHERE note_id IN ${ofNotes}`,
       paths,
     );
     await this.db.execute(

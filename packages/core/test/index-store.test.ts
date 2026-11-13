@@ -74,7 +74,7 @@ describe("IndexStore", () => {
         )
         .all()
         .map((row) => row.name);
-      expect(tables).toEqual(["headings", "links", "notes"]);
+      expect(tables).toEqual(["aliases", "headings", "links", "notes"]);
     });
 
     test("closes the database when it cannot be opened", async () => {
@@ -107,7 +107,9 @@ describe("IndexStore", () => {
       const parsed = parseNote("dir/a.md", text);
 
       expect(await store.headings("dir/a.md")).toEqual(parsed.headings);
-      expect(await store.outgoingLinks("dir/a.md")).toEqual(parsed.links);
+      expect(await store.outgoingLinks("dir/a.md")).toEqual(
+        parsed.links.map((link) => ({ ...link, resolved: null })),
+      );
     });
 
     test("replaces every row of a note indexed again", async () => {

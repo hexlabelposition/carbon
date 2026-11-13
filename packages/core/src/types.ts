@@ -9,6 +9,12 @@ export interface Heading {
 }
 
 export interface Link {
+  /**
+   * `wiki` for `[[Note]]`, whose target is found by path, file name or
+   * alias; `markdown` for `[text](Note.md)`, whose target is a path
+   * relative to the note.
+   */
+  kind: "wiki" | "markdown";
   /** The target as written: `Note` in `[[Note#Heading|alias]]`. */
   target: string;
   alias: string | null;
@@ -16,6 +22,12 @@ export interface Link {
   /** Offsets of the whole link in the note text. */
   start: number;
   end: number;
+}
+
+/** A link as the index has it: with the note it points to. */
+export interface OutgoingLink extends Link {
+  /** The note the link resolves to, or `null` while there is none. */
+  resolved: NotePath | null;
 }
 
 /** What the parser extracts from one note and the index stores. */

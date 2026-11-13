@@ -165,6 +165,9 @@ notes_fts  -- FTS5 virtual table over title and body
 
 - A note is identified by its path relative to the vault root.
 - `[[Name]]` resolves in this order: exact path match, then file name match anywhere in the vault (shortest path wins), then alias match.
+- A wiki link with a folder, `[[folder/Name]]`, matches only the exact path from the vault root. A Markdown link, `[text](../Name.md)`, matches only its path relative to the note.
+- Matching ignores case (in every language) and the Unicode normalization form.
+- The index keeps the resolved target in `links.target_id`. When a note is added, removed or indexed again, only the links whose path or name keys could match it are resolved again.
 - Renaming or moving a note through Carbon rewrites links in the notes that point to it.
 - Renames done outside Carbon are seen as delete + create; links become unresolved until fixed.
 

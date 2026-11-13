@@ -50,6 +50,7 @@ export type {
   Heading,
   Link,
   NotePath,
+  OutgoingLink,
   ParsedNote,
   SearchHit,
 } from "./types";

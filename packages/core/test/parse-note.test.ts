@@ -136,6 +136,14 @@ describe("parseNote", () => {
     ]);
   });
 
+  test("tells wiki links from Markdown links", () => {
+    const text = "[[A.md]] [a](A.md)";
+    expect(parse(text).links.map((link) => link.kind)).toEqual([
+      "wiki",
+      "markdown",
+    ]);
+  });
+
   describe("plain text", () => {
     test("drops the syntax and keeps one block per line", () => {
       const text = [
@@ -205,6 +213,7 @@ describe("parseNote", () => {
       expect(note.headings[0].pos).toBe(text.indexOf("# Heading"));
       expect(note.links).toEqual([
         {
+          kind: "wiki",
           target: "Link",
           alias: null,
           fragment: null,

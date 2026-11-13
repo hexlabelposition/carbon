@@ -77,7 +77,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-204** (P0) Startup scan: index only new and changed files, drop removed ones
 - [x] **C-205** (P0) Parsing in a Web Worker so the scan does not block the UI
 - [x] **C-206** (P0) Incremental reindex on save and on watcher events
-- [ ] **C-207** (P0) Link resolution: exact path, then file name, then alias
+- [x] **C-207** (P0) Link resolution: exact path, then file name, then alias
 - [ ] **C-208** (P0) Backlinks query with context snippet
 - [ ] **C-209** (P0) Rename and move rewrite links in other notes
 - [ ] **C-210** (P1) Unresolved links query

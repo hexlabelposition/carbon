@@ -98,6 +98,7 @@ function readWikiLink(text: string, node: SyntaxNode): Link {
     return value === "" ? null : value;
   };
   return {
+    kind: "wiki",
     // Empty for a heading of the same note: "[[#Heading]]".
     target: part("WikiLinkTarget") ?? "",
     alias: part("WikiLinkAlias"),
@@ -147,6 +148,7 @@ function readMarkdownLink(
 
   const alias = read.inlineBetween(node, marks[0].to, marks[1].from);
   return {
+    kind: "markdown",
     target,
     alias: alias === "" ? null : alias,
     fragment: fragment === "" ? null : fragment,
