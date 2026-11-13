@@ -55,4 +55,5 @@ export type {
   OutgoingLink,
   ParsedNote,
   SearchHit,
+  UnresolvedTarget,
 } from "./types";

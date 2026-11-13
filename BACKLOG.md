@@ -80,7 +80,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-207** (P0) Link resolution: exact path, then file name, then alias
 - [x] **C-208** (P0) Backlinks query with context snippet
 - [x] **C-209** (P0) Rename and move rewrite links in other notes
-- [ ] **C-210** (P1) Unresolved links query
+- [x] **C-210** (P1) Unresolved links query
 - [ ] **C-211** (P1) Index progress and ready events
 
 **UI**

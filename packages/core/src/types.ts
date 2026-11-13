@@ -60,6 +60,17 @@ export interface Backlink {
   end: number;
 }
 
+/** A note that links point to, but that does not exist. */
+export interface UnresolvedTarget {
+  /**
+   * Where the note would be found by these links, spelled as the first of
+   * them spells it: where to create it.
+   */
+  path: NotePath;
+  /** Every link to it, by the path of its note, then in written order. */
+  links: Backlink[];
+}
+
 export interface SearchHit {
   path: NotePath;
   title: string;

@@ -1,5 +1,5 @@
 import type { IndexStore } from "../index/index-store";
-import type { Backlink, NotePath } from "../types";
+import type { Backlink, NotePath, UnresolvedTarget } from "../types";
 
 /**
  * Questions about the links between notes, answered from the index
@@ -13,5 +13,10 @@ export class Links {
   /** The links in other notes that point to the note at `path`. */
   async backlinks(path: NotePath): Promise<Backlink[]> {
     return (await this.open()).backlinks(path);
+  }
+
+  /** The notes that links point to but that do not exist, with the links. */
+  async unresolved(): Promise<UnresolvedTarget[]> {
+    return (await this.open()).unresolved();
   }
 }

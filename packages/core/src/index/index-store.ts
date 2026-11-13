@@ -1,11 +1,12 @@
 import type { Platform, SqlDatabase, SqlValue } from "../platform";
-import { linkKeys, matchKey, noteKeys } from "../links/resolve";
+import { linkKeys, linkPath, matchKey, noteKeys } from "../links/resolve";
 import type {
   Backlink,
   Heading,
   NotePath,
   OutgoingLink,
   ParsedNote,
+  UnresolvedTarget,
 } from "../types";
 import { contentHash } from "../util/hash";
 import { normalizeRoot } from "../vault/path";
@@ -257,6 +258,38 @@ export class IndexStore {
        WHERE t.path = ? ORDER BY s.path, l.pos_start`,
       [path],
     );
+  }
+
+  /**
+   * Every link that finds no note, grouped by the note it is missing:
+   * links that spell one path differently, or name one note from
+   * different folders, are one group. Ordered by that path, ignoring case.
+   * Links that no note could ever resolve, such as one above the vault
+   * root, are left out.
+   */
+  async unresolved(): Promise<UnresolvedTarget[]> {
+    const rows = await this.db.select<
+      Backlink & Pick<OutgoingLink, "kind" | "target"> & { key: string }
+    >(
+      `SELECT l.target_path AS key, l.kind, l.target_raw AS target,
+              s.path AS source, s.title AS sourceTitle, l.snippet,
+              l.pos_start AS start, l.pos_end AS "end"
+       FROM links l JOIN notes s ON s.id = l.source_id
+       WHERE l.target_id IS NULL AND l.target_path IS NOT NULL
+       ORDER BY l.target_path, s.path, l.pos_start`,
+    );
+    const groups = new Map<string, UnresolvedTarget>();
+    for (const { key, kind, target, ...link } of rows) {
+      let group = groups.get(key);
+      if (group === undefined) {
+        // Not null: the link has a path key.
+        const path = linkPath(link.source, { kind, target }) ?? key;
+        group = { path, links: [] };
+        groups.set(key, group);
+      }
+      group.links.push(link);
+    }
+    return [...groups.values()];
   }
 
   /**
