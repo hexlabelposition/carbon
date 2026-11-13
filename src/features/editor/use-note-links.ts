@@ -1,4 +1,5 @@
 import {
+  linksToFile,
   parseNote,
   type NotePath,
   type TreeNode,
@@ -57,7 +58,7 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
       },
       preview: async (link) => {
         const note = await vault.links.resolve(path, link);
-        if (note === null) return { path: null };
+        if (note === null) return { path: null, canCreate: !linksToFile(link) };
         const text = await vault.notes.read(note);
         const parsed = parseNote(note, text);
         // "[[Note#Heading]]" shows the note from that heading on.
@@ -80,7 +81,11 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
         vault.links.follow(path, link).then(
           (followed) => {
             if (followed === null) {
-              setError(`"${link.target}" is outside the vault.`);
+              setError(
+                linksToFile(link)
+                  ? `"${link.target}" is not a note, so no note is made for it.`
+                  : `"${link.target}" is outside the vault.`,
+              );
               return;
             }
             setError(null);

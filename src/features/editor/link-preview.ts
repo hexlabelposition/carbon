@@ -11,8 +11,12 @@ export type LinkPreview =
       /** The start of the note, or of the heading the link points to. */
       text: string;
     }
-  /** The link points to no note; following it creates one. */
-  | { path: null };
+  /** The link points to no note; following it creates one, if it can. */
+  | {
+      path: null;
+      /** False for a link no note is made for, such as `[[file.pdf]]`. */
+      canCreate: boolean;
+    };
 
 /** Lines of the note a preview shows at most. */
 const PREVIEW_LINES = 12;
@@ -84,7 +88,9 @@ function previewDom(preview: LinkPreview): HTMLElement {
   const box = document.createElement("div");
   box.className = "cm-link-preview";
   if (preview.path === null) {
-    box.textContent = "No such note yet. Click the link to create it.";
+    box.textContent = preview.canCreate
+      ? "No such note yet. Click the link to create it."
+      : "Not a note: no note is made for this link.";
     box.classList.add("cm-link-preview-empty");
     return box;
   }

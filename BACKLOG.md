@@ -82,7 +82,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-209** (P0) Rename and move rewrite links in other notes
 - [x] **C-210** (P1) Unresolved links query
 - [x] **C-211** (P1) Index progress and ready events
-- [ ] **C-212** (P2) Following a link to a missing file with another extension (`[[file.pdf]]`) does not create `file.pdf.md`
+- [x] **C-212** (P2) Following a link to a missing file with another extension (`[[file.pdf]]`) does not create `file.pdf.md`
 
 **UI**
 
