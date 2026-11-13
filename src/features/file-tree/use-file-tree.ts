@@ -261,8 +261,9 @@ export function useFileTree(vault: Vault): FileTree {
     select: setSelected,
     activate(node, newTab = false) {
       setSelected(node.path);
-      if (node.kind === "note") active.open(node.path, { newTab });
-      else if (node.kind === "folder") {
+      if (node.kind === "note") {
+        active.open(node.path, { target: newTab ? "newTab" : "here" });
+      } else if (node.kind === "folder") {
         if (expanded.has(node.path)) collapse(node.path);
         else expand(node.path);
       }

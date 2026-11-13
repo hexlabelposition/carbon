@@ -8,6 +8,7 @@ import {
 import { Facet } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import type { Link, NotePath } from "@carbon/core";
+import type { OpenTarget } from "../workspace/workspace";
 import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
 
@@ -37,7 +38,7 @@ export interface LinkHost {
   /** Opens the note a link of the current note points to. */
   follow(
     link: Pick<Link, "kind" | "target">,
-    options: { newTab: boolean },
+    options: { target: OpenTarget },
   ): void;
 }
 

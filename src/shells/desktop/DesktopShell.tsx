@@ -175,49 +175,71 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
   const { path } = workspace;
 
   if (path === null) return <Placeholder>No note is open.</Placeholder>;
+  const split = workspace.panes.length > 1;
   return (
-    <>
-      <TabBar
-        tabs={workspace.tabs.map((tab) => ({
-          id: tab.id,
-          label: nameOf(tab.path).replace(/\.md$/i, ""),
-          title: tab.path,
-        }))}
-        activeId={workspace.activeTabId}
-        canGoBack={workspace.canGoBack}
-        canGoForward={workspace.canGoForward}
-        onBack={workspace.back}
-        onForward={workspace.forward}
-        onActivate={workspace.activateTab}
-        onClose={workspace.closeTab}
-      />
-      <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1">
-          <NoteEditor
-            key={path}
-            vault={vault}
-            path={path}
-            sourceMode={sourceMode.on}
-            onToggleSourceMode={sourceMode.toggle}
-            outline={outline.link}
-          />
-        </div>
-        {(outlineOpen || backlinksOpen) && (
-          <div className="flex w-64 shrink-0 flex-col border-l border-line bg-panel">
-            {outlineOpen && (
-              <SidePanel title="Outline">
-                <OutlinePanel
-                  headings={outline.headings}
-                  current={outline.current}
-                  onReveal={outline.reveal}
+    <div className="flex min-h-0 flex-1">
+      {workspace.panes.map((pane, index) => {
+        const active = index === workspace.activePane;
+        return (
+          <section
+            key={pane.id}
+            aria-label={split ? `Pane ${index + 1}` : undefined}
+            className={`flex min-w-0 flex-1 flex-col ${
+              index > 0 ? "border-l border-line" : ""
+            }`}
+            // The pane the user works in is the one keys and the rest of
+            // the app act on.
+            onMouseDownCapture={() => workspace.focusPane(index)}
+            onFocusCapture={() => workspace.focusPane(index)}
+          >
+            {/* With two panes, the one not worked in is dimmed. */}
+            <div className={split && !active ? "opacity-60" : undefined}>
+              <TabBar
+                tabs={pane.tabs.map((tab) => ({
+                  id: tab.id,
+                  label: nameOf(tab.path).replace(/\.md$/i, ""),
+                  title: tab.path,
+                }))}
+                activeId={pane.activeTabId}
+                canGoBack={pane.canGoBack}
+                canGoForward={pane.canGoForward}
+                onBack={workspace.back}
+                onForward={workspace.forward}
+                onActivate={workspace.activateTab}
+                onClose={workspace.closeTab}
+              />
+            </div>
+            {pane.path !== null && (
+              <div className="min-h-0 flex-1">
+                <NoteEditor
+                  key={pane.path}
+                  vault={vault}
+                  path={pane.path}
+                  sourceMode={sourceMode.on}
+                  onToggleSourceMode={sourceMode.toggle}
+                  // One outline: of the note in the active pane.
+                  outline={active ? outline.link : undefined}
                 />
-              </SidePanel>
+              </div>
             )}
-            {backlinksOpen && <BacklinksSection vault={vault} path={path} />}
-          </div>
-        )}
-      </div>
-    </>
+          </section>
+        );
+      })}
+      {(outlineOpen || backlinksOpen) && (
+        <div className="flex w-64 shrink-0 flex-col border-l border-line bg-panel">
+          {outlineOpen && (
+            <SidePanel title="Outline">
+              <OutlinePanel
+                headings={outline.headings}
+                current={outline.current}
+                onReveal={outline.reveal}
+              />
+            </SidePanel>
+          )}
+          {backlinksOpen && <BacklinksSection vault={vault} path={path} />}
+        </div>
+      )}
+    </div>
   );
 }
 

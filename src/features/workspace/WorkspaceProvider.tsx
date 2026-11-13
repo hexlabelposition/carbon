@@ -9,12 +9,18 @@ import {
 } from "react";
 import { useAppSettings } from "../settings/app-settings";
 import { findNode } from "../vault/paths";
-import { WorkspaceContext, type Reveal, type Workspace } from "./workspace";
 import {
-  activeTab,
+  WorkspaceContext,
+  type PaneInfo,
+  type Reveal,
+  type Workspace,
+} from "./workspace";
+import {
   initialWorkspace,
   noteOf,
+  shownTab,
   workspaceReducer,
+  type Pane,
 } from "./workspace-state";
 
 interface WorkspaceProviderProps {
@@ -42,8 +48,8 @@ export function WorkspaceProvider({
     initialWorkspace,
   );
 
-  const active = activeTab(state);
-  const path = active ? noteOf(active) : null;
+  const panes = useMemo(() => state.panes.map(paneInfo), [state.panes]);
+  const { path } = panes[state.activePane];
 
   useEffect(() => {
     void setLastOpenedNote(vault.root, path);
@@ -71,15 +77,22 @@ export function WorkspaceProvider({
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const nextReveal = useRef(1);
 
-  /** How the mounted editor writes its unsaved edits, if there is one. */
-  const flusher = useRef<(() => Promise<void>) | null>(null);
+  /** How the mounted editors write their unsaved edits. */
+  const flushers = useRef(new Set<() => Promise<void>>());
 
   // These never change, so effects that use them do not run again when the
   // tabs change.
   const actions = useMemo<
     Omit<
       Workspace,
-      "path" | "tabs" | "activeTabId" | "canGoBack" | "canGoForward" | "reveal"
+      | "path"
+      | "tabs"
+      | "activeTabId"
+      | "canGoBack"
+      | "canGoForward"
+      | "panes"
+      | "activePane"
+      | "reveal"
     >
   >(
     () => ({
@@ -93,7 +106,7 @@ export function WorkspaceProvider({
         dispatch({
           type: "open",
           path: note,
-          newTab: options?.newTab ?? false,
+          target: options?.target ?? "here",
         });
       },
       activateTab: (id) => {
@@ -112,32 +125,52 @@ export function WorkspaceProvider({
         setReveal(null);
         dispatch({ type: "forward" });
       },
+      focusPane: (index) => dispatch({ type: "focusPane", index }),
       moved: (from, to) => dispatch({ type: "moved", from, to }),
       removed: (removed) => dispatch({ type: "removed", path: removed }),
       onFlush: (flush) => {
-        flusher.current = flush;
+        flushers.current.add(flush);
         return () => {
-          if (flusher.current === flush) flusher.current = null;
+          flushers.current.delete(flush);
         };
       },
-      flush: () => flusher.current?.() ?? Promise.resolve(),
+      flush: async () => {
+        await Promise.all([...flushers.current].map((flush) => flush()));
+      },
     }),
     [],
   );
 
-  const workspace = useMemo<Workspace>(
-    () => ({
+  const workspace = useMemo<Workspace>(() => {
+    const pane = panes[state.activePane];
+    return {
       ...actions,
-      path,
-      tabs: state.tabs.map((tab) => ({ id: tab.id, path: noteOf(tab) })),
-      activeTabId: state.activeId,
-      canGoBack: active !== undefined && active.index > 0,
-      canGoForward:
-        active !== undefined && active.index < active.history.length - 1,
-      reveal: reveal?.path === path ? reveal : null,
-    }),
-    [actions, path, state, active, reveal],
-  );
+      path: pane.path,
+      tabs: pane.tabs,
+      activeTabId: pane.activeTabId,
+      canGoBack: pane.canGoBack,
+      canGoForward: pane.canGoForward,
+      panes,
+      activePane: state.activePane,
+      // For an editor that shows the note, in either pane.
+      reveal:
+        reveal !== null && panes.some((p) => p.path === reveal.path)
+          ? reveal
+          : null,
+    };
+  }, [actions, panes, state.activePane, reveal]);
 
   return <WorkspaceContext value={workspace}>{children}</WorkspaceContext>;
+}
+
+function paneInfo(pane: Pane): PaneInfo {
+  const shown = shownTab(pane);
+  return {
+    id: pane.id,
+    tabs: pane.tabs.map((tab) => ({ id: tab.id, path: noteOf(tab) })),
+    activeTabId: pane.activeId,
+    path: shown ? noteOf(shown) : null,
+    canGoBack: shown !== undefined && shown.index > 0,
+    canGoForward: shown !== undefined && shown.index < shown.history.length - 1,
+  };
 }

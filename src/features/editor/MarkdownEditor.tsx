@@ -31,6 +31,7 @@ import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
 import {
   outlineHost,
+  outlineOf,
   outlineTracker,
   revealHeading,
   type OutlineLink,
@@ -55,7 +56,11 @@ interface MarkdownEditorProps {
   images?: ImageHost;
   /** Shows the raw Markdown: no live preview, every mark visible. */
   sourceMode?: boolean;
-  /** Receives the headings of the note and lets them be gone to. */
+  /**
+   * Receives the headings of the note and lets them be gone to. Given
+   * later, or given again, it is told the headings at once: an editor in
+   * a pane that becomes active takes the outline over.
+   */
   outline?: OutlineLink;
   /** Suggests notes to link to after "[[", and follows links. */
   links?: LinkHost;
@@ -205,15 +210,21 @@ export function MarkdownEditor({
       }),
     });
     editor.current = view;
-    const disconnect = latest.current.outline?.connect((index) =>
-      revealHeading(view, index),
-    );
     return () => {
-      disconnect?.();
       editor.current = null;
       view.destroy();
     };
   }, [label]);
+
+  // After the editor is made: the outline it is given hears of the note.
+  useEffect(() => {
+    const view = editor.current;
+    if (view === null || outline === undefined) return;
+    const { headings, current } = outlineOf(view.state);
+    outline.headings(headings);
+    outline.current(current);
+    return outline.connect((index) => revealHeading(view, index));
+  }, [outline, label]);
 
   useEffect(() => {
     const view = editor.current;

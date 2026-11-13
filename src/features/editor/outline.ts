@@ -130,6 +130,23 @@ export function headingsOf(state: EditorState): Heading[] {
   return headingsIn(state).map(withoutPlace);
 }
 
+/**
+ * What an outline host is told about the note now: its headings, and the
+ * one the cursor is under (-1 above the first).
+ */
+export function outlineOf(state: EditorState): {
+  headings: Heading[];
+  current: number;
+} {
+  const found = headingsIn(state);
+  const head = state.selection.main.head;
+  let current = -1;
+  while (current + 1 < found.length && found[current + 1].from <= head) {
+    current++;
+  }
+  return { headings: found.map(withoutPlace), current };
+}
+
 /** The headings in the parsed part of the note, in order. */
 function headingsIn(state: EditorState): Found[] {
   const found: Found[] = [];

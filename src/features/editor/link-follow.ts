@@ -2,18 +2,20 @@ import { syntaxTree } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { parseNote, type Link } from "@carbon/core";
+import type { OpenTarget } from "../workspace/workspace";
 import type { SyntaxNode } from "@lezer/common";
 import { linkHost } from "./link-completion";
 
 /**
  * Ctrl+click, or Cmd+click, on a link to a note opens that note in a new
- * tab: in source mode, in a link whose Markdown shows, and on Markdown
- * links, which live preview leaves as they are.
+ * tab, and with Shift as well in the pane beside: in source mode, in a
+ * link whose Markdown shows, and on Markdown links, which live preview
+ * leaves as they are.
  */
 export const followOnModClick = EditorView.domEventHandlers({
   mousedown(event, view) {
     if (event.button !== 0 || !(event.ctrlKey || event.metaKey)) return false;
-    return follow(event, view, true);
+    return follow(event, view, event.shiftKey ? "beside" : "newTab");
   },
 });
 
@@ -25,20 +27,27 @@ export const followOnModClick = EditorView.domEventHandlers({
 export const followOnClick = [
   EditorView.domEventHandlers({
     mousedown(event, view) {
-      if (event.button !== 0 || event.shiftKey || event.altKey) return false;
+      const modified =
+        event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
+      // Ctrl/Cmd+click is `followOnModClick`'s, though it runs later.
+      if (event.button !== 0 || modified) return false;
       const target = event.target;
       // Only links that live preview shows by their label have the class.
       if (!(target instanceof Element) || !target.closest(".cm-wiki-link")) {
         return false;
       }
-      return follow(event, view, false);
+      return follow(event, view, "here");
     },
   }),
   EditorView.baseTheme({ ".cm-wiki-link": { cursor: "pointer" } }),
 ];
 
 /** Follows the link under the mouse, if there is one to a note. */
-function follow(event: MouseEvent, view: EditorView, newTab: boolean): boolean {
+function follow(
+  event: MouseEvent,
+  view: EditorView,
+  target: OpenTarget,
+): boolean {
   const host = view.state.facet(linkHost);
   const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
   if (host === null || pos === null) return false;
@@ -46,7 +55,7 @@ function follow(event: MouseEvent, view: EditorView, newTab: boolean): boolean {
   // "[[#Heading]]" points into this note: nothing to open.
   if (link === null || link.target === "") return false;
   event.preventDefault();
-  host.follow(link, { newTab });
+  host.follow(link, { target });
   return true;
 }
 

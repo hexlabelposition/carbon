@@ -94,7 +94,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 - [x] **C-226** (P1) Indexing status in the status bar
 - [x] **C-227** (P2) Hover preview of the linked note
 - [x] **C-229** (P1) Links to missing notes look different in live preview
-- [ ] **C-230** (P2) Open a linked note in a pane beside the current one
+- [x] **C-230** (P2) Open a linked note in a pane beside the current one
 
 ## M3. Search
 

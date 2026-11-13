@@ -96,7 +96,7 @@ export function NoteEditor({
           sourceMode={sourceMode}
           outline={outline}
           links={links.host}
-          reveal={reveal}
+          reveal={reveal?.path === path ? reveal : null}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (
