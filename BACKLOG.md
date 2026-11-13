@@ -87,7 +87,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 
 - [x] **C-221** (P0) Render wiki links in live preview; click or Ctrl/Cmd+click to follow
 - [x] **C-222** (P0) `[[` autocomplete with note titles
-- [ ] **C-223** (P0) Following a link to a missing note creates it
+- [x] **C-223** (P0) Following a link to a missing note creates it
 - [ ] **C-224** (P0) Backlinks panel for the current note
 - [ ] **C-225** (P1) Heading autocomplete after `[[Note#`
 - [ ] **C-226** (P1) Indexing status in the status bar

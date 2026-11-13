@@ -78,19 +78,10 @@ export function NoteEditor({
         </button>
       </header>
       {images.error !== null && (
-        <div
-          role="alert"
-          className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small"
-        >
-          <p className="min-w-0 flex-1 text-danger">{images.error}</p>
-          <button
-            type="button"
-            className={indicatorButton}
-            onClick={images.dismissError}
-          >
-            Dismiss
-          </button>
-        </div>
+        <EditorAlert message={images.error} onDismiss={images.dismissError} />
+      )}
+      {links.error !== null && (
+        <EditorAlert message={links.error} onDismiss={links.dismissError} />
       )}
       <div className="min-h-0 flex-1">
         <MarkdownEditor
@@ -102,7 +93,7 @@ export function NoteEditor({
           images={images.host}
           sourceMode={sourceMode}
           outline={outline}
-          links={links}
+          links={links.host}
         />
       </div>
       {note.save.status === "conflict" && !postponed && (
@@ -114,6 +105,27 @@ export function NoteEditor({
           onLater={() => setPostponed(true)}
         />
       )}
+    </div>
+  );
+}
+
+/** A problem with the note that the user can read and close. */
+function EditorAlert({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small"
+    >
+      <p className="min-w-0 flex-1 text-danger">{message}</p>
+      <button type="button" className={indicatorButton} onClick={onDismiss}>
+        Dismiss
+      </button>
     </div>
   );
 }
