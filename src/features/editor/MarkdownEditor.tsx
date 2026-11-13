@@ -153,6 +153,8 @@ export function MarkdownEditor({
             get current() {
               return latest.current.links?.current ?? "";
             },
+            headings: (target) =>
+              latest.current.links?.headings(target) ?? Promise.resolve([]),
             follow: (link, options) =>
               latest.current.links?.follow(link, options),
           }),

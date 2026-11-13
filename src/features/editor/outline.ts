@@ -125,6 +125,11 @@ const NO_HEADINGS = new Set([
 
 const HEADING = /^(?:ATX|Setext)Heading([1-6])$/;
 
+/** The headings in the parsed part of the note, as the outline shows them. */
+export function headingsOf(state: EditorState): Heading[] {
+  return headingsIn(state).map(withoutPlace);
+}
+
 /** The headings in the parsed part of the note, in order. */
 function headingsIn(state: EditorState): Found[] {
   const found: Found[] = [];

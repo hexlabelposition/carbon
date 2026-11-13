@@ -8,6 +8,7 @@ import {
 import { Facet } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import type { Link, NotePath } from "@carbon/core";
+import { headingsOf, type Heading } from "./outline";
 
 /** What the editor needs to suggest notes to link to, and to follow links. */
 export interface LinkHost {
@@ -15,6 +16,11 @@ export interface LinkHost {
   notes(): Promise<readonly NotePath[]>;
   /** The note being edited: it is not suggested. */
   current: NotePath;
+  /**
+   * The headings of the note `[[target]]` points to, from the note being
+   * edited. Empty if it points to none.
+   */
+  headings(target: string): Promise<readonly Heading[]>;
   /** Opens the note a link of the current note points to. */
   follow(
     link: Pick<Link, "kind" | "target">,
@@ -31,12 +37,13 @@ export const linkHost = Facet.define<LinkHost, LinkHost | null>({
 });
 
 /**
- * Suggests notes after "[[": the list narrows while the user types, and
- * picking a note writes its name and closes the link with "]]". Typing
+ * Suggests notes after "[[", and their headings after "[[Note#" (the
+ * headings of this note after "[[#"): the list narrows while the user
+ * types, and picking one writes it and closes the link with "]]". Typing
  * on goes on as usual; Escape closes the list.
  */
 export const linkCompletion = [
-  autocompletion({ override: [suggestNotes], icons: false }),
+  autocompletion({ override: [suggestNotes, suggestHeadings], icons: false }),
   EditorView.baseTheme({
     ".cm-tooltip.cm-tooltip-autocomplete": {
       border: "1px solid var(--cb-line-strong)",
@@ -81,14 +88,7 @@ async function suggestNotes(
   if (typed === null || host === null) return null;
 
   const from = typed.from + 2;
-  const line = state.doc.lineAt(pos);
-  let end = pos;
-  while (end < line.to && !NAME_END.test(state.sliceDoc(end, end + 1))) end++;
-  // "]]", "|alias" or "#heading" follows: the link is already closed, and
-  // the rest of its name is replaced too. In a link not closed yet, the
-  // text after the cursor is not part of it.
-  const closed = /^(\]\]|[|#])/.test(state.sliceDoc(end, end + 2));
-  const to = closed ? end : pos;
+  const { to, closed } = partEnd(state, pos, NAME_END, /^(\]\]|[|#])/);
 
   const notes = (await host.notes()).filter((path) => path !== host.current);
   if (context.aborted) return null;
@@ -121,6 +121,80 @@ async function suggestNotes(
     };
   });
   return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
+}
+
+/** Characters that end the heading of a wiki link. */
+const HEADING_END = /[[\]|\n]/;
+
+async function suggestHeadings(
+  context: CompletionContext,
+): Promise<CompletionResult | null> {
+  const { state, pos } = context;
+  const typed = context.matchBefore(/\[\[[^[\]|#\n]*#[^[\]|#\n]*/);
+  const host = state.facet(linkHost);
+  if (typed === null || host === null) return null;
+
+  const written = state.sliceDoc(typed.from + 2, typed.to);
+  const hash = written.indexOf("#");
+  const target = written.slice(0, hash).trim();
+  const from = typed.from + 2 + hash + 1;
+  const { to, closed } = partEnd(state, pos, HEADING_END, /^(\]\]|\|)/);
+
+  // "[[#": a heading of this note, as it is now, saved or not.
+  const headings =
+    target === "" ? headingsOf(state) : await host.headings(target);
+  if (context.aborted) return null;
+
+  const seen = new Set<string>();
+  const options: Completion[] = [];
+  for (const { level, text } of headings) {
+    const name = asFragment(text);
+    if (name === "" || seen.has(name)) continue;
+    seen.add(name);
+    options.push({
+      label: name,
+      detail: "#".repeat(level),
+      apply: (view, completion, start, end) => {
+        const insert = closed ? name : `${name}]]`;
+        view.dispatch({
+          changes: { from: start, to: end, insert },
+          selection: { anchor: start + insert.length },
+          userEvent: "input.complete",
+          annotations: pickedCompletion.of(completion),
+        });
+      },
+    });
+  }
+  return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
+}
+
+/**
+ * Where the part of a link the cursor is in ends. If `closing` follows,
+ * the link is already closed and the rest of the part is replaced too; in
+ * a link not closed yet, the text after the cursor is not part of it.
+ */
+function partEnd(
+  state: CompletionContext["state"],
+  pos: number,
+  partEnds: RegExp,
+  closing: RegExp,
+): { to: number; closed: boolean } {
+  const line = state.doc.lineAt(pos);
+  let end = pos;
+  while (end < line.to && !partEnds.test(state.sliceDoc(end, end + 1))) end++;
+  const closed = closing.test(state.sliceDoc(end, end + 2));
+  return { to: closed ? end : pos, closed };
+}
+
+/**
+ * A heading as it can be written after "#" in a wiki link: the characters
+ * that end the link or its parts are left out.
+ */
+function asFragment(heading: string): string {
+  return heading
+    .replace(/[[\]|#]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function titleOf(path: NotePath): string {

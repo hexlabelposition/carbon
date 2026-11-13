@@ -24,6 +24,14 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
       // The tree is listed once and reused while nothing changes.
       notes: async () => notesIn(await vault.tree()),
       current: path,
+      headings: async (target) => {
+        const note = await vault.links
+          .resolve(path, { kind: "wiki", target })
+          .catch(() => null);
+        if (note === null) return [];
+        const headings = await vault.links.headings(note).catch(() => []);
+        return headings.map(({ level, text }) => ({ level, text }));
+      },
       follow: (link, options) => {
         // The index can take a moment during the startup scan: the note
         // opens once it is found.
