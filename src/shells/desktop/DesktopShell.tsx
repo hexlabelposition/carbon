@@ -1,5 +1,7 @@
 import type { Vault } from "@carbon/core";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
+import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
+import { useBacklinks } from "../../features/backlinks/use-backlinks";
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
@@ -15,7 +17,7 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar, StatusButton } from "./StatusBar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
-import { useOutlinePanel } from "./use-outline-panel";
+import { useSidePanel } from "./use-side-panel";
 import { useSidebar } from "./use-sidebar";
 
 // Dev builds only: in a release build the condition is false at build time
@@ -33,7 +35,8 @@ export function DesktopShell() {
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
-  const outlinePanel = useOutlinePanel();
+  const outlinePanel = useSidePanel("carbon.desktop.outline");
+  const backlinksPanel = useSidePanel("carbon.desktop.backlinks");
   useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
@@ -85,7 +88,11 @@ export function DesktopShell() {
               </Sidebar>
             )}
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <NoteArea vault={vault} outlineOpen={outlinePanel.open} />
+              <NoteArea
+                vault={vault}
+                outlineOpen={outlinePanel.open}
+                backlinksOpen={backlinksPanel.open}
+              />
             </main>
           </WorkspaceProvider>
         )}
@@ -100,6 +107,14 @@ export function DesktopShell() {
                 onClick={outlinePanel.toggle}
               >
                 Outline
+              </StatusButton>
+            )}
+            {vault !== null && !showDev && (
+              <StatusButton
+                pressed={backlinksPanel.open}
+                onClick={backlinksPanel.toggle}
+              >
+                Backlinks
               </StatusButton>
             )}
             {DevPanel !== null && (
@@ -141,13 +156,16 @@ interface NoteAreaProps {
   vault: Vault;
   /** Shows the outline of the note beside it. */
   outlineOpen: boolean;
+  /** Shows the notes that link to the note beside it. */
+  backlinksOpen: boolean;
 }
 
 /**
  * The main area of the workspace: the tabs, the note that is shown and,
- * when it is open, the outline of the note.
+ * beside it, the panels that are open: the outline of the note and its
+ * backlinks, one above the other.
  */
-function NoteArea({ vault, outlineOpen }: NoteAreaProps) {
+function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
   const workspace = useWorkspace();
   useWorkspaceShortcuts();
   const sourceMode = useSourceMode();
@@ -182,25 +200,69 @@ function NoteArea({ vault, outlineOpen }: NoteAreaProps) {
             outline={outline.link}
           />
         </div>
-        {outlineOpen && (
-          <aside
-            aria-label="Outline"
-            className="flex w-60 shrink-0 flex-col border-l border-line bg-panel"
-          >
-            <div className="flex h-9 shrink-0 items-center border-b border-line px-3 font-semibold">
-              Outline
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <OutlinePanel
-                headings={outline.headings}
-                current={outline.current}
-                onReveal={outline.reveal}
-              />
-            </div>
-          </aside>
+        {(outlineOpen || backlinksOpen) && (
+          <div className="flex w-64 shrink-0 flex-col border-l border-line bg-panel">
+            {outlineOpen && (
+              <SidePanel title="Outline">
+                <OutlinePanel
+                  headings={outline.headings}
+                  current={outline.current}
+                  onReveal={outline.reveal}
+                />
+              </SidePanel>
+            )}
+            {backlinksOpen && <BacklinksSection vault={vault} path={path} />}
+          </div>
         )}
       </div>
     </>
+  );
+}
+
+/** One panel of the column beside the note; open panels share its height. */
+function SidePanel({
+  title,
+  detail,
+  children,
+}: {
+  title: string;
+  /** Shown after the title, such as a count. */
+  detail?: string;
+  children: ReactNode;
+}) {
+  return (
+    <aside
+      aria-label={title}
+      className="flex min-h-0 flex-1 flex-col border-b border-line last:border-b-0"
+    >
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-3">
+        <span className="font-semibold">{title}</span>
+        {detail !== undefined && (
+          <span className="text-small text-faint">{detail}</span>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+    </aside>
+  );
+}
+
+function BacklinksSection({ vault, path }: { vault: Vault; path: string }) {
+  const backlinks = useBacklinks(vault, path);
+  const { open } = useWorkspace();
+  return (
+    <SidePanel
+      title="Backlinks"
+      detail={
+        backlinks.status === "ready"
+          ? String(backlinks.backlinks.length)
+          : undefined
+      }
+    >
+      <BacklinksPanel
+        state={backlinks}
+        onOpen={(note, at) => open(note, { at })}
+      />
+    </SidePanel>
   );
 }
 
