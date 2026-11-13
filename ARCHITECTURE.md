@@ -271,6 +271,7 @@ vault.graph.global() / local(path, depth)
 vault.on('changed', ...)        // file added, changed or removed outside the editor
 vault.on('index:progress', ...) // startup scan: done of total new and changed notes
 vault.on('index:ready', ...)    // startup scan done
+vault.on('index:updated', ...)  // later changes are in the index: queries may answer differently
 vault.indexStatus               // scanning, ready or failed, for listeners that come late
 vault.on('tree', ...)           // the app itself added, moved or deleted something
 vault.on('conflict', ...)       // open note changed on disk while it has unsaved edits

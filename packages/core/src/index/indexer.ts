@@ -13,6 +13,8 @@ export interface IndexerOptions {
   root: string;
   store: IndexStore;
   parser: NoteParser;
+  /** After each step that indexed what was touched, failed or not. */
+  onUpdated?: () => void;
 }
 
 /**
@@ -29,9 +31,11 @@ export class Indexer {
   private queued = false;
   private closed = false;
   private readonly context: IndexContext;
+  private readonly onUpdated: () => void;
 
-  constructor(options: IndexerOptions) {
+  constructor({ onUpdated, ...options }: IndexerOptions) {
     this.context = { ...options, cancelled: () => this.closed };
+    this.onUpdated = onUpdated ?? (() => {});
   }
 
   /** Runs the startup scan. Paths touched meanwhile are handled after it. */
@@ -85,9 +89,14 @@ export class Indexer {
     this.queued = false;
     const paths = withoutNested([...this.dirty]);
     this.dirty.clear();
-    for (const path of paths) {
-      if (this.closed) return;
-      await this.updatePath(path);
+    try {
+      for (const path of paths) {
+        if (this.closed) return;
+        await this.updatePath(path);
+      }
+    } finally {
+      // A failed step may still have written some of its paths.
+      if (!this.closed) this.onUpdated();
     }
   }
 

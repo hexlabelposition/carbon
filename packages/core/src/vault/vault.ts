@@ -40,6 +40,12 @@ export interface VaultEvents {
   "index:progress": { done: number; total: number };
   /** The startup scan is done. Not sent if it fails: see `indexStatus`. */
   "index:ready": undefined;
+  /**
+   * After the startup scan, the index took in notes that were saved,
+   * created, moved or deleted, here or by other programs. Answers from
+   * `links` may differ now.
+   */
+  "index:updated": undefined;
   /** An open note changed on disk while it has unsaved edits. */
   conflict: { path: NotePath };
   /**
@@ -256,6 +262,7 @@ export class Vault {
           root,
           store,
           parser: platform.parser ?? inlineParser,
+          onUpdated: () => this.emitter.emit("index:updated", undefined),
         });
         return this.indexer.scan((progress) => {
           this.status = { state: "scanning", ...progress };

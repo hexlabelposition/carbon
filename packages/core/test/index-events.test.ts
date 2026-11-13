@@ -81,3 +81,25 @@ describe("index events", () => {
     expect(events).toEqual([]);
   });
 });
+
+describe("index:updated", () => {
+  test("after the index takes in a change, made here or elsewhere", async () => {
+    const platform = await platformWith(1);
+    const vault = await Vault.open("/v", platform, { changeDelayMs: 5 });
+    await vault.indexed();
+    let updates = 0;
+    vault.on("index:updated", () => updates++);
+
+    await vault.notes.write("a.md", "[[n0]]", null);
+    await vault.indexed();
+    expect(updates).toBe(1);
+    expect(await vault.links.backlinks("n0.md")).toHaveLength(1);
+
+    await platform.fs.writeTextAtomic("/v/b.md", "[[n0]]");
+    platform.watcher.emit({ kind: "created", path: "/v/b.md" });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    await vault.indexed();
+    expect(updates).toBe(2);
+    vault.close();
+  });
+});
