@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parseNote } from "../src/index";
+import { linkTargets } from "../src/parser/parse-note";
 import { wikiLinkSamples } from "./corpus/wiki-links";
 
 const parse = (text: string, path = "Note.md") => parseNote(path, text);
@@ -278,5 +279,48 @@ describe("parseNote", () => {
       expect(note.aliases).toEqual([]);
       expect(note.properties).toEqual({});
     });
+  });
+});
+
+describe("linkTargets", () => {
+  /** The text of each target, by the text of its link. */
+  const targets = (text: string) => {
+    const found = linkTargets(text);
+    return parseNote("Note.md", text).links.map((link) => {
+      const range = found.get(link.start);
+      return [
+        text.slice(link.start, link.end),
+        range === undefined ? null : text.slice(range.from, range.to),
+      ];
+    });
+  };
+
+  test("the note of a wiki link, without heading and alias", () => {
+    expect(targets("[[dir/Note#Part|text]] [[#Part]] [[ Spaced ]]")).toEqual([
+      ["[[dir/Note#Part|text]]", "dir/Note"],
+      ["[[#Part]]", null],
+      ["[[ Spaced ]]", " Spaced "],
+    ]);
+  });
+
+  test("the whole address of a Markdown link", () => {
+    expect(targets('[a](<a b.md#Part>) [b](b%20c.md "title")')).toEqual([
+      ["[a](<a b.md#Part>)", "<a b.md#Part>"],
+      ['[b](b%20c.md "title")', "b%20c.md"],
+    ]);
+  });
+
+  test("the definition of a link by reference", () => {
+    const text = "[a][ref] [ref]\n\n[ref]: dir/a.md";
+    const ranges = [...linkTargets(text).values()];
+    expect(ranges).toHaveLength(2);
+    expect(ranges[0]).toEqual(ranges[1]);
+    expect(text.slice(ranges[0].from, ranges[0].to)).toBe("dir/a.md");
+  });
+
+  test("keeps the offsets of a note with frontmatter", () => {
+    expect(targets("---\na: [[No]]\n---\n[[Yes]]")).toEqual([
+      ["[[Yes]]", "Yes"],
+    ]);
   });
 });

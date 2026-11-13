@@ -125,28 +125,14 @@ function readWikiLink(text: string, node: SyntaxNode): WrittenLink {
 function readMarkdownLink(
   text: string,
   node: SyntaxNode,
-  references: Map<string, string>,
+  references: References,
   read: Reader,
 ): WrittenLink | null {
   const marks = node.getChildren("LinkMark");
-  // "[" and "]" around the text are the first two marks.
-  if (marks.length < 2) return null;
-  const label = text.slice(marks[0].to, marks[1].from);
+  const url = addressOf(text, node, references);
+  if (url === null) return null;
 
-  let address: string | undefined;
-  const url = node.getChild("URL");
-  const reference = node.getChild("LinkLabel");
-  if (url !== null) {
-    address = text.slice(url.from, url.to);
-  } else if (reference !== null && reference.to - reference.from > 2) {
-    address = references.get(
-      referenceKey(text.slice(reference.from, reference.to)),
-    );
-  } else {
-    address = references.get(referenceKey(label));
-  }
-  if (address === undefined) return null;
-
+  let address = text.slice(url.from, url.to);
   address = decode(address.replace(/^<(.*)>$/, "$1"));
   if (/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(address)) return null;
   const hash = address.indexOf("#");
@@ -214,18 +200,76 @@ function clipEnd(text: string): string {
   return `${space === -1 ? kept : kept.slice(0, space)}…`;
 }
 
-/** `[ref]: address` definitions, by their normalized label. */
-function linkReferences(text: string, top: SyntaxNode): Map<string, string> {
-  const references = new Map<string, string>();
+/** The address nodes of `[ref]: address` definitions, by normalized label. */
+type References = Map<string, SyntaxNode>;
+
+function linkReferences(text: string, top: SyntaxNode): References {
+  const references: References = new Map();
   for (const node of top.getChildren("LinkReference")) {
     const label = node.getChild("LinkLabel");
     const url = node.getChild("URL");
     if (label === null || url === null) continue;
     const key = referenceKey(text.slice(label.from, label.to));
     // The first definition of a label wins, as in CommonMark.
-    if (!references.has(key)) references.set(key, text.slice(url.from, url.to));
+    if (!references.has(key)) references.set(key, url);
   }
   return references;
+}
+
+/**
+ * The address node of a Markdown link: its own, or the one in the
+ * definition of its reference. `null` without an address.
+ */
+function addressOf(
+  text: string,
+  link: SyntaxNode,
+  references: References,
+): SyntaxNode | null {
+  const marks = link.getChildren("LinkMark");
+  // "[" and "]" around the text are the first two marks.
+  if (marks.length < 2) return null;
+  const url = link.getChild("URL");
+  if (url !== null) return url;
+  const reference = link.getChild("LinkLabel");
+  const label =
+    reference !== null && reference.to - reference.from > 2
+      ? text.slice(reference.from, reference.to)
+      : text.slice(marks[0].to, marks[1].from);
+  return references.get(referenceKey(label)) ?? null;
+}
+
+/** Offsets of a part of a note's text. */
+export interface TextRange {
+  from: number;
+  to: number;
+}
+
+/**
+ * Where the target of each link is written, by the start of the link: the
+ * text to replace to point the link elsewhere. For a wiki link it is the
+ * note name, without the heading and the alias; for a Markdown link the
+ * whole address, `<...>` and heading included, which for a link by
+ * reference is in the definition, shared with other links. A wiki link
+ * without a target, `[[#Heading]]`, has none.
+ */
+export function linkTargets(text: string): Map<number, TextRange> {
+  const body = withoutFrontmatter(text);
+  const tree = markdownParser.parse(body);
+  const references = linkReferences(body, tree.topNode);
+  const targets = new Map<number, TextRange>();
+  tree.iterate({
+    enter({ name, node }) {
+      const part =
+        name === "WikiLink"
+          ? node.getChild("WikiLinkTarget")
+          : name === "Link"
+            ? addressOf(body, node, references)
+            : null;
+      if (part !== null)
+        targets.set(node.from, { from: part.from, to: part.to });
+    },
+  });
+  return targets;
 }
 
 /** CommonMark matches labels case-insensitively, with spaces collapsed. */
