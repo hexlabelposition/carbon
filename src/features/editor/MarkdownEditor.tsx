@@ -17,6 +17,7 @@ import {
 import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
+import { findReplace } from "./find-replace";
 import { livePreview } from "./live-preview";
 import {
   imageHost,
@@ -180,6 +181,7 @@ export function MarkdownEditor({
             headings: (list) => latest.current.outline?.headings(list),
             current: (index) => latest.current.outline?.current(index),
           }),
+          findReplace,
           editorTheme,
           // Tab indents, as a notes editor should. Escape, then Tab, moves
           // the focus out of the editor instead.
