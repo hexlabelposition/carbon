@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { contentHash, IndexStore, Vault } from "../src/index";
+import { contentHash, indexFileName, IndexStore, Vault } from "../src/index";
 import { createMemoryPlatform } from "./fakes";
 
 const ROOT = "/v";
@@ -55,6 +55,33 @@ describe("Indexer", () => {
       await vault.indexed();
       expect(await paths()).toEqual(["b.md"]);
       expect(await targets("b.md")).toEqual(["X"]);
+    });
+
+    test("the full text follows saves, renames and deletes", async () => {
+      const { platform, vault } = await setup({ "a.md": "first draft" });
+      const fullText = (query: string) =>
+        platform.sql
+          .raw(indexFileName(ROOT))
+          ?.query<{ path: string }, [string]>(
+            `SELECT n.path FROM notes_fts f JOIN notes n ON n.id = f.rowid
+             WHERE notes_fts MATCH ? ORDER BY n.path`,
+          )
+          .all(query)
+          .map((row) => row.path);
+
+      await vault.notes.write("a.md", "final text", contentHash("first draft"));
+      await vault.indexed();
+      expect(fullText("draft")).toEqual([]);
+      expect(fullText("final")).toEqual(["a.md"]);
+
+      await vault.notes.rename("a.md", "b.md");
+      await vault.indexed();
+      expect(fullText("final")).toEqual(["b.md"]);
+      expect(fullText("title: b")).toEqual(["b.md"]);
+
+      await vault.notes.remove("b.md");
+      await vault.indexed();
+      expect(fullText("final")).toEqual([]);
     });
 
     test("a deleted note leaves the index, to the trash or for good", async () => {

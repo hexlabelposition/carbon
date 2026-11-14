@@ -29,6 +29,21 @@ async function openStore() {
   return { platform, store };
 }
 
+/** The notes whose full text matches an FTS5 query, by path. */
+function fullText(
+  platform: ReturnType<typeof createMemoryPlatform>,
+  query: string,
+): string[] | undefined {
+  return platform.sql
+    .raw(indexFileName(ROOT))
+    ?.query<{ path: string }, [string]>(
+      `SELECT n.path FROM notes_fts f JOIN notes n ON n.id = f.rowid
+       WHERE notes_fts MATCH ? ORDER BY n.path`,
+    )
+    .all(query)
+    .map((row) => row.path);
+}
+
 describe("IndexStore", () => {
   describe("open", () => {
     test("creates the index of a vault in a file of its own", async () => {
@@ -74,7 +89,18 @@ describe("IndexStore", () => {
         )
         .all()
         .map((row) => row.name);
-      expect(tables).toEqual(["aliases", "headings", "links", "notes"]);
+      expect(tables).toEqual([
+        "aliases",
+        "headings",
+        "links",
+        "notes",
+        "notes_fts",
+        "notes_fts_config",
+        "notes_fts_content",
+        "notes_fts_data",
+        "notes_fts_docsize",
+        "notes_fts_idx",
+      ]);
     });
 
     test("closes the database when it cannot be opened", async () => {
@@ -188,6 +214,67 @@ describe("IndexStore", () => {
         target: "O'Brien",
         alias: "Ünïcødé",
       });
+    });
+  });
+
+  describe("full text", () => {
+    test("finds a note by a word of its title or its body", async () => {
+      const { platform, store } = await openStore();
+      await store.replaceNotes([
+        entry("dir/Garden.md", "# Plans\n\nTomatoes and **basil**."),
+        entry("Kitchen.md", "Basil goes in the [[Garden|sauce]]."),
+      ]);
+
+      expect(fullText(platform, "garden")).toEqual(["dir/Garden.md"]);
+      expect(fullText(platform, "plans")).toEqual(["dir/Garden.md"]);
+      expect(fullText(platform, "basil")).toEqual([
+        "Kitchen.md",
+        "dir/Garden.md",
+      ]);
+      expect(fullText(platform, "title: kitchen")).toEqual(["Kitchen.md"]);
+    });
+
+    test("leaves Markdown syntax and frontmatter out", async () => {
+      const { platform, store } = await openStore();
+      await store.replaceNotes([
+        entry("a.md", "---\nsecret: yes\n---\n[text](https://example.com)"),
+      ]);
+
+      expect(fullText(platform, "text")).toEqual(["a.md"]);
+      expect(fullText(platform, "secret")).toEqual([]);
+      expect(fullText(platform, "example")).toEqual([]);
+    });
+
+    test("follows a note indexed again", async () => {
+      const { platform, store } = await openStore();
+      await store.replaceNotes([entry("a.md", "old words")]);
+      await store.replaceNotes([entry("a.md", "new words", stamp(2))]);
+
+      expect(fullText(platform, "old")).toEqual([]);
+      expect(fullText(platform, "new")).toEqual(["a.md"]);
+      expect(fullText(platform, "words")).toEqual(["a.md"]);
+    });
+
+    test("forgets a removed note", async () => {
+      const { platform, store } = await openStore();
+      await store.replaceNotes([
+        entry("a.md", "shared word"),
+        entry("b.md", "shared word"),
+      ]);
+      await store.removeNotes(["a.md"]);
+
+      expect(fullText(platform, "shared")).toEqual(["b.md"]);
+    });
+
+    test("indexes a whole vault in batches", async () => {
+      const { platform, store } = await openStore();
+      const entries = Array.from({ length: 1200 }, (_, i) =>
+        entry(`n${i}.md`, `common word${i}`),
+      );
+      await store.replaceNotes(entries);
+
+      expect(fullText(platform, "common")).toHaveLength(1200);
+      expect(fullText(platform, "word1199")).toEqual(["n1199.md"]);
     });
   });
 

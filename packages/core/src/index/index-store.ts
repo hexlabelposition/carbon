@@ -32,14 +32,15 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Notes, their headings, aliases and links. A link keeps its target as
  * written, the keys it is matched by (`links/resolve.ts`), and the note it
  * resolves to: `target_id` is `NULL` while that note does not exist.
- * Full-text search is C-301, tags and the rest of the frontmatter M4. Each
- * adds its tables with a new schema version.
+ * `notes_fts` holds the title and the plain text of every note for
+ * full-text search, under the row id of the note. Tags and the rest of
+ * the frontmatter are M4; they add their tables with a new schema version.
  */
 const SCHEMA = [
   `CREATE TABLE notes (
@@ -85,6 +86,9 @@ const SCHEMA = [
   `CREATE INDEX links_target_path ON links (target_path)`,
   `CREATE INDEX links_target_name ON links (target_name)`,
   `CREATE INDEX links_target ON links (target_id)`,
+  // The text is stored here only: the index keeps no other copy of it.
+  // The default tokenizer, until C-307 checks it on other languages.
+  `CREATE VIRTUAL TABLE notes_fts USING fts5 (title, body)`,
 ];
 
 /**
@@ -381,6 +385,11 @@ export class IndexStore {
     );
     await insertRows(
       this.db,
+      "notes_fts (rowid, title, body)",
+      entries.map(({ note }) => [idOf(note.path), note.title, note.plainText]),
+    );
+    await insertRows(
+      this.db,
       "aliases (note_id, alias, alias_key)",
       entries.flatMap(({ note }) =>
         note.aliases.map((alias) => [idOf(note.path), alias, matchKey(alias)]),
@@ -473,6 +482,10 @@ export class IndexStore {
     );
     await this.db.execute(
       `DELETE FROM links WHERE source_id IN ${ofNotes}`,
+      paths,
+    );
+    await this.db.execute(
+      `DELETE FROM notes_fts WHERE rowid IN ${ofNotes}`,
       paths,
     );
   }
