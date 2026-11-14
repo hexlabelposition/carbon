@@ -7,20 +7,34 @@ import {
   type SearchHit,
 } from "../src/index";
 import { readMarks } from "../src/search/marks";
+import { firstMatch } from "../src/search/locate";
 import { fullTextQuery } from "../src/search/query";
 import { Search } from "../src/search/search";
 import { createMemoryPlatform } from "./fakes";
 
-const note = (path: string, text = ""): IndexEntry => ({
-  note: parseNote(path, text),
-  stamp: { mtime: 1, size: text.length, hash: "h" },
-});
+/** The text of each note made by `note`, as `vault.notes.read` has it. */
+const texts = new Map<string, string>();
+
+const note = (path: string, text = ""): IndexEntry => {
+  texts.set(path, text);
+  return {
+    note: parseNote(path, text),
+    stamp: { mtime: 1, size: text.length, hash: "h" },
+  };
+};
 
 /** `vault.search` over an index of these notes. */
 async function searchOver(...entries: IndexEntry[]) {
   const store = await IndexStore.open(createMemoryPlatform(), "/v");
   await store.replaceNotes(entries);
-  return new Search({ index: async () => store });
+  return new Search({
+    index: async () => store,
+    read: async (path) => {
+      const text = texts.get(path);
+      if (text === undefined) throw new Error(`No note: ${path}`);
+      return text;
+    },
+  });
 }
 
 const paths = (hits: SearchHit[]) => hits.map((hit) => hit.path);
@@ -75,6 +89,35 @@ describe("search", () => {
         text: "abc",
         matches: [],
       });
+    });
+  });
+
+  describe("firstMatch", () => {
+    test("finds the first word that starts with a word searched for", () => {
+      const text = "Notes about trees. A tree grows.";
+      expect(firstMatch(text, "tree")).toBe(text.indexOf("trees"));
+      expect(firstMatch(text, "grow notes")).toBe(0);
+    });
+
+    test("ignores case, in any script", () => {
+      expect(firstMatch("Мій Сад", "сад")).toBe(4);
+      expect(firstMatch("A GARDEN", "garden")).toBe(2);
+    });
+
+    test("only at the start of a word", () => {
+      expect(firstMatch("a subtree, a tree", "tree")).toBe(13);
+      expect(firstMatch("subtree", "tree")).toBeNull();
+    });
+
+    test("skips the frontmatter", () => {
+      const text = "---\ntags: tree\n---\nA tree";
+      expect(firstMatch(text, "tree")).toBe(text.lastIndexOf("tree"));
+    });
+
+    test("is null without a match or a word", () => {
+      expect(firstMatch("text", "other")).toBeNull();
+      expect(firstMatch("text", " *- ")).toBeNull();
+      expect(firstMatch("", "text")).toBeNull();
     });
   });
 
@@ -176,6 +219,16 @@ describe("search", () => {
       const search = await searchOver(note("a.md", "text"));
       expect(await search.query("")).toEqual([]);
       expect(await search.query(" *:- ")).toEqual([]);
+    });
+
+    test("tells where to open a hit", async () => {
+      const text = "# Intro\n\nSome words, then the needle.";
+      const search = await searchOver(note("Needle.md", text), note("b.md"));
+      expect(await search.locate("Needle.md", "needle")).toBe(
+        text.indexOf("needle"),
+      );
+      expect(await search.locate("b.md", "needle")).toBeNull();
+      await expect(search.locate("missing.md", "needle")).rejects.toThrow();
     });
 
     test("searches a whole vault opened as one", async () => {

@@ -4,6 +4,11 @@
  */
 const WORD = /[\p{L}\p{N}\p{M}]+/gu;
 
+/** The words of what the user typed, as the search takes them. */
+export function queryWords(text: string): string[] {
+  return text.match(WORD) ?? [];
+}
+
 /**
  * The FTS5 query for what the user typed, or `null` if it has no words.
  * Every word must occur, as a word or the start of one, so a word being
@@ -12,7 +17,7 @@ const WORD = /[\p{L}\p{N}\p{M}]+/gu;
  * Operators of our own are C-308.
  */
 export function fullTextQuery(text: string): string | null {
-  const words = text.match(WORD);
-  if (words === null) return null;
+  const words = queryWords(text);
+  if (words.length === 0) return null;
   return words.map((word) => `"${word}"*`).join(" ");
 }

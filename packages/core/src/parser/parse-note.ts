@@ -1,6 +1,6 @@
 import type { SyntaxNode } from "@lezer/common";
 import { Emoji, GFM, parser, Subscript, Superscript } from "@lezer/markdown";
-import type { Heading, Link, NotePath, ParsedNote } from "../types";
+import type { Heading, Link, NotePath, ParsedNote, TextRange } from "../types";
 import { wikiLink } from "./wiki-link";
 
 /**
@@ -88,7 +88,7 @@ function titleOf(path: NotePath): string {
  * frontmatter was: without this, "---" under a line of YAML makes that
  * line a heading.
  */
-function withoutFrontmatter(text: string): string {
+export function withoutFrontmatter(text: string): string {
   const match =
     /^---[ \t]*\r?\n(?:.*\r?\n)*?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(text);
   if (match === null) return text;
@@ -238,12 +238,6 @@ function addressOf(
   return references.get(referenceKey(label)) ?? null;
 }
 
-/** Offsets of a part of a note's text. */
-export interface TextRange {
-  from: number;
-  to: number;
-}
-
 /**
  * Where the target of each link is written, by the start of the link: the
  * text to replace to point the link elsewhere. For a wiki link it is the
@@ -266,7 +260,7 @@ export function linkTargets(text: string): Map<number, TextRange> {
             ? addressOf(body, node, references)
             : null;
       if (part !== null)
-        targets.set(node.from, { from: part.from, to: part.to });
+        targets.set(node.from, { start: part.from, end: part.to });
     },
   });
   return targets;

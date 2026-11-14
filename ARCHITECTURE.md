@@ -264,7 +264,7 @@ vault.folders.create(path) / rename(from, to) / remove(path)
 vault.attachments.read(path) / save(name, bytes) / import(source) / find(note, target)
 
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
-vault.search.query(text) / titles(text)
+vault.search.query(text) / locate(path, text) / titles(text)
 vault.tags.list() / notes(tag)
 vault.graph.global() / local(path, depth)
 

@@ -1,11 +1,14 @@
 import type { IndexStore } from "../index/index-store";
-import type { SearchHit } from "../types";
+import type { NotePath, SearchHit } from "../types";
+import { firstMatch } from "./locate";
 import { fullTextQuery } from "./query";
 
 /** What `Search` needs from the vault. */
 export interface SearchContext {
   /** The index once it is open; rejects if there is none. */
   index(): Promise<IndexStore>;
+  /** `Notes.read`. */
+  read(path: NotePath): Promise<string>;
 }
 
 export interface SearchOptions {
@@ -35,5 +38,14 @@ export class Search {
     if (match === null) return [];
     const index = await this.context.index();
     return index.search(match, options.limit ?? DEFAULT_LIMIT);
+  }
+
+  /**
+   * Where to open the note at `path` for a hit of `text`: the offset of
+   * the first word of the body that the search matched (`firstMatch`), or
+   * `null` to open it at the top. Rejects if the note cannot be read.
+   */
+  async locate(path: NotePath, text: string): Promise<number | null> {
+    return firstMatch(await this.context.read(path), text);
   }
 }
