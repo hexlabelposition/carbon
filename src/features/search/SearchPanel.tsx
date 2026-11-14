@@ -1,12 +1,10 @@
-import type { SearchHit, TextRange } from "@carbon/core";
-import {
-  useEffect,
-  useRef,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import type { SearchHit } from "@carbon/core";
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { Highlighted } from "./Highlighted";
 import type { Search } from "./use-search";
+
+/** How a match looks in a hit. */
+const MATCH = "rounded-xs bg-highlight text-fg";
 
 interface SearchPanelProps {
   search: Search;
@@ -100,13 +98,18 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
                   onAuxClick={(event) => onHitAuxClick(event, hit)}
                 >
                   <span className="block truncate font-semibold">
-                    <Highlighted text={hit.title} ranges={hit.titleMatches} />
+                    <Highlighted
+                      text={hit.title}
+                      ranges={hit.titleMatches}
+                      className={MATCH}
+                    />
                   </span>
                   {hit.snippet !== "" && (
                     <span className="line-clamp-3 text-small text-muted">
                       <Highlighted
                         text={hit.snippet}
                         ranges={hit.snippetMatches}
+                        className={MATCH}
                       />
                     </span>
                   )}
@@ -142,27 +145,4 @@ function Status({ results }: { results: Search["results"] }) {
       )}
     </>
   );
-}
-
-/** `text` with the parts at `ranges` marked; the ranges are in order. */
-function Highlighted({
-  text,
-  ranges,
-}: {
-  text: string;
-  ranges: readonly TextRange[];
-}) {
-  const parts: ReactNode[] = [];
-  let at = 0;
-  for (const { start, end } of ranges) {
-    if (start > at) parts.push(text.slice(at, start));
-    parts.push(
-      <mark key={start} className="rounded-xs bg-highlight text-fg">
-        {text.slice(start, end)}
-      </mark>,
-    );
-    at = end;
-  }
-  if (at < text.length) parts.push(text.slice(at));
-  return <>{parts}</>;
 }
