@@ -131,7 +131,11 @@ export class Vault {
       caughtUp,
       createNote: (path) => this.notes.create(path),
     });
-    this.search = new Search({ index, read: (path) => this.notes.read(path) });
+    this.search = new Search({
+      index,
+      read: (path) => this.notes.read(path),
+      tree: () => this.tree(),
+    });
     this.watch = new VaultWatch({
       root,
       fs,

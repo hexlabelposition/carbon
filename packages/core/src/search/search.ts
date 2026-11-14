@@ -2,6 +2,8 @@ import type { IndexStore } from "../index/index-store";
 import type { NotePath, SearchHit } from "../types";
 import { firstMatch } from "./locate";
 import { fullTextQuery } from "./query";
+import { TitleMatcher, type TitleHit } from "./titles";
+import type { TreeNode } from "../vault/tree";
 
 /** What `Search` needs from the vault. */
 export interface SearchContext {
@@ -9,6 +11,8 @@ export interface SearchContext {
   index(): Promise<IndexStore>;
   /** `Notes.read`. */
   read(path: NotePath): Promise<string>;
+  /** `Vault.tree`: the same array until something changes. */
+  tree(): Promise<readonly TreeNode[]>;
 }
 
 export interface SearchOptions {
@@ -18,6 +22,8 @@ export interface SearchOptions {
 
 /** Enough for a list to scroll through; the best hits come first. */
 const DEFAULT_LIMIT = 100;
+/** A quick switcher shows a short list: past that, the user types on. */
+const DEFAULT_TITLE_LIMIT = 50;
 
 /**
  * Full-text search over the titles and bodies of notes, answered from the
@@ -25,6 +31,8 @@ const DEFAULT_LIMIT = 100;
  * notes the scan has not reached yet.
  */
 export class Search {
+  private readonly matcher = new TitleMatcher();
+
   constructor(private readonly context: SearchContext) {}
 
   /**
@@ -38,6 +46,16 @@ export class Search {
     if (match === null) return [];
     const index = await this.context.index();
     return index.search(match, options.limit ?? DEFAULT_LIMIT);
+  }
+
+  /**
+   * The notes whose titles match `text` fuzzily, the best first: for a
+   * quick switcher (`TitleMatcher`). Works from the vault tree, so it
+   * needs no index and knows a new note at once. Empty if `text` is blank.
+   */
+  async titles(text: string, options: SearchOptions = {}): Promise<TitleHit[]> {
+    const tree = await this.context.tree();
+    return this.matcher.match(tree, text, options.limit ?? DEFAULT_TITLE_LIMIT);
   }
 
   /**

@@ -242,7 +242,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 ### search
 
 - Full text: SQLite FTS5 with snippets and ranking.
-- Quick switcher: fuzzy matching over titles and aliases kept in memory (candidates: uFuzzy, fuzzysort).
+- Quick switcher: fuzzy matching of titles with fuzzysort (ADR-022), over the notes of the vault tree kept in memory: it works before the index is ready and knows a new note at once. Aliases join when they are parsed (M4).
 
 ### config
 
@@ -467,6 +467,7 @@ Three rules that keep a second shell cheap:
 | ADR-019 | Deleting moves to the system trash through one custom Rust command (`move_to_trash`, the `trash` crate)   | Accepted                   | No official Tauri plugin has a trash. A deleted note must be recoverable, and a trash folder inside the vault would be synced and indexed                                                   |
 | ADR-020 | Files dropped from outside the vault are copied in by a custom Rust command (`import_file`)               | Accepted                   | On Linux the WebView gives a dropped file as a path, not as content, and the `fs` plugin may not read outside the opened folders. The command only writes new files inside an opened folder |
 | ADR-021 | The SQL of the index lives in the core; the platform provides only `SqlDatabases` (open, execute, select) | Accepted                   | The schema and queries are the riskiest part of the index and must be tested; in the core they run on Bun's SQLite in `bun test`. The engine stays replaceable behind `IndexStore`          |
+| ADR-022 | fuzzysort for fuzzy matching of note titles in the quick switcher                                         | Accepted                   | Small, no dependencies, no DOM or Node APIs, so it runs in the core. Gives the matched letters for highlights. 10,000 titles match well within 16 ms                                        |
 
 ## 13. Open questions
 

@@ -34,6 +34,7 @@ async function searchOver(...entries: IndexEntry[]) {
       if (text === undefined) throw new Error(`No note: ${path}`);
       return text;
     },
+    tree: async () => [],
   });
 }
 

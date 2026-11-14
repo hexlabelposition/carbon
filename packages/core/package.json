@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@lezer/highlight": "^1.2.5",
-    "@lezer/markdown": "^1.8.1"
+    "@lezer/markdown": "^1.8.1",
+    "fuzzysort": "^4.0.2"
   }
 }

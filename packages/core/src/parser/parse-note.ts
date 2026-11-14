@@ -78,7 +78,7 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
 
 const HEADING = /^(?:ATX|Setext)Heading([1-6])$/;
 
-function titleOf(path: NotePath): string {
+export function titleOf(path: NotePath): string {
   return path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/i, "");
 }
 

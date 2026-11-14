@@ -28,6 +28,7 @@ export { linksToFile } from "./links/resolve";
 export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";
 export type { Search, SearchOptions } from "./search/search";
+export type { TitleHit } from "./search/titles";
 
 export type {
   Entry,
