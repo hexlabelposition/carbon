@@ -1,11 +1,13 @@
 import type { Vault } from "@carbon/core";
-import { lazy, Suspense, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useState, type ReactNode } from "react";
 import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
 import { useBacklinks } from "../../features/backlinks/use-backlinks";
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
+import { SearchPanel } from "../../features/search/SearchPanel";
+import { useSearch } from "../../features/search/use-search";
 import { useOutline } from "../../features/outline/use-outline";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
@@ -20,6 +22,7 @@ import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { useSidePanel } from "./use-side-panel";
 import { useSidebar } from "./use-sidebar";
+import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
 
 // Dev builds only: in a release build the condition is false at build time
 // and the panel is not bundled.
@@ -36,12 +39,17 @@ export function DesktopShell() {
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
+  const { collapsed, toggle: toggleSidebar } = sidebar;
+  const revealSidebar = useCallback(() => {
+    if (collapsed) toggleSidebar();
+  }, [collapsed, toggleSidebar]);
   const outlinePanel = useSidePanel("carbon.desktop.outline");
   const backlinksPanel = useSidePanel("carbon.desktop.backlinks");
   useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
+  const sidebarView = useSidebarView(vault !== null && !showDev, revealSidebar);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
@@ -85,7 +93,7 @@ export function DesktopShell() {
                   </>
                 }
               >
-                <FileTree vault={vault} />
+                <SidebarContent vault={vault} view={sidebarView} />
               </Sidebar>
             )}
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -150,6 +158,59 @@ export function DesktopShell() {
           </>
         )}
       </StatusBar>
+    </div>
+  );
+}
+
+/**
+ * The views of the sidebar, files and search, with tabs to switch. Both
+ * stay mounted: switching keeps the open folders and the search.
+ */
+function SidebarContent({
+  vault,
+  view: { view, show, searchRequest },
+}: {
+  vault: Vault;
+  view: SidebarViewState;
+}) {
+  const search = useSearch(vault);
+  const tab = (name: typeof view, label: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={view === name}
+      className={`h-6 rounded-sm px-2 text-small hover:bg-raise hover:text-fg ${
+        view === name ? "bg-selected text-fg" : "text-muted"
+      }`}
+      onClick={() => show(name)}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex h-full flex-col">
+      <div
+        role="tablist"
+        aria-label="Sidebar views"
+        className="flex shrink-0 gap-0.5 border-b border-line px-1.5 py-1"
+      >
+        {tab("files", "Files")}
+        {tab("search", "Search")}
+      </div>
+      <div
+        role="tabpanel"
+        aria-label="Files"
+        className={view === "files" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <FileTree vault={vault} />
+      </div>
+      <div
+        role="tabpanel"
+        aria-label="Search"
+        className={view === "search" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <SearchPanel search={search} focusRequest={searchRequest} />
+      </div>
     </div>
   );
 }
