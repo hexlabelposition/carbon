@@ -290,7 +290,7 @@ describe("linkTargets", () => {
       const range = found.get(link.start);
       return [
         text.slice(link.start, link.end),
-        range === undefined ? null : text.slice(range.from, range.to),
+        range === undefined ? null : text.slice(range.start, range.end),
       ];
     });
   };
@@ -315,7 +315,7 @@ describe("linkTargets", () => {
     const ranges = [...linkTargets(text).values()];
     expect(ranges).toHaveLength(2);
     expect(ranges[0]).toEqual(ranges[1]);
-    expect(text.slice(ranges[0].from, ranges[0].to)).toBe("dir/a.md");
+    expect(text.slice(ranges[0].start, ranges[0].end)).toBe("dir/a.md");
   });
 
   test("keeps the offsets of a note with frontmatter", () => {

@@ -1,7 +1,7 @@
 import type { IndexStore } from "../index/index-store";
-import { linkTargets, parseNote, type TextRange } from "../parser/parse-note";
+import { linkTargets, parseNote } from "../parser/parse-note";
 import type { EntryKind } from "../platform";
-import type { Link, NotePath } from "../types";
+import type { Link, NotePath, TextRange } from "../types";
 import { contentHash } from "../util/hash";
 import { linkKeys, NoteFinder } from "./resolve";
 
@@ -134,7 +134,7 @@ function editsFor(source: NotePath, text: string, vault: MovedVault): Edit[] {
     const relative = link.kind === "markdown" && newSource !== source;
     if (newTarget === target && !relative) continue;
 
-    const written = text.slice(range.from, range.to);
+    const written = text.slice(range.start, range.end);
     const replacement = rewriteTarget(
       link,
       written,
@@ -144,7 +144,7 @@ function editsFor(source: NotePath, text: string, vault: MovedVault): Edit[] {
     );
     // A definition shared by links by reference is changed once.
     if (replacement !== written) {
-      edits.set(range.from, { ...range, text: replacement });
+      edits.set(range.start, { ...range, text: replacement });
     }
   }
   return [...edits.values()];
@@ -243,8 +243,8 @@ function decode(address: string): string {
 /** The text with every edit made; the edits do not overlap. */
 function applyEdits(text: string, edits: readonly Edit[]): string {
   let result = text;
-  for (const edit of [...edits].sort((a, b) => b.from - a.from)) {
-    result = result.slice(0, edit.from) + edit.text + result.slice(edit.to);
+  for (const edit of [...edits].sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
   }
   return result;
 }
