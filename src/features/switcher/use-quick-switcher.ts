@@ -1,5 +1,6 @@
 import type { NotePath, TitleHit, Vault } from "@carbon/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { keys, useCommands } from "../commands/commands";
 import { useWorkspace } from "../workspace/workspace";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 
@@ -50,6 +51,20 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
     setOpen(false);
     setQuery("");
   }, [setQuery]);
+
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: "switcher.open",
+          title: "Open a note",
+          shortcut: keys("Mod+O"),
+          run: () => setOpen(true),
+        },
+      ],
+      [],
+    ),
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

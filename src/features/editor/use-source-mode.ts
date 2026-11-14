@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { keys, useCommands } from "../commands/commands";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 
 const STORAGE_KEY = "carbon.editor.sourceMode";
@@ -31,6 +32,19 @@ export function useSourceMode(): SourceMode {
   }, [on]);
 
   const toggle = useCallback(() => setOn((value) => !value), []);
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: "editor.sourceMode",
+          title: "Toggle source mode",
+          shortcut: keys("Mod+E"),
+          run: toggle,
+        },
+      ],
+      [toggle],
+    ),
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

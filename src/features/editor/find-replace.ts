@@ -114,7 +114,7 @@ export const findReplace = [
 const COUNT_LIMIT = 1000;
 
 /** Opens the panel with the focus in the replace field. */
-function openReplace(view: EditorView): boolean {
+export function openReplace(view: EditorView): boolean {
   openSearchPanel(view);
   // The panel is made by the dispatch above, so it is there now.
   const field = view.dom.querySelector<HTMLInputElement>(".cb-find-replace");

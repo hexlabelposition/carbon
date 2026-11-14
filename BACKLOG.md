@@ -106,7 +106,7 @@ Done when: I can find any note by title or content in a 10k-note vault without n
 - [x] **C-303** (P0) Search panel: results list, click opens the note at the match
 - [x] **C-304** (P0) Quick switcher (Ctrl/Cmd+O): fuzzy match on titles, Enter opens, create if missing
 - [x] **C-305** (P0) Find and replace inside the current note
-- [ ] **C-306** (P1) Command palette (Ctrl/Cmd+P) for all app actions
+- [x] **C-306** (P1) Command palette (Ctrl/Cmd+P) for all app actions
 - [ ] **C-307** (P1) Search works for non-English text (check tokenizer for Cyrillic)
 - [ ] **C-308** (P2) Search operators: `tag:`, `path:`, exact phrase
 - [ ] **C-309** (P2) Recent notes in the quick switcher when the query is empty

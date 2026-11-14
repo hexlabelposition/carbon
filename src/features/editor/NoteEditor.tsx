@@ -17,6 +17,8 @@ interface NoteEditorProps {
   onToggleSourceMode: () => void;
   /** Where the headings of the note go. */
   outline?: OutlineLink;
+  /** The editor the user works in: see `MarkdownEditor`. */
+  active?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export function NoteEditor({
   sourceMode,
   onToggleSourceMode,
   outline,
+  active = false,
 }: NoteEditorProps) {
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
@@ -95,6 +98,7 @@ export function NoteEditor({
           images={images.host}
           sourceMode={sourceMode}
           outline={outline}
+          active={active}
           links={links.host}
           reveal={reveal?.path === path ? reveal : null}
         />

@@ -1,6 +1,7 @@
 import type { Vault } from "@carbon/core";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
@@ -10,6 +11,7 @@ import { isWithin, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { shortcutLetter } from "../workspace/shortcut-letter";
+import { useCommands } from "../commands/commands";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -25,8 +27,46 @@ const toolButton =
  * Ctrl+V to move. Ctrl+click, the middle button and Ctrl+Enter open a note
  * in a new tab.
  */
-export function FileTree({ vault }: { vault: Vault }) {
+export function FileTree({
+  vault,
+  onReveal,
+}: {
+  vault: Vault;
+  /**
+   * Makes the tree visible, for a command of the palette that acts in
+   * it, such as "New note".
+   */
+  onReveal?: () => void;
+}) {
   const tree = useFileTree(vault);
+  // The latest, so the commands stay the same while the tree changes.
+  const startNewRef = useRef(tree.startNew);
+  useEffect(() => {
+    startNewRef.current = tree.startNew;
+  });
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: "fileTree.newNote",
+          title: "New note",
+          run: () => {
+            onReveal?.();
+            startNewRef.current("note");
+          },
+        },
+        {
+          id: "fileTree.newFolder",
+          title: "New folder",
+          run: () => {
+            onReveal?.();
+            startNewRef.current("folder");
+          },
+        },
+      ],
+      [onReveal],
+    ),
+  );
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
     useVirtualRows(tree.rows.length, ROW_HEIGHT);
   const [dragging, setDragging] = useState<string | null>(null);

@@ -15,9 +15,11 @@ import {
   type Extension,
 } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
-import { findReplace } from "./find-replace";
+import { findReplace, openReplace } from "./find-replace";
+import { keys, useCommands } from "../commands/commands";
+import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
 import {
   imageHost,
@@ -70,6 +72,11 @@ interface MarkdownEditorProps {
    * scrolls it into view. A new `id` goes there again.
    */
   reveal?: { at: number; id: number } | null;
+  /**
+   * The editor the user works in: it offers its commands, such as "Find
+   * in note", in the command palette.
+   */
+  active?: boolean;
 }
 
 /** Everything live preview adds; source mode leaves it out. */
@@ -93,6 +100,7 @@ export function MarkdownEditor({
   outline,
   links,
   reveal = null,
+  active = false,
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
@@ -217,6 +225,30 @@ export function MarkdownEditor({
       view.destroy();
     };
   }, [label]);
+
+  useCommands(
+    useMemo(() => {
+      if (!active) return [];
+      return [
+        {
+          id: "editor.find",
+          title: "Find in note",
+          shortcut: keys("Mod+F"),
+          run: () => {
+            if (editor.current !== null) openSearchPanel(editor.current);
+          },
+        },
+        {
+          id: "editor.replace",
+          title: "Replace in note",
+          shortcut: keys("Mod+H"),
+          run: () => {
+            if (editor.current !== null) openReplace(editor.current);
+          },
+        },
+      ];
+    }, [active]),
+  );
 
   // After the editor is made: the outline it is given hears of the note.
   useEffect(() => {

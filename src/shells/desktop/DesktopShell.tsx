@@ -1,6 +1,20 @@
 import type { Vault } from "@carbon/core";
-import { lazy, Suspense, useCallback, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
+import { CommandPalette } from "../../features/commands/CommandPalette";
+import {
+  keys,
+  useCommands,
+  type Command,
+} from "../../features/commands/commands";
+import { useCommandPalette } from "../../features/commands/use-command-palette";
 import { useBacklinks } from "../../features/backlinks/use-backlinks";
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { useSourceMode } from "../../features/editor/use-source-mode";
@@ -52,6 +66,60 @@ export function DesktopShell() {
 
   const showDev = devOpen && DevPanel !== null;
   const sidebarView = useSidebarView(vault !== null && !showDev, revealSidebar);
+  const { show: showSidebarView } = sidebarView;
+  const { toggle: toggleOutline } = outlinePanel;
+  const { toggle: toggleBacklinks } = backlinksPanel;
+
+  useCommands(
+    useMemo(() => {
+      const commands: Command[] = [];
+      if (DevPanel !== null) {
+        commands.push({
+          id: "shell.devPanel",
+          title: "Toggle dev panel",
+          run: () => setDevOpen((open) => !open),
+        });
+      }
+      if (vault === null || showDev) return commands;
+      return [
+        ...commands,
+        { id: "shell.sidebar", title: "Toggle sidebar", run: toggleSidebar },
+        { id: "shell.outline", title: "Toggle outline", run: toggleOutline },
+        {
+          id: "shell.backlinks",
+          title: "Toggle backlinks",
+          run: toggleBacklinks,
+        },
+        {
+          id: "shell.files",
+          title: "Show files",
+          run: () => {
+            revealSidebar();
+            showSidebarView("files");
+          },
+        },
+        {
+          id: "shell.search",
+          title: "Search all notes",
+          shortcut: keys("Mod+Shift+F"),
+          run: () => {
+            revealSidebar();
+            showSidebarView("search");
+          },
+        },
+        { id: "shell.closeVault", title: "Close vault", run: close },
+      ];
+    }, [
+      vault,
+      showDev,
+      toggleSidebar,
+      toggleOutline,
+      toggleBacklinks,
+      revealSidebar,
+      showSidebarView,
+      close,
+    ]),
+  );
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
@@ -109,6 +177,7 @@ export function DesktopShell() {
           </WorkspaceProvider>
         )}
       </div>
+      <CommandPaletteHost />
 
       <StatusBar
         actions={
@@ -177,6 +246,7 @@ function SidebarContent({
   view: SidebarViewState;
 }) {
   const search = useSearch(vault);
+  const showFiles = useCallback(() => show("files"), [show]);
   const tab = (name: typeof view, label: string) => (
     <button
       type="button"
@@ -205,7 +275,7 @@ function SidebarContent({
         aria-label="Files"
         className={view === "files" ? "min-h-0 flex-1" : "hidden"}
       >
-        <FileTree vault={vault} />
+        <FileTree vault={vault} onReveal={showFiles} />
       </div>
       <div
         role="tabpanel"
@@ -216,6 +286,12 @@ function SidebarContent({
       </div>
     </div>
   );
+}
+
+/** The command palette, shown while it is open (Ctrl+P). */
+function CommandPaletteHost() {
+  const palette = useCommandPalette();
+  return palette.isOpen ? <CommandPalette palette={palette} /> : null;
 }
 
 /** The quick switcher, shown while it is open (Ctrl+O). */
@@ -289,6 +365,7 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
                   onToggleSourceMode={sourceMode.toggle}
                   // One outline: of the note in the active pane.
                   outline={active ? outline.link : undefined}
+                  active={active}
                 />
               </div>
             )}
