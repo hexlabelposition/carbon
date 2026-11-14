@@ -8,6 +8,8 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
 import { useSearch } from "../../features/search/use-search";
+import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
+import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
@@ -103,6 +105,7 @@ export function DesktopShell() {
                 backlinksOpen={backlinksPanel.open}
               />
             </main>
+            <QuickSwitcherHost vault={vault} />
           </WorkspaceProvider>
         )}
       </div>
@@ -213,6 +216,12 @@ function SidebarContent({
       </div>
     </div>
   );
+}
+
+/** The quick switcher, shown while it is open (Ctrl+O). */
+function QuickSwitcherHost({ vault }: { vault: Vault }) {
+  const switcher = useQuickSwitcher(vault);
+  return switcher.isOpen ? <QuickSwitcher switcher={switcher} /> : null;
 }
 
 interface NoteAreaProps {
