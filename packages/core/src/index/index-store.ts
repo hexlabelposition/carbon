@@ -1,11 +1,13 @@
 import type { Platform, SqlDatabase, SqlValue } from "../platform";
 import { linkKeys, linkPath, matchKey, noteKeys } from "../links/resolve";
+import { MATCH_END, MATCH_START, readMarks } from "../search/marks";
 import type {
   Backlink,
   Heading,
   NotePath,
   OutgoingLink,
   ParsedNote,
+  SearchHit,
   UnresolvedTarget,
 } from "../types";
 import { contentHash } from "../util/hash";
@@ -121,6 +123,11 @@ const RELINK = `UPDATE links
 const ROWS_PER_INSERT = 1000;
 /** Paths in one `IN (...)` list, well below SQLite's limit of parameters. */
 const PATHS_PER_QUERY = 500;
+
+/** How much more a word in the title counts than one in the body. */
+const TITLE_WEIGHT = 10;
+/** Words in the snippet of a search hit; FTS5 takes at most 64. */
+const SNIPPET_WORDS = 16;
 
 /**
  * The index of one vault, in SQLite (ADR-009). The database is a cache in
@@ -329,6 +336,41 @@ export class IndexStore {
       [keys.path, keys.name, keys.name],
     );
     return row?.path ?? null;
+  }
+
+  /**
+   * The notes whose title and body match the FTS5 query `match`, at most
+   * `limit` of them, the best first: ranked by BM25, with a word in the
+   * title worth `TITLE_WEIGHT` words in the body. Rejects on a query that
+   * is not valid FTS5.
+   */
+  async search(match: string, limit: number): Promise<SearchHit[]> {
+    const rows = await this.db.select<{
+      path: string;
+      title: string;
+      snippet: string;
+      rank: number;
+    }>(
+      `SELECT n.path, highlight(notes_fts, 0, ?, ?) AS title,
+              snippet(notes_fts, 1, ?, ?, '…', ${SNIPPET_WORDS}) AS snippet,
+              bm25(notes_fts, ${TITLE_WEIGHT}, 1) AS rank
+       FROM notes_fts JOIN notes n ON n.id = notes_fts.rowid
+       WHERE notes_fts MATCH ? ORDER BY rank, n.path LIMIT ?`,
+      [MATCH_START, MATCH_END, MATCH_START, MATCH_END, match, limit],
+    );
+    return rows.map((row) => {
+      const title = readMarks(row.title);
+      const snippet = readMarks(row.snippet, true);
+      return {
+        path: row.path,
+        title: title.text,
+        titleMatches: title.matches,
+        snippet: snippet.text,
+        snippetMatches: snippet.matches,
+        // BM25 in FTS5 is lower for a better match.
+        score: -row.rank,
+      };
+    });
   }
 
   close(): Promise<void> {

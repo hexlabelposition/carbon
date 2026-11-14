@@ -27,6 +27,7 @@ export type { FollowedLink, Links } from "./links/links";
 export { linksToFile } from "./links/resolve";
 export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";
+export type { Search, SearchOptions } from "./search/search";
 
 export type {
   Entry,
@@ -56,5 +57,6 @@ export type {
   OutgoingLink,
   ParsedNote,
   SearchHit,
+  TextRange,
   UnresolvedTarget,
 } from "./types";

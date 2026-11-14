@@ -71,10 +71,27 @@ export interface UnresolvedTarget {
   links: Backlink[];
 }
 
+/** A part of a text, by offsets in it. */
+export interface TextRange {
+  start: number;
+  end: number;
+}
+
+/** A note found by full-text search. */
 export interface SearchHit {
   path: NotePath;
+  /** `ParsedNote.title`. */
   title: string;
+  /** Where the words searched for are in `title`, in order. */
+  titleMatches: TextRange[];
+  /**
+   * The part of the body with the words searched for, as plain text on
+   * one line, cut short with "…". The start of the body if only the
+   * title has them.
+   */
   snippet: string;
-  /** Higher is better. */
+  /** Where the words searched for are in `snippet`, in order. */
+  snippetMatches: TextRange[];
+  /** How well the note matches; higher is better. */
   score: number;
 }

@@ -4,6 +4,7 @@ import { IndexStore } from "../index/index-store";
 import { Links } from "../links/links";
 import { LinkRewriter } from "../links/rename";
 import { inlineParser } from "../parser/parse-files";
+import { Search } from "../search/search";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
@@ -68,8 +69,8 @@ export interface VaultOptions {
 const DEFAULT_CHANGE_DELAY_MS = 100;
 
 /**
- * The single entry point for the UI. Later milestones add `search`, `tags`
- * and `graph` (ARCHITECTURE.md, section 6).
+ * The single entry point for the UI. Later milestones add `tags` and
+ * `graph` (ARCHITECTURE.md, section 6).
  */
 export class Vault {
   /** Absolute path of the vault folder, `/` separated. */
@@ -78,6 +79,7 @@ export class Vault {
   readonly folders: Folders;
   readonly attachments: Attachments;
   readonly links: Links;
+  readonly search: Search;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -122,12 +124,14 @@ export class Vault {
     this.notes = new Notes({ root, fs, trash, own }, rewriter);
     this.folders = new Folders({ root, fs, trash, own }, rewriter);
     this.attachments = new Attachments({ root, fs, trash, own });
+    const index = () =>
+      this.store ?? Promise.reject(new Error("The index is not open"));
     this.links = new Links({
-      index: () =>
-        this.store ?? Promise.reject(new Error("The index is not open")),
+      index,
       caughtUp,
       createNote: (path) => this.notes.create(path),
     });
+    this.search = new Search({ index });
     this.watch = new VaultWatch({
       root,
       fs,
