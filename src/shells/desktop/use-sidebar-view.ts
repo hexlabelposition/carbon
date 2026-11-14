@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { shortcutLetter } from "../../features/workspace/shortcut-letter";
 
 /** What the sidebar shows. */
 export type SidebarView = "files" | "search";
@@ -34,7 +35,7 @@ export function useSidebarView(
     function onKeyDown(event: KeyboardEvent) {
       const command = event.ctrlKey || event.metaKey;
       if (!command || !event.shiftKey || event.altKey) return;
-      if (event.key.toLowerCase() !== "f") return;
+      if (shortcutLetter(event) !== "f") return;
       reveal();
       show("search");
       // The editor has uses of its own for some keys.

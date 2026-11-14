@@ -9,6 +9,7 @@ import {
 import { isWithin, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
+import { shortcutLetter } from "../workspace/shortcut-letter";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -51,8 +52,8 @@ export function FileTree({ vault }: { vault: Vault }) {
       tree.activate(row.node, command);
     } else if (event.key === "F2") tree.startRename();
     else if (event.key === "Delete") tree.remove();
-    else if (command && event.key.toLowerCase() === "x") tree.cutSelected();
-    else if (command && event.key.toLowerCase() === "v") tree.paste();
+    else if (command && shortcutLetter(event) === "x") tree.cutSelected();
+    else if (command && shortcutLetter(event) === "v") tree.paste();
     else if (event.key === "Escape") tree.cancelCut();
     else return;
     event.preventDefault();

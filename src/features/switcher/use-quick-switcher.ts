@@ -1,6 +1,7 @@
 import type { NotePath, TitleHit, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useWorkspace } from "../workspace/workspace";
+import { shortcutLetter } from "../workspace/shortcut-letter";
 
 export interface QuickSwitcher {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
     function onKeyDown(event: KeyboardEvent) {
       const command = event.ctrlKey || event.metaKey;
       if (!command || event.shiftKey || event.altKey) return;
-      if (event.key.toLowerCase() !== "o") return;
+      if (shortcutLetter(event) !== "o") return;
       setOpen(true);
       // Not the browser's "open file", nor the editor's use of the key.
       event.preventDefault();

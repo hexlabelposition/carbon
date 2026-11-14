@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { shortcutLetter } from "../workspace/shortcut-letter";
 
 const STORAGE_KEY = "carbon.editor.sourceMode";
 
@@ -37,7 +38,7 @@ export function useSourceMode(): SourceMode {
         ? event.metaKey && !event.ctrlKey
         : event.ctrlKey && !event.metaKey;
       if (!command || event.altKey || event.shiftKey) return;
-      if (event.key.toLowerCase() !== "e") return;
+      if (shortcutLetter(event) !== "e") return;
       event.preventDefault();
       event.stopPropagation();
       toggle();

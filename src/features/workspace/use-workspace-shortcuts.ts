@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useWorkspace } from "./workspace";
+import { shortcutLetter } from "./shortcut-letter";
 
 /**
  * Keys and mouse buttons that work anywhere in the workspace:
@@ -20,7 +21,7 @@ export function useWorkspaceShortcuts(): void {
       const key = event.key.toLowerCase();
       if (event.altKey && !command && key === "arrowleft") back();
       else if (event.altKey && !command && key === "arrowright") forward();
-      else if (command && !event.altKey && key === "w") {
+      else if (command && !event.altKey && shortcutLetter(event) === "w") {
         if (activeTabId !== null) closeTab(activeTabId);
       } else if (event.ctrlKey && key === "tab") {
         const at = tabs.findIndex((tab) => tab.id === activeTabId);
