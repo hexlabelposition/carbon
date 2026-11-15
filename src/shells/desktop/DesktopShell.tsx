@@ -45,7 +45,7 @@ import {
   DragStrip,
   WINDOW_CONTROLS_ROOM,
   WindowControls,
-  useWindowBackground,
+  useWindowShape,
   type WindowFrame,
 } from "./WindowControls";
 
@@ -61,7 +61,7 @@ const DevPanel = import.meta.env.DEV
  * (ARCHITECTURE.md, section 8).
  */
 export function DesktopShell({ frame }: { frame: WindowFrame }) {
-  useWindowBackground(frame);
+  useWindowShape(frame);
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();

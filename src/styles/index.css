@@ -71,6 +71,28 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /*
+   * The desktop window is transparent (`transparent` in `tauri.conf.json`)
+   * and the page rounds its corners: outside them the desktop shows.
+   * `clip-path` cuts fixed elements too, which `overflow` would not.
+   * A maximized window keeps square corners.
+   *
+   * Neither `html` nor `body` has a background: the one of `body` would
+   * pass to the whole canvas, which `clip-path` does not cut. The shell
+   * paints its own (`bg-bg` on its root element).
+   */
+  html[data-window] {
+    background: transparent;
+  }
+
+  html[data-window] body {
+    clip-path: inset(0 round var(--radius-lg));
+  }
+
+  html[data-window="maximized"] body {
+    clip-path: none;
+  }
+
   ::selection {
     background: var(--cb-highlight);
   }

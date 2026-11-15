@@ -8,21 +8,77 @@ export interface WindowFrame {
   isMaximized(): Promise<boolean>;
   /** Calls `listener` after every resize; resolves to a function that stops it. */
   onResized(listener: () => void): Promise<() => void>;
-  /** Paints what shows where the page is not drawn yet, as a CSS hex color. */
+  /**
+   * Paints what shows where the page is not drawn yet, as a CSS hex color:
+   * `#rrggbbaa` for one that is see-through.
+   */
   setBackground(color: string): Promise<void>;
 }
 
 /**
- * Keeps the window background the background of the app, in the theme
- * that is on: while the window is being resized, the part the page has
- * not been drawn into yet shows it, not the grey of the system.
+ * Whether the window is maximized, checked again after every resize.
+ * Unknown at first and when the check fails: then `false`.
  */
-export function useWindowBackground(frame: WindowFrame): void {
+function useMaximized(frame: WindowFrame): boolean {
+  const [maximized, setMaximized] = useState(false);
+
+  useEffect(() => {
+    let current = true;
+    let stop: (() => void) | null = null;
+    const check = () => {
+      frame.isMaximized().then(
+        (value) => {
+          if (current) setMaximized(value);
+        },
+        // Unknown: keep what is known.
+        () => {},
+      );
+    };
+    check();
+    frame.onResized(check).then(
+      (unlisten) => {
+        if (current) stop = unlisten;
+        else unlisten();
+      },
+      () => {},
+    );
+    return () => {
+      current = false;
+      stop?.();
+    };
+  }, [frame]);
+
+  return maximized;
+}
+
+/**
+ * Shapes the window: rounded corners, square when it is maximized
+ * (`data-window` on the root element, see `index.css`).
+ *
+ * A maximized window is painted in the background of the app, in the
+ * theme that is on: while it is being resized, the part the page has not
+ * been drawn into yet shows it, not the grey of the system. A window that
+ * is not maximized stays transparent behind the page, or its corners
+ * would show that color.
+ */
+export function useWindowShape(frame: WindowFrame): void {
+  const maximized = useMaximized(frame);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.window = maximized ? "maximized" : "normal";
+    return () => {
+      delete root.dataset.window;
+    };
+  }, [maximized]);
+
   useEffect(() => {
     const paint = () => {
-      const color = getComputedStyle(document.documentElement)
-        .getPropertyValue("--cb-bg")
-        .trim();
+      const color = maximized
+        ? getComputedStyle(document.documentElement)
+            .getPropertyValue("--cb-bg")
+            .trim()
+        : TRANSPARENT;
       if (color === "") return;
       frame
         .setBackground(color)
@@ -43,8 +99,10 @@ export function useWindowBackground(frame: WindowFrame): void {
       dark.removeEventListener("change", paint);
       observer.disconnect();
     };
-  }, [frame]);
+  }, [frame, maximized]);
 }
+
+const TRANSPARENT = "#00000000";
 
 /**
  * Room to leave at the right end of the top row, under the window buttons:
@@ -58,33 +116,7 @@ export const WINDOW_CONTROLS_ROOM = "pr-[144px]";
  * that row leaves `WINDOW_CONTROLS_ROOM` free for them.
  */
 export function WindowControls({ frame }: { frame: WindowFrame }) {
-  const [maximized, setMaximized] = useState(false);
-
-  useEffect(() => {
-    let current = true;
-    let stop: (() => void) | null = null;
-    const check = () => {
-      frame.isMaximized().then(
-        (value) => {
-          if (current) setMaximized(value);
-        },
-        // Unknown: the button keeps the icon it has.
-        () => {},
-      );
-    };
-    check();
-    frame.onResized(check).then(
-      (unlisten) => {
-        if (current) stop = unlisten;
-        else unlisten();
-      },
-      () => {},
-    );
-    return () => {
-      current = false;
-      stop?.();
-    };
-  }, [frame]);
+  const maximized = useMaximized(frame);
 
   const act = (action: () => Promise<void>) => () => {
     action().catch((reason: unknown) =>

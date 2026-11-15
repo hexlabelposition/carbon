@@ -444,7 +444,7 @@ Behavior of a platform or its WebView that the app cannot change. Each was check
 
 - While the window is resized, the WebView draws the new size a few milliseconds late. For that moment the last frame is shown stretched to the new size, so text seems to grow or shrink and then snaps back, and the strip the page has not reached yet is empty.
 - It is the window system and the WebView engine, not the layout: every font size is in pixels, nothing depends on the window size. Obsidian, on Chromium, behaves the same.
-- The empty strip is painted in the background color of the theme (`useWindowBackground`), so it does not show as a grey band.
+- In a maximized window the empty strip is painted in the background color of the theme (`useWindowShape`), so it does not show as a grey band. A window that is not maximized is transparent (for its rounded corners, ADR-023), so the strip shows what lies behind the window; transparency also makes resizing a little slower.
 - Tried and dropped: `WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1` show a black area instead, which is worse. Running under X11 (`GDK_BACKEND=x11`) was not tried: it may resize differently, but it can blur text at fractional display scales and leaves Wayland.
 
 ## 11. Testing and quality
@@ -481,7 +481,7 @@ Behavior of a platform or its WebView that the app cannot change. Each was check
 | ADR-020 | Files dropped from outside the vault are copied in by a custom Rust command (`import_file`)               | Accepted                   | On Linux the WebView gives a dropped file as a path, not as content, and the `fs` plugin may not read outside the opened folders. The command only writes new files inside an opened folder |
 | ADR-021 | The SQL of the index lives in the core; the platform provides only `SqlDatabases` (open, execute, select) | Accepted                   | The schema and queries are the riskiest part of the index and must be tested; in the core they run on Bun's SQLite in `bun test`. The engine stays replaceable behind `IndexStore`          |
 | ADR-022 | fuzzysort for fuzzy matching in the quick switcher and the command palette                                | Accepted                   | Small, no dependencies, no DOM or Node APIs, so it runs in the core. Gives the matched letters for highlights. 10,000 titles match well within 16 ms                                        |
-| ADR-023 | The app draws its own title bar: no system frame, window buttons in the row of tabs                       | Trial                      | One row less, as in VS Code and Obsidian. Needs no Rust: Tauri drag regions and window API. Undone if resizing or the look suffers on Linux                                                 |
+| ADR-023 | The app draws its own title bar: no system frame, window buttons in the row of tabs, rounded corners      | Trial                      | One row less, as in VS Code and Obsidian. Needs no Rust: Tauri drag regions and window API. Undone if resizing or the look suffers on Linux                                                 |
 
 ## 13. Open questions
 
