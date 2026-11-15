@@ -1,12 +1,14 @@
 import type { SyntaxNode } from "@lezer/common";
 import { Emoji, GFM, parser, Subscript, Superscript } from "@lezer/markdown";
 import type { Heading, Link, NotePath, ParsedNote, TextRange } from "../types";
+import { matchKey } from "../links/resolve";
+import { hashtag } from "./hashtag";
 import { wikiLink } from "./wiki-link";
 
 /**
  * The Markdown grammar of Carbon: the one the editor uses (GFM with
  * subscript, superscript and emoji, as in `@codemirror/lang-markdown`)
- * plus wiki links (ADR-012).
+ * plus wiki links and tags (ADR-012).
  */
 export const markdownParser = parser.configure([
   GFM,
@@ -14,6 +16,7 @@ export const markdownParser = parser.configure([
   Superscript,
   Emoji,
   wikiLink,
+  hashtag,
 ]);
 
 /**
@@ -29,8 +32,11 @@ export const markdownParser = parser.configure([
  *   for the links module.
  * - `plainText`: the body without Markdown syntax, one block per line.
  *
- * Frontmatter is left out of everything. Tags, aliases and properties stay
- * empty until they are parsed (C-401, C-402).
+ * - `tags`: the inline tags (`hashtag`), without "#", once each: tags
+ *   that differ only in case are one, written as the first of them.
+ *
+ * Frontmatter is left out of everything. Its tags, aliases and properties
+ * stay empty until it is parsed (C-402).
  */
 export function parseNote(path: NotePath, text: string): ParsedNote {
   // Read from `body` everywhere: it has the offsets of `text`, and blanks
@@ -42,6 +48,7 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
 
   const headings: Heading[] = [];
   const links: Link[] = [];
+  const tags = new Map<string, string>();
   tree.iterate({
     enter({ name, node }) {
       const level = HEADING.exec(name)?.[1];
@@ -56,6 +63,10 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
           ...readWikiLink(body, node),
           snippet: snippetOf(read, node),
         });
+      } else if (name === "HashtagLabel") {
+        const tag = body.slice(node.from, node.to);
+        const key = matchKey(tag);
+        if (!tags.has(key)) tags.set(key, tag);
       } else if (name === "Link") {
         const link = readMarkdownLink(body, node, references, read);
         if (link !== null)
@@ -69,7 +80,7 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
     title: titleOf(path),
     headings,
     links,
-    tags: [],
+    tags: [...tags.values()],
     aliases: [],
     properties: {},
     plainText: read.plain(tree.topNode),
