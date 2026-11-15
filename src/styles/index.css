@@ -74,6 +74,9 @@
     --cb-note-size: 15px;
     --cb-note-width: 784px;
     --cb-note-font: var(--font-sans);
+
+    /* The width of the buttons in the top right corner (WindowControls). */
+    --cb-controls-room: 144px;
   }
 
   /*

@@ -179,7 +179,27 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
       <AppMark />
-      <WindowControls frame={frame} />
+      <WindowControls
+        frame={frame}
+        panels={
+          vault !== null && !showDev ? (
+            <>
+              <PanelToggle
+                side="left"
+                open={!sidebar.collapsed}
+                shortcut={LEFT_PANEL_SHORTCUT}
+                onToggle={toggleSidebar}
+              />
+              <PanelToggle
+                side="right"
+                open={rightPanel.open}
+                shortcut={RIGHT_PANEL_SHORTCUT}
+                onToggle={toggleRightPanel}
+              />
+            </>
+          ) : undefined
+        }
+      />
       <div className="flex min-h-0 flex-1">
         {showDev ? (
           <div className="flex min-w-0 flex-1 flex-col">
@@ -239,7 +259,6 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
               <NoteArea
                 vault={vault}
                 leftOpen={!sidebar.collapsed}
-                onToggleLeft={toggleSidebar}
                 right={rightPanel}
               />
             </main>
@@ -338,9 +357,8 @@ function QuickSwitcherHost({ vault }: { vault: Vault }) {
 
 interface NoteAreaProps {
   vault: Vault;
-  /** Whether the left panel is open, for its button at the start of the tabs. */
+  /** Whether the left panel is open: shut, the top row leaves the mark room. */
   leftOpen: boolean;
-  onToggleLeft: () => void;
   /** The panel beside the note: its outline and the notes that link to it. */
   right: RightPanel;
 }
@@ -350,7 +368,7 @@ interface NoteAreaProps {
  * beside it, the panels that are open: the outline of the note and its
  * backlinks, one above the other.
  */
-function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
+function NoteArea({ vault, leftOpen, right }: NoteAreaProps) {
   const workspace = useWorkspace();
   const t = useT();
   useWorkspaceShortcuts();
@@ -361,22 +379,41 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
   /** The edge of the right panel is being dragged: it does not glide. */
   const [resizingRight, setResizingRight] = useState(false);
 
-  const leftToggle = (
-    <PanelToggle
-      side="left"
-      open={leftOpen}
-      shortcut={LEFT_PANEL_SHORTCUT}
-      onToggle={onToggleLeft}
-    />
+  const rightPanel = (
+    <SlidePanel
+      open={right.open}
+      // As the sidebar: a share of the window, at least 180 pixels, and
+      // never narrower than the buttons in the corner above it.
+      width={`max(11.25rem, var(--cb-controls-room), ${right.width.fraction * 100}vw)`}
+      animate={!resizingRight}
+      keepMounted={false}
+    >
+      <RightPanelContent
+        width={right.width}
+        onResizing={setResizingRight}
+        vault={vault}
+        path={path}
+        view={right.view}
+        onShow={right.show}
+        outline={
+          <OutlinePanel
+            headings={outline.headings}
+            current={outline.current}
+            onReveal={outline.reveal}
+          />
+        }
+      />
+    </SlidePanel>
   );
 
   if (path === null) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <DragStrip room roomStart={!leftOpen}>
-          {leftToggle}
-        </DragStrip>
-        <Watermark label={t("shell.noNoteOpen")} />
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <DragStrip room={!right.open} roomStart={!leftOpen} />
+          <Watermark label={t("shell.noNoteOpen")} />
+        </div>
+        {rightPanel}
       </div>
     );
   }
@@ -415,19 +452,8 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
                 onForward={workspace.forward}
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
-                start={index === 0 ? leftToggle : undefined}
                 // With the left panel shut, the bar starts at the left edge.
                 leaveRoomStart={index === 0 && !leftOpen}
-                end={
-                  index === last ? (
-                    <PanelToggle
-                      side="right"
-                      open={right.open}
-                      shortcut={RIGHT_PANEL_SHORTCUT}
-                      onToggle={right.toggle}
-                    />
-                  ) : undefined
-                }
                 // The right end of the top row holds the window buttons.
                 leaveRoom={!right.open && index === last}
               />
@@ -456,29 +482,7 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
           </section>
         );
       })}
-      <SlidePanel
-        open={right.open}
-        // As the sidebar: a share of the window, at least 180 pixels.
-        width={`max(11.25rem, ${right.width.fraction * 100}vw)`}
-        animate={!resizingRight}
-        keepMounted={false}
-      >
-        <RightPanelContent
-          width={right.width}
-          onResizing={setResizingRight}
-          vault={vault}
-          path={path}
-          view={right.view}
-          onShow={right.show}
-          outline={
-            <OutlinePanel
-              headings={outline.headings}
-              current={outline.current}
-              onReveal={outline.reveal}
-            />
-          }
-        />
-      </SlidePanel>
+      {rightPanel}
     </div>
   );
 }
@@ -515,32 +519,67 @@ function IndexState({ vault }: { vault: Vault }) {
   );
 }
 
-/**
- * The panel at the right of the note, laid out as the left one: an empty
- * top row, which drags the window and leaves its buttons room, the tabs
- * of what it can show, and what it shows.
- */
-function RightPanelContent({
-  width,
-  onResizing,
-  vault,
-  path,
-  view,
-  onShow,
-  outline,
-}: {
+interface RightPanelProps {
   width: PanelWidth;
   /** Told when its edge is dragged and let go. */
   onResizing: (resizing: boolean) => void;
   vault: Vault;
-  path: string;
+  /** The note it is about; `null` while none is open: it is empty then. */
+  path: string | null;
   view: RightPanelView;
   onShow: (view: RightPanelView) => void;
   /** The outline of the note, which the note area keeps up to date. */
   outline: ReactNode;
+}
+
+/** The panel at the right of the note: empty while no note is open. */
+function RightPanelContent(props: RightPanelProps) {
+  return props.path === null ? (
+    <RightPanelFrame {...props} backlinks={null}>
+      {null}
+    </RightPanelFrame>
+  ) : (
+    <RightPanelForNote {...props} path={props.path} />
+  );
+}
+
+function RightPanelForNote(props: RightPanelProps & { path: string }) {
+  const { vault, path, view, outline } = props;
+  const backlinks = useBacklinks(vault, path);
+  return (
+    <RightPanelFrame
+      {...props}
+      backlinks={
+        backlinks.status === "ready" ? backlinks.backlinks.length : null
+      }
+    >
+      {view === "outline" ? (
+        outline
+      ) : (
+        <BacklinksView vault={vault} path={path} backlinks={backlinks} />
+      )}
+    </RightPanelFrame>
+  );
+}
+
+/**
+ * The right panel laid out as the left one: an empty top row, which drags
+ * the window and leaves its buttons room, the tabs of what it can show,
+ * and what it shows.
+ */
+function RightPanelFrame({
+  width,
+  onResizing,
+  view,
+  onShow,
+  backlinks,
+  children,
+}: RightPanelProps & {
+  /** How many notes link to the note, shown on its tab; `null` if unknown. */
+  backlinks: number | null;
+  children: ReactNode;
 }) {
   const t = useT();
-  const backlinks = useBacklinks(vault, path);
   return (
     <aside
       aria-label={t("shell.rightPanel")}
@@ -567,10 +606,8 @@ function RightPanelContent({
             label: (
               <>
                 {t("shell.backlinks")}
-                {backlinks.status === "ready" && (
-                  <span className="text-faint">
-                    {backlinks.backlinks.length}
-                  </span>
+                {backlinks !== null && (
+                  <span className="text-faint">{backlinks}</span>
                 )}
               </>
             ),
@@ -580,11 +617,7 @@ function RightPanelContent({
         onShow={onShow}
       />
       <div role="tabpanel" className="min-h-0 flex-1 overflow-auto">
-        {view === "outline" ? (
-          outline
-        ) : (
-          <BacklinksView vault={vault} path={path} backlinks={backlinks} />
-        )}
+        {children}
       </div>
     </aside>
   );

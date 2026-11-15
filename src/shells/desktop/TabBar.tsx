@@ -24,10 +24,6 @@ interface TabBarProps {
   leaveRoom?: boolean;
   /** The bar is at the top left: it leaves the mark of the app room. */
   leaveRoomStart?: boolean;
-  /** Before back and forward, such as the button of the left panel. */
-  start?: ReactNode;
-  /** After the tabs, such as the button of the right panel. */
-  end?: ReactNode;
 }
 
 /**
@@ -45,8 +41,6 @@ export function TabBar({
   onClose,
   leaveRoom = false,
   leaveRoomStart = false,
-  start,
-  end,
 }: TabBarProps) {
   const t = useT();
   return (
@@ -60,7 +54,6 @@ export function TabBar({
         data-tauri-drag-region
         className="flex shrink-0 items-center gap-0.5 px-1.5"
       >
-        {start}
         <ArrowButton
           label={t("tabs.back")}
           disabled={!canGoBack}
@@ -124,14 +117,6 @@ export function TabBar({
           );
         })}
       </div>
-      {end !== undefined && (
-        <div
-          data-tauri-drag-region
-          className="flex shrink-0 items-center border-l border-line px-1.5"
-        >
-          {end}
-        </div>
-      )}
     </div>
   );
 }

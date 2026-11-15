@@ -2,6 +2,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -177,19 +178,45 @@ function toggleFullscreen(frame: WindowFrame): void {
 }
 
 /**
- * Room to leave at the right end of the top row, under the window buttons:
- * three square buttons as tall as the row, 48 pixels.
+ * Room to leave at the right end of the top row, under the buttons in the
+ * top right corner: as wide as they are, which `WindowControls` keeps in
+ * `--cb-controls-room` (with the panel buttons or without).
  */
-export const WINDOW_CONTROLS_ROOM = "pr-[144px]";
+export const WINDOW_CONTROLS_ROOM = "pr-(--cb-controls-room)";
 
 /**
  * Minimize, maximize or restore, and close, in the top right corner of the
- * window, over the top row of the layout. The element at the right end of
- * that row leaves `WINDOW_CONTROLS_ROOM` free for them.
+ * window, over the top row of the layout, with `panels` before them: the
+ * buttons of the side panels. The element at the right end of that row
+ * leaves `WINDOW_CONTROLS_ROOM` free for them.
  */
-export function WindowControls({ frame }: { frame: WindowFrame }) {
+export function WindowControls({
+  frame,
+  panels,
+}: {
+  frame: WindowFrame;
+  panels?: ReactNode;
+}) {
   const t = useT();
   const { maximized } = useWindowState(frame);
+  const group = useRef<HTMLDivElement>(null);
+
+  // The room the top row leaves: as wide as the buttons are now. Before
+  // the paint, so the row never runs under them.
+  useLayoutEffect(() => {
+    const element = group.current;
+    if (element === null) return;
+    const { style } = document.documentElement;
+    const measure = () =>
+      style.setProperty("--cb-controls-room", `${element.offsetWidth}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      style.removeProperty("--cb-controls-room");
+    };
+  }, []);
 
   const act = (action: () => Promise<void>) => () => {
     action().catch((reason: unknown) =>
@@ -201,9 +228,14 @@ export function WindowControls({ frame }: { frame: WindowFrame }) {
     // Marked, so a dialog can tell a press here from one beside it: the
     // window buttons work while the settings are open.
     <div
+      ref={group}
       data-window-controls
       className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel"
     >
+      {panels !== undefined && (
+        // A little apart from the buttons of the window.
+        <div className="mr-2 flex">{panels}</div>
+      )}
       <ControlButton label={t("window.minimize")} onClick={act(frame.minimize)}>
         <path d="M0 5.5h10" shapeRendering="crispEdges" />
       </ControlButton>
@@ -286,13 +318,10 @@ function ControlButton({
 export function DragStrip({
   room = false,
   roomStart = false,
-  children,
 }: {
   room?: boolean;
   /** Leaves room at the start for the mark in the top left corner. */
   roomStart?: boolean;
-  /** Buttons at its start, such as the one of the left panel. */
-  children?: ReactNode;
 }) {
   return (
     <div
@@ -300,8 +329,6 @@ export function DragStrip({
       className={`flex h-12 shrink-0 items-center border-b border-line bg-panel px-1.5 ${
         room ? WINDOW_CONTROLS_ROOM : ""
       } ${roomStart ? APP_MARK_ROOM : ""}`}
-    >
-      {children}
-    </div>
+    />
   );
 }

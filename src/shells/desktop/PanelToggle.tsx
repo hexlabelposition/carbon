@@ -31,31 +31,36 @@ export function PanelToggle({
       aria-label={label}
       aria-pressed={open}
       title={`${label} (${shortcut})`}
-      className="flex size-6 shrink-0 items-center justify-center rounded-sm text-muted hover:bg-raise hover:text-fg"
+      // As tall as the top row, as the window buttons beside it.
+      // The whole height of the row takes the click; only a rounded square
+      // around the icon lights up.
+      className="group flex h-full w-9 shrink-0 items-center justify-center text-muted outline-none hover:text-fg"
       onClick={onToggle}
     >
-      <svg
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        className="size-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.25"
-      >
-        <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
-        <path d={side === "left" ? "M6 2.5v11" : "M10 2.5v11"} />
-        {open && (
-          <rect
-            x={x}
-            y="3"
-            width="4"
-            height="10"
-            rx="1"
-            fill="currentColor"
-            stroke="none"
-          />
-        )}
-      </svg>
+      <span className="flex size-7 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong">
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+        >
+          <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
+          <path d={side === "left" ? "M6 2.5v11" : "M10 2.5v11"} />
+          {open && (
+            <rect
+              x={x}
+              y="3"
+              width="4"
+              height="10"
+              rx="1"
+              fill="currentColor"
+              stroke="none"
+            />
+          )}
+        </svg>
+      </span>
     </button>
   );
 }
