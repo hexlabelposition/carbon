@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -64,7 +64,9 @@ function useMaximized(frame: WindowFrame): boolean {
 export function useWindowShape(frame: WindowFrame): void {
   const maximized = useMaximized(frame);
 
-  useEffect(() => {
+  // Before the first paint: the first frame already has the rounded
+  // corners, not a square one that turns round a moment later.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.window = maximized ? "maximized" : "normal";
     return () => {

@@ -9,6 +9,7 @@ const secondary =
 /** What the app shows while no vault is open. */
 export function StartScreen() {
   const start = useStartScreen();
+  if (!start.ready) return null;
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-120 flex-col justify-center gap-6 px-8 py-10">

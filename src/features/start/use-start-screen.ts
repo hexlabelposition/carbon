@@ -4,6 +4,12 @@ import { useAppSettings } from "../settings/app-settings";
 import { useVaultSession, type VaultError } from "../vault/vault-session";
 
 export interface StartScreenState {
+  /**
+   * False until the saved settings are read. Until then the screen shows
+   * nothing: its content is centered, and the recent vaults coming in a
+   * moment later would push it up.
+   */
+  ready: boolean;
   /** True while a vault is being picked, created or opened. */
   busy: boolean;
   error: VaultError | null;
@@ -56,6 +62,7 @@ export function useStartScreen(): StartScreenState {
   return {
     busy: session.opening,
     error: session.error,
+    ready: settings.loaded,
     recentVaults: settings.recentVaults,
     openFolder: () => void pickAndOpen(),
     openRecent: (root) => void open(root),
