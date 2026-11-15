@@ -59,7 +59,7 @@ interface MarkdownEditorProps {
   images?: ImageHost;
   /** Shows the raw Markdown: no live preview, every mark visible. */
   sourceMode?: boolean;
-  /** Shows the note to read only: no cursor, no edits. */
+  /** Shows the note to read: no cursor, no typing; tasks can be ticked. */
   readOnly?: boolean;
   /**
    * Receives the headings of the note and lets them be gone to. Given

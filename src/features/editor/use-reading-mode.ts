@@ -10,9 +10,9 @@ export interface ReadingMode {
 }
 
 /**
- * Whether notes are shown to read only: no cursor, no Markdown shown on a
- * click, no edits. One switch for every note, as source mode, remembered
- * between app starts.
+ * Whether notes are shown to read: no cursor, no Markdown shown on a
+ * click, no typing; tasks can still be ticked. One switch for every note,
+ * as source mode, remembered between app starts.
  */
 export function useReadingMode(): ReadingMode {
   const [on, setOn] = useState(load);

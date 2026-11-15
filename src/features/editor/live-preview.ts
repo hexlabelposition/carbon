@@ -119,10 +119,6 @@ export const livePreview = [
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    // To read only: the box cannot be ticked, so it does not look it.
-    ".cm-content[contenteditable=false] .cm-task": { cursor: "default" },
-    ".cm-content[contenteditable=false] .cm-task:not(.cm-task-checked):hover rect":
-      { stroke: "var(--cb-faint)" },
     ".cm-task-done": {
       color: "var(--cb-faint)",
       textDecoration: "line-through",
@@ -173,10 +169,10 @@ class TaskWidget extends WidgetType {
       (this.checked ? '<path d="M4.6 8.3l2.3 2.3 4.5-4.9"/>' : "") +
       "</svg>";
     // On press, not on click: the press would otherwise move the cursor
-    // next to the box first, which turns it back into "[ ]".
+    // next to the box first, which turns it back into "[ ]". It works in
+    // reading mode too: ticking a task is the one edit made while reading.
     box.addEventListener("mousedown", (event) => {
       event.preventDefault();
-      if (view.state.readOnly) return;
       const from = view.posAtDOM(box);
       const marker = view.state.sliceDoc(from, from + 3);
       if (!/^\[[ xX]\]$/.test(marker)) return;

@@ -19,7 +19,7 @@ interface NoteEditorProps {
   /** Shows the raw Markdown in place of live preview. */
   sourceMode: boolean;
   onToggleSourceMode: () => void;
-  /** Shows the note to read only: nothing in it can be changed. */
+  /** Shows the note to read: no typing, only tasks can be ticked. */
   readingMode: boolean;
   onToggleReadingMode: () => void;
   /** Where the headings of the note go. */
@@ -95,7 +95,7 @@ export function NoteEditor({
         <button
           type="button"
           aria-pressed={readingMode}
-          title="Read only: the note cannot be changed"
+          title="Reading mode: no typing, tasks can still be ticked"
           className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
             readingMode ? "bg-selected text-fg" : "text-muted"
           }`}
