@@ -37,15 +37,16 @@ export class Search {
 
   /**
    * The notes that have every word of `text`, as a word or the start of
-   * one, in the title or the body; ignoring case. The best first: a word
-   * in the title counts for more than one in the body. Empty if `text`
-   * has no words.
+   * one, and every `"exact phrase"`, in the title or the body; ignoring
+   * case. With `path:folder`, only notes whose path has that text. The
+   * best first: a word in the title counts for more than one in the body.
+   * Empty if `text` asks for nothing (`fullTextQuery`).
    */
   async query(text: string, options: SearchOptions = {}): Promise<SearchHit[]> {
-    const match = fullTextQuery(text);
-    if (match === null) return [];
+    const query = fullTextQuery(text);
+    if (query === null) return [];
     const index = await this.context.index();
-    return index.search(match, options.limit ?? DEFAULT_LIMIT);
+    return index.search(query, options.limit ?? DEFAULT_LIMIT);
   }
 
   /**

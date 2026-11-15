@@ -74,9 +74,9 @@ export class Links {
     const match = mentionQuery(title);
     if (match === null) return [];
     const index = await this.context.index();
-    const candidates = (await index.search(match, MENTION_NOTES)).filter(
-      (hit) => hit.path !== path,
-    );
+    const candidates = (
+      await index.search({ match, paths: [] }, MENTION_NOTES)
+    ).filter((hit) => hit.path !== path);
     const found = await mapPool(candidates, READ_CONCURRENCY, async (hit) => {
       let text: string;
       try {

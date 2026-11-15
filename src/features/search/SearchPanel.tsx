@@ -77,6 +77,7 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
           type="search"
           aria-label="Search notes"
           placeholder="Search notes"
+          title={'Words, "exact phrase", path:folder'}
           spellCheck={false}
           value={query}
           onChange={(event) => setQuery(event.target.value)}

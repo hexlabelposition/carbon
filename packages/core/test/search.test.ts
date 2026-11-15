@@ -9,7 +9,7 @@ import {
 import { readMarks } from "../src/search/marks";
 import { firstMatch } from "../src/search/locate";
 import { fold, spellings } from "../src/search/fold";
-import { fullTextQuery } from "../src/search/query";
+import { fullTextQuery, parseQuery } from "../src/search/query";
 import { Search } from "../src/search/search";
 import { createMemoryPlatform } from "./fakes";
 
@@ -46,30 +46,75 @@ const parts = (text: string, ranges: { start: number; end: number }[]) =>
   ranges.map((r) => text.slice(r.start, r.end));
 
 describe("search", () => {
+  describe("parseQuery", () => {
+    test("reads words, phrases and paths apart", () => {
+      expect(parseQuery('green "black tea" path:drinks tea')).toEqual({
+        words: ["green", "tea"],
+        phrases: [{ words: ["black", "tea"], open: false }],
+        paths: ["drinks"],
+      });
+    });
+
+    test("takes a quoted path with spaces", () => {
+      expect(parseQuery('path:"my notes/2026" x').paths).toEqual([
+        "my notes/2026",
+      ]);
+    });
+
+    test("runs a phrase without its closing quote to the end", () => {
+      expect(parseQuery('a "new ye').phrases).toEqual([
+        { words: ["new", "ye"], open: true },
+      ]);
+    });
+
+    test("leaves out empty parts and reads unknown operators as words", () => {
+      expect(parseQuery('path: "" title:x')).toEqual({
+        words: ["title", "x"],
+        phrases: [],
+        paths: [],
+      });
+    });
+  });
+
   describe("fullTextQuery", () => {
+    const match = (text: string) => fullTextQuery(text)?.match;
+
     test("asks for every word, or the start of it", () => {
-      expect(fullTextQuery("Green tea")).toBe('"green"* AND "tea"*');
+      expect(match("Green tea")).toBe('"green"* AND "tea"*');
+    });
+
+    test("asks for a phrase as written", () => {
+      expect(match('"green tea" x')).toBe('"x"* AND "green tea"');
+      expect(match('"green te')).toBe('"green te"*');
     });
 
     test("never passes on FTS5 syntax", () => {
-      expect(fullTextQuery('a OR "b" -c :d NEAR(e) f*')).toBe(
-        '"a"* AND "or"* AND "b"* AND "c"* AND "d"* AND "near"* AND "e"* AND "f"*',
+      expect(match("a OR -c :d NEAR(e) f*")).toBe(
+        '"a"* AND "or"* AND "c"* AND "d"* AND "near"* AND "e"* AND "f"*',
       );
     });
 
     test("keeps letters of any script and their marks", () => {
-      expect(fullTextQuery("Привіт, café 42")).toBe(
-        '"привіт"* AND "café"* AND "42"*',
-      );
+      expect(match("Привіт, café 42")).toBe('"привіт"* AND "café"* AND "42"*');
     });
 
     test("asks for every spelling of look-alike letters", () => {
-      expect(fullTextQuery("Ёлка tea")).toBe('("елка"* OR "ёлка"*) AND "tea"*');
+      expect(match("Ёлка tea")).toBe('("елка"* OR "ёлка"*) AND "tea"*');
+      expect(match('"ёлка"')).toBe('("елка" OR "ёлка")');
     });
 
-    test("is null without a word", () => {
+    test("filters by path keys, with or without words", () => {
+      expect(fullTextQuery("path:Проекты tea")).toEqual({
+        match: '"tea"*',
+        paths: ["проекты"],
+      });
+      expect(fullTextQuery("path:x")).toEqual({ match: null, paths: ["x"] });
+    });
+
+    test("is null when it asks for nothing", () => {
       expect(fullTextQuery("")).toBeNull();
       expect(fullTextQuery('  "*-:() ')).toBeNull();
+      expect(fullTextQuery("path:")).toBeNull();
     });
   });
 
@@ -167,6 +212,18 @@ describe("search", () => {
       expect(firstMatch("Жила-была Ёлка", "елк")).toBe(10);
       expect(firstMatch("w Łodzi", "lodz")).toBe(2);
       expect(firstMatch("мой", "мои")).toBeNull();
+    });
+
+    test("finds a phrase, not its words apart", () => {
+      const text = "black and tea, then black tea";
+      expect(firstMatch(text, '"black tea"')).toBe(text.lastIndexOf("black"));
+      expect(firstMatch("black teapot", '"black tea"')).toBeNull();
+      expect(firstMatch("black teapot", '"black tea')).toBe(0);
+    });
+
+    test("does not look for a path filter", () => {
+      expect(firstMatch("the dir here", "path:dir")).toBeNull();
+      expect(firstMatch("the dir here", "path:dir here")).toBe(8);
     });
 
     test("is null without a match or a word", () => {
@@ -298,6 +355,52 @@ describe("search", () => {
       const [hit] = await search.query("recipes");
       expect(hit.snippet).toBe("Soup. Bread.");
       expect(hit.snippetMatches).toEqual([]);
+    });
+
+    test("finds a phrase only as written", async () => {
+      const search = await searchOver(
+        note("a.md", "We drink black tea."),
+        note("b.md", "Tea, not black coffee."),
+      );
+      expect(paths(await search.query('"black tea"'))).toEqual(["a.md"]);
+      expect(paths(await search.query("black tea")).sort()).toEqual([
+        "a.md",
+        "b.md",
+      ]);
+      const [hit] = await search.query('"black tea"');
+      expect(parts(hit.snippet, hit.snippetMatches)).toEqual(["black tea"]);
+    });
+
+    test("filters by path, ignoring case", async () => {
+      const search = await searchOver(
+        note("Проекты/Carbon.md", "notes app"),
+        note("archive/Carbon old.md", "notes app"),
+        note("Notes.md", "app"),
+      );
+      expect(paths(await search.query("app path:проекты"))).toEqual([
+        "Проекты/Carbon.md",
+      ]);
+      expect(paths(await search.query("path:carbon app")).sort()).toEqual([
+        "archive/Carbon old.md",
+        "Проекты/Carbon.md",
+      ]);
+      expect(paths(await search.query('path:"carbon old"'))).toEqual([
+        "archive/Carbon old.md",
+      ]);
+    });
+
+    test("lists the notes of a path without words", async () => {
+      const long = "word ".repeat(40);
+      const search = await searchOver(
+        note("dir/b.md", "Second"),
+        note("dir/a.md", long),
+        note("other.md", "x"),
+      );
+      const hits = await search.query("path:dir/");
+      expect(paths(hits)).toEqual(["dir/a.md", "dir/b.md"]);
+      expect(hits[0].snippet.endsWith("…")).toBe(true);
+      expect(hits[0].snippet.length).toBeLessThanOrEqual(121);
+      expect(hits[1]).toMatchObject({ snippet: "Second", snippetMatches: [] });
     });
 
     test("takes what the user types as plain words", async () => {

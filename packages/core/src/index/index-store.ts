@@ -1,6 +1,7 @@
 import type { Platform, SqlDatabase, SqlValue } from "../platform";
 import { linkKeys, linkPath, matchKey, noteKeys } from "../links/resolve";
 import { MATCH_END, MATCH_START, readMarks } from "../search/marks";
+import type { FullTextQuery } from "../search/query";
 import type {
   Backlink,
   Heading,
@@ -135,6 +136,8 @@ const PATHS_PER_QUERY = 500;
 const TITLE_WEIGHT = 10;
 /** Words in the snippet of a search hit; FTS5 takes at most 64. */
 const SNIPPET_WORDS = 16;
+/** Characters of the body shown for a hit found by its path alone. */
+const PLAIN_SNIPPET_LENGTH = 120;
 
 /**
  * The index of one vault, in SQLite (ADR-009). The database is a cache in
@@ -346,12 +349,44 @@ export class IndexStore {
   }
 
   /**
-   * The notes whose title and body match the FTS5 query `match`, at most
-   * `limit` of them, the best first: ranked by BM25, with a word in the
-   * title worth `TITLE_WEIGHT` words in the body. Rejects on a query that
-   * is not valid FTS5.
+   * The notes that match `query`, at most `limit` of them, the best
+   * first: the ones whose title and body match its FTS5 query, ranked by
+   * BM25 with a word in the title worth `TITLE_WEIGHT` words in the body,
+   * and whose path keys have each of its `paths`. With paths alone, the
+   * notes in path order, each with the start of its body. Rejects on a
+   * query that is not valid FTS5.
    */
-  async search(match: string, limit: number): Promise<SearchHit[]> {
+  async search(query: FullTextQuery, limit: number): Promise<SearchHit[]> {
+    const inPaths = query.paths
+      .map(() => "AND instr(n.path_key, ?) > 0")
+      .join(" ");
+    if (query.match === null) {
+      const rows = await this.db.select<{
+        path: string;
+        title: string;
+        body: string;
+      }>(
+        `SELECT n.path, n.title, substr(f.body, 1, ${PLAIN_SNIPPET_LENGTH + 1}) AS body
+         FROM notes n JOIN notes_fts f ON f.rowid = n.id
+         WHERE 1 ${inPaths} ORDER BY n.path LIMIT ?`,
+        [...query.paths, limit],
+      );
+      return rows.map((row) => {
+        const body = readMarks(row.body, true).text;
+        return {
+          path: row.path,
+          title: row.title,
+          titleMatches: [],
+          snippet:
+            body.length > PLAIN_SNIPPET_LENGTH
+              ? `${body.slice(0, PLAIN_SNIPPET_LENGTH).trimEnd()}…`
+              : body,
+          snippetMatches: [],
+          score: 0,
+        };
+      });
+    }
+
     const rows = await this.db.select<{
       path: string;
       title: string;
@@ -362,8 +397,16 @@ export class IndexStore {
               snippet(notes_fts, 1, ?, ?, '…', ${SNIPPET_WORDS}) AS snippet,
               bm25(notes_fts, ${TITLE_WEIGHT}, 1) AS rank
        FROM notes_fts JOIN notes n ON n.id = notes_fts.rowid
-       WHERE notes_fts MATCH ? ORDER BY rank, n.path LIMIT ?`,
-      [MATCH_START, MATCH_END, MATCH_START, MATCH_END, match, limit],
+       WHERE notes_fts MATCH ? ${inPaths} ORDER BY rank, n.path LIMIT ?`,
+      [
+        MATCH_START,
+        MATCH_END,
+        MATCH_START,
+        MATCH_END,
+        query.match,
+        ...query.paths,
+        limit,
+      ],
     );
     return rows.map((row) => {
       const title = readMarks(row.title);
