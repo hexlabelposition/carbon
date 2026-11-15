@@ -11,6 +11,8 @@
     "core:window:allow-close",
     "core:window:allow-is-maximized",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-background-color",
+    "core:webview:allow-set-webview-background-color",
     "opener:default",
     "dialog:allow-open",
     "fs:allow-read-text-file",

@@ -8,6 +8,42 @@ export interface WindowFrame {
   isMaximized(): Promise<boolean>;
   /** Calls `listener` after every resize; resolves to a function that stops it. */
   onResized(listener: () => void): Promise<() => void>;
+  /** Paints what shows where the page is not drawn yet, as a CSS hex color. */
+  setBackground(color: string): Promise<void>;
+}
+
+/**
+ * Keeps the window background the background of the app, in the theme
+ * that is on: while the window is being resized, the part the page has
+ * not been drawn into yet shows it, not the grey of the system.
+ */
+export function useWindowBackground(frame: WindowFrame): void {
+  useEffect(() => {
+    const paint = () => {
+      const color = getComputedStyle(document.documentElement)
+        .getPropertyValue("--cb-bg")
+        .trim();
+      if (color === "") return;
+      frame
+        .setBackground(color)
+        .catch((reason: unknown) =>
+          console.error("Could not paint the window background", reason),
+        );
+    };
+    paint();
+    // The theme follows the system, or `data-theme` on the root element.
+    const dark = window.matchMedia("(prefers-color-scheme: dark)");
+    dark.addEventListener("change", paint);
+    const observer = new MutationObserver(paint);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => {
+      dark.removeEventListener("change", paint);
+      observer.disconnect();
+    };
+  }, [frame]);
 }
 
 /**
