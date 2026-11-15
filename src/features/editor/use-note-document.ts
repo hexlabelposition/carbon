@@ -46,6 +46,39 @@ export interface NoteDocumentActions {
 
 type Ready = Extract<NoteDocument, { status: "ready" }>;
 
+/**
+ * The text of notes this app just renamed, by their new path. The editor
+ * of the new path starts from it, ready at once, so the note does not
+ * blink empty while it would be read again.
+ */
+const handedOver = new Map<NotePath, string>();
+
+/**
+ * Tells the editor that will open the note at `path` its text, which is
+ * the text on disk: the note was just renamed, its edits all written.
+ */
+export function handOver(path: NotePath, text: string): void {
+  handedOver.set(path, text);
+}
+
+/** The first state of a note: ready if its text was handed over. */
+function firstState(
+  path: NotePath,
+): { path: NotePath; value: NoteDocument } | null {
+  const text = handedOver.get(path);
+  if (text === undefined) return null;
+  return {
+    path,
+    value: {
+      status: "ready",
+      text,
+      revision: 0,
+      save: { status: "saved" },
+      deletedOnDisk: null,
+    },
+  };
+}
+
 /** What the mounted note needs to act on its autosave from outside the effect. */
 interface Session {
   saver: Autosave;
@@ -76,7 +109,7 @@ export function useNoteDocument(
   const [loaded, setLoaded] = useState<{
     path: NotePath;
     value: NoteDocument;
-  } | null>(null);
+  } | null>(() => firstState(path));
   const session = useRef<Session | null>(null);
 
   useEffect(() => {
@@ -137,16 +170,20 @@ export function useNoteDocument(
       });
     }
 
-    vault.notes.read(path).then(
-      (text) => {
-        if (!stale) start(text);
-      },
-      (reason: unknown) => {
-        const message =
-          reason instanceof Error ? reason.message : String(reason);
-        if (!stale) setLoaded({ path, value: { status: "error", message } });
-      },
-    );
+    const known = handedOver.get(path);
+    handedOver.delete(path);
+    if (known !== undefined) start(known);
+    else
+      vault.notes.read(path).then(
+        (text) => {
+          if (!stale) start(text);
+        },
+        (reason: unknown) => {
+          const message =
+            reason instanceof Error ? reason.message : String(reason);
+          if (!stale) setLoaded({ path, value: { status: "error", message } });
+        },
+      );
 
     /** Another program changed or deleted this note. */
     async function onOutsideChange(removed: boolean) {

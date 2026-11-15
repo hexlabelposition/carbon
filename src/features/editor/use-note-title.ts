@@ -1,6 +1,7 @@
 import type { NotePath, Vault } from "@carbon/core";
 import { useCallback, useState } from "react";
 import { useWorkspace } from "../workspace/workspace";
+import { handOver } from "./use-note-document";
 
 export interface NoteTitle {
   /** The file name of the note, without `.md`. */
@@ -37,14 +38,18 @@ export function useNoteTitle(vault: Vault, path: NotePath): NoteTitle {
         return false;
       }
       const to = `${folder}${next}.md`;
+      let onDisk: string;
       try {
         // Edits not written yet must reach the file before it moves.
         await flush();
+        onDisk = await vault.notes.read(path);
         await vault.notes.rename(path, to);
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : String(reason));
         return false;
       }
+      // The editor of the new path starts from this text: no blink.
+      handOver(to, onDisk);
       moved(path, to);
       return true;
     },

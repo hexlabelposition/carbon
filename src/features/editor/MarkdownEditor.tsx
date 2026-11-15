@@ -15,7 +15,7 @@ import {
   type Extension,
 } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { findReplace, openReplace } from "./find-replace";
 import { keys, useCommands } from "../commands/commands";
@@ -128,7 +128,8 @@ export function MarkdownEditor({
     };
   }, [text, onChange, onSave, images, sourceMode, outline, links]);
 
-  useEffect(() => {
+  // Before the first paint, so a note never shows as an empty area first.
+  useLayoutEffect(() => {
     if (host.current === null) return;
     const view = new EditorView({
       parent: host.current,
