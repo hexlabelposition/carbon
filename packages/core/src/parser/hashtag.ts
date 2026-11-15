@@ -25,7 +25,13 @@ import type { InlineContext, MarkdownConfig } from "@lezer/markdown";
  */
 export const hashtag: MarkdownConfig = {
   defineNodes: [
-    { name: "Hashtag", style: tags.special(tags.labelName) },
+    {
+      name: "Hashtag",
+      // "/...": the parts take the style too. A style of the tag alone
+      // would cover no text, as its parts cover all of it; with one style
+      // for both, the editor draws the tag as one piece.
+      style: { "Hashtag/...": tags.special(tags.labelName) },
+    },
     { name: "HashtagMark" },
     { name: "HashtagLabel" },
   ],

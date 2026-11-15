@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { highlightTree, tagHighlighter, tags } from "@lezer/highlight";
 import { markdownParser, parseNote } from "../src/index";
 import { tagSamples } from "./corpus/tags";
 
@@ -35,6 +36,17 @@ describe("hashtag", () => {
       ["HashtagMark", "#"],
       ["HashtagLabel", "area/topic"],
     ]);
+  });
+
+  test("is styled as one piece, the hash included", () => {
+    const text = "x #area/topic y";
+    const styled: string[] = [];
+    highlightTree(
+      markdownParser.parse(text),
+      tagHighlighter([{ tag: tags.special(tags.labelName), class: "tag" }]),
+      (from, to) => styled.push(text.slice(from, to)),
+    );
+    expect(styled).toEqual(["#area/topic"]);
   });
 });
 
