@@ -1,6 +1,7 @@
 import type { NotePath, TitleHit, Vault } from "@carbon/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, useCommands } from "../commands/commands";
+import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 
@@ -9,6 +10,7 @@ export interface QuickSwitcher {
   close(): void;
   query: string;
   setQuery(query: string): void;
+  /** The notes that match, or the recent notes while nothing is typed. */
   hits: readonly TitleHit[];
   /**
    * Where a note named as typed would be made, or `null` if one is there
@@ -27,8 +29,9 @@ export interface QuickSwitcher {
 }
 
 /**
- * The quick switcher: Ctrl+O (Cmd+O on a Mac) opens it, typing narrows
- * the notes by title, and a note that is not there can be made.
+ * The quick switcher: Ctrl+O (Cmd+O on a Mac) opens it with the notes
+ * opened last, typing narrows the notes by title, and a note that is not
+ * there can be made.
  */
 export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   const [isOpen, setOpen] = useState(false);
@@ -39,7 +42,16 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   }>({ query: "", hits: [] });
   const [selected, select] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const { open } = useWorkspace();
+  const { open, path: current } = useWorkspace();
+  const { recentVaults } = useAppSettings();
+  const remembered = recentVaults.find(
+    (v) => v.path === vault.root,
+  )?.recentNotes;
+  // The note shown now is not one to switch to.
+  const recent = useMemo(
+    () => (remembered ?? []).filter((note) => note !== current),
+    [remembered, current],
+  );
 
   const setQuery = useCallback((next: string) => {
     setQueryState(next);
@@ -84,7 +96,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   useEffect(() => {
     if (!isOpen) return;
     let current = true;
-    vault.search.titles(query).then(
+    vault.search.titles(query, { recent }).then(
       (hits) => {
         if (current) setAnswer({ query, hits });
       },
@@ -96,7 +108,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
     return () => {
       current = false;
     };
-  }, [vault, isOpen, query]);
+  }, [vault, isOpen, query, recent]);
 
   // Until the hits for this query come, nothing is offered: neither the
   // hits of an older one, nor a new note where one may be already.

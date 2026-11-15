@@ -77,6 +77,12 @@ export function AppSettingsProvider({
     [change],
   );
 
+  const moveNotes = useCallback(
+    (root: string, from: string, to: string) =>
+      change((s) => s.moveNotes(root, from, to)),
+    [change],
+  );
+
   const state = useMemo<AppSettingsState>(
     () => ({
       loaded,
@@ -84,6 +90,7 @@ export function AppSettingsProvider({
       addRecentVault,
       removeRecentVault,
       setLastOpenedNote,
+      moveNotes,
     }),
     [
       loaded,
@@ -91,6 +98,7 @@ export function AppSettingsProvider({
       addRecentVault,
       removeRecentVault,
       setLastOpenedNote,
+      moveNotes,
     ],
   );
 

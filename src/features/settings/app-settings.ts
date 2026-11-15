@@ -15,6 +15,8 @@ export interface AppSettingsState {
   removeRecentVault(root: string): Promise<void>;
   /** Remembers the open note of a vault; `null` when none is open. */
   setLastOpenedNote(root: string, note: NotePath | null): Promise<void>;
+  /** Follows a note or folder of a vault that moved, in what is remembered. */
+  moveNotes(root: string, from: string, to: string): Promise<void>;
 }
 
 export const AppSettingsContext = createContext<AppSettingsState | null>(null);

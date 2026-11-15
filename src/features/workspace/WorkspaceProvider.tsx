@@ -39,7 +39,7 @@ export function WorkspaceProvider({
   initial,
   children,
 }: WorkspaceProviderProps) {
-  const { setLastOpenedNote } = useAppSettings();
+  const { setLastOpenedNote, moveNotes } = useAppSettings();
   // Only the value at mount counts: later it follows what is saved here.
   const [first] = useState(initial);
   const [state, dispatch] = useReducer(
@@ -126,7 +126,11 @@ export function WorkspaceProvider({
         dispatch({ type: "forward" });
       },
       focusPane: (index) => dispatch({ type: "focusPane", index }),
-      moved: (from, to) => dispatch({ type: "moved", from, to }),
+      moved: (from, to) => {
+        dispatch({ type: "moved", from, to });
+        // The recent notes follow too, also the ones not open now.
+        void moveNotes(vault.root, from, to);
+      },
       removed: (removed) => dispatch({ type: "removed", path: removed }),
       onFlush: (flush) => {
         flushers.current.add(flush);
@@ -138,7 +142,7 @@ export function WorkspaceProvider({
         await Promise.all([...flushers.current].map((flush) => flush()));
       },
     }),
-    [],
+    [vault, moveNotes],
   );
 
   const workspace = useMemo<Workspace>(() => {

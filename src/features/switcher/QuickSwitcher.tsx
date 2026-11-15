@@ -85,6 +85,9 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
           The note could not be created: {error}
         </p>
       )}
+      {query.trim() === "" && hits.length > 0 && (
+        <p className="px-3 pt-1.5 text-small text-faint">Recent notes</p>
+      )}
       {rows > 0 && (
         <ul
           id="switcher-list"
