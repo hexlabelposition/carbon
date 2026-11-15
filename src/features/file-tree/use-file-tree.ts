@@ -1,5 +1,5 @@
 import type { TreeNode, Vault } from "@carbon/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { useWorkspace } from "../workspace/workspace";
 
@@ -109,16 +109,30 @@ export function useFileTree(vault: Vault): FileTree {
     };
   }, [vault, version]);
 
+  /**
+   * The open note as the tree shows it: once the listing has it. A note
+   * renamed elsewhere, as from its title, is open under its new path a
+   * moment before the tree is listed again; until then its old row stays
+   * marked, so the mark does not blink off and on. Worked out while
+   * rendering, from the last one (React's way to adjust state to props).
+   */
+  const [shownActive, setShownActive] = useState(active.path);
+  const nextActive =
+    active.path === null
+      ? null
+      : tree === null || findNode(tree, active.path) !== undefined
+        ? active.path
+        : shownActive;
+  if (nextActive !== shownActive) setShownActive(nextActive);
+
   // Show the open note: its folders are opened and it becomes the selection.
-  // Runs when another note is opened, not when the user closes a folder.
-  const shown = useRef<string | null>(null);
-  useEffect(() => {
-    if (active.path === null || active.path === shown.current) return;
-    shown.current = active.path;
-    const path = active.path;
-    setSelected(path);
-    setExpanded((current) => withParents(current, path));
-  }, [active.path]);
+  // Done when another note is shown, not when the user closes a folder.
+  const [followed, setFollowed] = useState<string | null>(null);
+  if (nextActive !== null && nextActive !== followed) {
+    setFollowed(nextActive);
+    setSelected(nextActive);
+    setExpanded((current) => withParents(current, nextActive));
+  }
 
   const rows = useMemo(
     () => flatten(tree ?? [], expanded, edit),
@@ -251,7 +265,7 @@ export function useFileTree(vault: Vault): FileTree {
     rows,
     selected,
     selectedIndex,
-    activePath: active.path,
+    activePath: shownActive,
     edit,
     cut,
     error,
