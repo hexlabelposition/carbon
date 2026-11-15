@@ -198,7 +198,7 @@ export function WindowControls({
   panels?: ReactNode;
 }) {
   const t = useT();
-  const { maximized } = useWindowState(frame);
+  const { maximized, fullscreen } = useWindowState(frame);
   const group = useRef<HTMLDivElement>(null);
 
   // The room the top row leaves: as wide as the buttons are now. Before
@@ -234,37 +234,56 @@ export function WindowControls({
     >
       {panels !== undefined && (
         // A little apart from the buttons of the window.
-        <div className="mr-2 flex">{panels}</div>
+        <div
+          className={`flex transition-[margin] duration-200 ease-out motion-reduce:transition-none ${
+            fullscreen ? "mr-0" : "mr-2"
+          }`}
+        >
+          {panels}
+        </div>
       )}
-      <ControlButton label={t("window.minimize")} onClick={act(frame.minimize)}>
-        <path d="M0 5.5h10" shapeRendering="crispEdges" />
-      </ControlButton>
-      <ControlButton
-        label={maximized ? t("window.restore") : t("window.maximize")}
-        onClick={act(frame.toggleMaximize)}
+      {/* Over the whole screen (F11) the window has nothing to minimize or
+          restore: the buttons fade and fold away, and the row takes back
+          their room as they go. */}
+      <div
+        inert={fullscreen}
+        className="flex overflow-hidden transition-[width,opacity] duration-200 ease-out motion-reduce:transition-none"
+        // Three buttons of `w-12`, in the same unit: rem.
+        style={{ width: fullscreen ? 0 : "9rem", opacity: fullscreen ? 0 : 1 }}
       >
-        {maximized ? (
-          <g shapeRendering="crispEdges">
-            <rect x="0.5" y="2.5" width="7" height="7" />
-            <path d="M2.5 2.5v-2h7v7h-2" />
-          </g>
-        ) : (
-          <rect
-            x="0.5"
-            y="0.5"
-            width="9"
-            height="9"
-            shapeRendering="crispEdges"
-          />
-        )}
-      </ControlButton>
-      <ControlButton
-        label={t("window.close")}
-        danger
-        onClick={act(frame.close)}
-      >
-        <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-      </ControlButton>
+        <ControlButton
+          label={t("window.minimize")}
+          onClick={act(frame.minimize)}
+        >
+          <path d="M0 5.5h10" shapeRendering="crispEdges" />
+        </ControlButton>
+        <ControlButton
+          label={maximized ? t("window.restore") : t("window.maximize")}
+          onClick={act(frame.toggleMaximize)}
+        >
+          {maximized ? (
+            <g shapeRendering="crispEdges">
+              <rect x="0.5" y="2.5" width="7" height="7" />
+              <path d="M2.5 2.5v-2h7v7h-2" />
+            </g>
+          ) : (
+            <rect
+              x="0.5"
+              y="0.5"
+              width="9"
+              height="9"
+              shapeRendering="crispEdges"
+            />
+          )}
+        </ControlButton>
+        <ControlButton
+          label={t("window.close")}
+          danger
+          onClick={act(frame.close)}
+        >
+          <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+        </ControlButton>
+      </div>
     </div>
   );
 }
@@ -287,7 +306,7 @@ function ControlButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`flex h-full w-12 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
+      className={`flex h-full w-12 shrink-0 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
         danger
           ? "hover:bg-danger hover:text-on-danger active:bg-danger/80"
           : "hover:bg-selected hover:text-fg active:bg-line-strong"
