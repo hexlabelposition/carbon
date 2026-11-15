@@ -10,6 +10,7 @@ import { tauriWatcher } from "./watcher";
 
 export { pickVaultFolder } from "./dialog";
 export { openDatabase, type Database } from "./sql";
+export { setInterfaceZoom } from "./zoom";
 
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,
