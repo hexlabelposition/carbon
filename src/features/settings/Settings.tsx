@@ -83,9 +83,25 @@ export function Settings() {
   }, []);
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next, details) => {
+        // The window buttons stay out of the backdrop: pressing one
+        // minimizes or closes the window, it does not close the settings.
+        if (
+          details.reason === "outside-press" &&
+          details.event.target instanceof Element &&
+          details.event.target.closest("[data-window-controls]") !== null
+        ) {
+          return;
+        }
+        setOpen(next);
+      }}
+    >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-backdrop/40 backdrop-blur-sm" />
+        {/* Below the top row: the tabs and the window buttons stay sharp,
+            and the buttons can still be pressed. */}
+        <Dialog.Backdrop className="fixed inset-x-0 top-12 bottom-0 z-50 bg-backdrop/40 backdrop-blur-sm" />
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex w-[440px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog outline-none">
           <header className="flex items-center justify-between">
             <Dialog.Title className="text-h3 font-semibold">

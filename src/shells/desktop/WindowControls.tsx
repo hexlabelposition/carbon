@@ -125,7 +125,12 @@ export function WindowControls({ frame }: { frame: WindowFrame }) {
   };
 
   return (
-    <div className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel">
+    // Marked, so a dialog can tell a press here from one beside it: the
+    // window buttons work while the settings are open.
+    <div
+      data-window-controls
+      className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel"
+    >
       <ControlButton label="Minimize" onClick={act(frame.minimize)}>
         <path d="M0 5.5h10" shapeRendering="crispEdges" />
       </ControlButton>
