@@ -8,6 +8,7 @@ import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
 import { ImageViewer } from "./ImageViewer";
 import { useNoteImages } from "./use-note-images";
+import { useSmoothWheel } from "./use-smooth-wheel";
 import { useNoteLinks } from "./use-note-links";
 import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
@@ -41,6 +42,7 @@ export function NoteEditor({
   const links = useNoteLinks(vault, path);
   const title = useNoteTitle(vault, path);
   const { reveal } = useWorkspace();
+  const smoothWheel = useSmoothWheel();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
 
@@ -92,8 +94,14 @@ export function NoteEditor({
       {links.error !== null && (
         <EditorAlert message={links.error} onDismiss={links.dismissError} />
       )}
-      {/* One scroll for the name and the text: the name scrolls away. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+      {/* One scroll for the name and the text: the name scrolls away.
+          It glides: the editor scrolls by setting `scrollTop` here, for
+          Page Up and Page Down and for jumps to a heading or a match, and
+          so does the mouse wheel. */}
+      <div
+        ref={smoothWheel}
+        className="flex min-h-0 flex-1 flex-col overflow-auto scroll-smooth"
+      >
         <NoteTitleField title={title} />
         <MarkdownEditor
           text={note.text}
