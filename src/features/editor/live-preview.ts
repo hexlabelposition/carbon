@@ -287,7 +287,10 @@ function decorate(view: EditorView): DecorationSet {
     }
     const text = item?.getChild("Task");
     if (checked && text && marker.to < text.to) {
-      ranges.push(taskDone.range(marker.to, text.to));
+      // From the first letter: the space after the box is not struck out.
+      const after = state.sliceDoc(marker.to, text.to);
+      const from = marker.to + (after.length - after.trimStart().length);
+      if (from < text.to) ranges.push(taskDone.range(from, text.to));
     }
   }
 
