@@ -2,7 +2,10 @@ import type { TextRange } from "@carbon/core";
 import fuzzysort from "fuzzysort";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortcutLetter } from "../workspace/shortcut-letter";
-import { useCommandList, type Command } from "./commands";
+import { keys, useCommandList, useCommands, type Command } from "./commands";
+
+/** The command that opens the palette, offered elsewhere, not in it. */
+export const OPEN_PALETTE = "palette.open";
 
 /** A command the palette shows, with the letters that matched. */
 export interface PaletteItem {
@@ -28,7 +31,11 @@ export interface CommandPalette {
  * the commands fuzzily by title, as the quick switcher narrows notes.
  */
 export function useCommandPalette(): CommandPalette {
-  const commands = useCommandList();
+  const all = useCommandList();
+  const commands = useMemo(
+    () => all.filter((command) => command.id !== OPEN_PALETTE),
+    [all],
+  );
   const [isOpen, setOpen] = useState(false);
   const [query, setQueryState] = useState("");
   const [selected, select] = useState(0);
@@ -42,6 +49,21 @@ export function useCommandPalette(): CommandPalette {
     setOpen(false);
     setQuery("");
   }, [setQuery]);
+
+  // For places that offer it, such as the area where no note is open.
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: OPEN_PALETTE,
+          title: "Show all commands",
+          shortcut: keys("Mod+P"),
+          run: () => setOpen(true),
+        },
+      ],
+      [],
+    ),
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

@@ -9,6 +9,9 @@ target/
 # Logs
 *.log
 
+# Local files kept out of the repository: design sources and the like
+.tmp/
+
 # Local environment
 .env
 .env.*

@@ -1,3 +1,4 @@
+import { CarbonLogo } from "../brand/CarbonLogo";
 import { useStartScreen } from "./use-start-screen";
 
 const primary =
@@ -11,8 +12,10 @@ export function StartScreen() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-120 flex-col justify-center gap-6 px-8 py-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h2 font-semibold tracking-[-0.01em]">Carbon</h1>
+      <header className="flex flex-col gap-3">
+        <h1>
+          <CarbonLogo className="h-12 w-auto" />
+        </h1>
         <p className="text-muted">
           A vault is a folder of Markdown notes. Open one to start.
         </p>

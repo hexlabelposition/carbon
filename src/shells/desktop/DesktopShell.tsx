@@ -1,5 +1,6 @@
 import type { Vault } from "@carbon/core";
 import {
+  Fragment,
   lazy,
   Suspense,
   useCallback,
@@ -11,14 +12,19 @@ import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
 import { CommandPalette } from "../../features/commands/CommandPalette";
 import {
   keys,
+  useCommandList,
   useCommands,
   type Command,
 } from "../../features/commands/commands";
-import { useCommandPalette } from "../../features/commands/use-command-palette";
+import {
+  OPEN_PALETTE,
+  useCommandPalette,
+} from "../../features/commands/use-command-palette";
 import { useBacklinks } from "../../features/backlinks/use-backlinks";
 import { UnlinkedMentionsPanel } from "../../features/backlinks/UnlinkedMentionsPanel";
 import { useUnlinkedMentions } from "../../features/backlinks/use-unlinked-mentions";
 import { NoteEditor } from "../../features/editor/NoteEditor";
+import { CarbonMark } from "../../features/brand/CarbonLogo";
 import { ImageView } from "../../features/image/ImageView";
 import { imageTypeOf } from "../../features/image/image-file";
 import { useReadingMode } from "../../features/editor/use-reading-mode";
@@ -348,7 +354,7 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <DragStrip room />
-        <Placeholder>No note is open.</Placeholder>
+        <Watermark label="No note is open." />
       </div>
     );
   }
@@ -542,11 +548,58 @@ function BacklinksSection({
   );
 }
 
-function Placeholder({ children }: { children: string }) {
+/** The commands offered below the watermark, in this order. */
+const WATERMARK_COMMANDS = ["switcher.open", OPEN_PALETTE];
+
+/**
+ * The mark as a large shadow, a shade off the background, and below it a
+ * few commands to start with: what the note area shows while no note is
+ * open. `label` says so to screen readers.
+ */
+function Watermark({ label }: { label: string }) {
+  const all = useCommandList();
+  const commands = WATERMARK_COMMANDS.flatMap(
+    (id) => all.find((command) => command.id === id) ?? [],
+  );
   return (
-    <div className="flex h-full items-center justify-center px-4 text-center text-faint">
-      {children}
+    <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
+      <CarbonMark shadow className="h-auto w-[min(15rem,50%)] text-line" />
+      <span className="sr-only">{label}</span>
+      {commands.length > 0 && (
+        <ul className="flex w-full max-w-72 flex-col">
+          {commands.map((command) => (
+            <li key={command.id}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-4 rounded-md px-2 py-1 text-muted hover:bg-raise hover:text-fg"
+                onClick={command.run}
+              >
+                <span className="truncate">{command.title}</span>
+                {command.shortcut !== undefined && (
+                  <Shortcut text={command.shortcut} />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+/** Keys such as "Ctrl+O", each in a box. */
+function Shortcut({ text }: { text: string }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-small text-faint">
+      {text.split("+").map((key, index) => (
+        <Fragment key={index}>
+          {index > 0 && <span aria-hidden="true">+</span>}
+          <kbd className="min-w-5 rounded-sm border border-line-strong bg-panel px-1 text-center font-sans">
+            {key}
+          </kbd>
+        </Fragment>
+      ))}
+    </span>
   );
 }
 

@@ -43,6 +43,14 @@
   --cb-on-danger: #ffffff;
 
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.18);
+
+  /* Logo, as in the design sources */
+  --cb-logo-top: #dde0e4;
+  --cb-logo-upper: #b9bec4;
+  --cb-logo-lower: #8d939a;
+  --cb-logo-bottom: #61676e;
+  --cb-logo-center: #2f3338;
+  --cb-logo-text: #1e2124;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -64,6 +72,12 @@
     --cb-solid: #e7e8ea;
     --cb-on-solid: #0e0f10;
     --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+    --cb-logo-top: #f4f5f7;
+    --cb-logo-upper: #d9dce0;
+    --cb-logo-lower: #a9afb6;
+    --cb-logo-bottom: #7e858d;
+    --cb-logo-center: #ffffff;
+    --cb-logo-text: #f4f5f7;
   }
 }
 
@@ -85,4 +99,10 @@
   --cb-solid: #e7e8ea;
   --cb-on-solid: #0e0f10;
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+  --cb-logo-top: #f4f5f7;
+  --cb-logo-upper: #d9dce0;
+  --cb-logo-lower: #a9afb6;
+  --cb-logo-bottom: #7e858d;
+  --cb-logo-center: #ffffff;
+  --cb-logo-text: #f4f5f7;
 }
