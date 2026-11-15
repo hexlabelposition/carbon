@@ -275,16 +275,11 @@ export function MarkdownEditor({
     if (view === null) return;
     const extensions = sourceMode ? noPreview : livePreviewExtensions;
     if (preview.current.get(view.state) === extensions) return;
-    view.dispatch({
-      effects: [
-        preview.current.reconfigure(extensions),
-        // Lines change height when the marks show or hide: keep the
-        // cursor where the user can see it.
-        EditorView.scrollIntoView(view.state.selection.main.head, {
-          y: "center",
-        }),
-      ],
-    });
+    // Lines change height when the marks show or hide: the line at the
+    // top of the view stays where it is.
+    keepingPlace(view, () =>
+      view.dispatch({ effects: preview.current.reconfigure(extensions) }),
+    );
   }, [sourceMode]);
 
   useEffect(() => {
@@ -363,4 +358,42 @@ function difference(
  */
 function editable(on: boolean) {
   return [EditorView.editable.of(on), EditorState.readOnly.of(!on)];
+}
+
+/**
+ * Runs `change`, then scrolls so that the line at the top of the view is
+ * where it was before, for a change that makes lines taller or shorter.
+ * At once, not gliding: the scroll may be set to glide.
+ */
+function keepingPlace(view: EditorView, change: () => void): void {
+  const scroller = scrollParentOf(view.dom);
+  if (scroller === null) {
+    change();
+    return;
+  }
+  const viewTop = scroller.getBoundingClientRect().top;
+  // The line at the top of the view, and how far its top is from there.
+  const at = view.lineBlockAtHeight(viewTop - view.documentTop).from;
+  const offsetOf = () => view.documentTop + view.lineBlockAt(at).top - viewTop;
+  const before = offsetOf();
+  change();
+  view.requestMeasure({
+    read: offsetOf,
+    write(after) {
+      if (Math.abs(after - before) < 1) return;
+      scroller.scrollTo({
+        top: scroller.scrollTop + after - before,
+        behavior: "instant",
+      });
+    },
+  });
+}
+
+/** The element that scrolls `element` up and down, if one does. */
+function scrollParentOf(element: HTMLElement): HTMLElement | null {
+  for (let at = element.parentElement; at !== null; at = at.parentElement) {
+    const { overflowY } = getComputedStyle(at);
+    if (overflowY === "auto" || overflowY === "scroll") return at;
+  }
+  return null;
 }
