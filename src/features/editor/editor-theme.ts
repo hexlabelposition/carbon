@@ -67,6 +67,14 @@ export const markdownHighlight = HighlightStyle.define([
     color: "var(--cb-faint)",
   },
   { tag: tags.link, color: "var(--cb-link)" },
+  // Tags, "#" included: a quiet chip.
+  {
+    tag: tags.special(tags.labelName),
+    color: "var(--cb-link)",
+    backgroundColor: "var(--cb-raise)",
+    borderRadius: "4px",
+    padding: "0 2px",
+  },
   { tag: tags.url, color: "var(--cb-faint)" },
   // Inline code and code blocks; their size is set where they are drawn.
   { tag: tags.monospace, fontFamily: "var(--font-mono)" },

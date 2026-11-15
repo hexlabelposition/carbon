@@ -6,7 +6,7 @@ import {
 } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
-import { wikiLink } from "@carbon/core";
+import { hashtag, wikiLink } from "@carbon/core";
 import { languages } from "@codemirror/language-data";
 import {
   Compartment,
@@ -139,12 +139,12 @@ export function MarkdownEditor({
           EditorView.lineWrapping,
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
           // The language of a code block is loaded when one first uses it.
-          // Wiki links come from the core: one grammar for the editor and
-          // the index (ADR-012).
+          // Wiki links and tags come from the core: one grammar for the
+          // editor and the index (ADR-012).
           markdown({
             base: markdownLanguage,
             codeLanguages: languages,
-            extensions: [wikiLink],
+            extensions: [wikiLink, hashtag],
           }),
           syntaxHighlighting(markdownHighlight),
           preview.current.of(
