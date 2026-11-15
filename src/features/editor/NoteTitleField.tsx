@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useT } from "../i18n/i18n";
 import type { NoteTitle } from "./use-note-title";
 
 /**
@@ -14,6 +15,7 @@ export function NoteTitleField({
   title: NoteTitle;
   readOnly?: boolean;
 }) {
+  const t = useT();
   const field = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(title.name);
   /** Escape was pressed: the blur that follows renames nothing. */
@@ -59,7 +61,7 @@ export function NoteTitleField({
       <textarea
         ref={field}
         rows={1}
-        aria-label="Note name"
+        aria-label={t("editor.noteName")}
         readOnly={readOnly}
         // Not a stop of the Tab key while it cannot be edited.
         tabIndex={readOnly ? -1 : undefined}
@@ -74,7 +76,7 @@ export function NoteTitleField({
       />
       {title.error !== null && (
         <p role="alert" className="mt-1 text-small text-danger">
-          Could not rename: {title.error}
+          {t("editor.renameFailed", { reason: title.error })}
         </p>
       )}
     </div>

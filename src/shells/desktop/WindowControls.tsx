@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { useT } from "../../features/i18n/i18n";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -118,6 +119,7 @@ export const WINDOW_CONTROLS_ROOM = "pr-[144px]";
  * that row leaves `WINDOW_CONTROLS_ROOM` free for them.
  */
 export function WindowControls({ frame }: { frame: WindowFrame }) {
+  const t = useT();
   const maximized = useMaximized(frame);
 
   const act = (action: () => Promise<void>) => () => {
@@ -133,11 +135,11 @@ export function WindowControls({ frame }: { frame: WindowFrame }) {
       data-window-controls
       className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel"
     >
-      <ControlButton label="Minimize" onClick={act(frame.minimize)}>
+      <ControlButton label={t("window.minimize")} onClick={act(frame.minimize)}>
         <path d="M0 5.5h10" shapeRendering="crispEdges" />
       </ControlButton>
       <ControlButton
-        label={maximized ? "Restore" : "Maximize"}
+        label={maximized ? t("window.restore") : t("window.maximize")}
         onClick={act(frame.toggleMaximize)}
       >
         {maximized ? (
@@ -155,7 +157,11 @@ export function WindowControls({ frame }: { frame: WindowFrame }) {
           />
         )}
       </ControlButton>
-      <ControlButton label="Close" danger onClick={act(frame.close)}>
+      <ControlButton
+        label={t("window.close")}
+        danger
+        onClick={act(frame.close)}
+      >
         <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
       </ControlButton>
     </div>

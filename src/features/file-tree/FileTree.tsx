@@ -12,6 +12,7 @@ import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -38,6 +39,7 @@ export function FileTree({
    */
   onReveal?: () => void;
 }) {
+  const t = useT();
   const tree = useFileTree(vault);
   // The latest, so the commands stay the same while the tree changes.
   const startNewRef = useRef(tree.startNew);
@@ -49,7 +51,7 @@ export function FileTree({
       () => [
         {
           id: "fileTree.newNote",
-          title: "New note",
+          title: t("tree.newNote"),
           shortcut: keys("Mod+N"),
           run: () => {
             onReveal?.();
@@ -58,14 +60,14 @@ export function FileTree({
         },
         {
           id: "fileTree.newFolder",
-          title: "New folder",
+          title: t("tree.newFolder"),
           run: () => {
             onReveal?.();
             startNewRef.current("folder");
           },
         },
       ],
-      [onReveal],
+      [t, onReveal],
     ),
   );
   // Ctrl+N, or Cmd+N on a Mac, starts a new note from anywhere.
@@ -155,14 +157,14 @@ export function FileTree({
           className={toolButton}
           onClick={() => tree.startNew("note")}
         >
-          New note
+          {t("tree.newNote")}
         </button>
         <button
           type="button"
           className={toolButton}
           onClick={() => tree.startNew("folder")}
         >
-          New folder
+          {t("tree.newFolder")}
         </button>
         <button
           type="button"
@@ -170,7 +172,7 @@ export function FileTree({
           disabled={!hasSelection}
           onClick={tree.startRename}
         >
-          Rename
+          {t("tree.rename")}
         </button>
         <button
           type="button"
@@ -178,7 +180,7 @@ export function FileTree({
           disabled={!hasSelection}
           onClick={tree.remove}
         >
-          Delete
+          {t("tree.delete")}
         </button>
       </div>
 
@@ -187,7 +189,7 @@ export function FileTree({
       <div
         ref={viewportRef}
         role="tree"
-        aria-label="Files"
+        aria-label={t("shell.files")}
         aria-activedescendant={
           tree.selected === null ? undefined : rowId(tree.selected)
         }
@@ -205,9 +207,7 @@ export function FileTree({
         {...dropZone("")}
       >
         {tree.loading ? null : tree.rows.length === 0 ? (
-          <p className="px-3 py-4 text-center text-faint">
-            This vault is empty. Create the first note.
-          </p>
+          <p className="px-3 py-4 text-center text-faint">{t("tree.empty")}</p>
         ) : (
           <div style={{ height: totalHeight }}>
             <div
@@ -226,7 +226,11 @@ export function FileTree({
                     >
                       <Chevron hidden />
                       <NameInput
-                        label={`Name of the new ${row.what}`}
+                        label={t(
+                          row.what === "note"
+                            ? "tree.newNoteName"
+                            : "tree.newFolderName",
+                        )}
                         initial=""
                         onCommit={(text) =>
                           finishEdit(() => tree.commitEdit(text))
@@ -294,7 +298,7 @@ export function FileTree({
                     />
                     {renaming ? (
                       <NameInput
-                        label={`New name of ${nameOf(node.path)}`}
+                        label={t("tree.newName", { name: nameOf(node.path) })}
                         initial={labelOf(node)}
                         onCommit={(text) =>
                           finishEdit(() => tree.commitEdit(text))
@@ -317,6 +321,7 @@ export function FileTree({
 
 /** What went wrong, with a way out. */
 function Notice({ tree }: { tree: Tree }) {
+  const t = useT();
   if (tree.trashFailure !== null) {
     const name = nameOf(tree.trashFailure.path);
     return (
@@ -325,7 +330,10 @@ function Notice({ tree }: { tree: Tree }) {
         className="flex shrink-0 flex-col gap-1.5 border-b border-line px-3 py-2 text-small"
       >
         <p>
-          “{name}” could not be moved to the trash: {tree.trashFailure.message}
+          {t("tree.trashFailed", {
+            name,
+            reason: tree.trashFailure.message,
+          })}
         </p>
         <div className="flex gap-2">
           <button
@@ -333,14 +341,14 @@ function Notice({ tree }: { tree: Tree }) {
             className="h-6 rounded-sm bg-danger px-2 text-on-danger"
             onClick={tree.removeForGood}
           >
-            Delete for good
+            {t("tree.deleteForGood")}
           </button>
           <button
             type="button"
             className="h-6 rounded-sm border border-line-strong px-2"
             onClick={tree.dismiss}
           >
-            Keep
+            {t("tree.keep")}
           </button>
         </div>
       </div>
@@ -358,7 +366,7 @@ function Notice({ tree }: { tree: Tree }) {
           className="shrink-0 rounded-sm px-1 text-muted hover:bg-raise hover:text-fg"
           onClick={tree.dismiss}
         >
-          Dismiss
+          {t("common.dismiss")}
         </button>
       </div>
     );

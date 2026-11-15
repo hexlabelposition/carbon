@@ -1,6 +1,7 @@
 import type { TextRange } from "@carbon/core";
 import fuzzysort from "fuzzysort";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useT } from "../i18n/i18n";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommandList, useCommands, type Command } from "./commands";
 
@@ -31,6 +32,7 @@ export interface CommandPalette {
  * the commands fuzzily by title, as the quick switcher narrows notes.
  */
 export function useCommandPalette(): CommandPalette {
+  const t = useT();
   const all = useCommandList();
   const commands = useMemo(
     () => all.filter((command) => command.id !== OPEN_PALETTE),
@@ -56,12 +58,12 @@ export function useCommandPalette(): CommandPalette {
       () => [
         {
           id: OPEN_PALETTE,
-          title: "Show all commands",
+          title: t("palette.open"),
           shortcut: keys("Mod+P"),
           run: () => setOpen(true),
         },
       ],
-      [],
+      [t],
     ),
   );
 

@@ -1,3 +1,5 @@
+import { useT } from "../../features/i18n/i18n";
+
 interface PanelToggleProps {
   side: "left" | "right";
   open: boolean;
@@ -16,8 +18,11 @@ export function PanelToggle({
   shortcut,
   onToggle,
 }: PanelToggleProps) {
-  const name = side === "left" ? "left panel" : "right panel";
-  const label = `${open ? "Hide" : "Show"} the ${name}`;
+  const t = useT();
+  const label =
+    side === "left"
+      ? t(open ? "panels.hideLeft" : "panels.showLeft")
+      : t(open ? "panels.hideRight" : "panels.showRight");
   // The column the panel takes, inside the 16 by 16 window.
   const x = side === "left" ? 2 : 10;
   return (

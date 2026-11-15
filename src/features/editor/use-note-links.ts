@@ -6,6 +6,7 @@ import {
   type Vault,
 } from "@carbon/core";
 import { useMemo, useState } from "react";
+import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { asFragment, type LinkHost } from "./link-completion";
 import { previewText } from "./link-preview";
@@ -83,8 +84,8 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
             if (followed === null) {
               setError(
                 linksToFile(link)
-                  ? `"${link.target}" is not a note, so no note is made for it.`
-                  : `"${link.target}" is outside the vault.`,
+                  ? t("links.notNote", { target: link.target })
+                  : t("links.outside", { target: link.target }),
               );
               return;
             }
@@ -94,7 +95,7 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
           (reason: unknown) => {
             const message =
               reason instanceof Error ? reason.message : String(reason);
-            setError(`The note could not be opened: ${message}`);
+            setError(t("links.openFailed", { reason: message }));
           },
         );
       },

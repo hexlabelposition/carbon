@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useT } from "../../features/i18n/i18n";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
 
@@ -27,6 +28,7 @@ export function Sidebar({
   header,
   children,
 }: SidebarProps) {
+  const t = useT();
   /** The handle is being dragged: the width follows it without gliding. */
   const [resizing, setResizing] = useState(false);
 
@@ -39,7 +41,7 @@ export function Sidebar({
       animate={!resizing}
     >
       <aside
-        aria-label="Sidebar"
+        aria-label={t("shell.leftPanel")}
         className="relative flex h-full flex-col border-r border-line bg-panel"
       >
         {/* The window has no system title bar: this row drags it. */}
@@ -52,7 +54,7 @@ export function Sidebar({
         <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         <ResizeHandle
           side="left"
-          label="Resize sidebar"
+          label={t("shell.resizeLeftPanel")}
           fraction={fraction}
           onResize={onResize}
           onNudge={onNudge}

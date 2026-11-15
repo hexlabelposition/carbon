@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "../../features/i18n/i18n";
 import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
 
 export interface TabBarTab {
@@ -43,6 +44,7 @@ export function TabBar({
   start,
   end,
 }: TabBarProps) {
+  const t = useT();
   return (
     <div
       data-tauri-drag-region
@@ -55,11 +57,15 @@ export function TabBar({
         className="flex shrink-0 items-center gap-0.5 px-1.5"
       >
         {start}
-        <ArrowButton label="Back" disabled={!canGoBack} onClick={onBack}>
+        <ArrowButton
+          label={t("tabs.back")}
+          disabled={!canGoBack}
+          onClick={onBack}
+        >
           <path d="M10 4l-4 4 4 4" />
         </ArrowButton>
         <ArrowButton
-          label="Forward"
+          label={t("tabs.forward")}
           disabled={!canGoForward}
           onClick={onForward}
         >
@@ -69,7 +75,7 @@ export function TabBar({
       <div
         data-tauri-drag-region
         role="tablist"
-        aria-label="Open notes"
+        aria-label={t("tabs.openNotes")}
         className="flex min-w-0 flex-1 items-stretch overflow-x-auto"
       >
         {tabs.map((tab) => {
@@ -97,7 +103,7 @@ export function TabBar({
               </button>
               <button
                 type="button"
-                aria-label={`Close ${tab.label}`}
+                aria-label={t("tabs.close", { name: tab.label })}
                 className="mr-1.5 flex size-5 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-selected hover:text-fg"
                 onClick={() => onClose(tab.id)}
               >

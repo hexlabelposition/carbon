@@ -19,6 +19,7 @@ import {
   type Panel,
   type ViewUpdate,
 } from "@codemirror/view";
+import { t } from "../i18n/i18n";
 
 /**
  * Find and replace in the note, with CodeMirror's search and a panel of
@@ -142,8 +143,8 @@ class FindPanel implements Panel {
     this.origin = view.state.selection.main.from;
 
     this.find = input({
-      "aria-label": "Find",
-      placeholder: "Find",
+      "aria-label": t("find.find"),
+      placeholder: t("find.find"),
       // `openSearchPanel` focuses the field with this attribute.
       "main-field": "true",
     });
@@ -156,8 +157,8 @@ class FindPanel implements Panel {
     });
 
     this.replace = input({
-      "aria-label": "Replace",
-      placeholder: "Replace",
+      "aria-label": t("find.replace"),
+      placeholder: t("find.replace"),
       class: "cb-find-replace",
     });
     this.replace.value = query.replace;
@@ -169,9 +170,9 @@ class FindPanel implements Panel {
     });
 
     this.toggles = {
-      caseSensitive: toggle("Aa", "Match case", query.caseSensitive),
-      wholeWord: toggle("W", "Whole word", query.wholeWord),
-      regexp: toggle(".*", "Regular expression", query.regexp),
+      caseSensitive: toggle("Aa", t("find.matchCase"), query.caseSensitive),
+      wholeWord: toggle("W", t("find.wholeWord"), query.wholeWord),
+      regexp: toggle(".*", t("find.regexp"), query.regexp),
     };
     for (const button of Object.values(this.toggles)) {
       button.addEventListener("click", () => {
@@ -182,22 +183,24 @@ class FindPanel implements Panel {
     }
 
     this.count = el("span", { class: "cb-find-count", "aria-live": "polite" });
-    const previous = button("↑", "Previous match (Shift+Enter)", () =>
-      findPrevious(view),
-    );
-    const next = button("↓", "Next match (Enter)", () => findNext(view));
-    const replaceOne = button("Replace", "Replace (Enter)", () =>
+    const previous = button("↑", t("find.previous"), () => findPrevious(view));
+    const next = button("↓", t("find.next"), () => findNext(view));
+    const replaceOne = button(t("find.replace"), t("find.replaceHint"), () =>
       replaceNext(view),
     );
-    const replaceEvery = button("Replace all", "Replace all (Ctrl+Enter)", () =>
-      replaceAll(view),
+    const replaceEvery = button(
+      t("find.replaceAll"),
+      t("find.replaceAllHint"),
+      () => replaceAll(view),
     );
     this.needQuery = [previous, next, replaceOne, replaceEvery];
-    const close = button("×", "Close (Escape)", () => closeSearchPanel(view));
+    const close = button("×", t("common.closeEscape"), () =>
+      closeSearchPanel(view),
+    );
 
     this.dom = el(
       "div",
-      { class: "cb-find", role: "search", "aria-label": "Find in note" },
+      { class: "cb-find", role: "search", "aria-label": t("find.label") },
       [
         this.find,
         el("div", { class: "cb-find-row" }, [
@@ -287,10 +290,13 @@ class FindPanel implements Panel {
       query.search === ""
         ? ""
         : !query.valid
-          ? "Invalid"
+          ? t("find.invalid")
           : total === 0
-            ? "No matches"
-            : `${current ?? "?"} of ${total >= COUNT_LIMIT ? `${COUNT_LIMIT}+` : total}`;
+            ? t("find.none")
+            : t("find.count", {
+                current: current ?? "?",
+                total: total >= COUNT_LIMIT ? `${COUNT_LIMIT}+` : total,
+              });
   }
 }
 

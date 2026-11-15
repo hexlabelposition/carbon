@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
 import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
 
@@ -8,6 +9,7 @@ import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
  * typed even when others match. Escape or a click outside closes it.
  */
 export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
+  const t = useT();
   const dialog = useRef<HTMLDialogElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, hits, newNote, selected, select, error } = switcher;
@@ -52,7 +54,7 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
   return (
     <dialog
       ref={dialog}
-      aria-label="Quick switcher"
+      aria-label={t("switcher.label")}
       className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-12 backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
       onCancel={(event) => {
         event.preventDefault();
@@ -72,8 +74,8 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
         aria-activedescendant={
           rows > 0 ? `switcher-row-${selected}` : undefined
         }
-        aria-label="Find or create a note"
-        placeholder="Find or create a note"
+        aria-label={t("switcher.placeholder")}
+        placeholder={t("switcher.placeholder")}
         spellCheck={false}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -82,18 +84,20 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
       />
       {error !== null && (
         <p role="alert" className="px-3 py-1.5 text-small text-danger">
-          The note could not be created: {error}
+          {t("switcher.createFailed", { reason: error })}
         </p>
       )}
       {query.trim() === "" && hits.length > 0 && (
-        <p className="px-3 pt-1.5 text-small text-faint">Recent notes</p>
+        <p className="px-3 pt-1.5 text-small text-faint">
+          {t("switcher.recent")}
+        </p>
       )}
       {rows > 0 && (
         <ul
           id="switcher-list"
           ref={list}
           role="listbox"
-          aria-label="Notes"
+          aria-label={t("switcher.notes")}
           className="max-h-[50vh] overflow-auto py-1"
         >
           {hits.map((hit, index) => (
@@ -133,7 +137,7 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
                 switcher.create(event.ctrlKey || event.metaKey)
               }
             >
-              <span className="text-muted">Create</span>
+              <span className="text-muted">{t("switcher.create")}</span>
               <span className="min-w-0 truncate">{newNote}</span>
               <span className="ml-auto shrink-0 text-small text-faint">
                 Shift+Enter

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useT } from "../i18n/i18n";
 
 interface ConflictDialogProps {
   /** The note, as the user knows it. */
@@ -25,6 +26,7 @@ export function ConflictDialog({
   onUseDisk,
   onLater,
 }: ConflictDialogProps) {
+  const t = useT();
   const dialog = useRef<HTMLDialogElement>(null);
 
   // A modal `<dialog>` keeps the focus inside and closes on Escape. It
@@ -50,34 +52,30 @@ export function ConflictDialog({
       }}
     >
       <h2 id="conflict-title" className="text-h3 font-semibold">
-        {deleted
-          ? `“${name}” was deleted on disk`
-          : `“${name}” was changed on disk`}
+        {t(deleted ? "conflict.deletedTitle" : "conflict.changedTitle", {
+          name,
+        })}
       </h2>
       <p className="mt-2 text-muted">
-        {deleted
-          ? "Another program deleted this note while you had edits that were not saved yet."
-          : "Another program changed this note while you had edits that were not saved yet. Only one version can stay."}
+        {t(deleted ? "conflict.deletedText" : "conflict.changedText")}
       </p>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button type="button" className={button} onClick={onLater}>
-          Decide later
+          {t("conflict.later")}
         </button>
         <button type="button" className={button} onClick={onUseDisk}>
-          {deleted ? "Close the note" : "Use the version on disk"}
+          {t(deleted ? "conflict.closeNote" : "conflict.useDisk")}
         </button>
         <button
           type="button"
           className="h-7 rounded-md bg-solid px-3 font-medium text-on-solid"
           onClick={onKeepMine}
         >
-          {deleted ? "Keep my note" : "Keep my version"}
+          {t(deleted ? "conflict.keepNote" : "conflict.keepMine")}
         </button>
       </div>
       <p className="mt-3 text-small text-faint">
-        {deleted
-          ? "Keeping your note saves it again. Closing it drops your edits."
-          : "The version you do not keep is lost. Until you decide, nothing is saved."}
+        {t(deleted ? "conflict.deletedHint" : "conflict.changedHint")}
       </p>
     </dialog>
   );

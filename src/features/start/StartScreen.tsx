@@ -1,4 +1,5 @@
 import { CarbonLogo } from "../brand/CarbonLogo";
+import { useT } from "../i18n/i18n";
 import { useStartScreen } from "./use-start-screen";
 
 const primary =
@@ -9,6 +10,7 @@ const secondary =
 /** What the app shows while no vault is open. */
 export function StartScreen() {
   const start = useStartScreen();
+  const t = useT();
   if (!start.ready) return null;
 
   return (
@@ -17,9 +19,7 @@ export function StartScreen() {
         <h1>
           <CarbonLogo className="h-12 w-auto" />
         </h1>
-        <p className="text-muted">
-          A vault is a folder of Markdown notes. Open one to start.
-        </p>
+        <p className="text-muted">{t("start.intro")}</p>
       </header>
 
       {start.creating ? (
@@ -31,7 +31,7 @@ export function StartScreen() {
           }}
         >
           <label htmlFor="new-vault-name" className="font-medium">
-            Name of the new vault
+            {t("start.newVaultName")}
           </label>
           <input
             id="new-vault-name"
@@ -42,17 +42,14 @@ export function StartScreen() {
             value={start.name}
             onChange={(event) => start.setName(event.target.value)}
           />
-          <p className="text-small text-faint">
-            Next you choose where to put it. Carbon creates a folder with this
-            name there.
-          </p>
+          <p className="text-small text-faint">{t("start.newVaultHint")}</p>
           <div className="mt-1 flex gap-2">
             <button
               type="submit"
               className={primary}
               disabled={start.busy || !start.canCreate}
             >
-              Choose location and create
+              {t("start.chooseAndCreate")}
             </button>
             <button
               type="button"
@@ -60,7 +57,7 @@ export function StartScreen() {
               disabled={start.busy}
               onClick={start.cancelCreating}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -72,7 +69,7 @@ export function StartScreen() {
             disabled={start.busy}
             onClick={start.openFolder}
           >
-            Open vault
+            {t("start.openVault")}
           </button>
           <button
             type="button"
@@ -80,17 +77,17 @@ export function StartScreen() {
             disabled={start.busy}
             onClick={start.startCreating}
           >
-            Create vault
+            {t("start.createVault")}
           </button>
           {import.meta.env.DEV && start.openTestVault !== null && (
             <button
               type="button"
               className={secondary}
               disabled={start.busy}
-              title="Dev build only: a copy of fixtures/test-vault, made afresh each time"
+              title={t("start.testVaultHint")}
               onClick={start.openTestVault}
             >
-              Open test vault
+              {t("start.openTestVault")}
             </button>
           )}
         </div>
@@ -101,12 +98,14 @@ export function StartScreen() {
           <p className="text-danger">
             {start.error.root === null
               ? start.error.message
-              : `Could not open ${start.error.root}: ${start.error.message}`}
+              : t("start.couldNotOpen", {
+                  root: start.error.root,
+                  reason: start.error.message,
+                })}
           </p>
           {start.error.root !== null && (
             <p className="text-small text-faint">
-              If the folder was moved or deleted, remove it from the list below.
-              If it is still there, open it again with “Open vault”.
+              {t("start.couldNotOpenHint")}
             </p>
           )}
         </div>
@@ -121,7 +120,7 @@ export function StartScreen() {
             id="recent-vaults"
             className="text-label font-semibold tracking-[0.06em] text-faint uppercase"
           >
-            Recent vaults
+            {t("start.recentVaults")}
           </h2>
           <ul className="flex flex-col">
             {start.recentVaults.map(({ path }) => (
@@ -145,10 +144,12 @@ export function StartScreen() {
                 <button
                   type="button"
                   className="mr-1 shrink-0 rounded-sm px-1.5 py-0.5 text-small text-muted hover:bg-selected hover:text-fg"
-                  aria-label={`Remove ${nameOf(path)} from the recent vaults`}
+                  aria-label={t("start.removeRecentLabel", {
+                    name: nameOf(path),
+                  })}
                   onClick={() => start.forgetRecent(path)}
                 >
-                  Remove
+                  {t("start.removeRecent")}
                 </button>
               </li>
             ))}

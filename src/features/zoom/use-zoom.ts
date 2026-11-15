@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { keys, useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 import { preference } from "../settings/preference";
 
 /**
@@ -34,6 +35,7 @@ const reset = () => zoomPreference.set(1);
  * the same as commands, and the settings a choice of the levels.
  */
 export function useZoom(apply: (scale: number) => Promise<void>): void {
+  const t = useT();
   const scale = zoomPreference.use();
 
   useEffect(() => {
@@ -72,24 +74,24 @@ export function useZoom(apply: (scale: number) => Promise<void>): void {
       () => [
         {
           id: "zoom.in",
-          title: "Zoom in",
+          title: t("zoom.in"),
           shortcut: keys("Mod+="),
           run: zoomIn,
         },
         {
           id: "zoom.out",
-          title: "Zoom out",
+          title: t("zoom.out"),
           shortcut: keys("Mod+-"),
           run: zoomOut,
         },
         {
           id: "zoom.reset",
-          title: "Reset zoom",
+          title: t("zoom.reset"),
           shortcut: keys("Mod+0"),
           run: reset,
         },
       ],
-      [],
+      [t],
     ),
   );
 }

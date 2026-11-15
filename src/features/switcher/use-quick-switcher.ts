@@ -1,6 +1,7 @@
 import type { NotePath, TitleHit, Vault } from "@carbon/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
 import { shortcutLetter } from "../workspace/shortcut-letter";
@@ -34,6 +35,7 @@ export interface QuickSwitcher {
  * there can be made.
  */
 export function useQuickSwitcher(vault: Vault): QuickSwitcher {
+  const t = useT();
   const [isOpen, setOpen] = useState(false);
   const [query, setQueryState] = useState("");
   const [answer, setAnswer] = useState<{
@@ -69,12 +71,12 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
       () => [
         {
           id: "switcher.open",
-          title: "Open a note",
+          title: t("switcher.open"),
           shortcut: keys("Mod+O"),
           run: () => setOpen(true),
         },
       ],
-      [],
+      [t],
     ),
   );
 

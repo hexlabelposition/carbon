@@ -9,6 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import { keys, useCommands } from "../commands/commands";
+import {
+  LANGUAGE_SETTINGS,
+  languagePreference,
+  useLanguage,
+  useT,
+  type LanguageSetting,
+  type MessageKey,
+} from "../i18n/i18n";
 import { THEMES, themePreference, type Theme } from "../theme/use-theme";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
@@ -39,32 +47,45 @@ export function openSettings(): void {
   setOpen(true);
 }
 
-const THEME_LABELS: Record<Theme, string> = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
+const THEME_LABELS: Record<Theme, MessageKey> = {
+  system: "settings.theme.system",
+  light: "settings.theme.light",
+  dark: "settings.theme.dark",
+};
+
+const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
+  system: "settings.language.system",
+  en: "settings.language.en",
+  ru: "settings.language.ru",
 };
 
 /**
- * The settings of the app: applies the note settings, offers "Open
- * settings" (Ctrl+, or Cmd+, on a Mac) and shows the dialog while it is
- * open. Mount it once, inside the commands provider.
+ * The settings of the app: applies the note settings and the language,
+ * offers "Open settings" (Ctrl+, or Cmd+, on a Mac) and shows the dialog
+ * while it is open. Mount it once, inside the commands provider.
  */
 export function Settings() {
   useNoteStyle();
+  const t = useT();
+  const language = useLanguage();
   const open = useSyncExternalStore(subscribe, () => isOpen);
+
+  // The language of the page: hyphenation and spelling follow it.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   useCommands(
     useMemo(
       () => [
         {
           id: "settings.open",
-          title: "Open settings",
+          title: t("settings.open"),
           shortcut: keys("Mod+,"),
           run: openSettings,
         },
       ],
-      [],
+      [t],
     ),
   );
 
@@ -105,11 +126,11 @@ export function Settings() {
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex w-[440px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog outline-none">
           <header className="flex items-center justify-between">
             <Dialog.Title className="text-h3 font-semibold">
-              Settings
+              {t("settings.title")}
             </Dialog.Title>
             <Dialog.Close
-              aria-label="Close"
-              title="Close (Escape)"
+              aria-label={t("common.close")}
+              title={t("common.closeEscape")}
               className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
             >
               <svg
@@ -134,13 +155,26 @@ export function Settings() {
 }
 
 function AppearanceSettings() {
+  const t = useT();
   const theme = themePreference.use();
   const zoom = zoomPreference.use();
+  const language = languagePreference.use();
   return (
-    <Section title="Appearance">
-      <Row label="Theme">
+    <Section title={t("settings.appearance")}>
+      <Row label={t("settings.language")}>
+        <SettingSelect
+          label={t("settings.language")}
+          value={language}
+          items={LANGUAGE_SETTINGS.map((value) => ({
+            value,
+            label: t(LANGUAGE_LABELS[value]),
+          }))}
+          onChange={languagePreference.set}
+        />
+      </Row>
+      <Row label={t("settings.theme")}>
         <ToggleGroup
-          aria-label="Theme"
+          aria-label={t("settings.theme")}
           value={[theme]}
           // Pressing the theme that is on would turn it off: keep it.
           onValueChange={([next]: Theme[]) => {
@@ -154,14 +188,14 @@ function AppearanceSettings() {
               value={value}
               className="h-6 rounded-sm px-3 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong data-pressed:bg-solid data-pressed:font-medium data-pressed:text-on-solid"
             >
-              {THEME_LABELS[value]}
+              {t(THEME_LABELS[value])}
             </Toggle>
           ))}
         </ToggleGroup>
       </Row>
-      <Row label="Interface zoom">
+      <Row label={t("settings.zoom")}>
         <SettingSelect
-          label="Interface zoom"
+          label={t("settings.zoom")}
           value={zoom}
           items={ZOOM_LEVELS.map((level) => ({
             value: level,
@@ -175,35 +209,42 @@ function AppearanceSettings() {
 }
 
 function NoteSettings() {
+  const t = useT();
   const font = noteFontPreference.use();
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   return (
-    <Section title="Notes">
-      <Row label="Font">
+    <Section title={t("settings.notes")}>
+      <Row label={t("settings.font")}>
         <SettingSelect
-          label="Font"
+          label={t("settings.font")}
           value={font}
-          items={NOTE_FONTS}
+          items={NOTE_FONTS.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
           onChange={noteFontPreference.set}
         />
       </Row>
-      <Row label="Font size">
+      <Row label={t("settings.fontSize")}>
         <SettingSelect
-          label="Font size"
+          label={t("settings.fontSize")}
           value={size}
           items={NOTE_SIZES.map((pixels) => ({
             value: pixels,
-            label: `${pixels} px`,
+            label: t("settings.pixels", { count: pixels }),
           }))}
           onChange={noteSizePreference.set}
         />
       </Row>
-      <Row label="Content width">
+      <Row label={t("settings.width")}>
         <SettingSelect
-          label="Content width"
+          label={t("settings.width")}
           value={width}
-          items={NOTE_WIDTHS}
+          items={NOTE_WIDTHS.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
           onChange={noteWidthPreference.set}
         />
       </Row>

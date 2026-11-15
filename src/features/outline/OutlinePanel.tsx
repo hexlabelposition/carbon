@@ -1,4 +1,5 @@
 import type { Heading } from "../editor/outline";
+import { useT } from "../i18n/i18n";
 
 interface OutlinePanelProps {
   headings: readonly Heading[];
@@ -17,13 +18,16 @@ export function OutlinePanel({
   current,
   onReveal,
 }: OutlinePanelProps) {
+  const t = useT();
   if (headings.length === 0) {
-    return <p className="px-3 py-2 text-small text-faint">No headings</p>;
+    return (
+      <p className="px-3 py-2 text-small text-faint">{t("outline.empty")}</p>
+    );
   }
   const top = Math.min(...headings.map((heading) => heading.level));
 
   return (
-    <nav aria-label="Outline">
+    <nav aria-label={t("shell.outline")}>
       <ul className="py-1">
         {headings.map((heading, index) => (
           // Headings can repeat; their order is what tells them apart.
@@ -38,7 +42,7 @@ export function OutlinePanel({
               style={{ paddingLeft: `${12 + (heading.level - top) * 12}px` }}
               onClick={() => onReveal(index)}
             >
-              {heading.text || "(empty heading)"}
+              {heading.text || t("outline.emptyHeading")}
             </button>
           </li>
         ))}

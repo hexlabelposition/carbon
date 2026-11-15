@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 
 const STORAGE_KEY = "carbon.editor.sourceMode";
@@ -21,6 +22,7 @@ export interface SourceMode {
  * app starts. Ctrl+E, or Cmd+E on a Mac, switches it.
  */
 export function useSourceMode(): SourceMode {
+  const t = useT();
   const [on, setOn] = useState(load);
 
   useEffect(() => {
@@ -37,12 +39,12 @@ export function useSourceMode(): SourceMode {
       () => [
         {
           id: "editor.sourceMode",
-          title: "Toggle source mode",
+          title: t("editor.toggleSource"),
           shortcut: keys("Mod+E"),
           run: toggle,
         },
       ],
-      [toggle],
+      [t, toggle],
     ),
   );
 

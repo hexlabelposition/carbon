@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 
 const STORAGE_KEY = "carbon.editor.readingMode";
 
@@ -15,6 +16,7 @@ export interface ReadingMode {
  * as source mode, remembered between app starts.
  */
 export function useReadingMode(): ReadingMode {
+  const t = useT();
   const [on, setOn] = useState(load);
 
   useEffect(() => {
@@ -31,11 +33,11 @@ export function useReadingMode(): ReadingMode {
       () => [
         {
           id: "editor.readingMode",
-          title: "Toggle reading mode",
+          title: t("editor.toggleReading"),
           run: toggle,
         },
       ],
-      [toggle],
+      [t, toggle],
     ),
   );
 

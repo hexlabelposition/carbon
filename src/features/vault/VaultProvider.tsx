@@ -1,5 +1,6 @@
 import { checkVaultName, Vault, type Platform } from "@carbon/core";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { t } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import {
   VaultSessionContext,
@@ -73,7 +74,7 @@ export function VaultProvider({
   const pickAndOpen = useCallback(
     () =>
       attempt(null, async () => {
-        const root = await pickFolder("Open a vault folder");
+        const root = await pickFolder(t("vault.pickOpen"));
         return root === null ? null : Vault.open(root, platform);
       }),
     [attempt, pickFolder, platform],
@@ -84,7 +85,7 @@ export function VaultProvider({
       attempt(null, async () => {
         // Before the dialog: a bad name should not cost the user a pick.
         checkVaultName(name);
-        const parent = await pickFolder(`Choose where to create “${name}”`);
+        const parent = await pickFolder(t("vault.pickCreate", { name }));
         return parent === null ? null : Vault.create(parent, name, platform);
       }),
     [attempt, pickFolder, platform],

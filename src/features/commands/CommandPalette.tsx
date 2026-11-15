@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
 import type { CommandPalette as Palette } from "./use-command-palette";
 
@@ -7,6 +8,7 @@ import type { CommandPalette as Palette } from "./use-command-palette";
  * it, Escape or a click outside closes the palette.
  */
 export function CommandPalette({ palette }: { palette: Palette }) {
+  const t = useT();
   const dialog = useRef<HTMLDialogElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, items, selected, select, run } = palette;
@@ -38,7 +40,7 @@ export function CommandPalette({ palette }: { palette: Palette }) {
   return (
     <dialog
       ref={dialog}
-      aria-label="Command palette"
+      aria-label={t("palette.label")}
       className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-12 backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
       onCancel={(event) => {
         event.preventDefault();
@@ -58,8 +60,8 @@ export function CommandPalette({ palette }: { palette: Palette }) {
         aria-activedescendant={
           items.length > 0 ? `palette-row-${selected}` : undefined
         }
-        aria-label="Run a command"
-        placeholder="Run a command"
+        aria-label={t("palette.placeholder")}
+        placeholder={t("palette.placeholder")}
         spellCheck={false}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -67,13 +69,13 @@ export function CommandPalette({ palette }: { palette: Palette }) {
         className="h-10 w-full border-b border-line bg-bg px-3 outline-none"
       />
       {items.length === 0 ? (
-        <p className="px-3 py-2 text-small text-faint">No commands found</p>
+        <p className="px-3 py-2 text-small text-faint">{t("palette.empty")}</p>
       ) : (
         <ul
           id="palette-list"
           ref={list}
           role="listbox"
-          aria-label="Commands"
+          aria-label={t("palette.commands")}
           className="max-h-[50vh] overflow-auto py-1"
         >
           {items.map(({ command, matches }, index) => (

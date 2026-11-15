@@ -1,5 +1,6 @@
 import { attachmentLink, type NotePath, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../i18n/i18n";
 import { imageEndingOf, imageTypeOf } from "../image/image-file";
 import type { ImageHost, ShownImage } from "./live-preview-image";
 
@@ -44,7 +45,7 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
       } catch (reason) {
         const message =
           reason instanceof Error ? reason.message : String(reason);
-        setError(`The image could not be saved: ${message}`);
+        setError(t("images.saveFailed", { reason: message }));
         throw reason;
       }
     }

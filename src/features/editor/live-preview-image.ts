@@ -8,6 +8,7 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
+import { t } from "../i18n/i18n";
 import { imageTypeOf } from "../image/image-file";
 
 /** What the editor needs from outside to show and to take in images. */
@@ -181,8 +182,8 @@ export const imageInput = [
           if (saves.length === 0) {
             host.refuse(
               dropped.files.length + dropped.paths.length === 0
-                ? "The dropped file could not be read."
-                : "Only images can be dropped into a note.",
+                ? t("images.unreadable")
+                : t("images.onlyImages"),
             );
             return true;
           }
@@ -276,7 +277,7 @@ class ImageWidget extends WidgetType {
 
     const missing = () => {
       box.classList.add("cm-image-missing");
-      box.textContent = `Image not found: ${this.alt || this.target}`;
+      box.textContent = t("images.notFound", { name: this.alt || this.target });
     };
     const host = view.state.facet(imageHost);
     if (host === null) {
@@ -401,7 +402,7 @@ async function replaceDroppedPaths(
     selection: { anchor: dropped.from },
   });
   if (images.length === 0) {
-    host.refuse("Only images can be dropped into a note.");
+    host.refuse(t("images.onlyImages"));
     return;
   }
   const saved = await insertImages(

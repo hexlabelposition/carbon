@@ -1,4 +1,5 @@
 import type { Backlink, NotePath } from "@carbon/core";
+import { useT } from "../i18n/i18n";
 import type { BacklinksState } from "./use-backlinks";
 
 interface BacklinksPanelProps {
@@ -13,11 +14,12 @@ interface BacklinksPanelProps {
  * that link.
  */
 export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
+  const t = useT();
   if (state.status === "loading") return null;
   if (state.status === "error") {
     return (
       <p className="px-3 py-2 text-small text-danger">
-        Backlinks are not available: {state.message}
+        {t("backlinks.failed", { reason: state.message })}
       </p>
     );
   }
@@ -27,13 +29,15 @@ export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
     <div className="py-1">
       {state.partial && (
         <p role="status" className="px-3 pb-1 text-small text-faint">
-          Indexing: some backlinks may be missing.
+          {t("backlinks.partial")}
         </p>
       )}
       {groups.length === 0 ? (
-        <p className="px-3 py-1 text-small text-faint">No backlinks</p>
+        <p className="px-3 py-1 text-small text-faint">
+          {t("backlinks.empty")}
+        </p>
       ) : (
-        <ul aria-label="Backlinks">
+        <ul aria-label={t("shell.backlinks")}>
           {groups.map(({ source, title, links }) => (
             <li key={source} className="pb-1">
               <button
@@ -52,7 +56,7 @@ export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
                       className="block w-full px-3 py-0.5 pl-5 text-left text-small text-muted hover:bg-raise hover:text-fg"
                       onClick={() => onOpen(source, link.start)}
                     >
-                      {link.snippet || "(empty)"}
+                      {link.snippet || t("backlinks.emptySnippet")}
                     </button>
                   </li>
                 ))}

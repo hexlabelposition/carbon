@@ -30,6 +30,7 @@ import {
 import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
 import { linkPreview } from "./link-preview";
+import { useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
 import {
@@ -105,6 +106,7 @@ export function MarkdownEditor({
   reveal = null,
   active = false,
 }: MarkdownEditorProps) {
+  const t = useT();
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorView | null>(null);
   /** Holds the live preview, so it can be turned off and on in place. */
@@ -242,7 +244,7 @@ export function MarkdownEditor({
       return [
         {
           id: "editor.find",
-          title: "Find in note",
+          title: t("find.label"),
           shortcut: keys("Mod+F"),
           run: () => {
             if (editor.current !== null) openSearchPanel(editor.current);
@@ -250,14 +252,14 @@ export function MarkdownEditor({
         },
         {
           id: "editor.replace",
-          title: "Replace in note",
+          title: t("editor.replaceInNote"),
           shortcut: keys("Mod+H"),
           run: () => {
             if (editor.current !== null) openReplace(editor.current);
           },
         },
       ];
-    }, [active]),
+    }, [t, active]),
   );
 
   // After the editor is made: the outline it is given hears of the note.

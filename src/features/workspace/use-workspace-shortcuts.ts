@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { keys, useCommands, type Command } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 import { useWorkspace } from "./workspace";
 import { shortcutLetter } from "./shortcut-letter";
 
@@ -15,6 +16,7 @@ import { shortcutLetter } from "./shortcut-letter";
  * also opens the note in the other pane.
  */
 export function useWorkspaceShortcuts(): void {
+  const t = useT();
   const {
     path,
     tabs,
@@ -77,13 +79,13 @@ export function useWorkspaceShortcuts(): void {
       const commands: Command[] = [
         {
           id: "workspace.back",
-          title: "Go back",
+          title: t("workspace.back"),
           shortcut: "Alt+Left",
           run: back,
         },
         {
           id: "workspace.forward",
-          title: "Go forward",
+          title: t("workspace.forward"),
           shortcut: "Alt+Right",
           run: forward,
         },
@@ -93,19 +95,19 @@ export function useWorkspaceShortcuts(): void {
         ...commands,
         {
           id: "workspace.closeTab",
-          title: "Close tab",
+          title: t("workspace.closeTab"),
           shortcut: keys("Mod+W"),
           run: closeActiveTab,
         },
         {
           id: "workspace.nextTab",
-          title: "Next tab",
+          title: t("workspace.nextTab"),
           shortcut: "Ctrl+Tab",
           run: () => stepTab(1),
         },
         {
           id: "workspace.previousTab",
-          title: "Previous tab",
+          title: t("workspace.previousTab"),
           shortcut: "Ctrl+Shift+Tab",
           run: () => stepTab(-1),
         },
@@ -114,11 +116,11 @@ export function useWorkspaceShortcuts(): void {
           : [
               {
                 id: "workspace.openBeside",
-                title: "Open note in the other pane",
+                title: t("workspace.openBeside"),
                 run: () => open(path, { target: "beside" }),
               },
             ]),
       ];
-    }, [path, activeTabId, back, forward, closeActiveTab, stepTab, open]),
+    }, [t, path, activeTabId, back, forward, closeActiveTab, stepTab, open]),
   );
 }

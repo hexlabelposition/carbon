@@ -1,5 +1,6 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
 import { useState } from "react";
+import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
@@ -42,6 +43,7 @@ export function NoteEditor({
   outline,
   active = false,
 }: NoteEditorProps) {
+  const t = useT();
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
@@ -58,7 +60,7 @@ export function NoteEditor({
         role="alert"
         className="flex h-full items-center justify-center px-8 text-center text-danger"
       >
-        Could not open {path}: {note.message}
+        {t("start.couldNotOpen", { root: path, reason: note.message })}
       </p>
     );
   }
@@ -84,24 +86,24 @@ export function NoteEditor({
         <button
           type="button"
           aria-pressed={sourceMode}
-          title={`Show raw Markdown (${SOURCE_MODE_SHORTCUT})`}
+          title={t("editor.sourceHint", { shortcut: SOURCE_MODE_SHORTCUT })}
           className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
             sourceMode ? "bg-selected text-fg" : "text-muted"
           }`}
           onClick={onToggleSourceMode}
         >
-          Source
+          {t("editor.source")}
         </button>
         <button
           type="button"
           aria-pressed={readingMode}
-          title="Reading mode: no typing, tasks can still be ticked"
+          title={t("editor.readHint")}
           className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
             readingMode ? "bg-selected text-fg" : "text-muted"
           }`}
           onClick={onToggleReadingMode}
         >
-          Read
+          {t("editor.read")}
         </button>
       </header>
       {images.error !== null && (
@@ -165,6 +167,7 @@ function EditorAlert({
   message: string;
   onDismiss: () => void;
 }) {
+  const t = useT();
   return (
     <div
       role="alert"
@@ -172,7 +175,7 @@ function EditorAlert({
     >
       <p className="min-w-0 flex-1 text-danger">{message}</p>
       <button type="button" className={indicatorButton} onClick={onDismiss}>
-        Dismiss
+        {t("common.dismiss")}
       </button>
     </div>
   );
@@ -190,10 +193,11 @@ const indicatorButton =
 
 /** Tells whether the edits are on disk. Never by color alone. */
 function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
+  const t = useT();
   if (save.status === "saved") {
     return (
       <span role="status" className="shrink-0 text-small text-faint">
-        Saved
+        {t("save.saved")}
       </span>
     );
   }
@@ -204,18 +208,16 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
         className="flex shrink-0 items-center gap-1.5 text-small text-muted"
       >
         <span aria-hidden="true" className="size-1.5 rounded-full bg-fg" />
-        Unsaved
+        {t("save.unsaved")}
       </span>
     );
   }
   if (save.status === "conflict") {
     return (
       <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
-        <span className="truncate text-danger">
-          Not saved: the note was changed on disk
-        </span>
+        <span className="truncate text-danger">{t("save.conflict")}</span>
         <button type="button" className={indicatorButton} onClick={onResolve}>
-          Resolve
+          {t("save.resolve")}
         </button>
       </span>
     );
@@ -223,10 +225,10 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   return (
     <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
       <span className="truncate text-danger" title={save.message}>
-        Not saved: {save.message}
+        {t("save.failed", { reason: save.message })}
       </span>
       <button type="button" className={indicatorButton} onClick={onRetry}>
-        Retry
+        {t("save.retry")}
       </button>
     </span>
   );

@@ -1,5 +1,6 @@
 import type { NotePath, Vault } from "@carbon/core";
 import { useCallback, useState } from "react";
+import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { handOver } from "./use-note-document";
 
@@ -34,7 +35,7 @@ export function useNoteTitle(vault: Vault, path: NotePath): NoteTitle {
       const next = text.trim();
       if (next === "" || next === name) return false;
       if (/[\\/]/.test(next)) {
-        setError("A name cannot contain / or \\");
+        setError(t("tree.badName"));
         return false;
       }
       const to = `${folder}${next}.md`;

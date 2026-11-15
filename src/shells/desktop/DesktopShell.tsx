@@ -36,6 +36,7 @@ import { useSearch } from "../../features/search/use-search";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
+import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { useIndexStatus } from "../../features/vault/use-index-status";
@@ -82,6 +83,7 @@ const DevPanel = import.meta.env.DEV
  */
 export function DesktopShell({ frame }: { frame: WindowFrame }) {
   useWindowShape(frame);
+  const t = useT();
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
@@ -110,7 +112,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
       if (DevPanel !== null) {
         commands.push({
           id: "shell.devPanel",
-          title: "Toggle dev panel",
+          title: t("shell.toggleDevPanel"),
           run: () => setDevOpen((open) => !open),
         });
       }
@@ -119,29 +121,29 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
         ...commands,
         {
           id: "shell.sidebar",
-          title: "Toggle left panel",
+          title: t("shell.toggleLeftPanel"),
           shortcut: LEFT_PANEL_SHORTCUT,
           run: toggleSidebar,
         },
         {
           id: "shell.rightPanel",
-          title: "Toggle right panel",
+          title: t("shell.toggleRightPanel"),
           shortcut: RIGHT_PANEL_SHORTCUT,
           run: toggleRightPanel,
         },
         {
           id: "shell.outline",
-          title: "Toggle outline",
+          title: t("shell.toggleOutline"),
           run: () => toggleRightView("outline"),
         },
         {
           id: "shell.backlinks",
-          title: "Toggle backlinks",
+          title: t("shell.toggleBacklinks"),
           run: () => toggleRightView("backlinks"),
         },
         {
           id: "shell.files",
-          title: "Show files",
+          title: t("shell.showFiles"),
           run: () => {
             revealSidebar();
             showSidebarView("files");
@@ -149,16 +151,17 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
         },
         {
           id: "shell.search",
-          title: "Search all notes",
+          title: t("shell.searchAll"),
           shortcut: keys("Mod+Shift+F"),
           run: () => {
             revealSidebar();
             showSidebarView("search");
           },
         },
-        { id: "shell.closeVault", title: "Close vault", run: close },
+        { id: "shell.closeVault", title: t("shell.closeVault"), run: close },
       ];
     }, [
+      t,
       vault,
       showDev,
       toggleSidebar,
@@ -217,7 +220,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                     className="shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-raise hover:text-fg"
                     onClick={close}
                   >
-                    Close vault
+                    {t("shell.closeVault")}
                   </button>
                 </>
               }
@@ -259,6 +262,7 @@ function SidebarContent({
   /** Opens the sidebar if it is shut. */
   reveal: () => void;
 }) {
+  const t = useT();
   const search = useSearch(vault);
   // For what the file tree starts from elsewhere, such as "New note" from
   // the palette: its name field must be where it can be typed in.
@@ -269,24 +273,24 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       <ViewTabs
-        label="Sidebar views"
+        label={t("shell.sidebarViews")}
         views={[
-          { view: "files", label: "Files" },
-          { view: "search", label: "Search" },
+          { view: "files", label: t("shell.files") },
+          { view: "search", label: t("shell.search") },
         ]}
         current={view}
         onShow={show}
       />
       <div
         role="tabpanel"
-        aria-label="Files"
+        aria-label={t("shell.files")}
         className={view === "files" ? "min-h-0 flex-1" : "hidden"}
       >
         <FileTree vault={vault} onReveal={showFiles} />
       </div>
       <div
         role="tabpanel"
-        aria-label="Search"
+        aria-label={t("shell.search")}
         className={view === "search" ? "min-h-0 flex-1" : "hidden"}
       >
         <SearchPanel search={search} focusRequest={searchRequest} />
@@ -301,6 +305,7 @@ function SidebarContent({
  * how far indexing is, and what does not work. Nothing while all is well.
  */
 function VaultStatus({ vault }: { vault: Vault }) {
+  const t = useT();
   const index = useIndexStatus(vault);
   // A scan with nothing to do is over a moment later: not worth a line.
   const indexing = index.state === "scanning" && index.total !== 0;
@@ -308,9 +313,7 @@ function VaultStatus({ vault }: { vault: Vault }) {
   return (
     <div className="flex shrink-0 flex-col gap-1 border-t border-line px-3 py-2 text-small text-faint">
       {!vault.watching && (
-        <p className="text-danger">
-          Changes made by other programs are not noticed
-        </p>
+        <p className="text-danger">{t("shell.notWatching")}</p>
       )}
       <IndexState vault={vault} />
     </div>
@@ -345,6 +348,7 @@ interface NoteAreaProps {
  */
 function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
   const workspace = useWorkspace();
+  const t = useT();
   useWorkspaceShortcuts();
   const sourceMode = useSourceMode();
   const readingMode = useReadingMode();
@@ -366,7 +370,7 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <DragStrip room>{leftToggle}</DragStrip>
-        <Watermark label="No note is open." />
+        <Watermark label={t("shell.noNoteOpen")} />
       </div>
     );
   }
@@ -379,7 +383,9 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
         return (
           <section
             key={pane.id}
-            aria-label={split ? `Pane ${index + 1}` : undefined}
+            aria-label={
+              split ? t("shell.pane", { number: index + 1 }) : undefined
+            }
             className={`flex min-w-0 flex-1 flex-col ${
               index > 0 ? "border-l border-line" : ""
             }`}
@@ -475,6 +481,7 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
  * is ready.
  */
 function IndexState({ vault }: { vault: Vault }) {
+  const t = useT();
   const status = useIndexStatus(vault);
   if (status.state === "ready") return null;
   if (status.state === "failed") {
@@ -484,7 +491,7 @@ function IndexState({ vault }: { vault: Vault }) {
         : String(status.error);
     return (
       <p className="text-danger" title={reason}>
-        The index is not available: links and backlinks do not work
+        {t("shell.indexFailed")}
       </p>
     );
   }
@@ -494,8 +501,8 @@ function IndexState({ vault }: { vault: Vault }) {
   return (
     <p role="status">
       {total === null
-        ? "Indexing…"
-        : `Indexing ${done.toLocaleString()} of ${total.toLocaleString()} notes`}
+        ? t("shell.indexing")
+        : t("shell.indexingOf", { done, count: total })}
     </p>
   );
 }
@@ -524,15 +531,16 @@ function RightPanelContent({
   /** The outline of the note, which the note area keeps up to date. */
   outline: ReactNode;
 }) {
+  const t = useT();
   const backlinks = useBacklinks(vault, path);
   return (
     <aside
-      aria-label="Right panel"
+      aria-label={t("shell.rightPanel")}
       className="relative flex h-full flex-col border-l border-line bg-panel"
     >
       <ResizeHandle
         side="right"
-        label="Resize right panel"
+        label={t("shell.resizeRightPanel")}
         fraction={width.fraction}
         onResize={width.resize}
         onNudge={width.nudge}
@@ -543,14 +551,14 @@ function RightPanelContent({
         className={`h-12 shrink-0 border-b border-line ${WINDOW_CONTROLS_ROOM}`}
       />
       <ViewTabs
-        label="Right panel views"
+        label={t("shell.rightPanelViews")}
         views={[
-          { view: "outline", label: "Outline" },
+          { view: "outline", label: t("shell.outline") },
           {
             view: "backlinks",
             label: (
               <>
-                Backlinks
+                {t("shell.backlinks")}
                 {backlinks.status === "ready" && (
                   <span className="text-faint">
                     {backlinks.backlinks.length}

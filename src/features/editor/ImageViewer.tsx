@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useT } from "../i18n/i18n";
 import { FittedImage } from "../image/FittedImage";
 import type { ShownImage } from "./live-preview-image";
 
@@ -13,6 +14,7 @@ export function ImageViewer({
   image: ShownImage;
   onClose: () => void;
 }) {
+  const t = useT();
   const dialog = useRef<HTMLDialogElement>(null);
 
   // A modal `<dialog>` keeps the focus inside and closes on Escape.
@@ -45,8 +47,8 @@ export function ImageViewer({
       </p>
       <button
         type="button"
-        aria-label="Close"
-        title="Close (Escape)"
+        aria-label={t("common.close")}
+        title={t("common.closeEscape")}
         className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
         onClick={onClose}
       >

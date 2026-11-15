@@ -1,5 +1,6 @@
 import type { Vault } from "@carbon/core";
 import { useEffect, useState } from "react";
+import { useT } from "../i18n/i18n";
 import { imageTypeOf } from "./image-file";
 import { FittedImage } from "./FittedImage";
 
@@ -13,6 +14,7 @@ type Loaded =
  * from the file tree. Give it a `key` of its path: it loads the image once.
  */
 export function ImageView({ vault, path }: { vault: Vault; path: string }) {
+  const t = useT();
   const [image, setImage] = useState<Loaded>({ status: "loading" });
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export function ImageView({ vault, path }: { vault: Vault; path: string }) {
             role="alert"
             className="flex h-full items-center justify-center px-8 text-center text-danger"
           >
-            Could not open {path}: {image.message}
+            {t("start.couldNotOpen", { root: path, reason: image.message })}
           </p>
         )}
       </div>

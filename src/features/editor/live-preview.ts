@@ -10,6 +10,7 @@ import {
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { isMissing, missingChanged } from "./missing-links";
+import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
 
 /**
@@ -162,7 +163,7 @@ class TaskWidget extends WidgetType {
     box.className = this.checked ? "cm-task cm-task-checked" : "cm-task";
     box.setAttribute("role", "checkbox");
     box.setAttribute("aria-checked", String(this.checked));
-    box.setAttribute("aria-label", "Task done");
+    box.setAttribute("aria-label", t("editor.taskDone"));
     // A 16 by 16 square; the tick is drawn around its middle, (8, 8).
     box.innerHTML =
       '<svg viewBox="0 0 16 16" aria-hidden="true">' +

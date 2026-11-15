@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo } from "react";
 import { useCommands } from "../commands/commands";
+import { useT } from "../i18n/i18n";
 import { oneOf, preference } from "../settings/preference";
 
 /** The theme the user chose: one of the two, or the one of the system. */
@@ -21,6 +22,7 @@ export const themePreference = preference<Theme>(
  * the root element; the tokens follow it (tokens.css).
  */
 export function useTheme(): void {
+  const t = useT();
   const theme = themePreference.use();
 
   // Before the paint, so the app does not show in the other theme first.
@@ -35,21 +37,21 @@ export function useTheme(): void {
       () => [
         {
           id: "theme.light",
-          title: "Theme: Light",
+          title: t("theme.light"),
           run: () => themePreference.set("light"),
         },
         {
           id: "theme.dark",
-          title: "Theme: Dark",
+          title: t("theme.dark"),
           run: () => themePreference.set("dark"),
         },
         {
           id: "theme.system",
-          title: "Theme: Follow system",
+          title: t("theme.system"),
           run: () => themePreference.set("system"),
         },
       ],
-      [],
+      [t],
     ),
   );
 }

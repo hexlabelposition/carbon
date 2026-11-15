@@ -1,5 +1,6 @@
 import { EditorView, hoverTooltip } from "@codemirror/view";
 import type { Link, NotePath } from "@carbon/core";
+import { t } from "../i18n/i18n";
 import { linkHost } from "./link-completion";
 import { linkAt } from "./link-follow";
 
@@ -89,8 +90,8 @@ function previewDom(preview: LinkPreview): HTMLElement {
   box.className = "cm-link-preview";
   if (preview.path === null) {
     box.textContent = preview.canCreate
-      ? "No such note yet. Click the link to create it."
-      : "Not a note: no note is made for this link.";
+      ? t("linkPreview.missing")
+      : t("linkPreview.notNote");
     box.classList.add("cm-link-preview-empty");
     return box;
   }
@@ -103,7 +104,8 @@ function previewDom(preview: LinkPreview): HTMLElement {
     preview.text === ""
       ? "cm-link-preview-text cm-link-preview-empty"
       : "cm-link-preview-text";
-  text.textContent = preview.text === "" ? "Empty note" : preview.text;
+  text.textContent =
+    preview.text === "" ? t("linkPreview.empty") : preview.text;
   box.append(title, text);
   return box;
 }

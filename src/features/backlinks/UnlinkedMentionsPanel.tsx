@@ -1,4 +1,5 @@
 import type { Mention, NotePath } from "@carbon/core";
+import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
 import type { UnlinkedMentions } from "./use-unlinked-mentions";
 
@@ -21,6 +22,7 @@ export function UnlinkedMentionsPanel({
   onToggle,
   onOpen,
 }: UnlinkedMentionsPanelProps) {
+  const t = useT();
   const count = state.status === "ready" ? state.mentions.length : null;
   return (
     <div className="border-t border-line py-1">
@@ -33,7 +35,7 @@ export function UnlinkedMentionsPanel({
         <span aria-hidden className="w-3 text-faint">
           {open ? "▾" : "▸"}
         </span>
-        Unlinked mentions
+        {t("mentions.title")}
         {count !== null && (
           <span className="font-normal text-small text-faint">{count}</span>
         )}
@@ -41,7 +43,7 @@ export function UnlinkedMentionsPanel({
       {open && <MentionList state={state} link={link} onOpen={onOpen} />}
       {open && linkError !== null && (
         <p role="alert" className="px-3 py-1 text-small text-danger">
-          Could not link: {linkError}
+          {t("mentions.linkFailed", { reason: linkError })}
         </p>
       )}
     </div>
@@ -54,22 +56,27 @@ function MentionList({
   onOpen,
 }: Pick<UnlinkedMentions, "state" | "link"> &
   Pick<UnlinkedMentionsPanelProps, "onOpen">) {
+  const t = useT();
   if (state.status === "error") {
     return (
       <p className="px-3 py-1 text-small text-danger">
-        Mentions are not available: {state.message}
+        {t("mentions.failed", { reason: state.message })}
       </p>
     );
   }
   if (state.status !== "ready") {
-    return <p className="px-3 py-1 text-small text-faint">Looking…</p>;
+    return (
+      <p className="px-3 py-1 text-small text-faint">{t("mentions.looking")}</p>
+    );
   }
   const groups = bySource(state.mentions);
   if (groups.length === 0) {
-    return <p className="px-3 py-1 text-small text-faint">No mentions</p>;
+    return (
+      <p className="px-3 py-1 text-small text-faint">{t("mentions.empty")}</p>
+    );
   }
   return (
-    <ul aria-label="Unlinked mentions">
+    <ul aria-label={t("mentions.title")}>
       {groups.map(({ source, title, mentions }) => (
         <li key={source} className="pb-1">
           <button
@@ -99,11 +106,11 @@ function MentionList({
                 </button>
                 <button
                   type="button"
-                  title={`Link this mention in ${title}`}
+                  title={t("mentions.linkHint", { name: title })}
                   className="mt-0.5 shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-selected hover:text-fg"
                   onClick={() => link(mention)}
                 >
-                  Link
+                  {t("mentions.link")}
                 </button>
               </li>
             ))}

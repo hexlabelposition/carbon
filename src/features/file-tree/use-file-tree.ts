@@ -2,6 +2,7 @@ import type { TreeNode, Vault } from "@carbon/core";
 import { useEffect, useMemo, useState } from "react";
 import { imageTypeOf } from "../image/image-file";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
+import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 
 /** What is being typed into the tree: a new name, or a name for a new item. */
@@ -232,7 +233,7 @@ export function useFileTree(vault: Vault): FileTree {
     setEdit(null);
     if (current === null || name === "") return;
     if (/[\\/]/.test(name)) {
-      setError("A name cannot contain / or \\");
+      setError(t("tree.badName"));
       return;
     }
 

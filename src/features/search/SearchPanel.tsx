@@ -1,5 +1,6 @@
 import type { SearchHit } from "@carbon/core";
 import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { useT } from "../i18n/i18n";
 import { Highlighted } from "./Highlighted";
 import type { Search } from "./use-search";
 
@@ -20,6 +21,7 @@ interface SearchPanelProps {
  * hit, the arrow keys go through the list, Escape clears the field.
  */
 export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
+  const t = useT();
   const field = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, results, open } = search;
@@ -75,9 +77,9 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
         <input
           ref={field}
           type="search"
-          aria-label="Search notes"
-          placeholder="Search notes"
-          title={'Words, "exact phrase", path:folder'}
+          aria-label={t("search.placeholder")}
+          placeholder={t("search.placeholder")}
+          title={t("search.syntax")}
           spellCheck={false}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -88,7 +90,11 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
       <div className="min-h-0 flex-1 overflow-auto py-1">
         <Status results={results} />
         {hits.length > 0 && (
-          <ul aria-label="Search results" ref={list} onKeyDown={onListKeyDown}>
+          <ul
+            aria-label={t("search.results")}
+            ref={list}
+            onKeyDown={onListKeyDown}
+          >
             {hits.map((hit) => (
               <li key={hit.path}>
                 <button
@@ -126,10 +132,11 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
 
 /** A line about the results, when there is something to say. */
 function Status({ results }: { results: Search["results"] }) {
+  const t = useT();
   if (results.status === "error") {
     return (
       <p className="px-3 py-1 text-small text-danger">
-        Search is not available: {results.message}
+        {t("search.failed", { reason: results.message })}
       </p>
     );
   }
@@ -138,11 +145,11 @@ function Status({ results }: { results: Search["results"] }) {
     <>
       {results.partial && (
         <p role="status" className="px-3 pb-1 text-small text-faint">
-          Indexing: some notes may be missing.
+          {t("search.partial")}
         </p>
       )}
       {results.hits.length === 0 && (
-        <p className="px-3 py-1 text-small text-faint">No notes found</p>
+        <p className="px-3 py-1 text-small text-faint">{t("search.empty")}</p>
       )}
     </>
   );
