@@ -20,6 +20,10 @@ interface TabBarProps {
   onClose: (id: number) => void;
   /** The bar is at the top right: it leaves the window buttons room. */
   leaveRoom?: boolean;
+  /** Before back and forward, such as the button of the left panel. */
+  start?: ReactNode;
+  /** After the tabs, such as the button of the right panel. */
+  end?: ReactNode;
 }
 
 /**
@@ -36,6 +40,8 @@ export function TabBar({
   onActivate,
   onClose,
   leaveRoom = false,
+  start,
+  end,
 }: TabBarProps) {
   return (
     <div
@@ -48,6 +54,7 @@ export function TabBar({
         data-tauri-drag-region
         className="flex shrink-0 items-center gap-0.5 px-1.5"
       >
+        {start}
         <ArrowButton label="Back" disabled={!canGoBack} onClick={onBack}>
           <path d="M10 4l-4 4 4 4" />
         </ArrowButton>
@@ -107,6 +114,14 @@ export function TabBar({
           );
         })}
       </div>
+      {end !== undefined && (
+        <div
+          data-tauri-drag-region
+          className="flex shrink-0 items-center border-l border-line px-1.5"
+        >
+          {end}
+        </div>
+      )}
     </div>
   );
 }

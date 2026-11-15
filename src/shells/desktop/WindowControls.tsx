@@ -208,13 +208,22 @@ function ControlButton({
  * An empty top row that the window is dragged by, for views without a row
  * of their own there: the start screen, a workspace with no note open.
  */
-export function DragStrip({ room = false }: { room?: boolean }) {
+export function DragStrip({
+  room = false,
+  children,
+}: {
+  room?: boolean;
+  /** Buttons at its start, such as the one of the left panel. */
+  children?: ReactNode;
+}) {
   return (
     <div
       data-tauri-drag-region
-      className={`h-12 shrink-0 border-b border-line bg-panel ${
+      className={`flex h-12 shrink-0 items-center border-b border-line bg-panel px-1.5 ${
         room ? WINDOW_CONTROLS_ROOM : ""
       }`}
-    />
+    >
+      {children}
+    </div>
   );
 }

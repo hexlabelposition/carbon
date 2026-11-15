@@ -33,7 +33,6 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
 import { useSearch } from "../../features/search/use-search";
-import { openSettings } from "../../features/settings/Settings";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
@@ -45,11 +44,22 @@ import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-sh
 import { useWorkspace } from "../../features/workspace/workspace";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { Sidebar } from "./Sidebar";
-import { StatusBar, StatusButton } from "./StatusBar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
+import { PanelToggle } from "./PanelToggle";
+import { ResizeHandle } from "./ResizeHandle";
+import { SlidePanel } from "./SlidePanel";
+import { ViewTabs } from "./ViewTabs";
+import {
+  LEFT_PANEL_SHORTCUT,
+  RIGHT_PANEL_SHORTCUT,
+  usePanelShortcuts,
+  useRightPanel,
+  type RightPanel,
+  type RightPanelView,
+} from "./use-panels";
 import { useSidePanel } from "./use-side-panel";
-import { useSidebar } from "./use-sidebar";
+import { useSidebar, type PanelWidth } from "./use-sidebar";
 import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
 import {
   DragStrip,
@@ -66,9 +76,9 @@ const DevPanel = import.meta.env.DEV
   : null;
 
 /**
- * The desktop layout: sidebar, main area, status bar. It decides which
- * features are mounted and where; what they do lives in their hooks
- * (ARCHITECTURE.md, section 8).
+ * The desktop layout: the left panel, the main area and the right panel.
+ * It decides which features are mounted and where; what they do lives in
+ * their hooks (ARCHITECTURE.md, section 8).
  */
 export function DesktopShell({ frame }: { frame: WindowFrame }) {
   useWindowShape(frame);
@@ -79,16 +89,20 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
   const revealSidebar = useCallback(() => {
     if (collapsed) toggleSidebar();
   }, [collapsed, toggleSidebar]);
-  const outlinePanel = useSidePanel("carbon.desktop.outline");
-  const backlinksPanel = useSidePanel("carbon.desktop.backlinks");
+  const rightPanel = useRightPanel();
+  const { toggle: toggleRightPanel } = rightPanel;
   useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
   const sidebarView = useSidebarView(vault !== null && !showDev, revealSidebar);
   const { show: showSidebarView } = sidebarView;
-  const { toggle: toggleOutline } = outlinePanel;
-  const { toggle: toggleBacklinks } = backlinksPanel;
+  const { toggleView: toggleRightView } = rightPanel;
+  usePanelShortcuts(
+    vault !== null && !showDev,
+    toggleSidebar,
+    toggleRightPanel,
+  );
 
   useCommands(
     useMemo(() => {
@@ -103,12 +117,27 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
       if (vault === null || showDev) return commands;
       return [
         ...commands,
-        { id: "shell.sidebar", title: "Toggle sidebar", run: toggleSidebar },
-        { id: "shell.outline", title: "Toggle outline", run: toggleOutline },
+        {
+          id: "shell.sidebar",
+          title: "Toggle left panel",
+          shortcut: LEFT_PANEL_SHORTCUT,
+          run: toggleSidebar,
+        },
+        {
+          id: "shell.rightPanel",
+          title: "Toggle right panel",
+          shortcut: RIGHT_PANEL_SHORTCUT,
+          run: toggleRightPanel,
+        },
+        {
+          id: "shell.outline",
+          title: "Toggle outline",
+          run: () => toggleRightView("outline"),
+        },
         {
           id: "shell.backlinks",
           title: "Toggle backlinks",
-          run: toggleBacklinks,
+          run: () => toggleRightView("backlinks"),
         },
         {
           id: "shell.files",
@@ -133,8 +162,8 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
       vault,
       showDev,
       toggleSidebar,
-      toggleOutline,
-      toggleBacklinks,
+      toggleRightPanel,
+      toggleRightView,
       revealSidebar,
       showSidebarView,
       close,
@@ -170,37 +199,37 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
               null
             }
           >
-            {!sidebar.collapsed && (
-              <Sidebar
-                fraction={sidebar.fraction}
-                onResize={sidebar.resize}
-                onNudge={sidebar.nudge}
-                header={
-                  <>
-                    <span
-                      data-tauri-drag-region
-                      className="min-w-0 flex-1 truncate font-semibold"
-                    >
-                      {nameOf(vault.root)}
-                    </span>
-                    <button
-                      type="button"
-                      className="shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-raise hover:text-fg"
-                      onClick={close}
-                    >
-                      Close vault
-                    </button>
-                  </>
-                }
-              >
-                <SidebarContent vault={vault} view={sidebarView} />
-              </Sidebar>
-            )}
+            <Sidebar
+              open={!sidebar.collapsed}
+              fraction={sidebar.fraction}
+              onResize={sidebar.resize}
+              onNudge={sidebar.nudge}
+              header={
+                <>
+                  <span
+                    data-tauri-drag-region
+                    className="min-w-0 flex-1 truncate font-semibold"
+                  >
+                    {nameOf(vault.root)}
+                  </span>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-raise hover:text-fg"
+                    onClick={close}
+                  >
+                    Close vault
+                  </button>
+                </>
+              }
+            >
+              <SidebarContent vault={vault} view={sidebarView} />
+            </Sidebar>
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <NoteArea
                 vault={vault}
-                outlineOpen={outlinePanel.open}
-                backlinksOpen={backlinksPanel.open}
+                leftOpen={!sidebar.collapsed}
+                onToggleLeft={toggleSidebar}
+                right={rightPanel}
               />
             </main>
             <QuickSwitcherHost vault={vault} />
@@ -208,51 +237,6 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
         )}
       </div>
       <CommandPaletteHost />
-
-      <StatusBar
-        actions={
-          <>
-            {vault !== null && !showDev && (
-              <StatusButton
-                pressed={outlinePanel.open}
-                onClick={outlinePanel.toggle}
-              >
-                Outline
-              </StatusButton>
-            )}
-            {vault !== null && !showDev && (
-              <StatusButton
-                pressed={backlinksPanel.open}
-                onClick={backlinksPanel.toggle}
-              >
-                Backlinks
-              </StatusButton>
-            )}
-            <StatusButton onClick={openSettings}>Settings</StatusButton>
-          </>
-        }
-      >
-        {vault !== null && !showDev && (
-          <StatusButton pressed={!sidebar.collapsed} onClick={sidebar.toggle}>
-            Sidebar
-          </StatusButton>
-        )}
-        {vault === null ? (
-          <span>No vault is open</span>
-        ) : (
-          <>
-            <span className="truncate" title={vault.root}>
-              {vault.root}
-            </span>
-            {!vault.watching && (
-              <span className="shrink-0 text-danger">
-                Changes made by other programs are not noticed
-              </span>
-            )}
-            <IndexState vault={vault} />
-          </>
-        )}
-      </StatusBar>
     </div>
   );
 }
@@ -270,29 +254,17 @@ function SidebarContent({
 }) {
   const search = useSearch(vault);
   const showFiles = useCallback(() => show("files"), [show]);
-  const tab = (name: typeof view, label: string) => (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={view === name}
-      className={`h-6 rounded-sm px-2 text-small hover:bg-raise hover:text-fg ${
-        view === name ? "bg-selected text-fg" : "text-muted"
-      }`}
-      onClick={() => show(name)}
-    >
-      {label}
-    </button>
-  );
   return (
     <div className="flex h-full flex-col">
-      <div
-        role="tablist"
-        aria-label="Sidebar views"
-        className="flex shrink-0 gap-0.5 border-b border-line px-1.5 py-1"
-      >
-        {tab("files", "Files")}
-        {tab("search", "Search")}
-      </div>
+      <ViewTabs
+        label="Sidebar views"
+        views={[
+          { view: "files", label: "Files" },
+          { view: "search", label: "Search" },
+        ]}
+        current={view}
+        onShow={show}
+      />
       <div
         role="tabpanel"
         aria-label="Files"
@@ -307,6 +279,28 @@ function SidebarContent({
       >
         <SearchPanel search={search} focusRequest={searchRequest} />
       </div>
+      <VaultStatus vault={vault} />
+    </div>
+  );
+}
+
+/**
+ * What the user should know about the vault, at the foot of the sidebar:
+ * how far indexing is, and what does not work. Nothing while all is well.
+ */
+function VaultStatus({ vault }: { vault: Vault }) {
+  const index = useIndexStatus(vault);
+  // A scan with nothing to do is over a moment later: not worth a line.
+  const indexing = index.state === "scanning" && index.total !== 0;
+  if (vault.watching && index.state !== "failed" && !indexing) return null;
+  return (
+    <div className="flex shrink-0 flex-col gap-1 border-t border-line px-3 py-2 text-small text-faint">
+      {!vault.watching && (
+        <p className="text-danger">
+          Changes made by other programs are not noticed
+        </p>
+      )}
+      <IndexState vault={vault} />
     </div>
   );
 }
@@ -325,10 +319,11 @@ function QuickSwitcherHost({ vault }: { vault: Vault }) {
 
 interface NoteAreaProps {
   vault: Vault;
-  /** Shows the outline of the note beside it. */
-  outlineOpen: boolean;
-  /** Shows the notes that link to the note beside it. */
-  backlinksOpen: boolean;
+  /** Whether the left panel is open, for its button at the start of the tabs. */
+  leftOpen: boolean;
+  onToggleLeft: () => void;
+  /** The panel beside the note: its outline and the notes that link to it. */
+  right: RightPanel;
 }
 
 /**
@@ -336,24 +331,35 @@ interface NoteAreaProps {
  * beside it, the panels that are open: the outline of the note and its
  * backlinks, one above the other.
  */
-function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
+function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
   const workspace = useWorkspace();
   useWorkspaceShortcuts();
   const sourceMode = useSourceMode();
   const readingMode = useReadingMode();
   const outline = useOutline();
   const { path } = workspace;
+  /** The edge of the right panel is being dragged: it does not glide. */
+  const [resizingRight, setResizingRight] = useState(false);
+
+  const leftToggle = (
+    <PanelToggle
+      side="left"
+      open={leftOpen}
+      shortcut={LEFT_PANEL_SHORTCUT}
+      onToggle={onToggleLeft}
+    />
+  );
 
   if (path === null) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <DragStrip room />
+        <DragStrip room>{leftToggle}</DragStrip>
         <Watermark label="No note is open." />
       </div>
     );
   }
   const split = workspace.panes.length > 1;
-  const sideOpen = outlineOpen || backlinksOpen;
+  const last = workspace.panes.length - 1;
   return (
     <div className="flex min-h-0 flex-1">
       {workspace.panes.map((pane, index) => {
@@ -385,8 +391,19 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
                 onForward={workspace.forward}
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
+                start={index === 0 ? leftToggle : undefined}
+                end={
+                  index === last ? (
+                    <PanelToggle
+                      side="right"
+                      open={right.open}
+                      shortcut={RIGHT_PANEL_SHORTCUT}
+                      onToggle={right.toggle}
+                    />
+                  ) : undefined
+                }
                 // The right end of the top row holds the window buttons.
-                leaveRoom={!sideOpen && index === workspace.panes.length - 1}
+                leaveRoom={!right.open && index === last}
               />
             </div>
             {pane.path !== null && imageTypeOf(pane.path) !== null && (
@@ -413,26 +430,29 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
           </section>
         );
       })}
-      {sideOpen && (
-        <div className="flex w-64 shrink-0 flex-col border-l border-line bg-panel">
-          {outlineOpen && (
-            <SidePanel title="Outline" leaveRoom>
-              <OutlinePanel
-                headings={outline.headings}
-                current={outline.current}
-                onReveal={outline.reveal}
-              />
-            </SidePanel>
-          )}
-          {backlinksOpen && (
-            <BacklinksSection
-              vault={vault}
-              path={path}
-              leaveRoom={!outlineOpen}
+      <SlidePanel
+        open={right.open}
+        // As the sidebar: a share of the window, at least 180 pixels.
+        width={`max(11.25rem, ${right.width.fraction * 100}vw)`}
+        animate={!resizingRight}
+        keepMounted={false}
+      >
+        <RightPanelContent
+          width={right.width}
+          onResizing={setResizingRight}
+          vault={vault}
+          path={path}
+          view={right.view}
+          onShow={right.show}
+          outline={
+            <OutlinePanel
+              headings={outline.headings}
+              current={outline.current}
+              onReveal={outline.reveal}
             />
-          )}
-        </div>
-      )}
+          }
+        />
+      </SlidePanel>
     </div>
   );
 }
@@ -451,83 +471,111 @@ function IndexState({ vault }: { vault: Vault }) {
         ? status.error.message
         : String(status.error);
     return (
-      <span className="shrink-0 text-danger" title={reason}>
+      <p className="text-danger" title={reason}>
         The index is not available: links and backlinks do not work
-      </span>
+      </p>
     );
   }
   const { done, total } = status;
   // Nothing changed since the last start: ready a moment later.
   if (total === 0) return null;
   return (
-    <span role="status" className="shrink-0">
+    <p role="status">
       {total === null
         ? "Indexing…"
         : `Indexing ${done.toLocaleString()} of ${total.toLocaleString()} notes`}
-    </span>
+    </p>
   );
 }
 
-/** One panel of the column beside the note; open panels share its height. */
-function SidePanel({
-  title,
-  detail,
-  leaveRoom = false,
-  children,
+/**
+ * The panel at the right of the note, laid out as the left one: an empty
+ * top row, which drags the window and leaves its buttons room, the tabs
+ * of what it can show, and what it shows.
+ */
+function RightPanelContent({
+  width,
+  onResizing,
+  vault,
+  path,
+  view,
+  onShow,
+  outline,
 }: {
-  title: string;
-  /** Shown after the title, such as a count. */
-  detail?: string;
-  /** The panel is at the top right: its title row leaves the window buttons room. */
-  leaveRoom?: boolean;
-  children: ReactNode;
+  width: PanelWidth;
+  /** Told when its edge is dragged and let go. */
+  onResizing: (resizing: boolean) => void;
+  vault: Vault;
+  path: string;
+  view: RightPanelView;
+  onShow: (view: RightPanelView) => void;
+  /** The outline of the note, which the note area keeps up to date. */
+  outline: ReactNode;
 }) {
+  const backlinks = useBacklinks(vault, path);
   return (
     <aside
-      aria-label={title}
-      className="flex min-h-0 flex-1 flex-col border-b border-line last:border-b-0"
+      aria-label="Right panel"
+      className="relative flex h-full flex-col border-l border-line bg-panel"
     >
+      <ResizeHandle
+        side="right"
+        label="Resize right panel"
+        fraction={width.fraction}
+        onResize={width.resize}
+        onNudge={width.nudge}
+        onDragging={onResizing}
+      />
       <div
         data-tauri-drag-region
-        className={`flex h-12 shrink-0 items-center gap-2 border-b border-line px-3 ${
-          leaveRoom ? WINDOW_CONTROLS_ROOM : ""
-        }`}
-      >
-        <span data-tauri-drag-region className="font-semibold">
-          {title}
-        </span>
-        {detail !== undefined && (
-          <span className="text-small text-faint">{detail}</span>
+        className={`h-12 shrink-0 border-b border-line ${WINDOW_CONTROLS_ROOM}`}
+      />
+      <ViewTabs
+        label="Right panel views"
+        views={[
+          { view: "outline", label: "Outline" },
+          {
+            view: "backlinks",
+            label: (
+              <>
+                Backlinks
+                {backlinks.status === "ready" && (
+                  <span className="text-faint">
+                    {backlinks.backlinks.length}
+                  </span>
+                )}
+              </>
+            ),
+          },
+        ]}
+        current={view}
+        onShow={onShow}
+      />
+      <div role="tabpanel" className="min-h-0 flex-1 overflow-auto">
+        {view === "outline" ? (
+          outline
+        ) : (
+          <BacklinksView vault={vault} path={path} backlinks={backlinks} />
         )}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </aside>
   );
 }
 
-function BacklinksSection({
+function BacklinksView({
   vault,
   path,
-  leaveRoom,
+  backlinks,
 }: {
   vault: Vault;
   path: string;
-  leaveRoom: boolean;
+  backlinks: ReturnType<typeof useBacklinks>;
 }) {
-  const backlinks = useBacklinks(vault, path);
   const mentionsPanel = useSidePanel("carbon.desktop.unlinkedMentions");
   const mentions = useUnlinkedMentions(vault, path, mentionsPanel.open);
   const { open } = useWorkspace();
   return (
-    <SidePanel
-      title="Backlinks"
-      leaveRoom={leaveRoom}
-      detail={
-        backlinks.status === "ready"
-          ? String(backlinks.backlinks.length)
-          : undefined
-      }
-    >
+    <>
       <BacklinksPanel
         state={backlinks}
         onOpen={(note, at) => open(note, { at })}
@@ -538,7 +586,7 @@ function BacklinksSection({
         onToggle={mentionsPanel.toggle}
         onOpen={(note, at) => open(note, { at })}
       />
-    </SidePanel>
+    </>
   );
 }
 

@@ -3,14 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 export interface SidePanelState {
   open: boolean;
   toggle(): void;
+  set(open: boolean): void;
 }
 
 /**
  * Whether a panel beside the note is shown, remembered between app
- * starts under `storageKey`.
+ * starts under `storageKey`; `fallback` until something is remembered.
  */
-export function useSidePanel(storageKey: string): SidePanelState {
-  const [open, setOpen] = useState(() => load(storageKey));
+export function useSidePanel(
+  storageKey: string,
+  fallback = false,
+): SidePanelState {
+  const [open, setOpen] = useState(() => load(storageKey) ?? fallback);
 
   useEffect(() => {
     try {
@@ -21,14 +25,17 @@ export function useSidePanel(storageKey: string): SidePanelState {
   }, [storageKey, open]);
 
   const toggle = useCallback(() => setOpen((value) => !value), []);
-  return { open, toggle };
+  return { open, toggle, set: setOpen };
 }
 
-function load(storageKey: string): boolean {
+/** What is remembered, or `null` if nothing is, or not what was written. */
+function load(storageKey: string): boolean | null {
   try {
-    return JSON.parse(localStorage.getItem(storageKey) ?? "false") === true;
+    const saved: unknown = JSON.parse(
+      localStorage.getItem(storageKey) ?? "null",
+    );
+    return typeof saved === "boolean" ? saved : null;
   } catch {
-    // Nothing saved yet, or not what this version wrote.
-    return false;
+    return null;
   }
 }

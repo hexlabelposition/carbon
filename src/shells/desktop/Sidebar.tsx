@@ -1,7 +1,10 @@
-import type { KeyboardEvent, PointerEvent, ReactNode } from "react";
-import { SIDEBAR_MAX, SIDEBAR_MIN } from "./use-sidebar";
+import { useState, type ReactNode } from "react";
+import { ResizeHandle } from "./ResizeHandle";
+import { SlidePanel } from "./SlidePanel";
 
 interface SidebarProps {
+  /** Shown, or slid shut to the left edge. */
+  open: boolean;
   /** Width as a share of the window width. */
   fraction: number;
   onResize: (fraction: number) => void;
@@ -13,57 +16,49 @@ interface SidebarProps {
 
 /**
  * The left panel of the desktop layout with its resize handle. Layout only:
- * what is shown inside and how wide it is come from outside.
+ * what is shown inside, whether it is open and how wide it is come from
+ * outside. It slides open and shut.
  */
 export function Sidebar({
+  open,
   fraction,
   onResize,
   onNudge,
   header,
   children,
 }: SidebarProps) {
-  const percent = (value: number) => Math.round(value * 100);
-
-  function drag(event: PointerEvent<HTMLDivElement>) {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    // The sidebar starts at the left edge of the window.
-    onResize(event.clientX / document.documentElement.clientWidth);
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "ArrowLeft") onNudge(-1);
-    else if (event.key === "ArrowRight") onNudge(1);
-    else return;
-    event.preventDefault();
-  }
+  /** The handle is being dragged: the width follows it without gliding. */
+  const [resizing, setResizing] = useState(false);
 
   return (
-    <aside
-      aria-label="Sidebar"
-      className="relative flex min-w-45 shrink-0 flex-col border-r border-line bg-panel"
-      style={{ width: `${fraction * 100}%` }}
+    // A share of the window, which the panel starts at the left edge of:
+    // `vw`. Never narrower than 180 pixels.
+    <SlidePanel
+      open={open}
+      width={`max(11.25rem, ${fraction * 100}vw)`}
+      animate={!resizing}
     >
-      {/* The window has no system title bar: this row drags it. */}
-      <div
-        data-tauri-drag-region
-        className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3"
+      <aside
+        aria-label="Sidebar"
+        className="relative flex h-full flex-col border-r border-line bg-panel"
       >
-        {header}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize sidebar"
-        aria-valuenow={percent(fraction)}
-        aria-valuemin={percent(SIDEBAR_MIN)}
-        aria-valuemax={percent(SIDEBAR_MAX)}
-        tabIndex={0}
-        className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong"
-        onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
-        onPointerMove={drag}
-        onKeyDown={onKeyDown}
-      />
-    </aside>
+        {/* The window has no system title bar: this row drags it. */}
+        <div
+          data-tauri-drag-region
+          className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3"
+        >
+          {header}
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+        <ResizeHandle
+          side="left"
+          label="Resize sidebar"
+          fraction={fraction}
+          onResize={onResize}
+          onNudge={onNudge}
+          onDragging={setResizing}
+        />
+      </aside>
+    </SlidePanel>
   );
 }

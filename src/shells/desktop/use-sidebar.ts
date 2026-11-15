@@ -73,3 +73,45 @@ function load(): SidebarState {
   }
   return state;
 }
+
+export interface PanelWidth {
+  /** Width as a share of the window width, between the two limits. */
+  fraction: number;
+  /** Sets the width; values outside the limits are pulled back in. */
+  resize(fraction: number): void;
+  /** Makes the panel wider (positive) or narrower by whole steps. */
+  nudge(steps: number): void;
+}
+
+/**
+ * The width of a side panel other than the sidebar, with the same limits,
+ * remembered between app starts under `storageKey`.
+ */
+export function usePanelWidth(
+  storageKey: string,
+  fallback: number,
+): PanelWidth {
+  const [fraction, setFraction] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(storageKey) ?? Number.NaN);
+      return Number.isFinite(saved) ? clamp(saved) : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, String(fraction));
+    } catch {
+      // Without storage the panel works, it only forgets its size.
+    }
+  }, [storageKey, fraction]);
+
+  const resize = useCallback((next: number) => setFraction(clamp(next)), []);
+  const nudge = useCallback(
+    (steps: number) => setFraction((f) => clamp(f + steps * SIDEBAR_STEP)),
+    [],
+  );
+  return { fraction, resize, nudge };
+}
