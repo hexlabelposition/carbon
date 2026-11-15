@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent } from "react";
+import { useEffect, type KeyboardEvent, type PointerEvent } from "react";
 import { SIDEBAR_MAX, SIDEBAR_MIN } from "./use-sidebar";
 
 interface ResizeHandleProps {
@@ -28,6 +28,10 @@ export function ResizeHandle({
   onDragging,
 }: ResizeHandleProps) {
   const percent = (value: number) => Math.round(value * 100);
+
+  // Gone in the middle of a drag, such as a panel shut by its shortcut:
+  // text can be selected again.
+  useEffect(() => () => selectText(true), []);
 
   function drag(event: PointerEvent<HTMLDivElement>) {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
@@ -60,12 +64,28 @@ export function ResizeHandle({
         side === "left" ? "right-0" : "left-0"
       }`}
       onPointerDown={(event) => {
+        // Not the start of a text selection, which the drag would stretch.
+        event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
+        selectText(false);
         onDragging(true);
       }}
       onPointerMove={drag}
-      onLostPointerCapture={() => onDragging(false)}
+      onLostPointerCapture={() => {
+        selectText(true);
+        onDragging(false);
+      }}
       onKeyDown={onKeyDown}
     />
   );
+}
+
+/**
+ * Lets text in the window be selected, or not: not while a panel edge is
+ * dragged, or the pointer passing over the interface would select it.
+ */
+function selectText(allowed: boolean): void {
+  const { style } = document.documentElement;
+  style.userSelect = allowed ? "" : "none";
+  style.webkitUserSelect = allowed ? "" : "none";
 }
