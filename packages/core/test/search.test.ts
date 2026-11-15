@@ -8,6 +8,7 @@ import {
 } from "../src/index";
 import { readMarks } from "../src/search/marks";
 import { firstMatch } from "../src/search/locate";
+import { fold, spellings } from "../src/search/fold";
 import { fullTextQuery } from "../src/search/query";
 import { Search } from "../src/search/search";
 import { createMemoryPlatform } from "./fakes";
@@ -47,22 +48,67 @@ const parts = (text: string, ranges: { start: number; end: number }[]) =>
 describe("search", () => {
   describe("fullTextQuery", () => {
     test("asks for every word, or the start of it", () => {
-      expect(fullTextQuery("green tea")).toBe('"green"* "tea"*');
+      expect(fullTextQuery("Green tea")).toBe('"green"* AND "tea"*');
     });
 
     test("never passes on FTS5 syntax", () => {
-      expect(fullTextQuery('a OR "b" -c title:d NEAR(e) f*')).toBe(
-        '"a"* "OR"* "b"* "c"* "title"* "d"* "NEAR"* "e"* "f"*',
+      expect(fullTextQuery('a OR "b" -c :d NEAR(e) f*')).toBe(
+        '"a"* AND "or"* AND "b"* AND "c"* AND "d"* AND "near"* AND "e"* AND "f"*',
       );
     });
 
     test("keeps letters of any script and their marks", () => {
-      expect(fullTextQuery("Привіт, café 42")).toBe('"Привіт"* "café"* "42"*');
+      expect(fullTextQuery("Привіт, café 42")).toBe(
+        '"привіт"* AND "café"* AND "42"*',
+      );
+    });
+
+    test("asks for every spelling of look-alike letters", () => {
+      expect(fullTextQuery("Ёлка tea")).toBe('("елка"* OR "ёлка"*) AND "tea"*');
     });
 
     test("is null without a word", () => {
       expect(fullTextQuery("")).toBeNull();
       expect(fullTextQuery('  "*-:() ')).toBeNull();
+    });
+  });
+
+  describe("spellings", () => {
+    test("is the word in lower case without look-alike letters", () => {
+      expect(spellings("Привіт")).toEqual(["привіт"]);
+    });
+
+    test("tries each look-alike letter both ways", () => {
+      expect(spellings("ежё")).toEqual(["еже", "ежё", "ёже", "ёжё"]);
+      expect(spellings("Łódź").sort()).toEqual(["lódź", "łódź"]);
+    });
+
+    test("keeps to three spellings for a word with many", () => {
+      expect(spellings("lllll")).toEqual(["lllll", "łłłłł"]);
+      expect(spellings("ellelle")).toEqual(["ellelle", "ełłełłe"]);
+      expect(spellings("łlłlł")).toEqual(["łlłlł", "lllll", "łłłłł"]);
+    });
+  });
+
+  describe("fold", () => {
+    test("folds case and Latin diacritics, keeping offsets", () => {
+      const folded = fold("Ça Été");
+      expect(folded.text).toBe("ca ete");
+      expect(folded.offsets).toEqual([0, 1, 2, 3, 4, 5]);
+    });
+
+    test("drops a mark written apart after a Latin letter", () => {
+      const folded = fold("e\u0301x");
+      expect(folded.text).toBe("ex");
+      expect(folded.offsets).toEqual([0, 2]);
+    });
+
+    test("keeps the marks of other scripts", () => {
+      expect(fold("Йод їжак").text).toBe("йод їжак");
+    });
+
+    test("makes look-alike letters plain", () => {
+      expect(fold("Ёлка Łódź").text).toBe("елка lodz");
     });
   });
 
@@ -115,10 +161,69 @@ describe("search", () => {
       expect(firstMatch(text, "tree")).toBe(text.lastIndexOf("tree"));
     });
 
+    test("ignores Latin diacritics and look-alike letters", () => {
+      expect(firstMatch("Un café crème", "creme")).toBe(8);
+      expect(firstMatch("Une cafe\u0301 ici", "café ici")).toBe(4);
+      expect(firstMatch("Жила-была Ёлка", "елк")).toBe(10);
+      expect(firstMatch("w Łodzi", "lodz")).toBe(2);
+      expect(firstMatch("мой", "мои")).toBeNull();
+    });
+
     test("is null without a match or a word", () => {
       expect(firstMatch("text", "other")).toBeNull();
       expect(firstMatch("text", " *- ")).toBeNull();
       expect(firstMatch("", "text")).toBeNull();
+    });
+  });
+
+  describe("non-English text", () => {
+    test("Cyrillic: any case, by the start of a word", async () => {
+      const search = await searchOver(note("a.md", "Привет МИР, как дела"));
+      expect(paths(await search.query("мир"))).toEqual(["a.md"]);
+      expect(paths(await search.query("ПРИВ"))).toEqual(["a.md"]);
+      expect(await search.query("ривет")).toEqual([]);
+    });
+
+    test("е and ё find each other, and the word is highlighted", async () => {
+      const search = await searchOver(
+        note("a.md", "Ёлка в лесу"),
+        note("b.md", "Новая елка"),
+      );
+      const hits = await search.query("елка");
+      expect(paths(hits).sort()).toEqual(["a.md", "b.md"]);
+      const a = hits.find((hit) => hit.path === "a.md");
+      expect(a && parts(a.snippet, a.snippetMatches)).toEqual(["Ёлка"]);
+      expect(paths(await search.query("ёлка")).sort()).toEqual([
+        "a.md",
+        "b.md",
+      ]);
+    });
+
+    test("й is not и, ї is not і", async () => {
+      const search = await searchOver(
+        note("a.md", "мой дом"),
+        note("b.md", "Їжак і кіт"),
+      );
+      expect(await search.query("мои")).toEqual([]);
+      expect(paths(await search.query("мой"))).toEqual(["a.md"]);
+      expect(await search.query("іжак")).toEqual([]);
+      expect(paths(await search.query("їжак"))).toEqual(["b.md"]);
+    });
+
+    test("Latin diacritics and ł do not matter", async () => {
+      const search = await searchOver(
+        note("a.md", "Jadę do Łodzi, zażółć gęślą jaźń"),
+        note("b.md", "Über die Brücke"),
+      );
+      expect(paths(await search.query("lodzi zazolc"))).toEqual(["a.md"]);
+      expect(paths(await search.query("łodzi"))).toEqual(["a.md"]);
+      expect(paths(await search.query("uber brucke"))).toEqual(["b.md"]);
+    });
+
+    test("tells where to open a hit found in another spelling", async () => {
+      const text = "# Зима\n\nНа площади стоит Ёлка.";
+      const search = await searchOver(note("a.md", text));
+      expect(await search.locate("a.md", "елка")).toBe(text.indexOf("Ёлка"));
     });
   });
 

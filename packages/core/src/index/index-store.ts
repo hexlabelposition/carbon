@@ -34,7 +34,7 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Notes, their headings, aliases and links. A link keeps its target as
@@ -89,8 +89,15 @@ const SCHEMA = [
   `CREATE INDEX links_target_name ON links (target_name)`,
   `CREATE INDEX links_target ON links (target_id)`,
   // The text is stored here only: the index keeps no other copy of it.
-  // The default tokenizer, until C-307 checks it on other languages.
-  `CREATE VIRTUAL TABLE notes_fts USING fts5 (title, body)`,
+  // `unicode61` folds case in every script and, with `remove_diacritics
+  // 2`, the diacritics of Latin letters: "cafe" finds "Café". It keeps
+  // the marks of other scripts, so "й" is not "и". Look-alike letters it
+  // keeps apart, such as "е" and "ё", are searched for in every spelling
+  // (`search/fold.ts`). Text without spaces between words, such as
+  // Japanese, is one word to it: only its start is found.
+  `CREATE VIRTUAL TABLE notes_fts USING fts5 (
+     title, body, tokenize = 'unicode61 remove_diacritics 2'
+   )`,
 ];
 
 /**

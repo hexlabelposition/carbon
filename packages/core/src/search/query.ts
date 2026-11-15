@@ -1,3 +1,5 @@
+import { spellings } from "./fold";
+
 /**
  * A word as the FTS5 tokenizer `unicode61` sees one: letters, digits and
  * the marks on them. Everything else separates words.
@@ -12,12 +14,20 @@ export function queryWords(text: string): string[] {
 /**
  * The FTS5 query for what the user typed, or `null` if it has no words.
  * Every word must occur, as a word or the start of one, so a word being
- * typed already finds something. Each is quoted: what the user types is
- * never read as FTS5 syntax, so `OR`, `-`, `"` or `title:` are plain text.
- * Operators of our own are C-308.
+ * typed already finds something; in any of its `spellings`. Each is
+ * quoted: what the user types is never read as FTS5 syntax, so `OR`,
+ * `-`, `"` or `title:` are plain text. Operators of our own are C-308.
  */
 export function fullTextQuery(text: string): string | null {
   const words = queryWords(text);
   if (words.length === 0) return null;
-  return words.map((word) => `"${word}"*`).join(" ");
+  return (
+    words
+      .map((word) => {
+        const terms = spellings(word).map((spelling) => `"${spelling}"*`);
+        return terms.length === 1 ? terms[0] : `(${terms.join(" OR ")})`;
+      })
+      // Spelled out: FTS5 takes no implicit AND next to parentheses.
+      .join(" AND ")
+  );
 }
