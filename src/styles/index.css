@@ -101,9 +101,15 @@
   /*
    * A modal `<dialog>` and its backdrop are drawn above the page, out of
    * reach of the `clip-path` of `body`: what covers the whole window
-   * rounds its own corners.
+   * rounds its own corners. A backdrop starts below the top row, which
+   * stays sharp (`backdrop:top-12`), so only its lower corners meet the
+   * corners of the window.
    */
-  html[data-window="normal"] ::backdrop,
+  html[data-window="normal"] ::backdrop {
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+  }
+
   html[data-window="normal"] dialog[data-full-window] {
     border-radius: var(--radius-lg);
   }

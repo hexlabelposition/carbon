@@ -53,7 +53,7 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
     <dialog
       ref={dialog}
       aria-label="Quick switcher"
-      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:bg-backdrop/40"
+      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-12 backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
       onCancel={(event) => {
         event.preventDefault();
         switcher.close();
