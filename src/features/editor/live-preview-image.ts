@@ -30,6 +30,17 @@ export interface ImageHost {
   importFile(path: string): Promise<string>;
   /** Tells the user why something dropped on the note was not taken. */
   refuse(reason: string): void;
+  /** Shows an image of the note on its own, over the whole window. */
+  open(image: ShownImage): void;
+}
+
+/** An image of a note, ready to be shown. */
+export interface ShownImage {
+  /** What `ImageHost.load` gave for it. */
+  url: string;
+  /** The address in the note, `target` in `![alt](target)`. */
+  target: string;
+  alt: string;
 }
 
 /** The image host of an editor. Without one, images stay text. */
@@ -73,6 +84,7 @@ export const imagePreview = [
       verticalAlign: "top",
       cursor: "default",
     },
+    ".cm-image:has(img)": { cursor: "zoom-in" },
     ".cm-image img": {
       display: "block",
       maxWidth: "100%",
@@ -244,9 +256,18 @@ class ImageWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const box = document.createElement("span");
     box.className = "cm-image";
-    // A click selects the place of the image, which shows its Markdown.
+    // A click on the image shows it on its own. A click on a missing
+    // image selects its place, which shows its Markdown; so does a click
+    // beside any image.
     box.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
       event.preventDefault();
+      const image = box.querySelector("img");
+      const host = view.state.facet(imageHost);
+      if (image !== null && host !== null) {
+        host.open({ url: image.src, target: this.target, alt: this.alt });
+        return;
+      }
       view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
       view.focus();
     });

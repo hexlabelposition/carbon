@@ -6,6 +6,7 @@ import { MarkdownEditor } from "./MarkdownEditor";
 import { NoteTitleField } from "./NoteTitleField";
 import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
+import { ImageViewer } from "./ImageViewer";
 import { useNoteImages } from "./use-note-images";
 import { useNoteLinks } from "./use-note-links";
 import { useNoteTitle } from "./use-note-title";
@@ -108,6 +109,9 @@ export function NoteEditor({
           reveal={reveal?.path === path ? reveal : null}
         />
       </div>
+      {images.shown !== null && (
+        <ImageViewer image={images.shown} onClose={images.closeShown} />
+      )}
       {note.save.status === "conflict" && !postponed && (
         <ConflictDialog
           name={name}

@@ -1,6 +1,6 @@
 import { attachmentLink, type NotePath, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ImageHost } from "./live-preview-image";
+import type { ImageHost, ShownImage } from "./live-preview-image";
 
 /** Image files the editor shows, by the ending of their name. */
 const IMAGE_TYPES: Record<string, string> = {
@@ -19,6 +19,9 @@ export interface NoteImages {
   /** Why the last pasted or dropped file was not taken, for the user. */
   error: string | null;
   dismissError(): void;
+  /** The image shown on its own, over the whole window, if one is. */
+  shown: ShownImage | null;
+  closeShown(): void;
 }
 
 /**
@@ -27,6 +30,7 @@ export interface NoteImages {
  */
 export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
   const [error, setError] = useState<string | null>(null);
+  const [shown, setShown] = useState<ShownImage | null>(null);
 
   // Image bytes are handed to the browser as object URLs, one per file,
   // kept for as long as the note is open.
@@ -82,10 +86,18 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
       importFile: (source) => saved(() => vault.attachments.import(source)),
 
       refuse: setError,
+
+      open: setShown,
     };
   }, [vault, path]);
 
-  return { host, error, dismissError: () => setError(null) };
+  return {
+    host,
+    error,
+    dismissError: () => setError(null),
+    shown,
+    closeShown: () => setShown(null),
+  };
 }
 
 function endingOf(name: string): string {

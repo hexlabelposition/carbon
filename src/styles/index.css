@@ -93,6 +93,16 @@
     clip-path: none;
   }
 
+  /*
+   * A modal `<dialog>` and its backdrop are drawn above the page, out of
+   * reach of the `clip-path` of `body`: what covers the whole window
+   * rounds its own corners.
+   */
+  html[data-window="normal"] ::backdrop,
+  html[data-window="normal"] dialog[data-full-window] {
+    border-radius: var(--radius-lg);
+  }
+
   ::selection {
     background: var(--cb-highlight);
   }

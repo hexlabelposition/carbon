@@ -162,6 +162,7 @@ export function MarkdownEditor({
               latest.current.images?.importFile(path) ??
               Promise.reject(new Error("Images cannot be saved here")),
             refuse: (reason) => latest.current.images?.refuse(reason),
+            open: (image) => latest.current.images?.open(image),
           }),
           linkCompletion,
           followOnModClick,
