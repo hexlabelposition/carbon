@@ -483,6 +483,7 @@ Behavior of a platform or its WebView that the app cannot change. Each was check
 | ADR-022 | fuzzysort for fuzzy matching in the quick switcher and the command palette                                | Accepted                   | Small, no dependencies, no DOM or Node APIs, so it runs in the core. Gives the matched letters for highlights. 10,000 titles match well within 16 ms                                        |
 | ADR-023 | The app draws its own title bar: no system frame, window buttons in the row of tabs, rounded corners      | Trial                      | One row less, as in VS Code and Obsidian. Needs no Rust: Tauri drag regions and window API. Undone if resizing or the look suffers on Linux                                                 |
 | ADR-024 | Base UI (`@base-ui/react`) for components with complex behavior, added with the first one that needs it   | Accepted                   | Menus, tooltips and settings controls need focus, keys and placement done right. Unstyled, so Tailwind styles it. What works natively stays; editor widgets are DOM, not React              |
+| ADR-025 | Interface texts in our own typed dictionaries (`src/features/i18n`), no i18n library; English and Russian | Accepted                   | Two languages need lookup, values put in and plurals (Intl.PluralRules), not a library. Types catch a missing key. Core errors stay English until they become codes                         |
 
 ## 13. Open questions
 

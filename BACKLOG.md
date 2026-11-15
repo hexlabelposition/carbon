@@ -154,6 +154,8 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [ ] **C-610** (P1) Landing page and short user guide
 - [ ] **C-611** (P2) Configurable keyboard shortcuts
 - [ ] **C-612** (P2) AUR package
+- [x] **C-613** (P1) Interface in English and Russian, with a language setting (ADR-025)
+- [ ] **C-614** (P2) Errors from the core as codes, so the interface can show them in its language
 
 ---
 
@@ -176,7 +178,6 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - Import from other apps (Notion, Evernote)
 - Vim mode
 - Spell check
-- Interface translations
 - Canvas (free-form board)
 - Multiple windows and split panes
 - Browser mode: Carbon in a web browser, mainly to open vaults kept on a server; a vault in the browser's own storage when needed. Needs a web platform in place of the Tauri one (the in-memory fakes of the core tests show the shape). Also lets the interface be checked in another engine and end-to-end tests run in a browser (C-609)
