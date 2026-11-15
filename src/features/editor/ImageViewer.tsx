@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { FittedImage } from "../image/FittedImage";
 import type { ShownImage } from "./live-preview-image";
 
 /**
- * An image of a note on its own, over the whole window. At first it fits
- * the window; a click on it shows it at its own size, to scroll around,
- * and back. Escape, the close button or a click beside the image closes
- * it.
+ * An image of a note on its own, over the whole window, fit into it.
+ * Escape, the close button or a click beside the image closes it.
  */
 export function ImageViewer({
   image,
@@ -15,10 +14,6 @@ export function ImageViewer({
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  /** Shown at its own size, not fit into the window. */
-  const [actual, setActual] = useState(false);
-  /** Bigger than the window: only then does a click change the size. */
-  const [large, setLarge] = useState(false);
 
   // A modal `<dialog>` keeps the focus inside and closes on Escape.
   useEffect(() => {
@@ -40,40 +35,8 @@ export function ImageViewer({
         event.preventDefault();
         onClose();
       }}
-      // A click beside the image lands on the dialog or its frame.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
     >
-      <div
-        className={`flex h-full w-full overflow-auto p-12 ${
-          actual ? "" : "items-center justify-center"
-        }`}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
-      >
-        <img
-          src={image.url}
-          alt={image.alt}
-          draggable={false}
-          className={`m-auto rounded-md ${
-            actual
-              ? "max-w-none cursor-zoom-out"
-              : `max-h-full max-w-full object-contain ${large ? "cursor-zoom-in" : ""}`
-          }`}
-          onLoad={(event) => {
-            const img = event.currentTarget;
-            setLarge(
-              img.naturalWidth > img.clientWidth ||
-                img.naturalHeight > img.clientHeight,
-            );
-          }}
-          onClick={() => {
-            if (large) setActual((value) => !value);
-          }}
-        />
-      </div>
+      <FittedImage url={image.url} alt={image.alt} onClickBeside={onClose} />
       <p
         className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-16 py-4 text-center text-small text-muted"
         title={image.target}

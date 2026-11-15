@@ -8,6 +8,7 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from "@codemirror/view";
+import { imageTypeOf } from "../image/image-file";
 
 /** What the editor needs from outside to show and to take in images. */
 export interface ImageHost {
@@ -84,7 +85,7 @@ export const imagePreview = [
       verticalAlign: "top",
       cursor: "default",
     },
-    ".cm-image:has(img)": { cursor: "zoom-in" },
+    ".cm-image:has(img)": { cursor: "pointer" },
     ".cm-image img": {
       display: "block",
       maxWidth: "100%",
@@ -304,12 +305,9 @@ class ImageWidget extends WidgetType {
   }
 }
 
-/** File names the editor takes for images. */
-const IMAGE_NAME = /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i;
-
 /** Some systems give a dropped file no type: its name decides then. */
 function isImage(name: string, type = ""): boolean {
-  return type.startsWith("image/") || IMAGE_NAME.test(name);
+  return type.startsWith("image/") || imageTypeOf(name) !== null;
 }
 
 /**
@@ -330,7 +328,7 @@ function filePathsIn(text: string): { paths: string[]; only: boolean } {
       } catch {
         // Not an address after all: skip it.
       }
-    } else if (/^(\/|[A-Za-z]:[\\/])/.test(line) && IMAGE_NAME.test(line)) {
+    } else if (/^(\/|[A-Za-z]:[\\/])/.test(line) && isImage(line)) {
       // A bare path, as some file managers give it.
       paths.push(line.replaceAll("\\", "/"));
     }
