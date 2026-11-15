@@ -1,18 +1,7 @@
 import { attachmentLink, type NotePath, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { imageEndingOf, imageTypeOf } from "../image/image-file";
 import type { ImageHost, ShownImage } from "./live-preview-image";
-
-/** Image files the editor shows, by the ending of their name. */
-const IMAGE_TYPES: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  webp: "image/webp",
-  avif: "image/avif",
-  bmp: "image/bmp",
-  svg: "image/svg+xml",
-};
 
 export interface NoteImages {
   host: ImageHost;
@@ -64,8 +53,8 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
       async load(target) {
         const file = await vault.attachments.find(path, target);
         if (file === null) return null;
-        const type = IMAGE_TYPES[endingOf(file)];
-        if (type === undefined) return null;
+        const type = imageTypeOf(file);
+        if (type === null) return null;
         let url = urls.current.get(file);
         if (url === undefined) {
           url = vault.attachments.read(file).then(
@@ -100,10 +89,6 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
   };
 }
 
-function endingOf(name: string): string {
-  return name.slice(name.lastIndexOf(".") + 1).toLowerCase();
-}
-
 /**
  * The file name for a pasted or dropped image. An image copied from a
  * program has no name of its own, only "image.png": it is named by the
@@ -111,9 +96,7 @@ function endingOf(name: string): string {
  */
 function nameFor(image: File): string {
   if (image.name !== "" && !/^image\.\w+$/i.test(image.name)) return image.name;
-  const ending =
-    Object.entries(IMAGE_TYPES).find(([, type]) => type === image.type)?.[0] ??
-    "png";
+  const ending = imageEndingOf(image.type) ?? "png";
   const two = (n: number) => String(n).padStart(2, "0");
   const now = new Date();
   const date = `${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}`;

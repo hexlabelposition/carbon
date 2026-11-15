@@ -19,6 +19,8 @@ import { useBacklinks } from "../../features/backlinks/use-backlinks";
 import { UnlinkedMentionsPanel } from "../../features/backlinks/UnlinkedMentionsPanel";
 import { useUnlinkedMentions } from "../../features/backlinks/use-unlinked-mentions";
 import { NoteEditor } from "../../features/editor/NoteEditor";
+import { ImageView } from "../../features/image/ImageView";
+import { imageTypeOf } from "../../features/image/image-file";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
@@ -385,7 +387,12 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
                 leaveRoom={!sideOpen && index === workspace.panes.length - 1}
               />
             </div>
-            {pane.path !== null && (
+            {pane.path !== null && imageTypeOf(pane.path) !== null && (
+              <div className="min-h-0 flex-1">
+                <ImageView key={pane.path} vault={vault} path={pane.path} />
+              </div>
+            )}
+            {pane.path !== null && imageTypeOf(pane.path) === null && (
               <div className="min-h-0 flex-1">
                 <NoteEditor
                   key={pane.path}

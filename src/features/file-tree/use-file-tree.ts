@@ -1,5 +1,6 @@
 import type { TreeNode, Vault } from "@carbon/core";
 import { useEffect, useMemo, useState } from "react";
+import { imageTypeOf } from "../image/image-file";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { useWorkspace } from "../workspace/workspace";
 
@@ -275,7 +276,8 @@ export function useFileTree(vault: Vault): FileTree {
     select: setSelected,
     activate(node, newTab = false) {
       setSelected(node.path);
-      if (node.kind === "note") {
+      // A note opens in the editor, an image in a view of its own.
+      if (node.kind === "note" || imageTypeOf(node.path) !== null) {
         active.open(node.path, { target: newTab ? "newTab" : "here" });
       } else if (node.kind === "folder") {
         if (expanded.has(node.path)) collapse(node.path);
