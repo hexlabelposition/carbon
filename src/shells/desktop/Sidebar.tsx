@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
+import { APP_MARK_ROOM } from "./AppMark";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
 
@@ -47,7 +48,7 @@ export function Sidebar({
         {/* The window has no system title bar: this row drags it. */}
         <div
           data-tauri-drag-region
-          className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3"
+          className={`flex h-12 shrink-0 items-center gap-2 border-b border-line pr-3 ${APP_MARK_ROOM}`}
         >
           {header}
         </div>

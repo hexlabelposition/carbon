@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
+import { APP_MARK_ROOM } from "./AppMark";
 import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
 
 export interface TabBarTab {
@@ -21,6 +22,8 @@ interface TabBarProps {
   onClose: (id: number) => void;
   /** The bar is at the top right: it leaves the window buttons room. */
   leaveRoom?: boolean;
+  /** The bar is at the top left: it leaves the mark of the app room. */
+  leaveRoomStart?: boolean;
   /** Before back and forward, such as the button of the left panel. */
   start?: ReactNode;
   /** After the tabs, such as the button of the right panel. */
@@ -41,6 +44,7 @@ export function TabBar({
   onActivate,
   onClose,
   leaveRoom = false,
+  leaveRoomStart = false,
   start,
   end,
 }: TabBarProps) {
@@ -50,7 +54,7 @@ export function TabBar({
       data-tauri-drag-region
       className={`flex h-12 shrink-0 items-stretch border-b border-line bg-panel ${
         leaveRoom ? WINDOW_CONTROLS_ROOM : ""
-      }`}
+      } ${leaveRoomStart ? APP_MARK_ROOM : ""}`}
     >
       <div
         data-tauri-drag-region

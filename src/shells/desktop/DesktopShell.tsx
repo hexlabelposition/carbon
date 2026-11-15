@@ -47,6 +47,7 @@ import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
+import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
@@ -175,11 +176,12 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
+      <AppMark />
       <WindowControls frame={frame} />
       <div className="flex min-h-0 flex-1">
         {showDev ? (
           <div className="flex min-w-0 flex-1 flex-col">
-            <DragStrip room />
+            <DragStrip room roomStart />
             <div className="min-h-0 flex-1 overflow-auto">
               <Suspense fallback={null}>
                 <DevPanel />
@@ -188,7 +190,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
           </div>
         ) : vault === null ? (
           <main className="flex min-w-0 flex-1 flex-col">
-            <DragStrip room />
+            <DragStrip room roomStart />
             <div className="min-h-0 flex-1 overflow-auto">
               <StartScreen />
             </div>
@@ -369,7 +371,9 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
   if (path === null) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <DragStrip room>{leftToggle}</DragStrip>
+        <DragStrip room roomStart={!leftOpen}>
+          {leftToggle}
+        </DragStrip>
         <Watermark label={t("shell.noNoteOpen")} />
       </div>
     );
@@ -410,6 +414,8 @@ function NoteArea({ vault, leftOpen, onToggleLeft, right }: NoteAreaProps) {
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
                 start={index === 0 ? leftToggle : undefined}
+                // With the left panel shut, the bar starts at the left edge.
+                leaveRoomStart={index === 0 && !leftOpen}
                 end={
                   index === last ? (
                     <PanelToggle

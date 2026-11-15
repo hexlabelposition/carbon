@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
+import { APP_MARK_ROOM } from "./AppMark";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -216,9 +217,12 @@ function ControlButton({
  */
 export function DragStrip({
   room = false,
+  roomStart = false,
   children,
 }: {
   room?: boolean;
+  /** Leaves room at the start for the mark in the top left corner. */
+  roomStart?: boolean;
   /** Buttons at its start, such as the one of the left panel. */
   children?: ReactNode;
 }) {
@@ -227,7 +231,7 @@ export function DragStrip({
       data-tauri-drag-region
       className={`flex h-12 shrink-0 items-center border-b border-line bg-panel px-1.5 ${
         room ? WINDOW_CONTROLS_ROOM : ""
-      }`}
+      } ${roomStart ? APP_MARK_ROOM : ""}`}
     >
       {children}
     </div>
