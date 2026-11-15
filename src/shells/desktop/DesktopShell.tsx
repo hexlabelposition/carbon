@@ -478,7 +478,7 @@ function SidePanel({
     >
       <div
         data-tauri-drag-region
-        className={`flex h-9 shrink-0 items-center gap-2 border-b border-line px-3 ${
+        className={`flex h-12 shrink-0 items-center gap-2 border-b border-line px-3 ${
           leaveRoom ? WINDOW_CONTROLS_ROOM : ""
         }`}
       >

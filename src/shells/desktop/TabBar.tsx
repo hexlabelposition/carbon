@@ -40,7 +40,7 @@ export function TabBar({
   return (
     <div
       data-tauri-drag-region
-      className={`flex h-9 shrink-0 items-stretch border-b border-line bg-panel ${
+      className={`flex h-12 shrink-0 items-stretch border-b border-line bg-panel ${
         leaveRoom ? WINDOW_CONTROLS_ROOM : ""
       }`}
     >

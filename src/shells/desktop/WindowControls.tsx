@@ -48,9 +48,9 @@ export function useWindowBackground(frame: WindowFrame): void {
 
 /**
  * Room to leave at the right end of the top row, under the window buttons:
- * three buttons of 46 pixels.
+ * three square buttons as tall as the row, 48 pixels.
  */
-export const WINDOW_CONTROLS_ROOM = "pr-[138px]";
+export const WINDOW_CONTROLS_ROOM = "pr-[144px]";
 
 /**
  * Minimize, maximize or restore, and close, in the top right corner of the
@@ -93,7 +93,7 @@ export function WindowControls({ frame }: { frame: WindowFrame }) {
   };
 
   return (
-    <div className="fixed top-0 right-0 z-40 flex h-9 border-b border-line bg-panel">
+    <div className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel">
       <ControlButton label="Minimize" onClick={act(frame.minimize)}>
         <path d="M0 5.5h10" shapeRendering="crispEdges" />
       </ControlButton>
@@ -141,7 +141,7 @@ function ControlButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`flex h-full w-[46px] items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
+      className={`flex h-full w-12 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
         danger
           ? "hover:bg-danger hover:text-on-danger active:bg-danger/80"
           : "hover:bg-selected hover:text-fg active:bg-line-strong"
@@ -173,7 +173,7 @@ export function DragStrip({ room = false }: { room?: boolean }) {
   return (
     <div
       data-tauri-drag-region
-      className={`h-9 shrink-0 border-b border-line bg-panel ${
+      className={`h-12 shrink-0 border-b border-line bg-panel ${
         room ? WINDOW_CONTROLS_ROOM : ""
       }`}
     />
