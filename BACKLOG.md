@@ -179,6 +179,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - Interface translations
 - Canvas (free-form board)
 - Multiple windows and split panes
+- Browser mode: Carbon in a web browser, mainly to open vaults kept on a server; a vault in the browser's own storage when needed. Needs a web platform in place of the Tauri one (the in-memory fakes of the core tests show the shape). Also lets the interface be checked in another engine and end-to-end tests run in a browser (C-609)
 - Vault encryption
 - Moving hot paths (file scan, indexing) to native code
 - Paid optional services as an income model
