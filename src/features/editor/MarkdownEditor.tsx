@@ -306,7 +306,8 @@ export function MarkdownEditor({
     });
   }, [text, revision]);
 
-  return <div ref={host} className="h-full" />;
+  // Fills the space below the note name, and grows with a longer text.
+  return <div ref={host} className="flex flex-1 flex-col" />;
 }
 
 /**

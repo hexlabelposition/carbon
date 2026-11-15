@@ -8,8 +8,11 @@ import { tags } from "@lezer/highlight";
  * theme without knowing which one is on. Sizes match `styles/markdown.css`.
  */
 export const editorTheme = EditorView.theme({
+  // The editor grows with its text; the element around it scrolls, so
+  // the note name above the text scrolls with it. A short note still
+  // fills the space, so a click below its text goes into it.
   "&": {
-    height: "100%",
+    flexGrow: "1",
     fontSize: "15px",
     color: "var(--cb-fg)",
     backgroundColor: "transparent",
@@ -18,20 +21,21 @@ export const editorTheme = EditorView.theme({
   ".cm-scroller": {
     fontFamily: "var(--font-sans)",
     lineHeight: "1.65",
-    overflow: "auto",
+    overflow: "visible",
+    flexGrow: "1",
     // Inter raises a bracket that follows a tall character such as "!".
     // The editor draws "![" and "]" as separate pieces, so only one of the
     // two brackets was raised and the pair looked crooked. Markdown is
     // shown as it is typed: no contextual alternates.
     fontVariantLigatures: "no-contextual",
   },
-  // A readable column in the middle; the space below lets the last line
-  // be scrolled up from the bottom edge.
+  // A readable column in the middle, under the note name; the space below
+  // lets the last line be scrolled up from the bottom edge.
   ".cm-content": {
     boxSizing: "border-box",
     maxWidth: "784px",
     margin: "0 auto",
-    padding: "32px 32px 40vh",
+    padding: "12px 32px 40vh",
     caretColor: "var(--cb-fg)",
   },
   ".cm-line": { padding: "0" },

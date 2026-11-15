@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { NoteTitleField } from "./NoteTitleField";
 import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
 import { useNoteImages } from "./use-note-images";
 import { useNoteLinks } from "./use-note-links";
+import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 
 interface NoteEditorProps {
@@ -36,6 +38,7 @@ export function NoteEditor({
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
+  const title = useNoteTitle(vault, path);
   const { reveal } = useWorkspace();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
@@ -88,7 +91,9 @@ export function NoteEditor({
       {links.error !== null && (
         <EditorAlert message={links.error} onDismiss={links.dismissError} />
       )}
-      <div className="min-h-0 flex-1">
+      {/* One scroll for the name and the text: the name scrolls away. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+        <NoteTitleField title={title} />
         <MarkdownEditor
           text={note.text}
           revision={note.revision}
