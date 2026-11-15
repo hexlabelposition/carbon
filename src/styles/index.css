@@ -104,6 +104,6 @@
   }
 
   ::selection {
-    background: var(--cb-highlight);
+    background: var(--cb-selection);
   }
 }

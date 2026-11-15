@@ -39,7 +39,7 @@ export const editorTheme = EditorView.theme({
     caretColor: "var(--cb-fg)",
   },
   ".cm-line": { padding: "0" },
-  ".cm-content ::selection": { backgroundColor: "var(--cb-highlight)" },
+  ".cm-content ::selection": { backgroundColor: "var(--cb-selection)" },
 });
 
 /** Markdown highlighting: the text is styled, its marks are made quiet. */

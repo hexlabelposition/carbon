@@ -34,6 +34,13 @@
   /* Accent */
   --cb-link: #2c5a96;
   --cb-highlight: #d3d5d8; /* search match background */
+  /*
+   * Selected text. See-through, never opaque: WebKit swaps an opaque
+   * selection color for a see-through one that looks the same on white,
+   * which on a dark background comes out darker than the background. Here
+   * the text color at 19%, as #d3d5d8 on bg.
+   */
+  --cb-selection: rgb(23 24 26 / 0.19);
 
   /* Solid control: active segment, switch on */
   --cb-solid: #17181a;
@@ -69,6 +76,7 @@
     --cb-faint: #8b8f94;
     --cb-link: #a9c1de;
     --cb-highlight: #2e3033;
+    --cb-selection: rgb(231 232 234 / 0.2); /* as #3a3b3d on bg */
     --cb-solid: #e7e8ea;
     --cb-on-solid: #0e0f10;
     --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
@@ -96,6 +104,7 @@
   --cb-faint: #8b8f94;
   --cb-link: #a9c1de;
   --cb-highlight: #2e3033;
+  --cb-selection: rgb(231 232 234 / 0.2); /* as #3a3b3d on bg */
   --cb-solid: #e7e8ea;
   --cb-on-solid: #0e0f10;
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
