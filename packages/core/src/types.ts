@@ -60,6 +60,20 @@ export interface Backlink {
   end: number;
 }
 
+/** A mention of a note, by its title, in another note without a link. */
+export interface Mention {
+  /** The note that mentions it. */
+  source: NotePath;
+  sourceTitle: string;
+  /** Offsets of the mention in the source note. */
+  start: number;
+  end: number;
+  /** The line around the mention, cut short far from it. */
+  snippet: string;
+  /** Where the mention is in `snippet`. */
+  snippetMatch: TextRange;
+}
+
 /** A note that links point to, but that does not exist. */
 export interface UnresolvedTarget {
   /**

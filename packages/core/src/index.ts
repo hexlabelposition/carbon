@@ -54,6 +54,7 @@ export type {
   Backlink,
   Heading,
   Link,
+  Mention,
   NotePath,
   OutgoingLink,
   ParsedNote,

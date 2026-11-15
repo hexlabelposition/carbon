@@ -130,6 +130,8 @@ export class Vault {
       index,
       caughtUp,
       createNote: (path) => this.notes.create(path),
+      read: (path) => this.notes.read(path),
+      write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
     });
     this.search = new Search({
       index,

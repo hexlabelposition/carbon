@@ -1,11 +1,18 @@
 import type { IndexStore } from "../index/index-store";
+import { titleOf } from "../parser/parse-note";
+import { fold } from "../search/fold";
 import type {
   Backlink,
   Heading,
   Link,
+  Mention,
   NotePath,
+  TextRange,
   UnresolvedTarget,
 } from "../types";
+import { contentHash } from "../util/hash";
+import { mapPool } from "../util/pool";
+import { findMentions, mentionQuery } from "./mentions";
 import { linkPath, linksToFile } from "./resolve";
 
 /** What `Links` needs from the vault. */
@@ -16,7 +23,20 @@ export interface LinksContext {
   caughtUp(): Promise<IndexStore>;
   /** `Notes.create`: a new, empty note, with its folders. */
   createNote(path: NotePath): Promise<void>;
+  /** `Notes.read`. */
+  read(path: NotePath): Promise<string>;
+  /** `Notes.write`: rejects if the note is not `baseHash` any more. */
+  write(path: NotePath, text: string, baseHash: string): Promise<string>;
 }
+
+/**
+ * Notes read at most to look for mentions of one note, the ones that
+ * match best: a common title is mentioned in more notes than a list can
+ * show.
+ */
+const MENTION_NOTES = 200;
+/** Notes read at the same time while looking for mentions. */
+const READ_CONCURRENCY = 16;
 
 /** The note a followed link leads to. */
 export interface FollowedLink {
@@ -41,6 +61,73 @@ export class Links {
   /** The notes that links point to but that do not exist, with the links. */
   async unresolved(): Promise<UnresolvedTarget[]> {
     return (await this.context.index()).unresolved();
+  }
+
+  /**
+   * The places where other notes mention the note at `path` by its title
+   * without a link (`findMentions`), by the path of their note, then in
+   * written order. Reads those notes, so it is slower than `backlinks`.
+   * A note that cannot be read is left out.
+   */
+  async unlinked(path: NotePath): Promise<Mention[]> {
+    const title = titleOf(path);
+    const match = mentionQuery(title);
+    if (match === null) return [];
+    const index = await this.context.index();
+    const candidates = (await index.search(match, MENTION_NOTES)).filter(
+      (hit) => hit.path !== path,
+    );
+    const found = await mapPool(candidates, READ_CONCURRENCY, async (hit) => {
+      let text: string;
+      try {
+        text = await this.context.read(hit.path);
+      } catch {
+        return [];
+      }
+      return findMentions(text, title).map((mention) => ({
+        source: hit.path,
+        sourceTitle: hit.title,
+        ...mention,
+      }));
+    });
+    return found
+      .flat()
+      .sort((a, b) =>
+        a.source === b.source
+          ? a.start - b.start
+          : a.source < b.source
+            ? -1
+            : 1,
+      );
+  }
+
+  /**
+   * Turns a mention of the note at `target` in the note at `source`, at
+   * `at`, into a wiki link: `[[Title]]`, or `[[Title|as written]]` if it
+   * is written otherwise. By the title while it finds the note, else by
+   * its path. Rejects if the mention is not there any more, or the note
+   * changed meanwhile.
+   */
+  async linkMention(
+    source: NotePath,
+    at: TextRange,
+    target: NotePath,
+  ): Promise<void> {
+    const text = await this.context.read(source);
+    const written = text.slice(at.start, at.end);
+    const title = titleOf(target);
+    const same = (a: string) => fold(a).text.replace(/\s+/g, " ");
+    if (same(written) !== same(title)) {
+      throw new Error(`The mention of ${title} is not there any more`);
+    }
+    const byTitle = await this.resolve(source, { kind: "wiki", target: title });
+    const name = byTitle === target ? title : target.replace(/\.md$/i, "");
+    const link = written === name ? `[[${name}]]` : `[[${name}|${written}]]`;
+    await this.context.write(
+      source,
+      text.slice(0, at.start) + link + text.slice(at.end),
+      contentHash(text),
+    );
   }
 
   /**
