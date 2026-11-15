@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
 
 export interface TabBarTab {
   id: number;
@@ -17,9 +18,14 @@ interface TabBarProps {
   onForward: () => void;
   onActivate: (id: number) => void;
   onClose: (id: number) => void;
+  /** The bar is at the top right: it leaves the window buttons room. */
+  leaveRoom?: boolean;
 }
 
-/** The row of tabs above the note, with back and forward. Layout only. */
+/**
+ * The row of tabs above the note, with back and forward. Layout only. Its
+ * empty space drags the window, which has no system title bar.
+ */
 export function TabBar({
   tabs,
   activeId,
@@ -29,10 +35,19 @@ export function TabBar({
   onForward,
   onActivate,
   onClose,
+  leaveRoom = false,
 }: TabBarProps) {
   return (
-    <div className="flex h-9 shrink-0 items-stretch border-b border-line bg-panel">
-      <div className="flex shrink-0 items-center gap-0.5 px-1.5">
+    <div
+      data-tauri-drag-region
+      className={`flex h-9 shrink-0 items-stretch border-b border-line bg-panel ${
+        leaveRoom ? WINDOW_CONTROLS_ROOM : ""
+      }`}
+    >
+      <div
+        data-tauri-drag-region
+        className="flex shrink-0 items-center gap-0.5 px-1.5"
+      >
         <ArrowButton label="Back" disabled={!canGoBack} onClick={onBack}>
           <path d="M10 4l-4 4 4 4" />
         </ArrowButton>
@@ -45,6 +60,7 @@ export function TabBar({
         </ArrowButton>
       </div>
       <div
+        data-tauri-drag-region
         role="tablist"
         aria-label="Open notes"
         className="flex min-w-0 flex-1 items-stretch overflow-x-auto"

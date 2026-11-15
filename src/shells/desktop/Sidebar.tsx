@@ -43,7 +43,11 @@ export function Sidebar({
       className="relative flex min-w-45 shrink-0 flex-col border-r border-line bg-panel"
       style={{ width: `${fraction * 100}%` }}
     >
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-3">
+      {/* The window has no system title bar: this row drags it. */}
+      <div
+        data-tauri-drag-region
+        className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-3"
+      >
         {header}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>

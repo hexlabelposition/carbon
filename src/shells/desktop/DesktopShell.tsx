@@ -41,6 +41,12 @@ import { useFileDropGuard } from "./use-file-drop-guard";
 import { useSidePanel } from "./use-side-panel";
 import { useSidebar } from "./use-sidebar";
 import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
+import {
+  DragStrip,
+  WINDOW_CONTROLS_ROOM,
+  WindowControls,
+  type WindowFrame,
+} from "./WindowControls";
 
 // Dev builds only: in a release build the condition is false at build time
 // and the panel is not bundled.
@@ -53,7 +59,7 @@ const DevPanel = import.meta.env.DEV
  * features are mounted and where; what they do lives in their hooks
  * (ARCHITECTURE.md, section 8).
  */
-export function DesktopShell() {
+export function DesktopShell({ frame }: { frame: WindowFrame }) {
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
@@ -125,16 +131,23 @@ export function DesktopShell() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
+      <WindowControls frame={frame} />
       <div className="flex min-h-0 flex-1">
         {showDev ? (
-          <div className="min-w-0 flex-1 overflow-auto">
-            <Suspense fallback={null}>
-              <DevPanel />
-            </Suspense>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <DragStrip room />
+            <div className="min-h-0 flex-1 overflow-auto">
+              <Suspense fallback={null}>
+                <DevPanel />
+              </Suspense>
+            </div>
           </div>
         ) : vault === null ? (
-          <main className="min-w-0 flex-1 overflow-auto">
-            <StartScreen />
+          <main className="flex min-w-0 flex-1 flex-col">
+            <DragStrip room />
+            <div className="min-h-0 flex-1 overflow-auto">
+              <StartScreen />
+            </div>
           </main>
         ) : (
           <WorkspaceProvider
@@ -152,7 +165,10 @@ export function DesktopShell() {
                 onNudge={sidebar.nudge}
                 header={
                   <>
-                    <span className="min-w-0 flex-1 truncate font-semibold">
+                    <span
+                      data-tauri-drag-region
+                      className="min-w-0 flex-1 truncate font-semibold"
+                    >
                       {nameOf(vault.root)}
                     </span>
                     <button
@@ -322,8 +338,16 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
   const outline = useOutline();
   const { path } = workspace;
 
-  if (path === null) return <Placeholder>No note is open.</Placeholder>;
+  if (path === null) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <DragStrip room />
+        <Placeholder>No note is open.</Placeholder>
+      </div>
+    );
+  }
   const split = workspace.panes.length > 1;
+  const sideOpen = outlineOpen || backlinksOpen;
   return (
     <div className="flex min-h-0 flex-1">
       {workspace.panes.map((pane, index) => {
@@ -355,6 +379,8 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
                 onForward={workspace.forward}
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
+                // The right end of the top row holds the window buttons.
+                leaveRoom={!sideOpen && index === workspace.panes.length - 1}
               />
             </div>
             {pane.path !== null && (
@@ -374,10 +400,10 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
           </section>
         );
       })}
-      {(outlineOpen || backlinksOpen) && (
+      {sideOpen && (
         <div className="flex w-64 shrink-0 flex-col border-l border-line bg-panel">
           {outlineOpen && (
-            <SidePanel title="Outline">
+            <SidePanel title="Outline" leaveRoom>
               <OutlinePanel
                 headings={outline.headings}
                 current={outline.current}
@@ -385,7 +411,13 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
               />
             </SidePanel>
           )}
-          {backlinksOpen && <BacklinksSection vault={vault} path={path} />}
+          {backlinksOpen && (
+            <BacklinksSection
+              vault={vault}
+              path={path}
+              leaveRoom={!outlineOpen}
+            />
+          )}
         </div>
       )}
     </div>
@@ -427,11 +459,14 @@ function IndexState({ vault }: { vault: Vault }) {
 function SidePanel({
   title,
   detail,
+  leaveRoom = false,
   children,
 }: {
   title: string;
   /** Shown after the title, such as a count. */
   detail?: string;
+  /** The panel is at the top right: its title row leaves the window buttons room. */
+  leaveRoom?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -439,8 +474,15 @@ function SidePanel({
       aria-label={title}
       className="flex min-h-0 flex-1 flex-col border-b border-line last:border-b-0"
     >
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-3">
-        <span className="font-semibold">{title}</span>
+      <div
+        data-tauri-drag-region
+        className={`flex h-9 shrink-0 items-center gap-2 border-b border-line px-3 ${
+          leaveRoom ? WINDOW_CONTROLS_ROOM : ""
+        }`}
+      >
+        <span data-tauri-drag-region className="font-semibold">
+          {title}
+        </span>
         {detail !== undefined && (
           <span className="text-small text-faint">{detail}</span>
         )}
@@ -450,7 +492,15 @@ function SidePanel({
   );
 }
 
-function BacklinksSection({ vault, path }: { vault: Vault; path: string }) {
+function BacklinksSection({
+  vault,
+  path,
+  leaveRoom,
+}: {
+  vault: Vault;
+  path: string;
+  leaveRoom: boolean;
+}) {
   const backlinks = useBacklinks(vault, path);
   const mentionsPanel = useSidePanel("carbon.desktop.unlinkedMentions");
   const mentions = useUnlinkedMentions(vault, path, mentionsPanel.open);
@@ -458,6 +508,7 @@ function BacklinksSection({ vault, path }: { vault: Vault; path: string }) {
   return (
     <SidePanel
       title="Backlinks"
+      leaveRoom={leaveRoom}
       detail={
         backlinks.status === "ready"
           ? String(backlinks.backlinks.length)

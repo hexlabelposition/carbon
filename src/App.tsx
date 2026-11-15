@@ -2,7 +2,12 @@ import { CommandsProvider } from "./features/commands/CommandsProvider";
 import { AppSettingsProvider } from "./features/settings/AppSettingsProvider";
 import { VaultProvider } from "./features/vault/VaultProvider";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
-import { pickVaultFolder, setInterfaceZoom, tauriPlatform } from "./platform";
+import {
+  pickVaultFolder,
+  setInterfaceZoom,
+  tauriPlatform,
+  tauriWindow,
+} from "./platform";
 import { DesktopShell } from "./shells/desktop/DesktopShell";
 import { createWorkerParser } from "./workers/worker-parser";
 
@@ -19,7 +24,7 @@ function App() {
       <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
         <CommandsProvider>
           <InterfaceZoom apply={setInterfaceZoom} />
-          <DesktopShell />
+          <DesktopShell frame={tauriWindow} />
         </CommandsProvider>
       </VaultProvider>
     </AppSettingsProvider>

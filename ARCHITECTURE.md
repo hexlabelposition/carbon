@@ -470,6 +470,7 @@ Three rules that keep a second shell cheap:
 | ADR-020 | Files dropped from outside the vault are copied in by a custom Rust command (`import_file`)               | Accepted                   | On Linux the WebView gives a dropped file as a path, not as content, and the `fs` plugin may not read outside the opened folders. The command only writes new files inside an opened folder |
 | ADR-021 | The SQL of the index lives in the core; the platform provides only `SqlDatabases` (open, execute, select) | Accepted                   | The schema and queries are the riskiest part of the index and must be tested; in the core they run on Bun's SQLite in `bun test`. The engine stays replaceable behind `IndexStore`          |
 | ADR-022 | fuzzysort for fuzzy matching in the quick switcher and the command palette                                | Accepted                   | Small, no dependencies, no DOM or Node APIs, so it runs in the core. Gives the matched letters for highlights. 10,000 titles match well within 16 ms                                        |
+| ADR-023 | The app draws its own title bar: no system frame, window buttons in the row of tabs                       | Trial                      | One row less, as in VS Code and Obsidian. Needs no Rust: Tauri drag regions and window API. Undone if resizing or the look suffers on Linux                                                 |
 
 ## 13. Open questions
 
