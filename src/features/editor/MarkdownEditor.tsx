@@ -59,6 +59,8 @@ interface MarkdownEditorProps {
   images?: ImageHost;
   /** Shows the raw Markdown: no live preview, every mark visible. */
   sourceMode?: boolean;
+  /** Shows the note to read only: no cursor, no edits. */
+  readOnly?: boolean;
   /**
    * Receives the headings of the note and lets them be gone to. Given
    * later, or given again, it is told the headings at once: an editor in
@@ -97,6 +99,7 @@ export function MarkdownEditor({
   onSave,
   images,
   sourceMode = false,
+  readOnly = false,
   outline,
   links,
   reveal = null,
@@ -106,6 +109,8 @@ export function MarkdownEditor({
   const editor = useRef<EditorView | null>(null);
   /** Holds the live preview, so it can be turned off and on in place. */
   const preview = useRef(new Compartment());
+  /** Holds whether the note can be edited, switched in place too. */
+  const editing = useRef(new Compartment());
   // The latest values, so new ones do not rebuild the editor.
   const latest = useRef({
     text,
@@ -113,6 +118,7 @@ export function MarkdownEditor({
     onSave,
     images,
     sourceMode,
+    readOnly,
     outline,
     links,
   });
@@ -123,10 +129,11 @@ export function MarkdownEditor({
       onSave,
       images,
       sourceMode,
+      readOnly,
       outline,
       links,
     };
-  }, [text, onChange, onSave, images, sourceMode, outline, links]);
+  }, [text, onChange, onSave, images, sourceMode, readOnly, outline, links]);
 
   // Before the first paint, so a note never shows as an empty area first.
   useLayoutEffect(() => {
@@ -151,6 +158,7 @@ export function MarkdownEditor({
           preview.current.of(
             latest.current.sourceMode ? noPreview : livePreviewExtensions,
           ),
+          editing.current.of(editable(!latest.current.readOnly)),
           imageInput,
           imageHost.of({
             load: (target) =>
@@ -279,6 +287,16 @@ export function MarkdownEditor({
     });
   }, [sourceMode]);
 
+  useEffect(() => {
+    const view = editor.current;
+    if (view === null) return;
+    view.dispatch({
+      effects: editing.current.reconfigure(editable(!readOnly)),
+    });
+    // Out of the editor: the cursor and the Markdown under it go away.
+    if (readOnly && view.hasFocus) view.contentDOM.blur();
+  }, [readOnly]);
+
   // After the editor is made, so a note opened at a place goes there.
   useEffect(() => {
     const view = editor.current;
@@ -337,4 +355,12 @@ function difference(
     to: from.length - end,
     insert: to.slice(start, to.length - end),
   };
+}
+
+/**
+ * Whether the user can change the note. Not editable, the text takes no
+ * focus, so live preview never shows the Markdown under a cursor.
+ */
+function editable(on: boolean) {
+  return [EditorView.editable.of(on), EditorState.readOnly.of(!on)];
 }

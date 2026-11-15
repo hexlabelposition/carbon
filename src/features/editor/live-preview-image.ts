@@ -133,6 +133,7 @@ export const imageInput = [
       eventHandlers: {
         paste(event, view) {
           const host = view.state.facet(imageHost);
+          if (view.state.readOnly) return false;
           const images = [...(event.clipboardData?.files ?? [])].filter(
             (file) => isImage(file.name, file.type),
           );
@@ -167,7 +168,7 @@ export const imageInput = [
           // place of the app.
           event.preventDefault();
           const host = view.state.facet(imageHost);
-          if (host === null) return true;
+          if (host === null || view.state.readOnly) return true;
 
           const saves = [
             ...dropped.files

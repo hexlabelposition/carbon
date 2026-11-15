@@ -19,6 +19,9 @@ interface NoteEditorProps {
   /** Shows the raw Markdown in place of live preview. */
   sourceMode: boolean;
   onToggleSourceMode: () => void;
+  /** Shows the note to read only: nothing in it can be changed. */
+  readingMode: boolean;
+  onToggleReadingMode: () => void;
   /** Where the headings of the note go. */
   outline?: OutlineLink;
   /** The editor the user works in: see `MarkdownEditor`. */
@@ -34,6 +37,8 @@ export function NoteEditor({
   path,
   sourceMode,
   onToggleSourceMode,
+  readingMode,
+  onToggleReadingMode,
   outline,
   active = false,
 }: NoteEditorProps) {
@@ -87,6 +92,17 @@ export function NoteEditor({
         >
           Source
         </button>
+        <button
+          type="button"
+          aria-pressed={readingMode}
+          title="Read only: the note cannot be changed"
+          className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+            readingMode ? "bg-selected text-fg" : "text-muted"
+          }`}
+          onClick={onToggleReadingMode}
+        >
+          Read
+        </button>
       </header>
       {images.error !== null && (
         <EditorAlert message={images.error} onDismiss={images.dismissError} />
@@ -100,9 +116,16 @@ export function NoteEditor({
           so does the mouse wheel. */}
       <div
         ref={smoothWheel}
-        className="flex min-h-0 flex-1 flex-col overflow-auto scroll-smooth"
+        // To read, the scroll takes the focus on a click, so Page Up and
+        // Page Down, the arrows and Space scroll it: the text cannot. The
+        // editor keeps a click from focusing it, so it is focused here.
+        tabIndex={readingMode ? -1 : undefined}
+        onMouseDown={(event) => {
+          if (readingMode) event.currentTarget.focus({ preventScroll: true });
+        }}
+        className="flex min-h-0 flex-1 flex-col overflow-auto scroll-smooth outline-none"
       >
-        <NoteTitleField title={title} />
+        <NoteTitleField title={title} readOnly={readingMode} />
         <MarkdownEditor
           text={note.text}
           revision={note.revision}
@@ -111,6 +134,7 @@ export function NoteEditor({
           onSave={actions.saveNow}
           images={images.host}
           sourceMode={sourceMode}
+          readOnly={readingMode}
           outline={outline}
           active={active}
           links={links.host}

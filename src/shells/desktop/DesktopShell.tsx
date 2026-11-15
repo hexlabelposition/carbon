@@ -21,6 +21,7 @@ import { useUnlinkedMentions } from "../../features/backlinks/use-unlinked-menti
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { ImageView } from "../../features/image/ImageView";
 import { imageTypeOf } from "../../features/image/image-file";
+import { useReadingMode } from "../../features/editor/use-reading-mode";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
@@ -339,6 +340,7 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
   const workspace = useWorkspace();
   useWorkspaceShortcuts();
   const sourceMode = useSourceMode();
+  const readingMode = useReadingMode();
   const outline = useOutline();
   const { path } = workspace;
 
@@ -400,6 +402,8 @@ function NoteArea({ vault, outlineOpen, backlinksOpen }: NoteAreaProps) {
                   path={pane.path}
                   sourceMode={sourceMode.on}
                   onToggleSourceMode={sourceMode.toggle}
+                  readingMode={readingMode.on}
+                  onToggleReadingMode={readingMode.toggle}
                   // One outline: of the note in the active pane.
                   outline={active ? outline.link : undefined}
                   active={active}

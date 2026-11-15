@@ -5,9 +5,15 @@ import type { NoteTitle } from "./use-note-title";
  * The name of the note as a heading above its text, in the column of the
  * text. Editing it renames the note: Enter or leaving the field renames,
  * Escape takes the edit back. A blank name is not taken: the field shows
- * the name again. A long name wraps.
+ * the name again. A long name wraps. With `readOnly` it cannot be edited.
  */
-export function NoteTitleField({ title }: { title: NoteTitle }) {
+export function NoteTitleField({
+  title,
+  readOnly = false,
+}: {
+  title: NoteTitle;
+  readOnly?: boolean;
+}) {
   const field = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(title.name);
   /** Escape was pressed: the blur that follows renames nothing. */
@@ -54,6 +60,9 @@ export function NoteTitleField({ title }: { title: NoteTitle }) {
         ref={field}
         rows={1}
         aria-label="Note name"
+        readOnly={readOnly}
+        // Not a stop of the Tab key while it cannot be edited.
+        tabIndex={readOnly ? -1 : undefined}
         spellCheck={false}
         value={text}
         // A name is one line: line breaks typed or pasted become spaces.

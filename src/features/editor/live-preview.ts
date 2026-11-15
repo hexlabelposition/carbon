@@ -143,6 +143,7 @@ class TaskWidget extends WidgetType {
     // next to the box first, which turns it back into "[ ]".
     box.addEventListener("mousedown", (event) => {
       event.preventDefault();
+      if (view.state.readOnly) return;
       const from = view.posAtDOM(box);
       const marker = view.state.sliceDoc(from, from + 3);
       if (!/^\[[ xX]\]$/.test(marker)) return;
