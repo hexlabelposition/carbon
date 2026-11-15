@@ -436,6 +436,17 @@ Three rules that keep a second shell cheap:
 - Tauri capabilities are limited to the plugins listed above. File access is scoped to the opened vault and the app's own config and cache directories.
 - Strict Content Security Policy. Remote content in notes (images from the web) is off by default.
 
+### Known limitations
+
+Behavior of a platform or its WebView that the app cannot change. Each was checked so it is not looked into again.
+
+**Linux, Wayland: resizing the window lags.** Seen on GNOME with WebKitGTK, checked on 2026-11-15.
+
+- While the window is resized, the WebView draws the new size a few milliseconds late. For that moment the last frame is shown stretched to the new size, so text seems to grow or shrink and then snaps back, and the strip the page has not reached yet is empty.
+- It is the window system and the WebView engine, not the layout: every font size is in pixels, nothing depends on the window size. Obsidian, on Chromium, behaves the same.
+- The empty strip is painted in the background color of the theme (`useWindowBackground`), so it does not show as a grey band.
+- Tried and dropped: `WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1` show a black area instead, which is worse. Running under X11 (`GDK_BACKEND=x11`) was not tried: it may resize differently, but it can blur text at fractional display scales and leaves Wayland.
+
 ## 11. Testing and quality
 
 - **Core:** `bun test` with in-memory fakes for `FileSystem` and `SqlDatabases` (Bun's SQLite, in memory). Fixture vaults for link resolution and rename.
