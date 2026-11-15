@@ -33,6 +33,7 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
 import { useSearch } from "../../features/search/use-search";
+import { openSettings } from "../../features/settings/Settings";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
@@ -227,6 +228,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                 Backlinks
               </StatusButton>
             )}
+            <StatusButton onClick={openSettings}>Settings</StatusButton>
           </>
         }
       >

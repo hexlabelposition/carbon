@@ -69,6 +69,11 @@
     color: var(--cb-fg);
     background: var(--cb-bg);
     -webkit-font-smoothing: antialiased;
+
+    /* The note text, as the settings set it (note-style.ts). */
+    --cb-note-size: 15px;
+    --cb-note-width: 784px;
+    --cb-note-font: var(--font-sans);
   }
 
   /*

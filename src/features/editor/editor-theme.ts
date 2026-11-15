@@ -3,6 +3,16 @@ import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 
 /**
+ * A size of the note text, given as it is at the default text size of
+ * 15 pixels: it grows and shrinks with the size the settings set. Each is
+ * worked out from the text size, not from its parent, so code inside a
+ * heading or a table is not scaled twice.
+ */
+export function noteSize(pixels: number): string {
+  return `calc(var(--cb-note-size) * ${+(pixels / 15).toFixed(4)})`;
+}
+
+/**
  * How the editor looks. Colors and fonts are the design tokens of
  * `styles/tokens.css`, read as CSS variables, so the editor follows the
  * theme without knowing which one is on. Sizes match `styles/markdown.css`.
@@ -13,13 +23,13 @@ export const editorTheme = EditorView.theme({
   // fills the space, so a click below its text goes into it.
   "&": {
     flexGrow: "1",
-    fontSize: "15px",
+    fontSize: "var(--cb-note-size)",
     color: "var(--cb-fg)",
     backgroundColor: "transparent",
   },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": {
-    fontFamily: "var(--font-sans)",
+    fontFamily: "var(--cb-note-font)",
     lineHeight: "1.65",
     overflow: "visible",
     flexGrow: "1",
@@ -33,7 +43,7 @@ export const editorTheme = EditorView.theme({
   // lets the last line be scrolled up from the bottom edge.
   ".cm-content": {
     boxSizing: "border-box",
-    maxWidth: "784px",
+    maxWidth: "var(--cb-note-width)",
     margin: "0 auto",
     padding: "12px 32px 40vh",
     caretColor: "var(--cb-fg)",
@@ -46,19 +56,19 @@ export const editorTheme = EditorView.theme({
 export const markdownHighlight = HighlightStyle.define([
   {
     tag: tags.heading1,
-    fontSize: "30px",
+    fontSize: noteSize(30),
     fontWeight: "600",
     lineHeight: "1.2",
     letterSpacing: "-0.02em",
   },
   {
     tag: tags.heading2,
-    fontSize: "20px",
+    fontSize: noteSize(20),
     fontWeight: "600",
     lineHeight: "1.3",
     letterSpacing: "-0.01em",
   },
-  { tag: tags.heading3, fontSize: "16px", fontWeight: "600" },
+  { tag: tags.heading3, fontSize: noteSize(16), fontWeight: "600" },
   {
     tag: [tags.heading4, tags.heading5, tags.heading6],
     fontWeight: "600",

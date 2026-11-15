@@ -55,7 +55,7 @@ export function NoteTitleField({
   // shrink to its text and move to the middle. The width and padding are
   // those of the text below, so both start at one edge.
   return (
-    <div className="mx-auto box-border w-full max-w-[784px] px-8 pt-12 pb-4">
+    <div className="mx-auto box-border w-full max-w-(--cb-note-width) px-8 pt-12 pb-4">
       <textarea
         ref={field}
         rows={1}
@@ -70,7 +70,7 @@ export function NoteTitleField({
         onKeyDown={onKeyDown}
         onBlur={() => void commit()}
         // Larger than a "# Heading" of the text: the name heads the note.
-        className="block w-full resize-none overflow-hidden bg-transparent text-[36px] leading-[1.3] font-bold tracking-[-0.025em] text-fg outline-none"
+        className="block w-full resize-none overflow-hidden bg-transparent font-(family-name:--cb-note-font) text-[calc(var(--cb-note-size)*2.4)] leading-[1.3] font-bold tracking-[-0.025em] text-fg outline-none"
       />
       {title.error !== null && (
         <p role="alert" className="mt-1 text-small text-danger">

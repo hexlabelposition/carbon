@@ -10,6 +10,7 @@ import {
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { isMissing, missingChanged } from "./missing-links";
+import { noteSize } from "./editor-theme";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -50,7 +51,7 @@ export const livePreview = [
       border: "1px solid var(--cb-line)",
       borderRadius: "4px",
       backgroundColor: "var(--cb-code)",
-      fontSize: "13px",
+      fontSize: noteSize(13),
     },
     // A code block is drawn line by line: every line carries the sides of
     // the box, the first and the last one close it.
@@ -60,7 +61,7 @@ export const livePreview = [
       borderRight: "1px solid var(--cb-line)",
       backgroundColor: "var(--cb-code)",
       fontFamily: "var(--font-mono)",
-      fontSize: "13px",
+      fontSize: noteSize(13),
       lineHeight: "1.6",
     },
     ".cm-line.cm-code-first": {

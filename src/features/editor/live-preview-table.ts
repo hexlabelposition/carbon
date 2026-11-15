@@ -14,6 +14,7 @@ import {
 } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { wikiLinkLabel } from "./wiki-link";
+import { noteSize } from "./editor-theme";
 
 /**
  * Live preview of tables: a table is drawn as a table, except while the
@@ -54,7 +55,7 @@ export const tablePreview = [
     ".cm-table": {
       width: "100%",
       borderCollapse: "collapse",
-      fontSize: "14px",
+      fontSize: noteSize(14),
       cursor: "text",
     },
     ".cm-table th, .cm-table td": {
@@ -64,7 +65,7 @@ export const tablePreview = [
       verticalAlign: "top",
     },
     ".cm-table th": {
-      fontSize: "12px",
+      fontSize: noteSize(12),
       fontWeight: "600",
       color: "var(--cb-faint)",
     },
@@ -74,14 +75,14 @@ export const tablePreview = [
       borderRadius: "4px",
       backgroundColor: "var(--cb-code)",
       fontFamily: "var(--font-mono)",
-      fontSize: "13px",
+      fontSize: noteSize(13),
     },
     ".cm-table strong": { fontWeight: "600" },
     ".cm-table del": { color: "var(--cb-faint)" },
     ".cm-table .cm-table-link": { color: "var(--cb-link)" },
     ".cm-line.cm-table-source": {
       fontFamily: "var(--font-mono)",
-      fontSize: "13px",
+      fontSize: noteSize(13),
     },
   }),
 ];

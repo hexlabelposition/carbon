@@ -23,6 +23,7 @@
     "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && bun run --filter '*' typecheck"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
     "@carbon/core": "workspace:*",
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
