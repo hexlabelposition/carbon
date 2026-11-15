@@ -227,14 +227,6 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                 Backlinks
               </StatusButton>
             )}
-            {DevPanel !== null && (
-              <StatusButton
-                pressed={devOpen}
-                onClick={() => setDevOpen(!devOpen)}
-              >
-                Dev panel
-              </StatusButton>
-            )}
           </>
         }
       >
