@@ -8,3 +8,6 @@ tauri/gen/
 # Lock files
 bun.lock
 tauri/Cargo.lock
+
+# Test data, kept exactly as written
+fixtures/

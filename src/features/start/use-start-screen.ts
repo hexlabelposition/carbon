@@ -13,6 +13,11 @@ export interface StartScreenState {
   openRecent(root: string): void;
   /** Takes a vault off the recent list. Its folder is not touched. */
   forgetRecent(root: string): void;
+  /**
+   * Opens the test vault, made afresh from `fixtures/test-vault`. Only in
+   * the dev build: `null` in a release.
+   */
+  openTestVault: (() => void) | null;
 
   /** Whether the form for a new vault is shown. */
   creating: boolean;
@@ -34,7 +39,8 @@ export function useStartScreen(): StartScreenState {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
 
-  const { pickAndOpen, pickAndCreate, open, clearError } = session;
+  const { pickAndOpen, pickAndCreate, open, openPrepared, clearError } =
+    session;
   const { removeRecentVault } = settings;
   const trimmed = name.trim();
 
@@ -54,6 +60,14 @@ export function useStartScreen(): StartScreenState {
     openFolder: () => void pickAndOpen(),
     openRecent: (root) => void open(root),
     forgetRecent,
+    openTestVault: import.meta.env.DEV
+      ? () =>
+          void openPrepared(async () => {
+            // Loaded only here, so a release holds neither it nor the files.
+            const { prepareTestVault } = await import("../../dev/test-vault");
+            return prepareTestVault();
+          })
+      : null,
 
     creating,
     name,

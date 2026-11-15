@@ -81,6 +81,17 @@ export function StartScreen() {
           >
             Create vault
           </button>
+          {import.meta.env.DEV && start.openTestVault !== null && (
+            <button
+              type="button"
+              className={secondary}
+              disabled={start.busy}
+              title="Dev build only: a copy of fixtures/test-vault, made afresh each time"
+              onClick={start.openTestVault}
+            >
+              Open test vault
+            </button>
+          )}
         </div>
       )}
 

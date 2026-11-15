@@ -18,6 +18,12 @@ export interface VaultSession {
   pickAndCreate(name: string): Promise<void>;
   /** Opens the folder at `root`, closing the current vault on success. */
   open(root: string): Promise<void>;
+  /**
+   * Makes a vault folder with `prepare`, which resolves with its path, and
+   * opens it. It is not put on the recent list: for a vault made again
+   * each time, such as the test vault of the dev build.
+   */
+  openPrepared(prepare: () => Promise<string>): Promise<void>;
   close(): void;
   /** Forgets the last failure. */
   clearError(): void;

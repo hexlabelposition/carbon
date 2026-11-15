@@ -42,14 +42,18 @@ export function VaultProvider({
    * `null` if the user cancelled; a failure ends up in `error`.
    */
   const attempt = useCallback(
-    async (root: string | null, action: () => Promise<Vault | null>) => {
+    async (
+      root: string | null,
+      action: () => Promise<Vault | null>,
+      remember = true,
+    ) => {
       setOpening(true);
       setError(null);
       try {
         const opened = await action();
         if (opened === null) return;
         replace(opened);
-        void addRecentVault(opened.root);
+        if (remember) void addRecentVault(opened.root);
       } catch (reason) {
         const message =
           reason instanceof Error ? reason.message : String(reason);
@@ -86,6 +90,12 @@ export function VaultProvider({
     [attempt, pickFolder, platform],
   );
 
+  const openPrepared = useCallback(
+    (prepare: () => Promise<string>) =>
+      attempt(null, async () => Vault.open(await prepare(), platform), false),
+    [attempt, platform],
+  );
+
   const close = useCallback(() => {
     setError(null);
     replace(null);
@@ -101,6 +111,7 @@ export function VaultProvider({
       pickAndOpen,
       pickAndCreate,
       open,
+      openPrepared,
       close,
       clearError,
     }),
@@ -111,6 +122,7 @@ export function VaultProvider({
       pickAndOpen,
       pickAndCreate,
       open,
+      openPrepared,
       close,
       clearError,
     ],

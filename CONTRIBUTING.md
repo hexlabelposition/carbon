@@ -29,6 +29,8 @@ bun tauri dev
 
 CI runs the type check, lint, format check and tests, and builds the app on Linux and Windows. Run the first four locally before pushing.
 
+To try a change by hand, use **Open test vault** on the start screen of the dev build. It opens a copy of `fixtures/test-vault`, made afresh each time, with a note for each area: formatting, links, images, tags, a long note, Cyrillic names. Anything may be changed in it. A case the vault lacks goes into `fixtures/test-vault`.
+
 ## Where code goes
 
 | Folder              | What lives there                                     | Must not import                |

@@ -9,6 +9,7 @@ import { tauriTrash } from "./trash";
 import { tauriWatcher } from "./watcher";
 
 export { pickVaultFolder } from "./dialog";
+export { appCacheFolder } from "./paths";
 export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
 export { tauriWindow } from "./window";
