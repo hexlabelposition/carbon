@@ -88,14 +88,41 @@ export const livePreview = [
       textUnderlineOffset: "3px",
     },
     ".cm-wiki-link-separator": { color: "var(--cb-faint)" },
+    // Drawn, not the box of the system: that one sits low and draws its
+    // own coarse tick. One drawing for the box and the tick, so the tick
+    // is in the middle at any zoom; whole sizes, nothing nudged, so it
+    // sits the same on every line.
     ".cm-task": {
-      width: "14px",
-      height: "14px",
-      margin: "0",
-      verticalAlign: "-2px",
-      accentColor: "var(--cb-fg)",
+      display: "inline-block",
+      width: "1em",
+      height: "1em",
+      lineHeight: "0",
+      // Its middle on the middle of the lower-case letters.
+      verticalAlign: "-0.15em",
       cursor: "pointer",
     },
+    ".cm-task svg": { display: "block", width: "100%", height: "100%" },
+    ".cm-task rect": {
+      fill: "none",
+      stroke: "var(--cb-faint)",
+      strokeWidth: "1.5",
+    },
+    ".cm-task:hover rect": { stroke: "var(--cb-muted)" },
+    ".cm-task-checked rect, .cm-task-checked:hover rect": {
+      fill: "var(--cb-solid)",
+      stroke: "var(--cb-solid)",
+    },
+    ".cm-task path": {
+      fill: "none",
+      stroke: "var(--cb-on-solid)",
+      strokeWidth: "1.75",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    // To read only: the box cannot be ticked, so it does not look it.
+    ".cm-content[contenteditable=false] .cm-task": { cursor: "default" },
+    ".cm-content[contenteditable=false] .cm-task:not(.cm-task-checked):hover rect":
+      { stroke: "var(--cb-faint)" },
     ".cm-task-done": {
       color: "var(--cb-faint)",
       textDecoration: "line-through",
@@ -134,11 +161,17 @@ class TaskWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.className = "cm-task";
-    box.checked = this.checked;
+    const box = document.createElement("span");
+    box.className = this.checked ? "cm-task cm-task-checked" : "cm-task";
+    box.setAttribute("role", "checkbox");
+    box.setAttribute("aria-checked", String(this.checked));
     box.setAttribute("aria-label", "Task done");
+    // A 16 by 16 square; the tick is drawn around its middle, (8, 8).
+    box.innerHTML =
+      '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+      '<rect x="1" y="1" width="14" height="14" rx="3.5"/>' +
+      (this.checked ? '<path d="M4.6 8.3l2.3 2.3 4.5-4.9"/>' : "") +
+      "</svg>";
     // On press, not on click: the press would otherwise move the cursor
     // next to the box first, which turns it back into "[ ]".
     box.addEventListener("mousedown", (event) => {
