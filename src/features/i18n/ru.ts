@@ -198,6 +198,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "vault.pickCreate": "Выберите, где создать «{name}»",
   "vault.pickOpen": "Откройте папку хранилища",
   "window.close": "Закрыть",
+  "window.fullscreen": "Полноэкранный режим",
   "window.maximize": "Развернуть",
   "window.minimize": "Свернуть",
   "window.restore": "Восстановить",

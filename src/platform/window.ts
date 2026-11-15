@@ -12,6 +12,12 @@ export const tauriWindow = {
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
   close: () => getCurrentWindow().close(),
   isMaximized: () => getCurrentWindow().isMaximized(),
+  isFullscreen: () => getCurrentWindow().isFullscreen(),
+  /** Fills the whole screen, without the panels of the desktop, or back. */
+  toggleFullscreen: async () => {
+    const window = getCurrentWindow();
+    await window.setFullscreen(!(await window.isFullscreen()));
+  },
   /** Calls `listener` after every resize; resolves to a function that stops it. */
   onResized: (listener: () => void) =>
     getCurrentWindow().onResized(() => listener()),

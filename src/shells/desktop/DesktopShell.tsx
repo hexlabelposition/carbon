@@ -67,6 +67,7 @@ import {
   DragStrip,
   WINDOW_CONTROLS_ROOM,
   WindowControls,
+  useFullscreenShortcut,
   useWindowShape,
   type WindowFrame,
 } from "./WindowControls";
@@ -84,6 +85,7 @@ const DevPanel = import.meta.env.DEV
  */
 export function DesktopShell({ frame }: { frame: WindowFrame }) {
   useWindowShape(frame);
+  useFullscreenShortcut(frame);
   const t = useT();
   const { vault, close } = useVaultSession();
   const { recentVaults } = useAppSettings();

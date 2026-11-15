@@ -202,6 +202,7 @@ export const en = {
   "vault.pickCreate": "Choose where to create “{name}”",
   "vault.pickOpen": "Open a vault folder",
   "window.close": "Close",
+  "window.fullscreen": "Toggle full screen",
   "window.maximize": "Maximize",
   "window.minimize": "Minimize",
   "window.restore": "Restore",

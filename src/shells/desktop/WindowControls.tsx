@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { useCommands } from "../../features/commands/commands";
 import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
 
@@ -8,6 +15,8 @@ export interface WindowFrame {
   toggleMaximize(): Promise<void>;
   close(): Promise<void>;
   isMaximized(): Promise<boolean>;
+  isFullscreen(): Promise<boolean>;
+  toggleFullscreen(): Promise<void>;
   /** Calls `listener` after every resize; resolves to a function that stops it. */
   onResized(listener: () => void): Promise<() => void>;
   /**
@@ -17,20 +26,34 @@ export interface WindowFrame {
   setBackground(color: string): Promise<void>;
 }
 
+interface WindowState {
+  maximized: boolean;
+  /** Over the whole screen (F11). */
+  fullscreen: boolean;
+}
+
 /**
- * Whether the window is maximized, checked again after every resize.
- * Unknown at first and when the check fails: then `false`.
+ * Whether the window is maximized or fills the screen, checked again
+ * after every resize. Unknown at first and when the check fails: `false`.
  */
-function useMaximized(frame: WindowFrame): boolean {
-  const [maximized, setMaximized] = useState(false);
+function useWindowState(frame: WindowFrame): WindowState {
+  const [state, setState] = useState<WindowState>({
+    maximized: false,
+    fullscreen: false,
+  });
 
   useEffect(() => {
     let current = true;
     let stop: (() => void) | null = null;
     const check = () => {
-      frame.isMaximized().then(
-        (value) => {
-          if (current) setMaximized(value);
+      Promise.all([frame.isMaximized(), frame.isFullscreen()]).then(
+        ([maximized, fullscreen]) => {
+          if (!current) return;
+          setState((old) =>
+            old.maximized === maximized && old.fullscreen === fullscreen
+              ? old
+              : { maximized, fullscreen },
+          );
         },
         // Unknown: keep what is known.
         () => {},
@@ -50,11 +73,12 @@ function useMaximized(frame: WindowFrame): boolean {
     };
   }, [frame]);
 
-  return maximized;
+  return state;
 }
 
 /**
- * Shapes the window: rounded corners, square when it is maximized
+ * Shapes the window: rounded corners, square when it is maximized or
+ * fills the screen
  * (`data-window` on the root element, see `index.css`).
  *
  * A maximized window is painted in the background of the app, in the
@@ -64,7 +88,9 @@ function useMaximized(frame: WindowFrame): boolean {
  * would show that color.
  */
 export function useWindowShape(frame: WindowFrame): void {
-  const maximized = useMaximized(frame);
+  // Square to the edges of the screen: maximized, or over the whole of it.
+  const { maximized: isMaximized, fullscreen } = useWindowState(frame);
+  const maximized = isMaximized || fullscreen;
 
   // Before the first paint: the first frame already has the rounded
   // corners, not a square one that turns round a moment later.
@@ -109,6 +135,48 @@ export function useWindowShape(frame: WindowFrame): void {
 const TRANSPARENT = "#00000000";
 
 /**
+ * F11 fills the screen with the window, or gives the screen back; the
+ * palette has the same as a command.
+ */
+export function useFullscreenShortcut(frame: WindowFrame): void {
+  const t = useT();
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: "window.fullscreen",
+          title: t("window.fullscreen"),
+          shortcut: "F11",
+          run: () => toggleFullscreen(frame),
+        },
+      ],
+      [t, frame],
+    ),
+  );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "F11" || event.ctrlKey || event.altKey) return;
+      if (event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFullscreen(frame);
+    }
+    // Capture: the shortcut is taken before the focused element sees it.
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [frame]);
+}
+
+function toggleFullscreen(frame: WindowFrame): void {
+  frame
+    .toggleFullscreen()
+    .catch((reason: unknown) =>
+      console.error("Could not switch full screen", reason),
+    );
+}
+
+/**
  * Room to leave at the right end of the top row, under the window buttons:
  * three square buttons as tall as the row, 48 pixels.
  */
@@ -121,7 +189,7 @@ export const WINDOW_CONTROLS_ROOM = "pr-[144px]";
  */
 export function WindowControls({ frame }: { frame: WindowFrame }) {
   const t = useT();
-  const maximized = useMaximized(frame);
+  const { maximized } = useWindowState(frame);
 
   const act = (action: () => Promise<void>) => () => {
     action().catch((reason: unknown) =>
