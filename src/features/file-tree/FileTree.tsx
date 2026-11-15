@@ -11,7 +11,7 @@ import { isWithin, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { shortcutLetter } from "../workspace/shortcut-letter";
-import { useCommands } from "../commands/commands";
+import { keys, useCommands } from "../commands/commands";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -50,6 +50,7 @@ export function FileTree({
         {
           id: "fileTree.newNote",
           title: "New note",
+          shortcut: keys("Mod+N"),
           run: () => {
             onReveal?.();
             startNewRef.current("note");
@@ -67,6 +68,21 @@ export function FileTree({
       [onReveal],
     ),
   );
+  // Ctrl+N, or Cmd+N on a Mac, starts a new note from anywhere.
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      const command = event.ctrlKey || event.metaKey;
+      if (!command || event.shiftKey || event.altKey) return;
+      if (shortcutLetter(event) !== "n") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onReveal?.();
+      startNewRef.current("note");
+    }
+    // Capture: the shortcut is taken before the focused element sees it.
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [onReveal]);
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
     useVirtualRows(tree.rows.length, ROW_HEIGHT);
   const [dragging, setDragging] = useState<string | null>(null);

@@ -222,7 +222,11 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                 </>
               }
             >
-              <SidebarContent vault={vault} view={sidebarView} />
+              <SidebarContent
+                vault={vault}
+                view={sidebarView}
+                reveal={revealSidebar}
+              />
             </Sidebar>
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <NoteArea
@@ -248,12 +252,20 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 function SidebarContent({
   vault,
   view: { view, show, searchRequest },
+  reveal,
 }: {
   vault: Vault;
   view: SidebarViewState;
+  /** Opens the sidebar if it is shut. */
+  reveal: () => void;
 }) {
   const search = useSearch(vault);
-  const showFiles = useCallback(() => show("files"), [show]);
+  // For what the file tree starts from elsewhere, such as "New note" from
+  // the palette: its name field must be where it can be typed in.
+  const showFiles = useCallback(() => {
+    reveal();
+    show("files");
+  }, [reveal, show]);
   return (
     <div className="flex h-full flex-col">
       <ViewTabs
@@ -591,7 +603,12 @@ function BacklinksView({
 }
 
 /** The commands offered below the watermark, in this order. */
-const WATERMARK_COMMANDS = ["switcher.open", OPEN_PALETTE];
+const WATERMARK_COMMANDS = [
+  "fileTree.newNote",
+  "switcher.open",
+  OPEN_PALETTE,
+  "settings.open",
+];
 
 /**
  * The mark as a large shadow, a shade off the background, and below it a
