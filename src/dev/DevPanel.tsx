@@ -1,8 +1,5 @@
-import { useState } from "react";
 import { ReadBench } from "./bench/ReadBench";
 import { SqlBench } from "./bench/SqlBench";
-
-type Theme = "system" | "dark" | "light";
 
 const SURFACES = [
   "bg-backdrop",
@@ -18,43 +15,14 @@ const TEXTS = ["text-fg", "text-muted", "text-faint", "text-link"];
  * Development tools, mounted by the shell in dev builds only: the M0
  * measurements, and a preview of the design tokens and Markdown styles. The
  * preview is the reference for what the editor does not draw yet: wiki
- * links, tags and frontmatter.
+ * links, tags and frontmatter. The theme is switched with the "Theme"
+ * commands of the palette.
  */
 function DevPanel() {
-  const [theme, setTheme] = useState<Theme>("system");
-
-  function apply(next: Theme) {
-    setTheme(next);
-    if (next === "system")
-      document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", next);
-  }
-
   return (
     <div className="mx-auto flex max-w-180 flex-col gap-10 px-8 py-10">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header>
         <span className="font-semibold">Carbon design tokens</span>
-        <div
-          className="inline-flex rounded-md border border-line-strong bg-panel p-0.5"
-          role="group"
-          aria-label="Theme"
-        >
-          {(["system", "dark", "light"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={theme === t}
-              onClick={() => apply(t)}
-              className={`h-6.5 rounded-sm px-3 capitalize ${
-                theme === t
-                  ? "bg-solid font-medium text-on-solid"
-                  : "text-muted hover:text-fg"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
       </header>
 
       <ReadBench />

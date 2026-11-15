@@ -1,6 +1,7 @@
 import { CommandsProvider } from "./features/commands/CommandsProvider";
 import { AppSettingsProvider } from "./features/settings/AppSettingsProvider";
 import { VaultProvider } from "./features/vault/VaultProvider";
+import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import {
   pickVaultFolder,
@@ -24,6 +25,7 @@ function App() {
       <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
         <CommandsProvider>
           <InterfaceZoom apply={setInterfaceZoom} />
+          <ThemeSwitch />
           <DesktopShell frame={tauriWindow} />
         </CommandsProvider>
       </VaultProvider>
