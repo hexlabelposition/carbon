@@ -7,9 +7,12 @@ export interface RecentVault {
   readonly path: string;
   /** The note that was open when the vault was last used. */
   readonly lastOpenedNote: NotePath | null;
+  /** Notes opened in the vault, the latest first, for the quick switcher. */
+  readonly recentNotes: readonly NotePath[];
 }
 
 const MAX_RECENT_VAULTS = 10;
+const MAX_RECENT_NOTES = 20;
 
 /**
  * Settings of the app on this device: which vaults were opened and where the
@@ -56,10 +59,8 @@ export class AppSettings {
     const path = normalizeRoot(root);
     const known = this.vaults.find((v) => v.path === path);
     const rest = this.vaults.filter((v) => v.path !== path);
-    this.vaults = [known ?? { path, lastOpenedNote: null }, ...rest].slice(
-      0,
-      MAX_RECENT_VAULTS,
-    );
+    const added = known ?? { path, lastOpenedNote: null, recentNotes: [] };
+    this.vaults = [added, ...rest].slice(0, MAX_RECENT_VAULTS);
     await this.save();
   }
 
@@ -77,19 +78,69 @@ export class AppSettings {
     return this.vaults.find((v) => v.path === path)?.lastOpenedNote ?? null;
   }
 
+  /** The notes opened in a vault, the latest first. */
+  recentNotes(root: string): readonly NotePath[] {
+    const path = normalizeRoot(root);
+    return this.vaults.find((v) => v.path === path)?.recentNotes ?? [];
+  }
+
   /**
-   * Remembers the note that is open in a vault; `null` when none is. The
-   * note is remembered as part of the recent list, so a vault that is not
-   * on the list is ignored.
+   * Remembers the note that is open in a vault; `null` when none is. A
+   * note goes first in the recent notes of the vault. The note is
+   * remembered as part of the recent list, so a vault that is not on the
+   * list is ignored.
    */
   async setLastOpenedNote(root: string, note: NotePath | null): Promise<void> {
     const path = normalizeRoot(root);
     const known = this.vaults.find((v) => v.path === path);
     if (!known || known.lastOpenedNote === note) return;
-    this.vaults = this.vaults.map((v) =>
-      v === known ? { path, lastOpenedNote: note } : v,
-    );
+    const recentNotes =
+      note === null
+        ? known.recentNotes
+        : [note, ...known.recentNotes.filter((n) => n !== note)].slice(
+            0,
+            MAX_RECENT_NOTES,
+          );
+    this.update(known, { lastOpenedNote: note, recentNotes });
     await this.save();
+  }
+
+  /**
+   * Follows a note or folder of a vault that moved from `from` to `to`:
+   * the remembered notes at it, or inside it, take the new path.
+   */
+  async moveNotes(root: string, from: string, to: string): Promise<void> {
+    const path = normalizeRoot(root);
+    const known = this.vaults.find((v) => v.path === path);
+    if (!known) return;
+    const move = (note: NotePath) =>
+      note === from
+        ? to
+        : note.startsWith(`${from}/`)
+          ? to + note.slice(from.length)
+          : note;
+    const lastOpenedNote =
+      known.lastOpenedNote === null ? null : move(known.lastOpenedNote);
+    const recentNotes = known.recentNotes.map(move);
+    if (
+      lastOpenedNote === known.lastOpenedNote &&
+      recentNotes.every((note, i) => note === known.recentNotes[i])
+    ) {
+      return;
+    }
+    this.update(known, {
+      lastOpenedNote,
+      // Moved onto a note that is on the list too: one entry stays.
+      recentNotes: [...new Set(recentNotes)],
+    });
+    await this.save();
+  }
+
+  /** Replaces a vault of the list with a changed copy, in its place. */
+  private update(vault: RecentVault, change: Partial<RecentVault>) {
+    this.vaults = this.vaults.map((v) =>
+      v === vault ? { ...v, ...change } : v,
+    );
   }
 
   private save(): Promise<void> {
@@ -124,9 +175,15 @@ function parse(text: string | null): RecentVault[] {
     }
     if (vaults.some((v) => v.path === path)) continue;
     const note = item.lastOpenedNote;
+    const recent: unknown[] = Array.isArray(item.recentNotes)
+      ? item.recentNotes
+      : [];
     vaults.push({
       path,
       lastOpenedNote: typeof note === "string" ? note : null,
+      recentNotes: [
+        ...new Set(recent.filter((n): n is string => typeof n === "string")),
+      ].slice(0, MAX_RECENT_NOTES),
     });
   }
   return vaults.slice(0, MAX_RECENT_VAULTS);

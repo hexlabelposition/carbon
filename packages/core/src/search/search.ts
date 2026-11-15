@@ -20,6 +20,14 @@ export interface SearchOptions {
   limit?: number;
 }
 
+export interface TitleOptions extends SearchOptions {
+  /**
+   * Notes to offer while nothing is typed, such as the recent ones: the
+   * ones that still exist are the hits, in this order.
+   */
+  recent?: readonly NotePath[];
+}
+
 /** Enough for a list to scroll through; the best hits come first. */
 const DEFAULT_LIMIT = 100;
 /** A quick switcher shows a short list: past that, the user types on. */
@@ -52,11 +60,15 @@ export class Search {
   /**
    * The notes whose titles match `text` fuzzily, the best first: for a
    * quick switcher (`TitleMatcher`). Works from the vault tree, so it
-   * needs no index and knows a new note at once. Empty if `text` is blank.
+   * needs no index and knows a new note at once. While `text` is blank,
+   * the notes of `options.recent` that exist, else nothing.
    */
-  async titles(text: string, options: SearchOptions = {}): Promise<TitleHit[]> {
+  async titles(text: string, options: TitleOptions = {}): Promise<TitleHit[]> {
     const tree = await this.context.tree();
-    return this.matcher.match(tree, text, options.limit ?? DEFAULT_TITLE_LIMIT);
+    const limit = options.limit ?? DEFAULT_TITLE_LIMIT;
+    return text.trim() === ""
+      ? this.matcher.existing(tree, options.recent ?? [], limit)
+      : this.matcher.match(tree, text, limit);
   }
 
   /**

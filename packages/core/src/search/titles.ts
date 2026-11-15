@@ -28,6 +28,7 @@ interface Target {
 export class TitleMatcher {
   private tree: readonly TreeNode[] | null = null;
   private snapshot = fuzzysort.snapshot<Target>([], { key: "title" });
+  private byPath = new Map<NotePath, Target>();
 
   /**
    * The notes of `tree` whose titles match `text`, at most `limit`, the
@@ -37,10 +38,7 @@ export class TitleMatcher {
    */
   match(tree: readonly TreeNode[], text: string, limit: number): TitleHit[] {
     if (text.trim() === "") return [];
-    if (tree !== this.tree) {
-      this.tree = tree;
-      this.snapshot = fuzzysort.snapshot(targetsOf(tree), { key: "title" });
-    }
+    this.prepare(tree);
     // Every match, not fuzzysort's best: ties are ours to break.
     const results = fuzzysort.go(text, this.snapshot, {
       limit: 0,
@@ -60,6 +58,34 @@ export class TitleMatcher {
           (a.path < b.path ? -1 : a.path > b.path ? 1 : 0),
       )
       .slice(0, limit);
+  }
+
+  /**
+   * The notes at `paths` that are in `tree`, in that order, at most
+   * `limit`: as hits with nothing matched, such as the recent notes.
+   */
+  existing(
+    tree: readonly TreeNode[],
+    paths: readonly NotePath[],
+    limit: number,
+  ): TitleHit[] {
+    this.prepare(tree);
+    return paths
+      .flatMap((path) => {
+        const target = this.byPath.get(path);
+        return target === undefined
+          ? []
+          : [{ ...target, matches: [], score: 0 }];
+      })
+      .slice(0, limit);
+  }
+
+  private prepare(tree: readonly TreeNode[]) {
+    if (tree === this.tree) return;
+    this.tree = tree;
+    const targets = targetsOf(tree);
+    this.snapshot = fuzzysort.snapshot(targets, { key: "title" });
+    this.byPath = new Map(targets.map((target) => [target.path, target]));
   }
 }
 

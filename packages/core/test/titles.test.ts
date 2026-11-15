@@ -101,6 +101,19 @@ describe("TitleMatcher", () => {
     expect(match(treeOf("a.md"), "   ")).toEqual([]);
   });
 
+  test("gives the notes that exist of a list, in its order", () => {
+    const tree = treeOf("a.md", "dir/b.md", "c.md");
+    const hits = new TitleMatcher().existing(
+      tree,
+      ["dir/b.md", "gone.md", "a.md", "c.md"],
+      2,
+    );
+    expect(hits).toEqual([
+      { path: "dir/b.md", title: "b", matches: [], score: 0 },
+      { path: "a.md", title: "a", matches: [], score: 0 },
+    ]);
+  });
+
   test("prepares the notes again for a new tree", () => {
     const matcher = new TitleMatcher();
     expect(matcher.match(treeOf("Old.md"), "new", 10)).toEqual([]);
@@ -126,6 +139,23 @@ describe("TitleMatcher", () => {
 });
 
 describe("vault.search.titles", () => {
+  test("offers the recent notes while nothing is typed", async () => {
+    const root = "/v";
+    const platform = createMemoryPlatform({
+      [`${root}/a.md`]: "",
+      [`${root}/b.md`]: "",
+    });
+    const vault = await Vault.open(root, platform);
+    const recent = ["b.md", "deleted.md", "a.md"];
+    expect(paths(await vault.search.titles(" ", { recent }))).toEqual([
+      "b.md",
+      "a.md",
+    ]);
+    expect(await vault.search.titles("")).toEqual([]);
+    expect(paths(await vault.search.titles("a", { recent }))).toEqual(["a.md"]);
+    vault.close();
+  });
+
   test("knows a note as soon as it is created", async () => {
     const root = "/v";
     const platform = createMemoryPlatform({ [`${root}/Old.md`]: "" });

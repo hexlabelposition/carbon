@@ -69,7 +69,9 @@ describe("recent vaults", () => {
     await settings.addRecentVault("/home/me/notes");
     const before = settings.recentVaults;
     await settings.addRecentVault("/home/me/work");
-    expect(before).toEqual([{ path: "/home/me/notes", lastOpenedNote: null }]);
+    expect(before).toEqual([
+      { path: "/home/me/notes", lastOpenedNote: null, recentNotes: [] },
+    ]);
     expect(settings.recentVaults).not.toBe(before);
   });
 });
@@ -115,6 +117,68 @@ describe("last opened note", () => {
   });
 });
 
+describe("recent notes", () => {
+  test("are the opened notes of a vault, the latest first, once each", async () => {
+    const { settings } = await loadSettings();
+    await settings.addRecentVault("/v");
+    for (const note of ["a.md", "b.md", null, "a.md", "c.md"]) {
+      await settings.setLastOpenedNote("/v", note);
+    }
+    expect(settings.recentNotes("/v")).toEqual(["c.md", "a.md", "b.md"]);
+    expect(settings.recentNotes("/unknown")).toEqual([]);
+  });
+
+  test("keep the twenty latest", async () => {
+    const { settings } = await loadSettings();
+    await settings.addRecentVault("/v");
+    for (let i = 0; i < 25; i++) {
+      await settings.setLastOpenedNote("/v", `n${i}.md`);
+    }
+    const recent = settings.recentNotes("/v");
+    expect(recent).toHaveLength(20);
+    expect(recent[0]).toBe("n24.md");
+    expect(recent[19]).toBe("n5.md");
+  });
+
+  test("follow a moved note or folder", async () => {
+    const { settings, store } = await loadSettings();
+    await settings.addRecentVault("/v");
+    for (const note of ["dir/a.md", "dir/sub/b.md", "dirt.md", "x.md"]) {
+      await settings.setLastOpenedNote("/v", note);
+    }
+    await settings.moveNotes("/v", "dir", "new");
+    expect(settings.recentNotes("/v")).toEqual([
+      "x.md",
+      "dirt.md",
+      "new/sub/b.md",
+      "new/a.md",
+    ]);
+    await settings.moveNotes("/v", "x.md", "y.md");
+    expect(settings.lastOpenedNote("/v")).toBe("y.md");
+    expect((await AppSettings.load(store)).recentNotes("/v")[0]).toBe("y.md");
+  });
+
+  test("keep one entry when a note moves onto another on the list", async () => {
+    const { settings } = await loadSettings();
+    await settings.addRecentVault("/v");
+    await settings.setLastOpenedNote("/v", "a.md");
+    await settings.setLastOpenedNote("/v", "b.md");
+    await settings.moveNotes("/v", "a.md", "b.md");
+    expect(settings.recentNotes("/v")).toEqual(["b.md"]);
+  });
+
+  test("a move that changes nothing does not save", async () => {
+    const { settings, store } = await loadSettings();
+    await settings.addRecentVault("/v");
+    await settings.setLastOpenedNote("/v", "a.md");
+    let writes = 0;
+    store.write = async () => void writes++;
+    await settings.moveNotes("/v", "other.md", "new.md");
+    await settings.moveNotes("/unknown", "a.md", "b.md");
+    expect(writes).toBe(0);
+  });
+});
+
 describe("saving and loading", () => {
   test("what was saved is there after a restart", async () => {
     const { settings, store } = await loadSettings();
@@ -126,7 +190,11 @@ describe("saving and loading", () => {
     const restarted = await AppSettings.load(store);
 
     expect(restarted.recentVaults).toEqual([
-      { path: "/home/me/notes", lastOpenedNote: "Inbox.md" },
+      {
+        path: "/home/me/notes",
+        lastOpenedNote: "Inbox.md",
+        recentNotes: ["Inbox.md"],
+      },
     ]);
   });
 
@@ -134,7 +202,7 @@ describe("saving and loading", () => {
     const { settings, store } = await loadSettings();
     await settings.addRecentVault("/home/me/notes");
     expect(store.text).toBe(
-      '{\n  "recentVaults": [\n    {\n      "path": "/home/me/notes",\n      "lastOpenedNote": null\n    }\n  ]\n}\n',
+      '{\n  "recentVaults": [\n    {\n      "path": "/home/me/notes",\n      "lastOpenedNote": null,\n      "recentNotes": []\n    }\n  ]\n}\n',
     );
   });
 
@@ -165,18 +233,26 @@ describe("saving and loading", () => {
       JSON.stringify({
         somethingNewer: true,
         recentVaults: [
-          { path: "/home/me/notes/", lastOpenedNote: "Inbox.md" },
+          {
+            path: "/home/me/notes/",
+            lastOpenedNote: "Inbox.md",
+            recentNotes: ["Inbox.md", 3, "a.md", "Inbox.md"],
+          },
           { path: 42 },
           null,
           { path: "" },
-          { path: "/home/me/work", lastOpenedNote: 7 },
+          { path: "/home/me/work", lastOpenedNote: 7, recentNotes: "x" },
           { path: "/home/me/notes" },
         ],
       }),
     );
     expect(settings.recentVaults).toEqual([
-      { path: "/home/me/notes", lastOpenedNote: "Inbox.md" },
-      { path: "/home/me/work", lastOpenedNote: null },
+      {
+        path: "/home/me/notes",
+        lastOpenedNote: "Inbox.md",
+        recentNotes: ["Inbox.md", "a.md"],
+      },
+      { path: "/home/me/work", lastOpenedNote: null, recentNotes: [] },
     ]);
   });
 
