@@ -101,7 +101,7 @@ Done when: I can link notes with `[[...]]`, jump between them, see backlinks, an
 Done when: I can find any note by title or content in a 10k-note vault without noticeable delay.
 
 - [x] **C-301** (P0) Full-text index over title and body, kept in sync by the indexer
-- [ ] **C-228** (P2) Unlinked mentions (note title appears as plain text elsewhere), on top of the full-text index; moved from M2
+- [x] **C-228** (P2) Unlinked mentions (note title appears as plain text elsewhere), on top of the full-text index; moved from M2
 - [x] **C-302** (P0) `search.query` with ranking, snippets and match highlights
 - [x] **C-303** (P0) Search panel: results list, click opens the note at the match
 - [x] **C-304** (P0) Quick switcher (Ctrl/Cmd+O): fuzzy match on titles, Enter opens, create if missing

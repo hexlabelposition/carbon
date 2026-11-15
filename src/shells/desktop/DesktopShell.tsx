@@ -16,6 +16,8 @@ import {
 } from "../../features/commands/commands";
 import { useCommandPalette } from "../../features/commands/use-command-palette";
 import { useBacklinks } from "../../features/backlinks/use-backlinks";
+import { UnlinkedMentionsPanel } from "../../features/backlinks/UnlinkedMentionsPanel";
+import { useUnlinkedMentions } from "../../features/backlinks/use-unlinked-mentions";
 import { NoteEditor } from "../../features/editor/NoteEditor";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
@@ -450,6 +452,8 @@ function SidePanel({
 
 function BacklinksSection({ vault, path }: { vault: Vault; path: string }) {
   const backlinks = useBacklinks(vault, path);
+  const mentionsPanel = useSidePanel("carbon.desktop.unlinkedMentions");
+  const mentions = useUnlinkedMentions(vault, path, mentionsPanel.open);
   const { open } = useWorkspace();
   return (
     <SidePanel
@@ -462,6 +466,12 @@ function BacklinksSection({ vault, path }: { vault: Vault; path: string }) {
     >
       <BacklinksPanel
         state={backlinks}
+        onOpen={(note, at) => open(note, { at })}
+      />
+      <UnlinkedMentionsPanel
+        mentions={mentions}
+        open={mentionsPanel.open}
+        onToggle={mentionsPanel.toggle}
         onOpen={(note, at) => open(note, { at })}
       />
     </SidePanel>
