@@ -197,7 +197,7 @@ function TagRow({
             }}
           >
             <span className="truncate">{node.name}</span>
-            <span className="ml-auto shrink-0 text-small text-faint">
+            <span className="ml-auto shrink-0 text-small text-faint tabular-nums">
               {node.count}
             </span>
           </button>
