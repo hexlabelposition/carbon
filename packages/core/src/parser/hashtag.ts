@@ -43,6 +43,18 @@ const HASH = 35; // #
 const MAX_LABEL = 200;
 const LABEL = /^[\p{L}\p{N}\p{M}_-]+(?:\/[\p{L}\p{N}\p{M}_-]+)*/u;
 
+/**
+ * Whether `label` is a whole tag label by the rules above, without "#":
+ * what a tag in the frontmatter must be too.
+ */
+export function isTagLabel(label: string): boolean {
+  return (
+    label.length <= MAX_LABEL &&
+    LABEL.exec(label)?.[0] === label &&
+    /\p{L}/u.test(label)
+  );
+}
+
 function parseHashtag(cx: InlineContext, next: number, pos: number): number {
   if (next !== HASH) return -1;
   if (pos > cx.offset && !/\s/.test(cx.slice(pos - 1, pos))) return -1;

@@ -273,11 +273,16 @@ describe("parseNote", () => {
       ]);
     });
 
-    test("is not parsed yet", () => {
+    test("gives tags, aliases and properties", () => {
       const note = parse("---\ntags: [a]\naliases: [b]\nx: 1\n---\n");
-      expect(note.tags).toEqual([]);
-      expect(note.aliases).toEqual([]);
-      expect(note.properties).toEqual({});
+      expect(note.tags).toEqual(["a"]);
+      expect(note.aliases).toEqual(["b"]);
+      expect(note.properties).toEqual({ x: 1 });
+    });
+
+    test("puts its tags before the inline ones, once each", () => {
+      const text = "---\ntags: [b, A]\n---\n#a #c #b";
+      expect(parse(text).tags).toEqual(["b", "A", "c"]);
     });
   });
 });

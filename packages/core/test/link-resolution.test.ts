@@ -3,11 +3,17 @@ import { IndexStore, parseNote, Vault, type IndexEntry } from "../src/index";
 import { linkKeys, linkPath, NoteFinder } from "../src/links/resolve";
 import { createMemoryPlatform } from "./fakes";
 
-/** A note as the indexer would hand it over; aliases are not parsed yet. */
-const note = (path: string, text = "", aliases: string[] = []): IndexEntry => ({
-  note: { ...parseNote(path, text), aliases },
-  stamp: { mtime: 1, size: text.length, hash: "h" },
-});
+/**
+ * A note as the indexer would hand it over. `aliases`, when given, stand
+ * for those of a frontmatter, so the text can stay short.
+ */
+const note = (path: string, text = "", aliases?: string[]): IndexEntry => {
+  const parsed = parseNote(path, text);
+  return {
+    note: { ...parsed, aliases: aliases ?? parsed.aliases },
+    stamp: { mtime: 1, size: text.length, hash: "h" },
+  };
+};
 
 async function openStore(...entries: IndexEntry[]) {
   const store = await IndexStore.open(createMemoryPlatform(), "/v");
@@ -101,6 +107,14 @@ describe("link resolution", () => {
         "people/Someone.md",
         "far/away/Note.md",
       ]);
+    });
+
+    test("an alias from the frontmatter", async () => {
+      const { targets } = await openStore(
+        note("src.md", "[[Nick]]"),
+        note("people/Someone.md", "---\naliases: [Nick]\n---\n"),
+      );
+      expect(await targets("src.md")).toEqual(["people/Someone.md"]);
     });
 
     test("ignores case, in any language", async () => {

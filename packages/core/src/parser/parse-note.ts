@@ -1,7 +1,7 @@
 import type { SyntaxNode } from "@lezer/common";
 import { Emoji, GFM, parser, Subscript, Superscript } from "@lezer/markdown";
 import type { Heading, Link, NotePath, ParsedNote, TextRange } from "../types";
-import { matchKey } from "../links/resolve";
+import { findFrontmatter, parseFrontmatter, unique } from "./frontmatter";
 import { hashtag } from "./hashtag";
 import { wikiLink } from "./wiki-link";
 
@@ -32,11 +32,13 @@ export const markdownParser = parser.configure([
  *   for the links module.
  * - `plainText`: the body without Markdown syntax, one block per line.
  *
- * - `tags`: the inline tags (`hashtag`), without "#", once each: tags
- *   that differ only in case are one, written as the first of them.
+ * - `tags`: the tags of the frontmatter, then the inline tags
+ *   (`hashtag`), without "#", once each: tags that differ only in case
+ *   are one, written as the first of them.
+ * - `aliases` and `properties`: from the frontmatter (`parseFrontmatter`).
  *
- * Frontmatter is left out of everything. Its tags, aliases and properties
- * stay empty until it is parsed (C-402).
+ * The frontmatter is left out of everything else: its text has no
+ * headings, links or inline tags, and is not in `plainText`.
  */
 export function parseNote(path: NotePath, text: string): ParsedNote {
   // Read from `body` everywhere: it has the offsets of `text`, and blanks
@@ -48,7 +50,8 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
 
   const headings: Heading[] = [];
   const links: Link[] = [];
-  const tags = new Map<string, string>();
+  const frontmatter = parseFrontmatter(text);
+  const tags: string[] = [...frontmatter.tags];
   tree.iterate({
     enter({ name, node }) {
       const level = HEADING.exec(name)?.[1];
@@ -64,9 +67,7 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
           snippet: snippetOf(read, node),
         });
       } else if (name === "HashtagLabel") {
-        const tag = body.slice(node.from, node.to);
-        const key = matchKey(tag);
-        if (!tags.has(key)) tags.set(key, tag);
+        tags.push(body.slice(node.from, node.to));
       } else if (name === "Link") {
         const link = readMarkdownLink(body, node, references, read);
         if (link !== null)
@@ -80,9 +81,9 @@ export function parseNote(path: NotePath, text: string): ParsedNote {
     title: titleOf(path),
     headings,
     links,
-    tags: [...tags.values()],
-    aliases: [],
-    properties: {},
+    tags: unique(tags),
+    aliases: frontmatter.aliases,
+    properties: frontmatter.properties,
     plainText: read.plain(tree.topNode),
   };
 }
@@ -100,11 +101,10 @@ export function titleOf(path: NotePath): string {
  * line a heading.
  */
 export function withoutFrontmatter(text: string): string {
-  const match =
-    /^---[ \t]*\r?\n(?:.*\r?\n)*?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(text);
-  if (match === null) return text;
-  const blank = match[0].replace(/[^\r\n]/g, " ");
-  return blank + text.slice(match[0].length);
+  const found = findFrontmatter(text);
+  if (found === null) return text;
+  const blank = found.block.replace(/[^\r\n]/g, " ");
+  return blank + text.slice(found.block.length);
 }
 
 /** A link as it is written; the snippet comes from the whole note. */

@@ -7,6 +7,7 @@
 - To a heading: [[Formatting#Tables]]
 - To a heading with an alias: [[Formatting#Code|code blocks]]
 - To a note in a folder, by name only: [[Deep note]]
+- To a note by an alias in its frontmatter: [[Tag examples]]
 - To a note with a Cyrillic name: [[Заметка на русском]]
 - To a note that does not exist: [[Not written yet]]
 - Another missing one, which following creates: [[A new note]]

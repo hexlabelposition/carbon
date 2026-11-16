@@ -5,7 +5,7 @@ Each note tries one area:
 - [[Formatting]]: headings, emphasis, lists, tasks, quotes, code, tables
 - [[Links]]: wiki links, links to headings, aliases, missing notes, web links
 - [[Images]]: every image format, big and odd-shaped images, missing ones
-- [[Tags]]: tags, nested tags, and text that only looks like a tag
+- [[Tags]]: tags, nested tags, frontmatter, and text that only looks like a tag
 - [[Long note]]: hundreds of paragraphs, for scrolling and the outline
 - [[Заметка на русском]]: Cyrillic text and a Cyrillic name
 - [[Note in folder]] and [[Deep note]]: notes inside folders

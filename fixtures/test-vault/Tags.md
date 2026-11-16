@@ -1,3 +1,9 @@
+---
+tags: [fixtures, project/carbon]
+aliases: [Tag examples]
+status: draft
+---
+
 # Tags
 
 Simple tags: #carbon #testing
