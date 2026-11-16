@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "gen:vault": "bun scripts/generate-vault.ts",
+    "bench": "bun packages/core/bench/bench.ts",
     "tauri": "tauri",
     "test": "bun test",
     "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && bun run --filter '*' typecheck"
