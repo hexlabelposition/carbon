@@ -21,6 +21,15 @@ import { THEMES, themePreference, type Theme } from "../theme/use-theme";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
 import {
+  availableFonts,
+  MONO_FONTS,
+  monoFontPreference,
+  UI_FONTS,
+  uiFontPreference,
+  useFonts,
+  type FontChoice,
+} from "./fonts";
+import {
   NOTE_FONTS,
   NOTE_SIZES,
   NOTE_WIDTHS,
@@ -66,6 +75,7 @@ const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
  */
 export function Settings() {
   useNoteStyle();
+  useFonts();
   const t = useT();
   const language = useLanguage();
   const open = useSyncExternalStore(subscribe, () => isOpen);
@@ -150,6 +160,7 @@ export function Settings() {
             </Dialog.Close>
           </header>
           <AppearanceSettings />
+          <FontSettings />
           <NoteSettings />
         </Dialog.Popup>
       </Dialog.Portal>
@@ -213,22 +224,10 @@ function AppearanceSettings() {
 
 function NoteSettings() {
   const t = useT();
-  const font = noteFontPreference.use();
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   return (
     <Section title={t("settings.notes")}>
-      <Row label={t("settings.font")}>
-        <SettingSelect
-          label={t("settings.font")}
-          value={font}
-          items={NOTE_FONTS.map(({ value, label }) => ({
-            value,
-            label: t(label),
-          }))}
-          onChange={noteFontPreference.set}
-        />
-      </Row>
       <Row label={t("settings.fontSize")}>
         <SettingSelect
           label={t("settings.fontSize")}
@@ -249,6 +248,59 @@ function NoteSettings() {
             label: t(label),
           }))}
           onChange={noteWidthPreference.set}
+        />
+      </Row>
+    </Section>
+  );
+}
+
+/**
+ * The three fonts: of the interface, of the note text, and the monospace
+ * one, for code and for note text set to monospace.
+ */
+function FontSettings() {
+  const t = useT();
+  const ui = uiFontPreference.use();
+  const text = noteFontPreference.use();
+  const mono = monoFontPreference.use();
+  /** The installed choices, and the one chosen even if it is gone since. */
+  const choices = (fonts: readonly FontChoice[], chosen: string) => {
+    const available = availableFonts(fonts);
+    return [
+      ...available,
+      ...fonts.filter((f) => f.value === chosen && !available.includes(f)),
+    ].map((f) => ({
+      value: f.value,
+      label: f.name ?? t("settings.font.system"),
+    }));
+  };
+  return (
+    <Section title={t("settings.fonts")}>
+      <Row label={t("settings.font.ui")}>
+        <SettingSelect
+          label={t("settings.font.ui")}
+          value={ui}
+          items={choices(UI_FONTS, ui)}
+          onChange={uiFontPreference.set}
+        />
+      </Row>
+      <Row label={t("settings.font.text")}>
+        <SettingSelect
+          label={t("settings.font.text")}
+          value={text}
+          items={NOTE_FONTS.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
+          onChange={noteFontPreference.set}
+        />
+      </Row>
+      <Row label={t("settings.font.mono")}>
+        <SettingSelect
+          label={t("settings.font.mono")}
+          value={mono}
+          items={choices(MONO_FONTS, mono)}
+          onChange={monoFontPreference.set}
         />
       </Row>
     </Section>

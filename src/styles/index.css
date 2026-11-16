@@ -63,7 +63,8 @@
 
 @layer base {
   html {
-    font-family: var(--font-sans);
+    /* The font of the interface, as the settings set it (fonts.ts). */
+    font-family: var(--cb-ui-font);
     font-size: 13px;
     line-height: 1.4;
     color: var(--cb-fg);
@@ -74,6 +75,9 @@
     --cb-note-size: 15px;
     --cb-note-width: 784px;
     --cb-note-font: var(--font-sans);
+    /* The fonts as the settings set them (fonts.ts). */
+    --cb-ui-font: var(--font-sans);
+    --cb-mono-font: var(--font-mono);
 
     /* The width of the buttons in the top right corner (WindowControls). */
     --cb-controls-room: 9rem;

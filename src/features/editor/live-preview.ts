@@ -61,7 +61,7 @@ export const livePreview = [
       borderLeft: "1px solid var(--cb-line)",
       borderRight: "1px solid var(--cb-line)",
       backgroundColor: "var(--cb-code)",
-      fontFamily: "var(--font-mono)",
+      fontFamily: "var(--cb-mono-font)",
       fontSize: noteSize(13),
       lineHeight: "1.6",
     },

@@ -149,7 +149,7 @@
 /* Code */
 .markdown code,
 .markdown pre {
-  font-family: var(--font-mono);
+  font-family: var(--cb-mono-font);
   font-size: 13px;
 }
 

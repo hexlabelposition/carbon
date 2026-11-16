@@ -91,7 +91,7 @@ export const markdownHighlight = HighlightStyle.define([
   },
   { tag: tags.url, color: "var(--cb-faint)" },
   // Inline code and code blocks; their size is set where they are drawn.
-  { tag: tags.monospace, fontFamily: "var(--font-mono)" },
+  { tag: tags.monospace, fontFamily: "var(--cb-mono-font)" },
   { tag: tags.quote, color: "var(--cb-muted)" },
   // The marks themselves: #, *, >, -, ``` and the like.
   {

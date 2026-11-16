@@ -36,7 +36,8 @@ const FONT: Record<NoteFont, string> = {
   inter: "var(--font-sans)",
   system: "system-ui, sans-serif",
   serif: 'ui-serif, "Noto Serif", "DejaVu Serif", Georgia, serif',
-  mono: "var(--font-mono)",
+  // The monospace font chosen in the settings (fonts.ts).
+  mono: "var(--cb-mono-font)",
 };
 
 export const noteSizePreference = preference<number>(
