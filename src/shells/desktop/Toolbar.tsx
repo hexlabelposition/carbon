@@ -123,6 +123,15 @@ export const toolbarIcons = {
       <path d="M9 1.5V5h3.5M6 8.5h4M6 11h4" />
     </>
   ),
+  // A die showing three.
+  randomNote: (
+    <>
+      <rect x="2" y="2" width="12" height="12" rx="2.5" />
+      <circle cx="5.25" cy="5.25" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="10.75" cy="10.75" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
   commands: (
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" />

@@ -95,6 +95,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "panels.hideRight": "Скрыть правую панель",
   "panels.showLeft": "Показать левую панель",
   "panels.showRight": "Показать правую панель",
+  "randomNote.open": "Открыть случайную заметку",
   "save.conflict": "Не сохранено: заметку изменили на диске",
   "save.failed": "Не сохранено: {reason}",
   "save.resolve": "Решить",

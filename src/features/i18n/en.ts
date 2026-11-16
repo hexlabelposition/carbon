@@ -102,6 +102,7 @@ export const en = {
   "panels.hideRight": "Hide the right panel",
   "panels.showLeft": "Show the left panel",
   "panels.showRight": "Show the right panel",
+  "randomNote.open": "Open a random note",
   "save.conflict": "Not saved: the note was changed on disk",
   "save.failed": "Not saved: {reason}",
   "save.resolve": "Resolve",

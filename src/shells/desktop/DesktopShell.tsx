@@ -39,6 +39,10 @@ import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
 import { NEW_NOTE, useNewNote } from "../../features/new-note/use-new-note";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
+import {
+  OPEN_RANDOM_NOTE,
+  useRandomNote,
+} from "../../features/random-note/use-random-note";
 import { useOutline } from "../../features/outline/use-outline";
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
@@ -487,6 +491,7 @@ function ToolbarHost({
         ),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         ...command("switcher.open", toolbarIcons.note),
+        ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
         ...command(OPEN_PALETTE, toolbarIcons.commands),
       ]}
       footer={[
@@ -539,6 +544,7 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const workspace = useWorkspace();
   const t = useT();
   useWorkspaceShortcuts();
+  useRandomNote(vault);
   const sourceMode = useSourceMode();
   const readingMode = useReadingMode();
   const outline = useOutline();
