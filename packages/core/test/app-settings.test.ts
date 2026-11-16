@@ -128,16 +128,16 @@ describe("recent notes", () => {
     expect(settings.recentNotes("/unknown")).toEqual([]);
   });
 
-  test("keep the twenty latest", async () => {
+  test("keep the thirty latest", async () => {
     const { settings } = await loadSettings();
     await settings.addRecentVault("/v");
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 35; i++) {
       await settings.setLastOpenedNote("/v", `n${i}.md`);
     }
     const recent = settings.recentNotes("/v");
-    expect(recent).toHaveLength(20);
-    expect(recent[0]).toBe("n24.md");
-    expect(recent[19]).toBe("n5.md");
+    expect(recent).toHaveLength(30);
+    expect(recent[0]).toBe("n34.md");
+    expect(recent[29]).toBe("n5.md");
   });
 
   test("follow a moved note or folder", async () => {

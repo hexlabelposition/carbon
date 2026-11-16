@@ -12,7 +12,7 @@ export interface RecentVault {
 }
 
 const MAX_RECENT_VAULTS = 10;
-const MAX_RECENT_NOTES = 20;
+const MAX_RECENT_NOTES = 30;
 
 /**
  * Settings of the app on this device: which vaults were opened and where the
