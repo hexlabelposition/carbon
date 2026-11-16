@@ -14,7 +14,7 @@ export function StartScreen() {
   if (!start.ready) return null;
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-120 flex-col justify-center gap-6 px-8 py-10">
+    <div className="mx-auto flex min-h-full w-full max-w-120 flex-col justify-center gap-6 px-8 py-10 select-none">
       <header className="flex flex-col gap-3">
         <h1>
           <CarbonLogo animated className="h-12 w-auto" />
@@ -38,7 +38,7 @@ export function StartScreen() {
             autoFocus
             autoComplete="off"
             spellCheck={false}
-            className="h-7 rounded-md border border-line-strong bg-bg px-2"
+            className="h-7 rounded-md border border-line-strong bg-bg px-2 select-text"
             value={start.name}
             onChange={(event) => start.setName(event.target.value)}
           />
