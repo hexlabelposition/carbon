@@ -102,6 +102,23 @@
   }
 
   /*
+   * A line along the edge of a window that is not maximized, over all of
+   * the page, so the window stands apart from an app of the same color
+   * behind it. A shadow would need room around the page inside the window,
+   * which would take the clicks meant for what is behind and set the window
+   * off from the edges of the screen. Maximized, the screen is its edge.
+   */
+  html[data-window="normal"] body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    border: 1px solid var(--cb-window-edge);
+    border-radius: var(--radius-lg);
+    pointer-events: none;
+  }
+
+  /*
    * A modal `<dialog>` and its backdrop are drawn above the page, out of
    * reach of the `clip-path` of `body`: what covers the whole window
    * rounds its own corners. A backdrop starts below the top row, which

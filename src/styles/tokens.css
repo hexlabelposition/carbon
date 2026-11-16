@@ -50,6 +50,8 @@
   --cb-on-danger: #ffffff;
 
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.18);
+  /* The edge of the window, so it does not run into what is behind it */
+  --cb-window-edge: rgb(0 0 0 / 0.2);
 
   /* Logo, as in the design sources */
   --cb-logo-top: #dde0e4;
@@ -88,6 +90,7 @@
     --cb-solid: #e7e8ea;
     --cb-on-solid: #0e0f10;
     --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+    --cb-window-edge: rgb(255 255 255 / 0.12);
     --cb-logo-top: #f4f5f7;
     --cb-logo-upper: #d9dce0;
     --cb-logo-lower: #a9afb6;
@@ -120,6 +123,7 @@
   --cb-solid: #e7e8ea;
   --cb-on-solid: #0e0f10;
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.35);
+  --cb-window-edge: rgb(255 255 255 / 0.12);
   --cb-logo-top: #f4f5f7;
   --cb-logo-upper: #d9dce0;
   --cb-logo-lower: #a9afb6;
