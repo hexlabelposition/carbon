@@ -35,9 +35,15 @@ export function ResizeHandle({
 
   function drag(event: PointerEvent<HTMLDivElement>) {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    // The panel starts at its edge of the window.
+    // From where the panel starts, which need not be the edge of the
+    // window: the toolbar can stand before the left one.
+    const panel = event.currentTarget.parentElement?.getBoundingClientRect();
+    if (panel === undefined) return;
     const width = document.documentElement.clientWidth;
-    const x = side === "left" ? event.clientX : width - event.clientX;
+    const x =
+      side === "left"
+        ? event.clientX - panel.left
+        : panel.right - event.clientX;
     onResize(x / width);
   }
 
@@ -60,7 +66,9 @@ export function ResizeHandle({
       aria-valuemin={percent(SIDEBAR_MIN)}
       aria-valuemax={percent(SIDEBAR_MAX)}
       tabIndex={0}
-      className={`absolute inset-y-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
+      // Below the top row, as the line at the edge of the panel: the row
+      // runs on into the one beside it and drags the window.
+      className={`absolute top-12 bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
         side === "left" ? "right-0" : "left-0"
       }`}
       onPointerDown={(event) => {

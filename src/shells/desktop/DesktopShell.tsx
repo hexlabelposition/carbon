@@ -52,9 +52,11 @@ import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
 import { ViewTabs } from "./ViewTabs";
+import { Toolbar, toolbarIcons, type ToolbarItem } from "./Toolbar";
 import {
   LEFT_PANEL_SHORTCUT,
   RIGHT_PANEL_SHORTCUT,
+  TOOLBAR_SHORTCUT,
   usePanelShortcuts,
   useRightPanel,
   type RightPanel,
@@ -96,6 +98,8 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
   }, [collapsed, toggleSidebar]);
   const rightPanel = useRightPanel();
   const { toggle: toggleRightPanel } = rightPanel;
+  const toolbar = useSidePanel("carbon.desktop.toolbar", true);
+  const { toggle: toggleToolbar } = toolbar;
   useFileDropGuard();
   const [devOpen, setDevOpen] = useState(false);
 
@@ -107,6 +111,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
     vault !== null && !showDev,
     toggleSidebar,
     toggleRightPanel,
+    toggleToolbar,
   );
 
   useCommands(
@@ -133,6 +138,12 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
           title: t("shell.toggleRightPanel"),
           shortcut: RIGHT_PANEL_SHORTCUT,
           run: toggleRightPanel,
+        },
+        {
+          id: "shell.toolbar",
+          title: t("shell.toggleToolbar"),
+          shortcut: TOOLBAR_SHORTCUT,
+          run: toggleToolbar,
         },
         {
           id: "shell.outline",
@@ -169,6 +180,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
       showDev,
       toggleSidebar,
       toggleRightPanel,
+      toggleToolbar,
       toggleRightView,
       revealSidebar,
       showSidebarView,
@@ -178,7 +190,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
-      <AppMark />
+      <AppMark edge={vault !== null && !showDev && toolbar.open} />
       <WindowControls
         frame={frame}
         panels={
@@ -226,28 +238,18 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
               null
             }
           >
+            <ToolbarHost
+              open={toolbar.open}
+              sidebarOpen={!sidebar.collapsed}
+              sidebarView={sidebarView}
+              revealSidebar={revealSidebar}
+              toggleSidebar={toggleSidebar}
+            />
             <Sidebar
               open={!sidebar.collapsed}
               fraction={sidebar.fraction}
               onResize={sidebar.resize}
               onNudge={sidebar.nudge}
-              header={
-                <>
-                  <span
-                    data-tauri-drag-region
-                    className="min-w-0 flex-1 truncate font-semibold"
-                  >
-                    {nameOf(vault.root)}
-                  </span>
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-raise hover:text-fg"
-                    onClick={close}
-                  >
-                    {t("shell.closeVault")}
-                  </button>
-                </>
-              }
             >
               <SidebarContent
                 vault={vault}
@@ -258,7 +260,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <NoteArea
                 vault={vault}
-                leftOpen={!sidebar.collapsed}
+                startCovered={toolbar.open || !sidebar.collapsed}
                 right={rightPanel}
               />
             </main>
@@ -343,6 +345,85 @@ function VaultStatus({ vault }: { vault: Vault }) {
   );
 }
 
+/**
+ * The toolbar at the left edge: files and search, which show in the sidebar
+ * and hide it when it shows them already, and a few commands; at the foot
+ * the settings and closing the vault.
+ */
+function ToolbarHost({
+  open,
+  sidebarOpen,
+  sidebarView: { view, show },
+  revealSidebar,
+  toggleSidebar,
+}: {
+  open: boolean;
+  sidebarOpen: boolean;
+  sidebarView: SidebarViewState;
+  revealSidebar: () => void;
+  toggleSidebar: () => void;
+}) {
+  const t = useT();
+  const all = useCommandList();
+  const command = (id: string, icon: ReactNode): ToolbarItem[] => {
+    const found = all.find((c) => c.id === id);
+    return found === undefined
+      ? []
+      : [
+          {
+            id,
+            label: found.title,
+            shortcut: found.shortcut,
+            icon,
+            run: found.run,
+          },
+        ];
+  };
+  const sidebarItem = (
+    which: SidebarViewState["view"],
+    label: string,
+    icon: ReactNode,
+    shortcut?: string,
+  ): ToolbarItem => {
+    const shown = sidebarOpen && view === which;
+    return {
+      id: `sidebar.${which}`,
+      label,
+      shortcut,
+      pressed: shown,
+      icon,
+      run: () => {
+        if (shown) {
+          toggleSidebar();
+          return;
+        }
+        revealSidebar();
+        show(which);
+      },
+    };
+  };
+  return (
+    <Toolbar
+      open={open}
+      items={[
+        sidebarItem("files", t("shell.files"), toolbarIcons.files),
+        sidebarItem(
+          "search",
+          t("shell.searchAll"),
+          toolbarIcons.search,
+          keys("Mod+Shift+F"),
+        ),
+        ...command("switcher.open", toolbarIcons.note),
+        ...command(OPEN_PALETTE, toolbarIcons.commands),
+      ]}
+      footer={[
+        ...command("settings.open", toolbarIcons.settings),
+        ...command("shell.closeVault", toolbarIcons.closeVault),
+      ]}
+    />
+  );
+}
+
 /** The command palette, shown while it is open (Ctrl+P). */
 function CommandPaletteHost() {
   const palette = useCommandPalette();
@@ -357,8 +438,11 @@ function QuickSwitcherHost({ vault }: { vault: Vault }) {
 
 interface NoteAreaProps {
   vault: Vault;
-  /** Whether the left panel is open: shut, the top row leaves the mark room. */
-  leftOpen: boolean;
+  /**
+   * Whether the toolbar or the left panel stands at the left edge, under
+   * the mark: if neither does, the top row leaves the mark room.
+   */
+  startCovered: boolean;
   /** The panel beside the note: its outline and the notes that link to it. */
   right: RightPanel;
 }
@@ -368,7 +452,7 @@ interface NoteAreaProps {
  * beside it, the panels that are open: the outline of the note and its
  * backlinks, one above the other.
  */
-function NoteArea({ vault, leftOpen, right }: NoteAreaProps) {
+function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
   const workspace = useWorkspace();
   const t = useT();
   useWorkspaceShortcuts();
@@ -410,7 +494,7 @@ function NoteArea({ vault, leftOpen, right }: NoteAreaProps) {
     return (
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <DragStrip room={!right.open} roomStart={!leftOpen} />
+          <DragStrip room={!right.open} roomStart={!startCovered} />
           <Watermark label={t("shell.noNoteOpen")} />
         </div>
         {rightPanel}
@@ -452,8 +536,9 @@ function NoteArea({ vault, leftOpen, right }: NoteAreaProps) {
                 onForward={workspace.forward}
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
-                // With the left panel shut, the bar starts at the left edge.
-                leaveRoomStart={index === 0 && !leftOpen}
+                // With the toolbar and the left panel shut, the bar starts
+                // at the left edge.
+                leaveRoomStart={index === 0 && !startCovered}
                 // The right end of the top row holds the window buttons.
                 leaveRoom={!right.open && index === last}
               />
@@ -565,7 +650,8 @@ function RightPanelForNote(props: RightPanelProps & { path: string }) {
 /**
  * The right panel laid out as the left one: an empty top row, which drags
  * the window and leaves its buttons room, the tabs of what it can show,
- * and what it shows.
+ * and what it shows. The line at its edge starts below the top row, so the
+ * row runs on from the one beside it.
  */
 function RightPanelFrame({
   width,
@@ -583,7 +669,7 @@ function RightPanelFrame({
   return (
     <aside
       aria-label={t("shell.rightPanel")}
-      className="relative flex h-full flex-col border-l border-line bg-panel"
+      className="relative flex h-full flex-col bg-panel"
     >
       <ResizeHandle
         side="right"
@@ -593,31 +679,34 @@ function RightPanelFrame({
         onNudge={width.nudge}
         onDragging={onResizing}
       />
+      {/* Runs on into the top row beside it, with no line between. */}
       <div
         data-tauri-drag-region
         className={`h-12 shrink-0 border-b border-line ${WINDOW_CONTROLS_ROOM}`}
       />
-      <ViewTabs
-        label={t("shell.rightPanelViews")}
-        views={[
-          { view: "outline", label: t("shell.outline") },
-          {
-            view: "backlinks",
-            label: (
-              <>
-                {t("shell.backlinks")}
-                {backlinks !== null && (
-                  <span className="text-faint">{backlinks}</span>
-                )}
-              </>
-            ),
-          },
-        ]}
-        current={view}
-        onShow={onShow}
-      />
-      <div role="tabpanel" className="min-h-0 flex-1 overflow-auto">
-        {children}
+      <div className="flex min-h-0 flex-1 flex-col border-l border-line">
+        <ViewTabs
+          label={t("shell.rightPanelViews")}
+          views={[
+            { view: "outline", label: t("shell.outline") },
+            {
+              view: "backlinks",
+              label: (
+                <>
+                  {t("shell.backlinks")}
+                  {backlinks !== null && (
+                    <span className="text-faint">{backlinks}</span>
+                  )}
+                </>
+              ),
+            },
+          ]}
+          current={view}
+          onShow={onShow}
+        />
+        <div role="tabpanel" className="min-h-0 flex-1 overflow-auto">
+          {children}
+        </div>
       </div>
     </aside>
   );

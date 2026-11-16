@@ -157,6 +157,8 @@ export const en = {
   "shell.toggleLeftPanel": "Toggle left panel",
   "shell.toggleOutline": "Toggle outline",
   "shell.toggleRightPanel": "Toggle right panel",
+  "shell.toggleToolbar": "Toggle toolbar",
+  "shell.toolbar": "Toolbar",
   "start.chooseAndCreate": "Choose location and create",
   "start.couldNotOpen": "Could not open {root}: {reason}",
   "start.couldNotOpenHint":

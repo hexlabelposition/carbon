@@ -152,6 +152,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.toggleLeftPanel": "Показать или скрыть левую панель",
   "shell.toggleOutline": "Показать или скрыть оглавление",
   "shell.toggleRightPanel": "Показать или скрыть правую панель",
+  "shell.toggleToolbar": "Показать или скрыть панель инструментов",
+  "shell.toolbar": "Панель инструментов",
   "start.chooseAndCreate": "Выбрать место и создать",
   "start.couldNotOpen": "Не удалось открыть {root}: {reason}",
   "start.couldNotOpenHint":
