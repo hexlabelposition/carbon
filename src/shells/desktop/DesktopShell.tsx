@@ -107,7 +107,14 @@ const DevBubble = import.meta.env.DEV
  * It decides which features are mounted and where; what they do lives in
  * their hooks (ARCHITECTURE.md, section 8).
  */
-export function DesktopShell({ frame }: { frame: WindowFrame }) {
+export function DesktopShell({
+  frame,
+  showInFileManager,
+}: {
+  frame: WindowFrame;
+  /** Opens the file manager of the system at an absolute path. */
+  showInFileManager?: (path: string) => Promise<void>;
+}) {
   // The first frame the app draws: the window shows something (C-602).
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -298,6 +305,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                         vault={vault}
                         view={sidebarView}
                         reveal={revealSidebar}
+                        showInFileManager={showInFileManager}
                       />
                     </Sidebar>
                   </>
@@ -338,11 +346,13 @@ function SidebarContent({
   vault,
   view: { view, show, searchRequest },
   reveal,
+  showInFileManager,
 }: {
   vault: Vault;
   view: SidebarViewState;
   /** Opens the sidebar if it is shut. */
   reveal: () => void;
+  showInFileManager?: (path: string) => Promise<void>;
 }) {
   const t = useT();
   const search = useSearch(vault);
@@ -371,7 +381,11 @@ function SidebarContent({
         aria-label={t("shell.files")}
         className={view === "files" ? "min-h-0 flex-1" : "hidden"}
       >
-        <FileTree vault={vault} onReveal={showFiles} />
+        <FileTree
+          vault={vault}
+          onReveal={showFiles}
+          showInFileManager={showInFileManager}
+        />
       </div>
       <div
         role="tabpanel"

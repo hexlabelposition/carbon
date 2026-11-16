@@ -9,12 +9,12 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
-import { isWithin, nameOf, parentOf } from "../vault/paths";
+import { isWithin, joinPath, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
-import { useCommands } from "../commands/commands";
+import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
@@ -25,14 +25,22 @@ const INDENT = 14;
 /**
  * The file tree of the sidebar. Works with the mouse (click, drag to move,
  * the right button for a menu of what can be done) and with the keyboard
- * alone: arrows, Enter, F2, Delete, and Ctrl+X then Ctrl+V to move.
+ * alone: arrows, Enter, F2, Delete, Ctrl+X or Ctrl+C then Ctrl+V to move
+ * or copy, Ctrl+Z to take back the last move, rename or copy, and
+ * Ctrl+Shift+Z or Ctrl+Y to make it again.
  * Ctrl+click, the middle button and Ctrl+Enter open a note in a new tab.
  */
 export function FileTree({
   vault,
   onReveal,
+  showInFileManager,
 }: {
   vault: Vault;
+  /**
+   * Opens the file manager of the system at an absolute path: offered in
+   * the menu when given.
+   */
+  showInFileManager?: (path: string) => Promise<void>;
   /**
    * Makes the tree visible, for a command of the palette that acts in
    * it, such as "New folder".
@@ -119,6 +127,11 @@ export function FileTree({
     } else if (event.key === "F2") tree.startRename();
     else if (event.key === "Delete") tree.remove();
     else if (command && shortcutLetter(event) === "x") tree.cutSelected();
+    else if (command && shortcutLetter(event) === "c") tree.copySelected();
+    else if (command && shortcutLetter(event) === "z") {
+      if (event.shiftKey) tree.redo();
+      else tree.undo();
+    } else if (command && shortcutLetter(event) === "y") tree.redo();
     else if (command && shortcutLetter(event) === "v") tree.paste();
     else if (event.key === "Escape") tree.cancelCut();
     else return;
@@ -324,6 +337,29 @@ export function FileTree({
           onNewFolder={() => editLater(() => tree.startNew("folder"))}
           onRename={() => editLater(tree.startRename)}
           onDelete={tree.remove}
+          onCut={tree.cutSelected}
+          onCopy={tree.copySelected}
+          onPaste={tree.paste}
+          canPaste={tree.canPaste}
+          onUndo={tree.undo}
+          canUndo={tree.canUndo}
+          onRedo={tree.redo}
+          canRedo={tree.canRedo}
+          onMoveToRoot={tree.canMoveToRoot ? tree.moveToRoot : undefined}
+          onShowInFileManager={
+            showInFileManager === undefined
+              ? undefined
+              : () => {
+                  // The row of the menu, or the vault folder itself.
+                  const path =
+                    menuTarget === null
+                      ? vault.root
+                      : joinPath(vault.root, menuTarget.path);
+                  showInFileManager(path).catch((reason: unknown) =>
+                    console.error("Could not open the file manager", reason),
+                  );
+                }
+          }
         />
       </ContextMenu.Root>
     </div>
@@ -338,14 +374,37 @@ interface TreeMenuProps {
   onNewFolder: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onCut: () => void;
+  onCopy: () => void;
+  onPaste: () => void;
+  /** Whether there is something to paste into the folder of the row. */
+  canPaste: boolean;
+  onUndo: () => void;
+  /** Whether there is a move, rename or copy to take back. */
+  canUndo: boolean;
+  onRedo: () => void;
+  /** Whether there is a change taken back to make again. */
+  canRedo: boolean;
+  /** Offered for a row in a folder, not for one at the root already. */
+  onMoveToRoot?: () => void;
+  /** Offered when the system file manager can be opened. */
+  onShowInFileManager?: () => void;
 }
 
 const menuItem =
-  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
+  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
+
+const separator = "mx-1 my-1 h-px bg-line";
+
+/** The keys of a menu item, at its right. */
+function MenuKeys({ text }: { text: string }) {
+  return <span className="text-small text-faint">{text}</span>;
+}
 
 /**
  * The menu of the right button: new things in the folder of the row, or
- * at the root; and for a row, rename and delete it, with their keys.
+ * at the root; cut, copy and paste; moving a row to the root and showing
+ * it in the file manager of the system; renaming and deleting a row.
  */
 function TreeMenu({
   target,
@@ -354,6 +413,16 @@ function TreeMenu({
   onNewFolder,
   onRename,
   onDelete,
+  onCut,
+  onCopy,
+  onPaste,
+  canPaste,
+  onUndo,
+  canUndo,
+  onRedo,
+  canRedo,
+  onMoveToRoot,
+  onShowInFileManager,
 }: TreeMenuProps) {
   const t = useT();
   return (
@@ -369,19 +438,73 @@ function TreeMenu({
           <ContextMenu.Item className={menuItem} onClick={onNewFolder}>
             {t("tree.newFolder")}
           </ContextMenu.Item>
+          <ContextMenu.Separator className={separator} />
           {target !== null && (
             <>
-              <ContextMenu.Separator className="mx-1 my-1 h-px bg-line" />
+              <ContextMenu.Item className={menuItem} onClick={onCut}>
+                {t("tree.cut")}
+                <MenuKeys text={keys("Mod+X")} />
+              </ContextMenu.Item>
+              <ContextMenu.Item className={menuItem} onClick={onCopy}>
+                {t("tree.copy")}
+                <MenuKeys text={keys("Mod+C")} />
+              </ContextMenu.Item>
+            </>
+          )}
+          <ContextMenu.Item
+            className={menuItem}
+            disabled={!canPaste}
+            onClick={onPaste}
+          >
+            {t("tree.paste")}
+            <MenuKeys text={keys("Mod+V")} />
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            className={menuItem}
+            disabled={!canUndo}
+            onClick={onUndo}
+          >
+            {t("tree.undo")}
+            <MenuKeys text={keys("Mod+Z")} />
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            className={menuItem}
+            disabled={!canRedo}
+            onClick={onRedo}
+          >
+            {t("tree.redo")}
+            <MenuKeys text={keys("Mod+Shift+Z")} />
+          </ContextMenu.Item>
+          {((target !== null && onMoveToRoot !== undefined) ||
+            onShowInFileManager !== undefined) && (
+            <ContextMenu.Separator className={separator} />
+          )}
+          {target !== null && onMoveToRoot !== undefined && (
+            <ContextMenu.Item className={menuItem} onClick={onMoveToRoot}>
+              {t("tree.moveToRoot")}
+            </ContextMenu.Item>
+          )}
+          {onShowInFileManager !== undefined && (
+            <ContextMenu.Item
+              className={menuItem}
+              onClick={onShowInFileManager}
+            >
+              {t("tree.showInFileManager")}
+            </ContextMenu.Item>
+          )}
+          {target !== null && (
+            <>
+              <ContextMenu.Separator className={separator} />
               <ContextMenu.Item className={menuItem} onClick={onRename}>
                 {t("tree.rename")}
-                <span className="text-small text-faint">F2</span>
+                <MenuKeys text="F2" />
               </ContextMenu.Item>
               <ContextMenu.Item
                 className={`${menuItem} text-danger`}
                 onClick={onDelete}
               >
                 {t("tree.delete")}
-                <span className="text-small text-faint">Del</span>
+                <MenuKeys text="Del" />
               </ContextMenu.Item>
             </>
           )}

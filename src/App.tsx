@@ -8,6 +8,7 @@ import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import {
   pickVaultFolder,
   setInterfaceZoom,
+  showInFileManager,
   tauriPlatform,
   tauriWindow,
 } from "./platform";
@@ -30,7 +31,10 @@ function App() {
             <InterfaceZoom apply={setInterfaceZoom} />
             <ThemeSwitch />
             <Settings />
-            <DesktopShell frame={tauriWindow} />
+            <DesktopShell
+              frame={tauriWindow}
+              showInFileManager={showInFileManager}
+            />
           </CommandsProvider>
         </VaultProvider>
       </AppSettingsProvider>

@@ -1,5 +1,5 @@
 import type { TreeNode, Vault } from "@carbon/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { imageTypeOf } from "../image/image-file";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { t } from "../i18n/i18n";
@@ -9,6 +9,18 @@ import { useWorkspace } from "../workspace/workspace";
 export type TreeEdit =
   | { kind: "rename"; path: string }
   | { kind: "new"; what: "note" | "folder"; parent: string };
+
+/**
+ * A change made in the tree that "undo" can take back and "redo" make
+ * again: a move or a rename (from `from` to `to`), or a copy of `source`
+ * made at `path`.
+ */
+type Undoable =
+  | { kind: "move"; from: string; to: string; folder: boolean }
+  | { kind: "copy"; source: string; path: string; folder: boolean };
+
+/** How many changes "undo" and "redo" each keep, the latest first. */
+const UNDO_LIMIT = 50;
 
 /** One line of the tree as it is shown: folders that are closed hide theirs. */
 export type TreeRow =
@@ -29,6 +41,10 @@ export interface FileTree {
   edit: TreeEdit | null;
   /** The entry marked to be moved by "cut", then "paste". */
   cut: string | null;
+  /** Whether "paste" would do something in the folder of the selection. */
+  canPaste: boolean;
+  /** Whether the selection is in a folder and could go to the root. */
+  canMoveToRoot: boolean;
   /** The last thing that went wrong, in words for the user. */
   error: string | null;
   /** Set when moving to the trash failed: the user may delete for good. */
@@ -65,9 +81,28 @@ export interface FileTree {
   canMove(path: string, folder: string): boolean;
   move(path: string, folder: string): void;
   cutSelected(): void;
-  /** Moves the cut entry into the folder of the selection. */
+  /** Marks the selection to be copied by "paste". */
+  copySelected(): void;
+  /**
+   * Moves the cut entry, or copies the copied one, into the folder of the
+   * selection. A copy whose name is taken there gets a number: "Note 1".
+   */
   paste(): void;
+  /** Moves the selection to the vault root. */
+  moveToRoot(): void;
+  /** Forgets what was cut or copied. */
   cancelCut(): void;
+  /** Whether there is a change for `undo` to take back. */
+  canUndo: boolean;
+  /**
+   * Takes back the last move, rename or copy made in the tree: moves the
+   * entry back, or moves the copy to the system trash.
+   */
+  undo(): void;
+  /** Whether there is a change taken back for `redo` to make again. */
+  canRedo: boolean;
+  /** Makes again the last change `undo` took back. */
+  redo(): void;
 }
 
 /** Everything the file tree does; the component only shows it. */
@@ -77,10 +112,36 @@ export function useFileTree(vault: Vault): FileTree {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(active.path);
   const [edit, setEdit] = useState<TreeEdit | null>(null);
-  const [cut, setCut] = useState<string | null>(null);
+  /** What "cut" or "copy" marked, for "paste". */
+  const [clipboard, setClipboard] = useState<{
+    path: string;
+    mode: "cut" | "copy";
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [trashFailure, setTrashFailure] =
     useState<FileTree["trashFailure"]>(null);
+  /**
+   * The changes `undo` can take back and the ones `redo` can make again,
+   * the latest last in each.
+   */
+  const changes = useRef<{ undo: Undoable[]; redo: Undoable[] }>({
+    undo: [],
+    redo: [],
+  });
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  function syncHistory() {
+    setCanUndo(changes.current.undo.length > 0);
+    setCanRedo(changes.current.redo.length > 0);
+  }
+  /** A new change: it can be taken back, and what was taken back is gone. */
+  function remember(change: Undoable) {
+    changes.current = {
+      undo: [...changes.current.undo, change].slice(-UNDO_LIMIT),
+      redo: [],
+    };
+    syncHistory();
+  }
   /** Raised to list the vault again: after a change, here or outside. */
   const [version, setVersion] = useState(0);
 
@@ -184,7 +245,12 @@ export function useFileTree(vault: Vault): FileTree {
       isWithin(path, from) ? rebase(path, from, to) : path;
     setExpanded((current) => new Set([...current].map(moved)));
     setSelected((current) => (current === null ? null : moved(current)));
-    setCut(null);
+    // A cut entry has been moved; a copied one is still to be copied.
+    setClipboard((current) =>
+      current === null || current.mode === "cut"
+        ? null
+        : { ...current, path: moved(current.path) },
+    );
     active.moved(from, to);
   }
 
@@ -195,8 +261,8 @@ export function useFileTree(vault: Vault): FileTree {
     setSelected((current) =>
       current !== null && isWithin(current, path) ? null : current,
     );
-    setCut((current) =>
-      current !== null && isWithin(current, path) ? null : current,
+    setClipboard((current) =>
+      current !== null && isWithin(current.path, path) ? null : current,
     );
     active.removed(path);
   }
@@ -224,9 +290,49 @@ export function useFileTree(vault: Vault): FileTree {
     void run(async () => {
       await rename(node, to);
       follow(path, to);
+      remember({
+        kind: "move",
+        from: path,
+        to,
+        folder: node.kind === "folder",
+      });
       if (folder !== "") expand(folder);
     });
   }
+
+  /** Copies `path` into `folder`, under a free name. */
+  function copy(path: string, folder: string) {
+    const node = tree === null ? undefined : findNode(tree, path);
+    if (node === undefined || tree === null) return;
+    if (isWithin(folder, path)) {
+      setError(t("tree.copyIntoItself"));
+      return;
+    }
+    const parent = folder === "" ? undefined : findNode(tree, folder);
+    const siblings: readonly TreeNode[] =
+      folder === "" ? tree : parent?.kind === "folder" ? parent.children : [];
+    const taken = new Set(siblings.map((n) => n.name.toLowerCase()));
+    const to = joinPath(folder, freeName(node, taken));
+    void run(async () => {
+      await (node.kind === "folder"
+        ? vault.folders.copy(node.path, to)
+        : vault.notes.copy(node.path, to));
+      remember({
+        kind: "copy",
+        source: node.path,
+        path: to,
+        folder: node.kind === "folder",
+      });
+      setSelected(to);
+      if (folder !== "") expand(folder);
+    });
+  }
+
+  const canPaste =
+    clipboard !== null &&
+    (clipboard.mode === "cut"
+      ? canMove(clipboard.path, targetFolder)
+      : !isWithin(targetFolder, clipboard.path));
 
   function commitEdit(text: string) {
     const current = edit;
@@ -260,6 +366,56 @@ export function useFileTree(vault: Vault): FileTree {
     void run(async () => {
       await rename(node, to);
       follow(node.path, to);
+      remember({
+        kind: "move",
+        from: node.path,
+        to,
+        folder: node.kind === "folder",
+      });
+    });
+  }
+
+  /** Does `change` again (`forward`) or takes it back. */
+  async function apply(change: Undoable, forward: boolean): Promise<void> {
+    if (change.kind === "move") {
+      const [from, to] = forward
+        ? [change.from, change.to]
+        : [change.to, change.from];
+      await (change.folder
+        ? vault.folders.rename(from, to)
+        : vault.notes.rename(from, to));
+      follow(from, to);
+      if (parentOf(to) !== "") expand(parentOf(to));
+    } else if (forward) {
+      await (change.folder
+        ? vault.folders.copy(change.source, change.path)
+        : vault.notes.copy(change.source, change.path));
+      setSelected(change.path);
+      if (parentOf(change.path) !== "") expand(parentOf(change.path));
+    } else {
+      // To the system trash, not for good: the copy can still be got back.
+      await (change.folder
+        ? vault.folders.remove(change.path)
+        : vault.notes.remove(change.path));
+      forget(change.path);
+    }
+  }
+
+  /** Takes back the last change ("undo"), or does again the last taken back. */
+  function step(direction: "undo" | "redo") {
+    const history = changes.current;
+    const change = history[direction].at(-1);
+    if (change === undefined) return;
+    // Taken off first: a change that cannot be redone or undone, as one
+    // whose entry was moved or deleted since, must not stand in the way
+    // of the ones before it. The failure is told as any other.
+    history[direction] = history[direction].slice(0, -1);
+    syncHistory();
+    void run(async () => {
+      await apply(change, direction === "redo");
+      const other = direction === "undo" ? "redo" : "undo";
+      history[other] = [...history[other], change].slice(-UNDO_LIMIT);
+      syncHistory();
     });
   }
 
@@ -270,7 +426,10 @@ export function useFileTree(vault: Vault): FileTree {
     selectedIndex,
     activePath: shownActive,
     edit,
-    cut,
+    cut: clipboard?.mode === "cut" ? clipboard.path : null,
+    canPaste,
+    canMoveToRoot:
+      selectedNode !== undefined && parentOf(selectedNode.path) !== "",
     error,
     trashFailure,
 
@@ -358,11 +517,25 @@ export function useFileTree(vault: Vault): FileTree {
 
     canMove,
     move,
-    cutSelected: () => setCut(selectedNode?.path ?? null),
-    paste() {
-      if (cut !== null) move(cut, targetFolder);
+    cutSelected() {
+      if (selectedNode) setClipboard({ path: selectedNode.path, mode: "cut" });
     },
-    cancelCut: () => setCut(null),
+    copySelected() {
+      if (selectedNode) setClipboard({ path: selectedNode.path, mode: "copy" });
+    },
+    paste() {
+      if (clipboard === null || !canPaste) return;
+      if (clipboard.mode === "cut") move(clipboard.path, targetFolder);
+      else copy(clipboard.path, targetFolder);
+    },
+    moveToRoot() {
+      if (selectedNode) move(selectedNode.path, "");
+    },
+    cancelCut: () => setClipboard(null),
+    canUndo,
+    undo: () => step("undo"),
+    canRedo,
+    redo: () => step("redo"),
   };
 }
 
@@ -396,6 +569,22 @@ function withParents(
   const next = new Set(expanded);
   for (let p = parentOf(path); p !== ""; p = parentOf(p)) next.add(p);
   return next.size === expanded.size ? expanded : next;
+}
+
+/**
+ * The name of `node`, or, if it is taken (`taken` holds lower-case names),
+ * the first free one with a number before the ending: "Note 1.md",
+ * "Photo 2.png", "Folder 1".
+ */
+function freeName(node: TreeNode, taken: ReadonlySet<string>): string {
+  if (!taken.has(node.name.toLowerCase())) return node.name;
+  const ending =
+    node.kind === "folder" ? "" : (/(?<=.)\.[^.]+$/.exec(node.name)?.[0] ?? "");
+  const base = node.name.slice(0, node.name.length - ending.length);
+  for (let n = 1; ; n++) {
+    const name = `${base} ${n}${ending}`;
+    if (!taken.has(name.toLowerCase())) return name;
+  }
 }
 
 /** A note is a `.md` file, so the user does not have to type the ending. */
