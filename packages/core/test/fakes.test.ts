@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { FsEvent } from "../src/index";
-import { MemoryFileSystem, MemoryWatcher } from "./fakes";
+import { MemoryFileSystem, MemorySqlDatabases, MemoryWatcher } from "./fakes";
 
 describe("MemoryFileSystem", () => {
   test("lists direct children, folders included", async () => {
@@ -87,5 +87,25 @@ describe("MemoryWatcher", () => {
 
     expect(seen).toEqual([{ kind: "modified", path: "/v/a.md" }]);
     expect(watcher.watchCount).toBe(0);
+  });
+});
+
+describe("MemorySqlDatabases", () => {
+  test("a batch runs every statement, or none if one fails", async () => {
+    const db = await new MemorySqlDatabases().open("a.db");
+    await db.execute("CREATE TABLE t (n INTEGER NOT NULL)");
+    await db.batch([
+      { sql: "INSERT INTO t VALUES (?)", params: [1] },
+      { sql: "INSERT INTO t VALUES (?), (?)", params: [2, 3] },
+    ]);
+    await expect(
+      db.batch([
+        { sql: "INSERT INTO t VALUES (?)", params: [4] },
+        { sql: "INSERT INTO t VALUES (?)", params: [null] },
+      ]),
+    ).rejects.toThrow();
+    expect(
+      await db.select<{ n: number }>("SELECT n FROM t ORDER BY n"),
+    ).toEqual([{ n: 1 }, { n: 2 }, { n: 3 }]);
   });
 });

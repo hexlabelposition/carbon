@@ -1,6 +1,6 @@
 import { Emitter } from "../events";
 import { Indexer } from "../index/indexer";
-import type { ScanResult } from "../index/scan";
+import type { ScanResult, ScanWaits } from "../index/scan";
 import { IndexStore } from "../index/index-store";
 import { Links } from "../links/links";
 import { LinkRewriter } from "../links/rename";
@@ -36,6 +36,8 @@ export type IndexStatus =
       indexed: number;
       ms: number;
       doneAt: number;
+      /** Where the scan waited (`ScanWaits`). */
+      waits: ScanWaits;
     }
   /** The index could not be opened or scanned; the notes work without it. */
   | { state: "failed"; error: unknown };
@@ -326,6 +328,7 @@ export class Vault {
             indexed: scan.indexed,
             ms: doneAt - started,
             doneAt,
+            waits: scan.waits,
           };
           this.emitter.emit("index:ready", undefined);
         },

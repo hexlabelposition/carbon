@@ -14,14 +14,25 @@ async function setup(files: Record<string, string>) {
   const platform = createMemoryPlatform(seeded);
   const store = await IndexStore.open(platform, ROOT);
   const reads = countReads(platform);
-  const scan = (options: Partial<Parameters<typeof scanVault>[0]> = {}) =>
-    scanVault({
+  // Without the waits: they are times, other on every run.
+  const scan = async (
+    options: Partial<Parameters<typeof scanVault>[0]> = {},
+  ) => {
+    const { waits, ...result } = await scanVault({
       fs: platform.fs,
       root: ROOT,
       store,
       parser: inlineParser,
       ...options,
     });
+    expect(Object.keys(waits).sort()).toEqual([
+      "list",
+      "parse",
+      "read",
+      "write",
+    ]);
+    return result;
+  };
   return { platform, store, reads, scan };
 }
 
@@ -268,6 +279,7 @@ describe("Vault indexing", () => {
       const db = await open(name);
       return {
         execute: (sql, params) => db.execute(sql, params),
+        batch: (statements) => db.batch(statements),
         select: (sql, params) => db.select(sql, params),
         close: async () => void closed++,
       };

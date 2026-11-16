@@ -111,6 +111,7 @@ describe("IndexStore", () => {
       let closed = false;
       platform.sql.open = async () => ({
         execute: () => Promise.reject(new Error("disk full")),
+        batch: () => Promise.reject(new Error("disk full")),
         select: (sql: string) =>
           Promise.resolve(
             (sql === "PRAGMA user_version"

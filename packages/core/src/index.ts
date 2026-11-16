@@ -32,6 +32,7 @@ export type { FollowedLink, Links } from "./links/links";
 export { linksToFile } from "./links/resolve";
 export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";
+export type { ScanWaits } from "./index/scan";
 export type { Search, SearchOptions, TitleOptions } from "./search/search";
 export type { TitleHit } from "./search/titles";
 export { tagTree } from "./tags/tags";
@@ -51,6 +52,7 @@ export type {
   SettingsStore,
   SqlDatabase,
   SqlDatabases,
+  SqlStatement,
   SqlValue,
   NoteStat,
   Stat,

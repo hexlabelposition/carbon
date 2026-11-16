@@ -13,7 +13,7 @@ export type {
   NoteStat,
   Stat,
 } from "./file-system";
-export type { SqlDatabase, SqlDatabases, SqlValue } from "./sql";
+export type { SqlDatabase, SqlDatabases, SqlStatement, SqlValue } from "./sql";
 export type { NoteFile, NoteParser, ParsedFile } from "./parser";
 export type { SettingsStore } from "./settings-store";
 export type { Trash } from "./trash";

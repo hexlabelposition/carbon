@@ -1,5 +1,10 @@
 import { Database } from "bun:sqlite";
-import type { SqlDatabase, SqlDatabases, SqlValue } from "../../src/index";
+import type {
+  SqlDatabase,
+  SqlDatabases,
+  SqlStatement,
+  SqlValue,
+} from "../../src/index";
 
 /**
  * `SqlDatabases` on Bun's SQLite, in memory: real SQL, no disk. A name
@@ -35,6 +40,15 @@ class MemorySqlDatabase implements SqlDatabase {
   async execute(sql: string, params: readonly SqlValue[] = []): Promise<void> {
     this.check();
     this.file.query(sql).run(...params);
+  }
+
+  async batch(statements: readonly SqlStatement[]): Promise<void> {
+    this.check();
+    this.file.transaction(() => {
+      for (const { sql, params } of statements) {
+        this.file.query(sql).run(...params);
+      }
+    })();
   }
 
   async select<Row>(

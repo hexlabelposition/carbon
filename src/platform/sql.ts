@@ -1,4 +1,5 @@
 import type { SqlDatabase, SqlDatabases } from "@carbon/core";
+import { invoke } from "@tauri-apps/api/core";
 import { appCacheDir } from "@tauri-apps/api/path";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import Database from "@tauri-apps/plugin-sql";
@@ -28,6 +29,17 @@ export const tauriSqlDatabases: SqlDatabases = {
     const database: SqlDatabase = {
       async execute(sql, params = []) {
         await db.execute(sql, [...params]);
+      },
+      // The plugin has no transactions: a command of ours runs the batch on
+      // the pool of the plugin, found by the string it was loaded with.
+      async batch(statements) {
+        if (statements.length === 0) return;
+        try {
+          await invoke("sql_batch", { db: db.path, statements });
+        } catch (reason) {
+          // A command rejects with a plain string, the core expects an `Error`.
+          throw new Error(String(reason), { cause: reason });
+        }
       },
       select: (sql, params = []) => db.select(sql, [...params]),
       async close() {

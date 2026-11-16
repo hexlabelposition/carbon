@@ -108,6 +108,55 @@ async fn list_notes(app: tauri::AppHandle, dir: String) -> Result<Vec<NoteStat>,
     .map_err(|error| error.to_string())
 }
 
+/// One statement of `sql_batch`: `?` takes `params` in order.
+#[derive(serde::Deserialize)]
+struct SqlStatement {
+    sql: String,
+    params: Vec<serde_json::Value>,
+}
+
+/// Runs statements on a database the `sql` plugin opened, in one
+/// transaction: all of them or none. The plugin has no transactions, so each
+/// of its statements is a commit of its own, and each commit waits for the
+/// disk: about 1,000 for a first index of 10,000 notes, 9 s of its 14
+/// (ARCHITECTURE.md, ADR-029). `db` is the connection string the database was
+/// loaded with; values are bound as the plugin binds them.
+#[tauri::command]
+async fn sql_batch(
+    instances: tauri::State<'_, tauri_plugin_sql::DbInstances>,
+    db: String,
+    statements: Vec<SqlStatement>,
+) -> Result<(), String> {
+    let instances = instances.0.read().await;
+    let Some(tauri_plugin_sql::DbPool::Sqlite(pool)) = instances.get(&db) else {
+        return Err(format!("Database not loaded: {db}"));
+    };
+    let mut transaction = pool.begin().await.map_err(|error| error.to_string())?;
+    for statement in statements {
+        let mut query = sqlx::query(&statement.sql);
+        for value in statement.params {
+            query = match value {
+                serde_json::Value::Null => query.bind(None::<String>),
+                serde_json::Value::String(text) => query.bind(text),
+                serde_json::Value::Number(number) => match number.as_i64() {
+                    Some(integer) => query.bind(integer),
+                    None => query.bind(number.as_f64().unwrap_or_default()),
+                },
+                other => query.bind(other.to_string()),
+            };
+        }
+        query
+            .execute(&mut *transaction)
+            .await
+            .map_err(|error| error.to_string())?;
+    }
+    // Dropped without a commit on an error above: rolled back.
+    transaction
+        .commit()
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// Turns spell checking on in the WebView of Linux, for English and Russian,
 /// the languages of the interface. WebKitGTK checks nothing until its web
 /// context allows it, and Tauri leaves it off; the `spellcheck` attribute of
@@ -149,7 +198,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             move_to_trash,
             import_file,
-            list_notes
+            list_notes,
+            sql_batch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

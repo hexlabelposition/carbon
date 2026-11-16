@@ -37,6 +37,21 @@ export interface ScanResult {
   indexed: number;
   /** Notes that were in the index but are gone from the vault. */
   removed: number;
+  /** Where the scan waited, for measuring the budgets (C-602). */
+  waits: ScanWaits;
+}
+
+/**
+ * Milliseconds the scan waited on each step: listing the notes, reading
+ * them, parsing them and writing them to the index. Reading, parsing and
+ * writing overlap, so a step that waits long is the one that holds the
+ * others up.
+ */
+export interface ScanWaits {
+  list: number;
+  read: number;
+  parse: number;
+  write: number;
 }
 
 /**
@@ -51,6 +66,8 @@ export async function scanVault(options: ScanOptions): Promise<ScanResult> {
   // One call for every note with its size and time (ADR-028): no `stat`
   // for each of them below.
   const prefix = folder === "" ? "" : `${folder}/`;
+  const waits: ScanWaits = { list: 0, read: 0, parse: 0, write: 0 };
+  const listStart = Date.now();
   const [listed, known] = await Promise.all([
     fs.listNotes(folder === "" ? root : `${root}/${folder}`),
     store.stamps(folder),
@@ -62,20 +79,31 @@ export async function scanVault(options: ScanOptions): Promise<ScanResult> {
     ]),
   );
   const paths = [...stats.keys()].sort();
-  if (cancelled()) return { notes: paths.length, indexed: 0, removed: 0 };
+  waits.list = Date.now() - listStart;
+  if (cancelled()) {
+    return { notes: paths.length, indexed: 0, removed: 0, waits };
+  }
 
   const present = new Set(paths);
   const gone = [...known.keys()].filter((path) => !present.has(path));
   await store.removeNotes(gone);
   if (cancelled()) {
-    return { notes: paths.length, indexed: 0, removed: gone.length };
+    return { notes: paths.length, indexed: 0, removed: gone.length, waits };
   }
 
-  const updated = await updateNotes(options, paths, known, onProgress, stats);
+  const updated = await updateNotes(
+    options,
+    paths,
+    known,
+    onProgress,
+    stats,
+    waits,
+  );
   return {
     notes: paths.length,
     indexed: updated.indexed,
     removed: gone.length + updated.removed,
+    waits,
   };
 }
 
@@ -92,7 +120,18 @@ export async function updateNotes(
   onProgress?: ScanOptions["onProgress"],
   /** The stats of `paths` if they are known already, as from `listNotes`. */
   listed?: ReadonlyMap<NotePath, Stat>,
+  /** Where the time the reads, parses and writes are waited on goes. */
+  waits?: ScanWaits,
 ): Promise<{ indexed: number; removed: number }> {
+  /** Awaits `step`, adding the wait to `waits[kind]`. */
+  const timed = async <T>(kind: keyof ScanWaits, step: Promise<T>) => {
+    const start = Date.now();
+    try {
+      return await step;
+    } finally {
+      if (waits !== undefined) waits[kind] += Date.now() - start;
+    }
+  };
   const { fs, root, store, parser } = context;
   const cancelled = context.cancelled ?? (() => false);
   const result = { indexed: 0, removed: 0 };
@@ -143,18 +182,18 @@ export async function updateNotes(
   let reading = toIndex.length > 0 ? readBatch(toIndex.slice(0, BATCH)) : null;
   let writing: Promise<void> = Promise.resolve();
   for (let i = 0; reading !== null; i += BATCH) {
-    const { files, readStats, unreadable } = await reading;
+    const { files, readStats, unreadable } = await timed("read", reading);
     const next = i + BATCH;
     reading =
       next < toIndex.length
         ? readBatch(toIndex.slice(next, next + BATCH))
         : null;
-    const parsed = await parser.parse(files);
+    const parsed = await timed("parse", parser.parse(files));
     const entries: IndexEntry[] = parsed.map(({ note, hash }, j) => ({
       note,
       stamp: { mtime: readStats[j].mtime, size: readStats[j].size, hash },
     }));
-    await writing;
+    await timed("write", writing);
     if (cancelled()) return result;
 
     const done = Math.min(next, toIndex.length);
@@ -169,7 +208,7 @@ export async function updateNotes(
     // write still rejects, when it is awaited.
     writing.catch(() => {});
   }
-  await writing;
+  await timed("write", writing);
   return result;
 }
 

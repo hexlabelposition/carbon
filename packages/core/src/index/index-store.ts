@@ -1,4 +1,9 @@
-import type { Platform, SqlDatabase, SqlValue } from "../platform";
+import type {
+  Platform,
+  SqlDatabase,
+  SqlStatement,
+  SqlValue,
+} from "../platform";
 import { linkKeys, linkPath, matchKey, noteKeys } from "../links/resolve";
 import { MATCH_END, MATCH_START, readMarks } from "../search/marks";
 import type { FullTextQuery } from "../search/query";
@@ -172,9 +177,10 @@ const PLAIN_SNIPPET_LENGTH = 120;
  * the app cache directory, one file per vault: the files of the vault are
  * the truth, and the startup scan repairs whatever the index missed.
  *
- * Writing one note takes several statements and is not atomic. A crash in
- * between leaves that note half indexed until the next scan, which is
- * acceptable for a cache (ARCHITECTURE.md, section 7).
+ * Writing notes takes two transactions (`SqlDatabase.batch`): the notes,
+ * then their rows. A crash in between leaves notes without their rows
+ * until the next scan, which is acceptable for a cache (ARCHITECTURE.md,
+ * section 7).
  */
 export class IndexStore {
   private constructor(
@@ -257,12 +263,14 @@ export class IndexStore {
   async removeNotes(paths: readonly NotePath[]): Promise<void> {
     for (const chunk of chunks([...new Set(paths)], PATHS_PER_QUERY)) {
       const aliases = await this.aliasKeysOf(chunk);
-      await this.deleteRowsOf(chunk);
-      await this.db.execute(
-        `DELETE FROM notes WHERE path IN (${marks(chunk.length)})`,
-        chunk,
-      );
-      await this.relinkTargets(chunk, aliases);
+      await this.db.batch([
+        ...deleteRowsOf(chunk),
+        {
+          sql: `DELETE FROM notes WHERE path IN (${marks(chunk.length)})`,
+          params: chunk,
+        },
+        ...relinkTargets(chunk, aliases),
+      ]);
     }
   }
 
@@ -549,32 +557,39 @@ export class IndexStore {
     return this.db.close();
   }
 
+  /**
+   * Replaces the rows of some notes in two transactions (ADR-029): the
+   * notes themselves first, as their child rows need their ids, then
+   * everything that hangs on them. A crash between the two leaves notes
+   * without their rows, which the next scan repairs: the index is a cache.
+   */
   private async replaceChunk(entries: readonly IndexEntry[]): Promise<void> {
     const paths = entries.map((entry) => entry.note.path);
     // Links that matched an alias the note no longer has resolve again.
     const oldAliases = await this.aliasKeysOf(paths);
-    await this.deleteRowsOf(paths);
 
-    // An upsert, not delete and insert: the note keeps its id.
-    await insertRows(
-      this.db,
-      "notes (path, title, path_key, name_key, mtime, size, hash)",
-      entries.map(({ note, stamp }) => {
-        const keys = noteKeys(note.path);
-        return [
-          note.path,
-          note.title,
-          keys.path,
-          keys.name,
-          stamp.mtime,
-          stamp.size,
-          stamp.hash,
-        ];
-      }),
-      `ON CONFLICT (path) DO UPDATE SET title = excluded.title,
-         path_key = excluded.path_key, name_key = excluded.name_key,
-         mtime = excluded.mtime, size = excluded.size, hash = excluded.hash`,
-    );
+    await this.db.batch([
+      ...deleteRowsOf(paths),
+      // An upsert, not delete and insert: the note keeps its id.
+      ...insertRows(
+        "notes (path, title, path_key, name_key, mtime, size, hash)",
+        entries.map(({ note, stamp }) => {
+          const keys = noteKeys(note.path);
+          return [
+            note.path,
+            note.title,
+            keys.path,
+            keys.name,
+            stamp.mtime,
+            stamp.size,
+            stamp.hash,
+          ];
+        }),
+        `ON CONFLICT (path) DO UPDATE SET title = excluded.title,
+           path_key = excluded.path_key, name_key = excluded.name_key,
+           mtime = excluded.mtime, size = excluded.size, hash = excluded.hash`,
+      ),
+    ]);
 
     const ids = new Map(
       (
@@ -590,114 +605,84 @@ export class IndexStore {
       return id;
     };
 
-    await insertRows(
-      this.db,
-      "headings (note_id, level, text, pos)",
-      entries.flatMap(({ note }) =>
-        note.headings.map((h) => [idOf(note.path), h.level, h.text, h.pos]),
-      ),
-    );
-    await insertRows(
-      this.db,
-      "notes_fts (rowid, title, body)",
-      entries.map(({ note }) => [idOf(note.path), note.title, note.plainText]),
-    );
-    await insertRows(
-      this.db,
-      "aliases (note_id, alias, alias_key)",
-      entries.flatMap(({ note }) =>
-        note.aliases.map((alias) => [idOf(note.path), alias, matchKey(alias)]),
-      ),
-    );
-    await insertRows(
-      this.db,
-      "tags (note_id, tag, tag_key)",
-      entries.flatMap(({ note }) =>
-        note.tags.map((tag) => [idOf(note.path), tag, matchKey(tag)]),
-      ),
-    );
-    await insertRows(
-      this.db,
-      "tag_parts (note_id, tag, tag_key)",
-      entries.flatMap(({ note }) =>
-        tagParts(note.tags).map(([tag, key]) => [idOf(note.path), tag, key]),
-      ),
-    );
-    await insertRows(
-      this.db,
-      "properties (note_id, key, value)",
-      entries.flatMap(({ note }) =>
-        Object.entries(note.properties).map(([key, value]) => [
-          idOf(note.path),
-          key,
-          // `?? null`: a value JSON has no form for, such as a function,
-          // is stored as null rather than lost with its key.
-          JSON.stringify(value) ?? "null",
-        ]),
-      ),
-    );
-    await insertRows(
-      this.db,
-      `links (source_id, kind, target_raw, target_path, target_name,
-              alias, fragment, pos_start, pos_end, snippet)`,
-      entries.flatMap(({ note }) =>
-        note.links.map((l) => {
-          const keys = linkKeys(note.path, l);
-          return [
-            idOf(note.path),
-            l.kind,
-            l.target,
-            keys.path,
-            keys.name,
-            l.alias,
-            l.fragment,
-            l.start,
-            l.end,
-            l.snippet,
-          ];
-        }),
-      ),
-    );
-
-    // The links of these notes, and the links elsewhere that a new note,
-    // or a new alias, may take over.
-    await this.relink("source_id", [...ids.values()]);
     const newAliases = entries.flatMap(({ note }) =>
       note.aliases.map(matchKey),
     );
-    await this.relinkTargets(paths, [...oldAliases, ...newAliases]);
-  }
-
-  /**
-   * Resolves again the links that could point to notes at `paths`, or to
-   * notes with the aliases `aliasKeys`: they are the only ones whose
-   * target may change when those notes come or go.
-   */
-  private async relinkTargets(
-    paths: readonly NotePath[],
-    aliasKeys: readonly string[],
-  ): Promise<void> {
-    const keys = paths.map(noteKeys);
-    await this.relink(
-      "target_path",
-      keys.map((k) => k.path),
-    );
-    await this.relink("target_name", [
-      ...keys.map((k) => k.name),
-      ...aliasKeys,
+    await this.db.batch([
+      ...insertRows(
+        "headings (note_id, level, text, pos)",
+        entries.flatMap(({ note }) =>
+          note.headings.map((h) => [idOf(note.path), h.level, h.text, h.pos]),
+        ),
+      ),
+      ...insertRows(
+        "notes_fts (rowid, title, body)",
+        entries.map(({ note }) => [
+          idOf(note.path),
+          note.title,
+          note.plainText,
+        ]),
+      ),
+      ...insertRows(
+        "aliases (note_id, alias, alias_key)",
+        entries.flatMap(({ note }) =>
+          note.aliases.map((alias) => [
+            idOf(note.path),
+            alias,
+            matchKey(alias),
+          ]),
+        ),
+      ),
+      ...insertRows(
+        "tags (note_id, tag, tag_key)",
+        entries.flatMap(({ note }) =>
+          note.tags.map((tag) => [idOf(note.path), tag, matchKey(tag)]),
+        ),
+      ),
+      ...insertRows(
+        "tag_parts (note_id, tag, tag_key)",
+        entries.flatMap(({ note }) =>
+          tagParts(note.tags).map(([tag, key]) => [idOf(note.path), tag, key]),
+        ),
+      ),
+      ...insertRows(
+        "properties (note_id, key, value)",
+        entries.flatMap(({ note }) =>
+          Object.entries(note.properties).map(([key, value]) => [
+            idOf(note.path),
+            key,
+            // `?? null`: a value JSON has no form for, such as a function,
+            // is stored as null rather than lost with its key.
+            JSON.stringify(value) ?? "null",
+          ]),
+        ),
+      ),
+      ...insertRows(
+        `links (source_id, kind, target_raw, target_path, target_name,
+                alias, fragment, pos_start, pos_end, snippet)`,
+        entries.flatMap(({ note }) =>
+          note.links.map((l) => {
+            const keys = linkKeys(note.path, l);
+            return [
+              idOf(note.path),
+              l.kind,
+              l.target,
+              keys.path,
+              keys.name,
+              l.alias,
+              l.fragment,
+              l.start,
+              l.end,
+              l.snippet,
+            ];
+          }),
+        ),
+      ),
+      // The links of these notes, and the links elsewhere that a new note,
+      // or a new alias, may take over.
+      ...relink("source_id", [...ids.values()]),
+      ...relinkTargets(paths, [...oldAliases, ...newAliases]),
     ]);
-  }
-
-  private async relink(
-    column: "source_id" | "target_path" | "target_name",
-    values: readonly SqlValue[],
-  ): Promise<void> {
-    for (const chunk of chunks([...new Set(values)], PATHS_PER_QUERY)) {
-      await this.db.execute(
-        `${RELINK} WHERE ${column} IN (${marks(chunk.length)})`,
-        chunk,
-      );
-    }
   }
 
   /** The alias keys of notes, as the index has them. */
@@ -708,39 +693,6 @@ export class IndexStore {
       paths,
     );
     return rows.map((row) => row.alias_key);
-  }
-
-  /** Deletes the rows that belong to notes, not the notes themselves. */
-  private async deleteRowsOf(paths: readonly NotePath[]): Promise<void> {
-    const ofNotes = `(SELECT id FROM notes WHERE path IN (${marks(paths.length)}))`;
-    await this.db.execute(
-      `DELETE FROM headings WHERE note_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM aliases WHERE note_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM tags WHERE note_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM tag_parts WHERE note_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM properties WHERE note_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM links WHERE source_id IN ${ofNotes}`,
-      paths,
-    );
-    await this.db.execute(
-      `DELETE FROM notes_fts WHERE rowid IN ${ofNotes}`,
-      paths,
-    );
   }
 }
 
@@ -771,19 +723,66 @@ function isVirtual(table: { sql: string | null }): boolean {
   return /^CREATE VIRTUAL TABLE/i.test(table.sql ?? "");
 }
 
-async function insertRows(
-  db: SqlDatabase,
+/**
+ * Inserts rows, `ROWS_PER_INSERT` to a statement: the statements to put
+ * in a batch. None for no rows.
+ */
+function insertRows(
   into: string,
   rows: readonly SqlValue[][],
   suffix = "",
-): Promise<void> {
-  for (const chunk of chunks(rows, ROWS_PER_INSERT)) {
+): SqlStatement[] {
+  return chunks(rows, ROWS_PER_INSERT).map((chunk) => {
     const tuple = `(${marks(chunk[0].length)})`;
-    await db.execute(
-      `INSERT INTO ${into} VALUES ${Array(chunk.length).fill(tuple).join(", ")} ${suffix}`,
-      chunk.flat(),
-    );
-  }
+    return {
+      sql: `INSERT INTO ${into} VALUES ${Array(chunk.length).fill(tuple).join(", ")} ${suffix}`,
+      params: chunk.flat(),
+    };
+  });
+}
+
+/** Deletes the rows that belong to notes, not the notes themselves. */
+function deleteRowsOf(paths: readonly NotePath[]): SqlStatement[] {
+  const ofNotes = `(SELECT id FROM notes WHERE path IN (${marks(paths.length)}))`;
+  return [
+    `DELETE FROM headings WHERE note_id IN ${ofNotes}`,
+    `DELETE FROM aliases WHERE note_id IN ${ofNotes}`,
+    `DELETE FROM tags WHERE note_id IN ${ofNotes}`,
+    `DELETE FROM tag_parts WHERE note_id IN ${ofNotes}`,
+    `DELETE FROM properties WHERE note_id IN ${ofNotes}`,
+    `DELETE FROM links WHERE source_id IN ${ofNotes}`,
+    `DELETE FROM notes_fts WHERE rowid IN ${ofNotes}`,
+  ].map((sql) => ({ sql, params: paths }));
+}
+
+/**
+ * Resolves again the links that could point to notes at `paths`, or to
+ * notes with the aliases `aliasKeys`: they are the only ones whose target
+ * may change when those notes come or go.
+ */
+function relinkTargets(
+  paths: readonly NotePath[],
+  aliasKeys: readonly string[],
+): SqlStatement[] {
+  const keys = paths.map(noteKeys);
+  return [
+    ...relink(
+      "target_path",
+      keys.map((k) => k.path),
+    ),
+    ...relink("target_name", [...keys.map((k) => k.name), ...aliasKeys]),
+  ];
+}
+
+/** Resolves again the links whose `column` is one of `values`. */
+function relink(
+  column: "source_id" | "target_path" | "target_name",
+  values: readonly SqlValue[],
+): SqlStatement[] {
+  return chunks([...new Set(values)], PATHS_PER_QUERY).map((chunk) => ({
+    sql: `${RELINK} WHERE ${column} IN (${marks(chunk.length)})`,
+    params: chunk,
+  }));
 }
 
 /**
