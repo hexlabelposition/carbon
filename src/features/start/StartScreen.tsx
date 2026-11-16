@@ -17,7 +17,7 @@ export function StartScreen() {
     <div className="mx-auto flex min-h-full w-full max-w-120 flex-col justify-center gap-6 px-8 py-10">
       <header className="flex flex-col gap-3">
         <h1>
-          <CarbonLogo className="h-12 w-auto" />
+          <CarbonLogo animated className="h-12 w-auto" />
         </h1>
         <p className="text-muted">{t("start.intro")}</p>
       </header>

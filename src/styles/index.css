@@ -121,3 +121,37 @@
     background: var(--cb-selection);
   }
 }
+
+/*
+ * A cell of the logo walking through the shades of the ring, from the top
+ * one down and back up (CarbonLogo sets the duration and the delay).
+ */
+@keyframes cb-logo-wave {
+  0%,
+  100% {
+    fill: var(--cb-logo-top);
+  }
+  16.667%,
+  83.333% {
+    fill: var(--cb-logo-upper);
+  }
+  33.333%,
+  66.667% {
+    fill: var(--cb-logo-lower);
+  }
+  50% {
+    fill: var(--cb-logo-bottom);
+  }
+}
+
+.cb-logo-wave {
+  animation-name: cb-logo-wave;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-logo-wave {
+    animation: none;
+  }
+}
