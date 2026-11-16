@@ -28,8 +28,12 @@ export interface TitleOptions extends SearchOptions {
   recent?: readonly NotePath[];
 }
 
-/** Enough for a list to scroll through; the best hits come first. */
-const DEFAULT_LIMIT = 100;
+/**
+ * Enough for a list to scroll through; the best hits come first. Each hit
+ * costs its snippet and highlights, about 0.2 ms in a 10k-note vault: 50
+ * keep a search well inside its 50 ms budget, 100 did not (C-602).
+ */
+const DEFAULT_LIMIT = 50;
 /** A quick switcher shows a short list: past that, the user types on. */
 const DEFAULT_TITLE_LIMIT = 50;
 
