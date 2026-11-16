@@ -1,6 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
+import { Shortcut } from "./Shortcut";
 import type { CommandPalette as Palette } from "./use-command-palette";
 
 /**
@@ -98,9 +99,7 @@ export function CommandPalette({ palette }: { palette: Palette }) {
                 />
               </span>
               {command.shortcut !== undefined && (
-                <kbd className="shrink-0 font-sans text-small text-faint">
-                  {command.shortcut}
-                </kbd>
+                <Shortcut text={command.shortcut} />
               )}
             </li>
           ))}

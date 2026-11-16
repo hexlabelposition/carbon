@@ -1,6 +1,5 @@
 import type { Vault } from "@carbon/core";
 import {
-  Fragment,
   lazy,
   Suspense,
   useCallback,
@@ -10,6 +9,7 @@ import {
 } from "react";
 import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
 import { CommandPalette } from "../../features/commands/CommandPalette";
+import { Shortcut } from "../../features/commands/Shortcut";
 import {
   keys,
   useCommandList,
@@ -891,22 +891,6 @@ function Watermark({ label }: { label: string }) {
         </ul>
       )}
     </div>
-  );
-}
-
-/** Keys such as "Ctrl+O", each in a box. */
-function Shortcut({ text }: { text: string }) {
-  return (
-    <span className="flex shrink-0 items-center gap-1 text-small text-faint">
-      {text.split("+").map((key, index) => (
-        <Fragment key={index}>
-          {index > 0 && <span aria-hidden="true">+</span>}
-          <kbd className="min-w-5 rounded-sm border border-line-strong bg-panel px-1 text-center font-sans">
-            {key}
-          </kbd>
-        </Fragment>
-      ))}
-    </span>
   );
 }
 
