@@ -140,7 +140,12 @@ export class Vault {
       read: (path) => this.notes.read(path),
       tree: () => this.tree(),
     });
-    this.tags = new Tags({ index });
+    this.tags = new Tags({
+      index,
+      caughtUp,
+      read: (path) => this.notes.read(path),
+      write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
+    });
     this.watch = new VaultWatch({
       root,
       fs,

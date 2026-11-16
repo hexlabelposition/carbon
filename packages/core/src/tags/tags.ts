@@ -1,11 +1,31 @@
 import type { IndexStore } from "../index/index-store";
 import { matchKey } from "../links/resolve";
+import { isTagLabel } from "../parser/hashtag";
+import { contentHash } from "../util/hash";
+import { renameTagIn } from "./rename";
 import type { NotePath, TagCount } from "../types";
 
 /** What `Tags` needs from the vault. */
 export interface TagsContext {
   /** The index once it is open; rejects if there is none. */
   index(): Promise<IndexStore>;
+  /** The index once it also holds every change so far. */
+  caughtUp(): Promise<IndexStore>;
+  /** `Notes.read`. */
+  read(path: NotePath): Promise<string>;
+  /** `Notes.write`: rejects if the note is not `baseHash` any more. */
+  write(path: NotePath, text: string, baseHash: string): Promise<unknown>;
+}
+
+/** What renaming a tag did to the notes of the vault. */
+export interface TagRename {
+  /** Notes whose tags were rewritten. */
+  updated: NotePath[];
+  /**
+   * Notes that have the tag but were not written: they changed since
+   * they were read, or could not be read or written.
+   */
+  failed: NotePath[];
 }
 
 /** A tag in the tree of tags: `topic` in `area/topic`. */
@@ -89,6 +109,34 @@ export class Tags {
       }
     }
     return [...result.values()];
+  }
+
+  /**
+   * Renames the tag `from` to `to` in every note that has it, and the tags
+   * nested in it with it (`renameTagIn`), inline and in the frontmatter.
+   * "#" in front of either is allowed. Each note is written only if it
+   * did not change since it was read. Rejects if `to` cannot be a tag.
+   */
+  async rename(from: string, to: string): Promise<TagRename> {
+    const old = from.replace(/^#/, "");
+    const name = to.trim().replace(/^#/, "");
+    if (!isTagLabel(name)) throw new Error(`Not a tag: ${to}`);
+    const result: TagRename = { updated: [], failed: [] };
+    if (old === name) return result;
+
+    const index = await this.context.caughtUp();
+    for (const path of await index.notesWithTag(old)) {
+      try {
+        const text = await this.context.read(path);
+        const renamed = renameTagIn(text, old, name);
+        if (renamed === null) continue;
+        await this.context.write(path, renamed, contentHash(text));
+        result.updated.push(path);
+      } catch {
+        result.failed.push(path);
+      }
+    }
+    return result;
   }
 
   /** The notes with the tag or a tag nested in it, by path. */

@@ -1,5 +1,6 @@
 import type { NotePath, TagNode, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "../i18n/i18n";
 
 export type TagTreeState =
   | { status: "loading" }
@@ -26,6 +27,15 @@ export interface TagsView {
   select(tag: string | null): void;
   /** The notes of `selected`; loading while none is selected. */
   notes: TagNotesState;
+  /** The tag whose new name is being typed, or `null`. */
+  renaming: string | null;
+  startRename(tag: string): void;
+  cancelRename(): void;
+  /** Renames `tag` to `name` in every note (`Tags.rename`). */
+  commitRename(tag: string, name: string): void;
+  /** What went wrong with the last rename, until dismissed. */
+  renameError: string | null;
+  dismissRenameError(): void;
 }
 
 /**
@@ -34,6 +44,9 @@ export interface TagsView {
  * again whenever the index takes in a change.
  */
 export function useTags(vault: Vault, enabled: boolean): TagsView {
+  const t = useT();
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const [tree, setTree] = useState<TagTreeState>({ status: "loading" });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(null);
@@ -104,6 +117,40 @@ export function useTags(vault: Vault, enabled: boolean): TagsView {
     });
   }, []);
 
+  const commitRename = useCallback(
+    (tag: string, name: string) => {
+      setRenaming(null);
+      const next = name.trim().replace(/^#/, "");
+      if (next === "" || next === tag) return;
+      setRenameError(null);
+      vault.tags.rename(tag, next).then(
+        ({ failed }) => {
+          // The list follows the tag, and the tags nested in it.
+          setSelected((current) => {
+            if (current === null) return current;
+            const key = current.toLowerCase();
+            const old = tag.toLowerCase();
+            if (key !== old && !key.startsWith(`${old}/`)) return current;
+            return next + current.slice(tag.length);
+          });
+          if (failed.length > 0) {
+            setRenameError(
+              t("tags.renamePartial", { count: failed.length, tag }),
+            );
+          }
+        },
+        (reason: unknown) =>
+          setRenameError(
+            t("tags.renameFailed", { tag, reason: messageOf(reason) }),
+          ),
+      );
+    },
+    [vault, t],
+  );
+
+  const cancelRename = useCallback(() => setRenaming(null), []);
+  const dismissRenameError = useCallback(() => setRenameError(null), []);
+
   return {
     tree,
     isExpanded,
@@ -114,6 +161,12 @@ export function useTags(vault: Vault, enabled: boolean): TagsView {
       selected !== null && answer?.tag === selected
         ? answer.state
         : { status: "loading" },
+    renaming,
+    startRename: setRenaming,
+    cancelRename,
+    commitRename,
+    renameError,
+    dismissRenameError,
   };
 }
 

@@ -208,9 +208,17 @@ export const en = {
   "tags.empty":
     "No tags yet. Write #tag in a note, or add tags: to its frontmatter.",
   "tags.failed": "Tags are not available: {reason}",
+  "tags.newName": "New name of #{tag}",
   "tags.noNotes": "No notes have this tag",
   "tags.notesOf": "Notes with #{tag}",
   "tags.partial": "Indexing: some tags may be missing.",
+  "tags.rename": "Rename",
+  "tags.renameFailed": "Could not rename #{tag}: {reason}",
+  "tags.renamePartial": {
+    one: "#{tag} was not renamed in {count} note: it changed meanwhile or could not be written.",
+    other:
+      "#{tag} was not renamed in {count} notes: they changed meanwhile or could not be written.",
+  },
   "tags.toggle": "Show or hide the tags in #{tag}",
   "theme.dark": "Theme: Dark",
   "theme.light": "Theme: Light",

@@ -1,4 +1,7 @@
+import { ContextMenu } from "@base-ui/react/context-menu";
 import type { NotePath, TagNode } from "@carbon/core";
+import { useRef, useState, type MouseEvent } from "react";
+import { NameInput } from "../file-tree/NameInput";
 import { useT } from "../i18n/i18n";
 import type { TagsView } from "./use-tags";
 
@@ -11,14 +14,23 @@ interface TagsPanelProps {
 /** Pixels a nested tag is moved in by, as in the file tree. */
 const INDENT = 14;
 
+const menuItem =
+  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
+
 /**
  * The tags of the vault as a tree, each with the number of its notes. A
  * click on a tag lists its notes below the tree, those of the tags nested
- * in it too; a click on the arrow shows or hides the nested tags.
+ * in it too; a click on the arrow shows or hides the nested tags. The
+ * right button, or F2, renames a tag in every note.
  */
 export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
   const t = useT();
   const { tree } = tags;
+  /** The tag the menu of the right button is for. */
+  const [menuTag, setMenuTag] = useState<string | null>(null);
+  /** Rename from the menu: started once the menu is shut and gives up
+   * the focus, or the field would lose it at once. */
+  const pendingRename = useRef<string | null>(null);
   if (tree.status === "loading") return null;
   if (tree.status === "error") {
     return (
@@ -28,24 +40,79 @@ export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
     );
   }
 
+  function onContextMenu(event: MouseEvent<HTMLDivElement>) {
+    const row =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-tag]")
+        : null;
+    setMenuTag(row?.dataset.tag ?? null);
+    pendingRename.current = null;
+  }
+
   return (
     <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1 overflow-auto py-1">
-        {tree.partial && (
-          <p role="status" className="px-3 pb-1 text-small text-faint">
-            {t("tags.partial")}
-          </p>
+      {tags.renameError !== null && (
+        <div
+          role="alert"
+          className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small text-danger"
+        >
+          <p className="min-w-0 flex-1">{tags.renameError}</p>
+          <button
+            type="button"
+            className="shrink-0 text-faint hover:text-fg"
+            onClick={tags.dismissRenameError}
+          >
+            {t("common.dismiss")}
+          </button>
+        </div>
+      )}
+      <ContextMenu.Root
+        onOpenChangeComplete={(open) => {
+          const tag = pendingRename.current;
+          pendingRename.current = null;
+          if (!open && tag !== null) setTimeout(() => tags.startRename(tag), 0);
+        }}
+      >
+        <ContextMenu.Trigger
+          className="min-h-0 flex-1 overflow-auto py-1"
+          onContextMenu={onContextMenu}
+        >
+          {tree.partial && (
+            <p role="status" className="px-3 pb-1 text-small text-faint">
+              {t("tags.partial")}
+            </p>
+          )}
+          {tree.tags.length === 0 ? (
+            <p className="px-3 py-1 text-small text-faint">{t("tags.empty")}</p>
+          ) : (
+            <ul role="tree" aria-label={t("shell.tags")}>
+              {tree.tags.map((node) => (
+                <TagRow key={node.tag} node={node} depth={0} tags={tags} />
+              ))}
+            </ul>
+          )}
+        </ContextMenu.Trigger>
+        {menuTag !== null && (
+          <ContextMenu.Portal>
+            <ContextMenu.Positioner className="z-50 outline-none">
+              <ContextMenu.Popup
+                finalFocus={() => pendingRename.current === null}
+                className="min-w-44 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+              >
+                <ContextMenu.Item
+                  className={menuItem}
+                  onClick={() => {
+                    pendingRename.current = menuTag;
+                  }}
+                >
+                  {t("tags.rename")}
+                  <span className="text-small text-faint">F2</span>
+                </ContextMenu.Item>
+              </ContextMenu.Popup>
+            </ContextMenu.Positioner>
+          </ContextMenu.Portal>
         )}
-        {tree.tags.length === 0 ? (
-          <p className="px-3 py-1 text-small text-faint">{t("tags.empty")}</p>
-        ) : (
-          <ul role="tree" aria-label={t("shell.tags")}>
-            {tree.tags.map((node) => (
-              <TagRow key={node.tag} node={node} depth={0} tags={tags} />
-            ))}
-          </ul>
-        )}
-      </div>
+      </ContextMenu.Root>
       {tags.selected !== null && (
         <TagNotes tag={tags.selected} tags={tags} onOpen={onOpen} />
       )}
@@ -66,8 +133,10 @@ function TagRow({
   const nested = node.children.length > 0;
   const open = nested && tags.isExpanded(node.tag);
   const selected = tags.selected?.toLowerCase() === node.tag.toLowerCase();
+  const renaming = tags.renaming === node.tag;
   return (
     <li
+      data-tag={node.tag}
       role="treeitem"
       aria-level={depth + 1}
       aria-selected={selected}
@@ -90,17 +159,33 @@ function TagRow({
         >
           <Chevron open={open} />
         </button>
-        <button
-          type="button"
-          title={`#${node.tag}`}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-fg"
-          onClick={() => tags.select(selected ? null : node.tag)}
-        >
-          <span className="truncate">{node.name}</span>
-          <span className="ml-auto shrink-0 text-small text-faint">
-            {node.count}
-          </span>
-        </button>
+        {renaming ? (
+          // The whole tag: renaming can move it under another one too.
+          <NameInput
+            label={t("tags.newName", { tag: node.tag })}
+            initial={node.tag}
+            onCommit={(text) => tags.commitRename(node.tag, text)}
+            onCancel={tags.cancelRename}
+          />
+        ) : (
+          <button
+            type="button"
+            title={`#${node.tag}`}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-fg"
+            onClick={() => tags.select(selected ? null : node.tag)}
+            onKeyDown={(event) => {
+              if (event.key === "F2") {
+                event.preventDefault();
+                tags.startRename(node.tag);
+              }
+            }}
+          >
+            <span className="truncate">{node.name}</span>
+            <span className="ml-auto shrink-0 text-small text-faint">
+              {node.count}
+            </span>
+          </button>
+        )}
       </div>
       {open && (
         <ul role="group">

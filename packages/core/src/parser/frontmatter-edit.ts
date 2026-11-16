@@ -1,4 +1,11 @@
-import { isMap, isSeq, parse, parseDocument, type Document } from "yaml";
+import {
+  isMap,
+  isScalar,
+  isSeq,
+  parse,
+  parseDocument,
+  type Document,
+} from "yaml";
 import { findFrontmatter } from "./frontmatter";
 
 /** A change to one property of a frontmatter. */
@@ -63,6 +70,45 @@ export function editFrontmatter(
   }
 
   // Between the opening fence and the closing one.
+  const from = found.block.indexOf("\n") + 1;
+  return { from, to: from + found.yaml.length, insert: write(doc) };
+}
+
+/**
+ * The change to a note that renames tags in the `tags` of its
+ * frontmatter, as written: `rename` gets each tag without "#" and gives
+ * its new name, or `null` to keep it. One string keeps its commas and
+ * spaces, a list its items and their quotes; a "#" in front stays.
+ * `null` if no tag changes or the YAML does not parse.
+ */
+export function renameFrontmatterTags(
+  text: string,
+  rename: (tag: string) => string | null,
+): TextChange | null {
+  const found = findFrontmatter(text);
+  if (found === null) return null;
+  const doc: Document = parseDocument(found.yaml, { uniqueKeys: false });
+  if (doc.errors.length > 0) return null;
+
+  let changed = false;
+  const renamed = (written: string): string => {
+    const hash = written.startsWith("#") ? "#" : "";
+    const next = rename(written.slice(hash.length));
+    if (next === null) return written;
+    changed = true;
+    return hash + next;
+  };
+  const tags = doc.get("tags", true);
+  if (isScalar(tags) && typeof tags.value === "string") {
+    tags.value = tags.value.replace(/[^\s,]+/g, renamed);
+  } else if (isSeq(tags)) {
+    for (const item of tags.items) {
+      if (isScalar(item) && typeof item.value === "string") {
+        item.value = renamed(item.value.trim());
+      }
+    }
+  }
+  if (!changed) return null;
   const from = found.block.indexOf("\n") + 1;
   return { from, to: from + found.yaml.length, insert: write(doc) };
 }

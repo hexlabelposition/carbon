@@ -249,6 +249,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 
 - Every tag with the number of its notes, counting the notes of the tags nested in it once each, and the tree of tags built from that.
 - The notes of a tag are those of the tags nested in it too: `area` finds `area/topic`. Case is ignored, as for links.
+- Renaming a tag rewrites it in every note that has it, with the tags nested in it: inline tags through the grammar, so code and links are left alone, and the `tags` of the frontmatter as written. As with links, a note is written only if it did not change since it was read.
 
 ### config
 
@@ -272,7 +273,7 @@ vault.attachments.read(path) / save(name, bytes) / import(source) / find(note, t
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.links.unlinked(path) / linkMention(source, at, target) / aliases()
 vault.search.query(text) / locate(path, text) / titles(text)
-vault.tags.all() / tree() / notes(tag) / of(path) / suggestions(path, written)
+vault.tags.all() / tree() / notes(tag) / of(path) / suggestions(path, written) / rename(from, to)
 vault.graph.global() / local(path, depth)
 
 vault.on('changed', ...)        // file added, changed or removed outside the editor
