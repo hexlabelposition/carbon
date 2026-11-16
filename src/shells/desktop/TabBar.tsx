@@ -38,7 +38,7 @@ export function TabBar({
   return (
     <div
       data-tauri-drag-region
-      className={`flex h-12 shrink-0 items-stretch border-b border-line bg-panel ${
+      className={`flex h-bar shrink-0 items-stretch border-b border-line bg-panel ${
         leaveRoom ? WINDOW_CONTROLS_ROOM : ""
       } ${leaveRoomStart ? APP_MARK_ROOM : ""}`}
     >
@@ -56,7 +56,7 @@ export function TabBar({
               // A rounded button of its own, as wide as its name, filled and
               // edged so it stands out from the bar. The one shown is in
               // the color of the note below it, with a stronger edge.
-              className={`flex h-7 max-w-52 min-w-20 shrink-0 items-center rounded-md border transition-colors duration-100 ${
+              className={`flex h-8 max-w-52 min-w-20 shrink-0 items-center rounded-md border transition-colors duration-100 ${
                 active
                   ? "border-line-strong bg-bg text-fg shadow-xs"
                   : "border-line bg-raise text-muted hover:bg-selected hover:text-fg"
@@ -79,10 +79,14 @@ export function TabBar({
               <button
                 type="button"
                 aria-label={t("tabs.close", { name: tab.label })}
-                className="mr-1 flex size-5 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-line-strong/50 hover:text-fg"
+                className="mr-1 flex size-6 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-line-strong/50 hover:text-fg"
                 onClick={() => onClose(tab.id)}
               >
-                <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3">
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  className="size-3.5"
+                >
                   <path
                     d="M4 4l8 8M12 4l-8 8"
                     fill="none"

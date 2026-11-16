@@ -230,7 +230,7 @@ export function WindowControls({
     <div
       ref={group}
       data-window-controls
-      className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel"
+      className="fixed top-0 right-0 z-40 flex h-bar border-b border-line bg-panel"
     >
       {panels !== undefined && (
         // Set off by a line at each side: from the tabs or the right panel
@@ -250,14 +250,17 @@ export function WindowControls({
       <div
         inert={fullscreen}
         className="flex overflow-hidden transition-[width,opacity] duration-200 ease-out motion-reduce:transition-none"
-        // Three buttons of `w-12`, in the same unit: rem.
-        style={{ width: fullscreen ? 0 : "9rem", opacity: fullscreen ? 0 : 1 }}
+        // Three buttons of `w-bar`.
+        style={{
+          width: fullscreen ? 0 : "calc(var(--spacing-bar) * 3)",
+          opacity: fullscreen ? 0 : 1,
+        }}
       >
         <ControlButton
           label={t("window.minimize")}
           onClick={act(frame.minimize)}
         >
-          <path d="M0 5.5h10" shapeRendering="crispEdges" />
+          <path d="M0 5.5h11" shapeRendering="crispEdges" />
         </ControlButton>
         <ControlButton
           label={maximized ? t("window.restore") : t("window.maximize")}
@@ -265,15 +268,15 @@ export function WindowControls({
         >
           {maximized ? (
             <g shapeRendering="crispEdges">
-              <rect x="0.5" y="2.5" width="7" height="7" />
-              <path d="M2.5 2.5v-2h7v7h-2" />
+              <rect x="0.5" y="2.5" width="8" height="8" />
+              <path d="M2.5 2.5v-2h8v8h-2" />
             </g>
           ) : (
             <rect
               x="0.5"
               y="0.5"
-              width="9"
-              height="9"
+              width="10"
+              height="10"
               shapeRendering="crispEdges"
             />
           )}
@@ -283,7 +286,7 @@ export function WindowControls({
           danger
           onClick={act(frame.close)}
         >
-          <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+          <path d="M0.5 0.5l10 10M10.5 0.5l-10 10" />
         </ControlButton>
       </div>
     </div>
@@ -308,19 +311,19 @@ function ControlButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`flex h-full w-12 shrink-0 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
+      className={`flex h-full w-bar shrink-0 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
         danger
           ? "hover:bg-danger hover:text-on-danger active:bg-danger/80"
           : "hover:bg-selected hover:text-fg active:bg-line-strong"
       }`}
       onClick={onClick}
     >
-      {/* 10 by 10 pixels with 1-pixel lines, as the window buttons of
+      {/* 11 by 11 pixels with 1-pixel lines, as the window buttons of
           Windows and VS Code: lines on whole pixels stay sharp. */}
       <svg
-        viewBox="0 0 10 10"
-        width="10"
-        height="10"
+        viewBox="0 0 11 11"
+        width="11"
+        height="11"
         aria-hidden="true"
         fill="none"
         stroke="currentColor"
@@ -347,7 +350,7 @@ export function DragStrip({
   return (
     <div
       data-tauri-drag-region
-      className={`flex h-12 shrink-0 items-center border-b border-line bg-panel px-1.5 ${
+      className={`flex h-bar shrink-0 items-center border-b border-line bg-panel px-1.5 ${
         room ? WINDOW_CONTROLS_ROOM : ""
       } ${roomStart ? APP_MARK_ROOM : ""}`}
     />

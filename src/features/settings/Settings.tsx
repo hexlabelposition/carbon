@@ -153,7 +153,7 @@ export function Settings() {
       <Dialog.Portal>
         {/* Below the top row: the tabs and the window buttons stay sharp,
             and the buttons can still be pressed. */}
-        <Dialog.Backdrop className="fixed inset-x-0 top-12 bottom-0 z-50 bg-backdrop/40 backdrop-blur-xs" />
+        <Dialog.Backdrop className="fixed inset-x-0 top-bar bottom-0 z-50 bg-backdrop/40 backdrop-blur-xs" />
         {/* Centered by its margins, not moved back by half its size: a
             move of half an odd size lands between pixels, and the text in
             it is drawn blurred. */}

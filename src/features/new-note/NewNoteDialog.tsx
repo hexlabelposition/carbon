@@ -30,7 +30,7 @@ export function NewNoteDialog({ newNote }: { newNote: NewNote }) {
     <dialog
       ref={dialog}
       aria-label={t("tree.newNote")}
-      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-12 backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
+      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
       onCancel={(event) => {
         event.preventDefault();
         newNote.close();

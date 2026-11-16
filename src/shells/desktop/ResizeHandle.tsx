@@ -70,7 +70,7 @@ export function ResizeHandle({
       // one beside it and drags the window: the handle starts below it, as
       // the line at its edge. The left panel stands below the top row.
       className={`absolute bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
-        side === "left" ? "top-0 right-0" : "top-12 left-0"
+        side === "left" ? "top-0 right-0" : "top-bar left-0"
       }`}
       onPointerDown={(event) => {
         // Not the start of a text selection, which the drag would stretch.

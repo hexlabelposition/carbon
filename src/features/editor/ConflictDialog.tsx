@@ -45,7 +45,7 @@ export function ConflictDialog({
     <dialog
       ref={dialog}
       aria-labelledby="conflict-title"
-      className="m-auto w-full max-w-[520px] rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog backdrop:top-12 backdrop:bg-backdrop/70"
+      className="m-auto w-full max-w-[520px] rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/70"
       onCancel={(event) => {
         event.preventDefault();
         onLater();

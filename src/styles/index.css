@@ -55,6 +55,12 @@
   --text-h1: 30px;
   --text-h1--line-height: 1.2;
 
+  /*
+   * The top row and the toolbar: the row is this tall, the toolbar this
+   * wide, and the mark in the corner a square of it (`h-bar`, `w-bar`).
+   */
+  --spacing-bar: 3.5rem;
+
   /* Radii: small and strict */
   --radius-sm: 4px; /* inline code, segments, kbd */
   --radius-md: 6px; /* rows, buttons, inputs, cards */
@@ -80,7 +86,7 @@
     --cb-mono-font: var(--font-mono);
 
     /* The width of the buttons in the top right corner (WindowControls). */
-    --cb-controls-room: 9rem;
+    --cb-controls-room: calc(var(--spacing-bar) * 3);
   }
 
   /*
@@ -126,7 +132,7 @@
    * A modal `<dialog>` and its backdrop are drawn above the page, out of
    * reach of the `clip-path` of `body`: what covers the whole window
    * rounds its own corners. A backdrop starts below the top row, which
-   * stays sharp (`backdrop:top-12`), so only its lower corners meet the
+   * stays sharp (`backdrop:top-bar`), so only its lower corners meet the
    * corners of the window.
    */
   html[data-window="normal"] ::backdrop {

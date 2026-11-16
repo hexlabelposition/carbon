@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
 
-/** How wide the toolbar is open: `w-12`, as the mark above it, in rem. */
-export const TOOLBAR_WIDTH = "3rem";
+/** How wide the toolbar is open: as the mark above it (`w-bar`). */
+export const TOOLBAR_WIDTH = "var(--spacing-bar)";
 
 /** A button of the toolbar. */
 export interface ToolbarItem {
@@ -73,20 +73,20 @@ function ToolbarButton({
       title={shortcut === undefined ? label : `${label} (${shortcut})`}
       // The whole width of the strip takes the click; only a rounded square
       // around the icon lights up, as on the panel buttons.
-      className={`group flex h-9 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
+      className={`group flex h-10 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
         pressed === true ? "text-fg" : "text-muted"
       }`}
       onClick={run}
     >
       <span
-        className={`flex size-7 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
+        className={`flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
           pressed === true ? "bg-selected" : ""
         }`}
       >
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className="size-4"
+          className="size-4.5"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.25"
@@ -100,7 +100,7 @@ function ToolbarButton({
   );
 }
 
-/** The icons of the toolbar buttons, 16 by 16. */
+/** The icons of the toolbar buttons, drawn on 16 by 16. */
 export const toolbarIcons = {
   files: (
     <path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13a1.5 1.5 0 0 1 1.5 1.5v5.5A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5z" />

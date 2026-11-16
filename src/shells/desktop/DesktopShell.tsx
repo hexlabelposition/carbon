@@ -765,7 +765,7 @@ function RightPanelFrame({
       {/* Runs on into the top row beside it, with no line between. */}
       <div
         data-tauri-drag-region
-        className={`h-12 shrink-0 border-b border-line ${WINDOW_CONTROLS_ROOM}`}
+        className={`h-bar shrink-0 border-b border-line ${WINDOW_CONTROLS_ROOM}`}
       />
       <div className="flex min-h-0 flex-1 flex-col border-l border-line">
         <ViewTabs
