@@ -64,16 +64,18 @@ function ArrowButton({
         type="button"
         aria-label={label}
         disabled={disabled}
-        className="flex size-6 items-center justify-center rounded-sm text-muted hover:bg-raise hover:text-fg disabled:text-faint disabled:opacity-50 disabled:hover:bg-transparent"
+        className="flex size-8 items-center justify-center rounded-md text-muted transition-colors duration-100 hover:bg-selected hover:text-fg disabled:text-faint disabled:opacity-50 disabled:hover:bg-transparent"
         onClick={onClick}
       >
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className="size-3.5"
+          className="size-4.5"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
           {children}
         </svg>

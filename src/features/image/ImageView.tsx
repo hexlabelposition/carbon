@@ -52,10 +52,12 @@ export function ImageView({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
+      <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
         {history}
         <Tooltip label={path}>
-          <span className="min-w-0 flex-1 truncate text-muted">{path}</span>
+          <span className="min-w-0 flex-1 truncate px-2 text-muted">
+            {path}
+          </span>
         </Tooltip>
       </header>
       <div className="min-h-0 flex-1">

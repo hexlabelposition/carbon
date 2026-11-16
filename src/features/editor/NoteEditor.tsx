@@ -84,10 +84,12 @@ export function NoteEditor({
   return (
     // Ctrl and the wheel anywhere over the note change its text size.
     <div ref={wheelTextSize} className="flex h-full flex-col">
-      <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
+      <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
         {history}
         <Tooltip label={path}>
-          <span className="min-w-0 flex-1 truncate text-muted">{name}</span>
+          <span className="min-w-0 flex-1 truncate px-2 text-muted">
+            {name}
+          </span>
         </Tooltip>
         <SaveIndicator
           save={note.save}
@@ -98,7 +100,7 @@ export function NoteEditor({
           <button
             type="button"
             aria-pressed={sourceMode}
-            className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+            className={`h-8 shrink-0 rounded-md px-2.5 text-small transition-colors duration-100 hover:bg-selected hover:text-fg ${
               sourceMode ? "bg-selected text-fg" : "text-muted"
             }`}
             onClick={onToggleSourceMode}
@@ -110,7 +112,7 @@ export function NoteEditor({
           <button
             type="button"
             aria-pressed={readingMode}
-            className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+            className={`h-8 shrink-0 rounded-md px-2.5 text-small transition-colors duration-100 hover:bg-selected hover:text-fg ${
               readingMode ? "bg-selected text-fg" : "text-muted"
             }`}
             onClick={onToggleReadingMode}
@@ -208,22 +210,46 @@ const indicatorButton =
 /** Tells whether the edits are on disk. Never by color alone. */
 function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   const t = useT();
-  if (save.status === "saved") {
+  if (save.status === "saved" || save.status === "unsaved") {
+    const saved = save.status === "saved";
+    const label = t(saved ? "save.saved" : "save.unsaved");
+    // A mark in place of a word, told apart by its shape: a dot while
+    // there are edits to save, a tick drawn in once they are on disk.
+    // The word is in the tooltip and for screen readers.
     return (
-      <span role="status" className="shrink-0 text-small text-faint">
-        {t("save.saved")}
-      </span>
-    );
-  }
-  if (save.status === "unsaved") {
-    return (
-      <span
-        role="status"
-        className="flex shrink-0 items-center gap-1.5 text-small text-muted"
-      >
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-fg" />
-        {t("save.unsaved")}
-      </span>
+      <Tooltip label={label}>
+        <span
+          role="status"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-faint transition-colors duration-100 hover:bg-selected hover:text-muted"
+        >
+          <span className="sr-only">{label}</span>
+          {saved ? (
+            <svg
+              key="saved"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              className="size-4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d="M3.5 8.5l3 3 6-7"
+                pathLength={1}
+                className="cb-save-tick"
+              />
+            </svg>
+          ) : (
+            <span
+              key="unsaved"
+              aria-hidden="true"
+              className="cb-save-dot size-2 rounded-full bg-muted"
+            />
+          )}
+        </span>
+      </Tooltip>
     );
   }
   if (save.status === "conflict") {
