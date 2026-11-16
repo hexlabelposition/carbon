@@ -30,26 +30,13 @@ export function Sidebar({
   const [resizing, setResizing] = useState(false);
 
   return (
-    // A share of the window, which the panel starts at the left edge of:
-    // `vw`. Never narrower than 180 pixels.
-    <SlidePanel
-      open={open}
-      width={`max(11.25rem, ${fraction * 100}vw)`}
-      animate={!resizing}
-    >
+    <SlidePanel open={open} width={sidebarWidth(fraction)} animate={!resizing}>
       <aside
         aria-label={t("shell.leftPanel")}
-        className="relative flex h-full flex-col bg-panel"
+        className="relative flex h-full flex-col border-r border-line bg-panel"
       >
-        {/* The window has no system title bar: this empty row drags it. It
-            runs on into the top row beside it, with no line between. */}
-        <div
-          data-tauri-drag-region
-          className="h-12 shrink-0 border-b border-line"
-        />
-        <div className="min-h-0 flex-1 overflow-auto border-r border-line">
-          {children}
-        </div>
+        {/* Below the top row, which the tabs run along. */}
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         <ResizeHandle
           side="left"
           label={t("shell.resizeLeftPanel")}
@@ -61,4 +48,13 @@ export function Sidebar({
       </aside>
     </SlidePanel>
   );
+}
+
+/**
+ * How wide the sidebar is open, as a CSS length: a share of the window,
+ * which it starts near the left edge of (`vw`), never narrower than 180
+ * pixels.
+ */
+export function sidebarWidth(fraction: number): string {
+  return `max(11.25rem, ${fraction * 100}vw)`;
 }

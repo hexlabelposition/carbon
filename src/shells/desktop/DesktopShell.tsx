@@ -47,7 +47,7 @@ import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-sh
 import { useWorkspace } from "../../features/workspace/workspace";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { HistoryButtons } from "../../features/workspace/HistoryButtons";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, sidebarWidth } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
@@ -55,7 +55,12 @@ import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
 import { ViewTabs } from "./ViewTabs";
-import { Toolbar, toolbarIcons, type ToolbarItem } from "./Toolbar";
+import {
+  TOOLBAR_WIDTH,
+  Toolbar,
+  toolbarIcons,
+  type ToolbarItem,
+} from "./Toolbar";
 import {
   LEFT_PANEL_SHORTCUT,
   RIGHT_PANEL_SHORTCUT,
@@ -193,7 +198,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
-      <AppMark edge={vault !== null && !showDev && toolbar.open} />
+      <AppMark />
       <WindowControls
         frame={frame}
         panels={
@@ -241,30 +246,36 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
               null
             }
           >
-            <ToolbarHost
-              open={toolbar.open}
-              sidebarOpen={!sidebar.collapsed}
-              sidebarView={sidebarView}
-              revealSidebar={revealSidebar}
-              toggleSidebar={toggleSidebar}
-            />
-            <Sidebar
-              open={!sidebar.collapsed}
-              fraction={sidebar.fraction}
-              onResize={sidebar.resize}
-              onNudge={sidebar.nudge}
-            >
-              <SidebarContent
-                vault={vault}
-                view={sidebarView}
-                reveal={revealSidebar}
-              />
-            </Sidebar>
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <NoteArea
                 vault={vault}
-                startCovered={toolbar.open || !sidebar.collapsed}
                 right={rightPanel}
+                startWidth={`calc(${toolbar.open ? TOOLBAR_WIDTH : "0px"} + ${
+                  sidebar.collapsed ? "0px" : sidebarWidth(sidebar.fraction)
+                })`}
+                start={
+                  <>
+                    <ToolbarHost
+                      open={toolbar.open}
+                      sidebarOpen={!sidebar.collapsed}
+                      sidebarView={sidebarView}
+                      revealSidebar={revealSidebar}
+                      toggleSidebar={toggleSidebar}
+                    />
+                    <Sidebar
+                      open={!sidebar.collapsed}
+                      fraction={sidebar.fraction}
+                      onResize={sidebar.resize}
+                      onNudge={sidebar.nudge}
+                    >
+                      <SidebarContent
+                        vault={vault}
+                        view={sidebarView}
+                        reveal={revealSidebar}
+                      />
+                    </Sidebar>
+                  </>
+                }
               />
             </main>
             <QuickSwitcherHost vault={vault} />
@@ -448,21 +459,25 @@ function QuickSwitcherHost({ vault }: { vault: Vault }) {
 
 interface NoteAreaProps {
   vault: Vault;
-  /**
-   * Whether the toolbar or the left panel stands at the left edge, under
-   * the mark: if neither does, the top row leaves the mark room.
-   */
-  startCovered: boolean;
   /** The panel beside the note: its outline and the notes that link to it. */
   right: RightPanel;
+  /**
+   * What stands at the left, below the top row: the toolbar and the
+   * sidebar. The top row of the first pane runs on above them, from the
+   * mark in the corner.
+   */
+  start: ReactNode;
+  /** How wide `start` is now, as a CSS length. */
+  startWidth: string;
 }
 
 /**
  * The main area of the workspace: the tabs, the note that is shown and,
  * beside it, the panels that are open: the outline of the note and its
- * backlinks, one above the other.
+ * backlinks, one above the other. The toolbar and the sidebar stand at the
+ * left of the first pane, below its tabs.
  */
-function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
+function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const workspace = useWorkspace();
   const t = useT();
   useWorkspaceShortcuts();
@@ -500,95 +515,141 @@ function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
     </SlidePanel>
   );
 
-  if (path === null) {
-    return (
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <DragStrip room={!right.open} roomStart={!startCovered} />
-          <Watermark label={t("shell.noNoteOpen")} />
+  // No note open: one column, the watermark in place of a note.
+  const panes = path === null ? [] : workspace.panes;
+  const split = panes.length > 1;
+  const last = panes.length - 1;
+
+  /**
+   * A column of the note area: its top row and below it its note. The
+   * first holds the sidebar too, at the same place whether a note is open
+   * or not, so it keeps its state.
+   */
+  const column = (
+    key: number,
+    index: number,
+    header: ReactNode,
+    body: ReactNode,
+  ) => (
+    <div
+      // The first by its place: the sidebar in it stays mounted.
+      key={index === 0 ? "first" : key}
+      className={`flex min-w-0 flex-col ${
+        index > 0 ? "border-l border-line" : ""
+      } ${
+        split
+          ? "transition-[flex-basis] duration-200 ease-out motion-reduce:transition-none"
+          : ""
+      }`}
+      // The first column holds the sidebar too: it starts as wide as that,
+      // and the room left is shared alike, so the notes of the panes are as
+      // wide as each other.
+      style={{ flex: index === 0 ? `1 1 ${startWidth}` : "1 1 0" }}
+    >
+      {header}
+      {index === 0 ? (
+        <div className="flex min-h-0 flex-1">
+          {start}
+          {body}
         </div>
-        {rightPanel}
-      </div>
-    );
-  }
-  const split = workspace.panes.length > 1;
-  const last = workspace.panes.length - 1;
+      ) : (
+        body
+      )}
+    </div>
+  );
+
   return (
     <div className="flex min-h-0 flex-1">
-      {workspace.panes.map((pane, index) => {
-        const active = index === workspace.activePane;
-        const history = (
-          <HistoryButtons
-            canGoBack={pane.canGoBack}
-            canGoForward={pane.canGoForward}
-            onBack={workspace.back}
-            onForward={workspace.forward}
-          />
-        );
-        return (
-          <section
-            key={pane.id}
-            aria-label={
-              split ? t("shell.pane", { number: index + 1 }) : undefined
-            }
-            className={`flex min-w-0 flex-1 flex-col ${
-              index > 0 ? "border-l border-line" : ""
-            }`}
-            // The pane the user works in is the one keys and the rest of
-            // the app act on.
-            onMouseDownCapture={() => workspace.focusPane(index)}
-            onFocusCapture={() => workspace.focusPane(index)}
-          >
-            {/* With two panes, the one not worked in is dimmed. */}
-            <div className={split && !active ? "opacity-60" : undefined}>
-              <TabBar
-                tabs={pane.tabs.map((tab) => ({
-                  id: tab.id,
-                  label: nameOf(tab.path).replace(/\.md$/i, ""),
-                  title: tab.path,
-                }))}
-                activeId={pane.activeTabId}
-                onActivate={workspace.activateTab}
-                onClose={workspace.closeTab}
-                // With the toolbar and the left panel shut, the bar starts
-                // at the left edge.
-                leaveRoomStart={index === 0 && !startCovered}
-                // The right end of the top row holds the window buttons.
-                leaveRoom={!right.open && index === last}
+      {path === null
+        ? column(
+            0,
+            0,
+            <DragStrip room={!right.open} roomStart />,
+            <div className="min-w-0 flex-1">
+              <Watermark label={t("shell.noNoteOpen")} />
+            </div>,
+          )
+        : panes.map((pane, index) => {
+            const active = index === workspace.activePane;
+            const history = (
+              <HistoryButtons
+                canGoBack={pane.canGoBack}
+                canGoForward={pane.canGoForward}
+                onBack={workspace.back}
+                onForward={workspace.forward}
               />
-            </div>
-            {/* The pane is focused on the press, before the click: back
-                and forward act on it. */}
-            {pane.path !== null && imageTypeOf(pane.path) !== null && (
-              <div className="min-h-0 flex-1">
-                <ImageView
-                  key={pane.path}
-                  vault={vault}
-                  path={pane.path}
-                  history={history}
+            );
+            // The pane the user works in is the one keys and the rest
+            // of the app act on: its tabs or its note pressed, not the
+            // sidebar. On the press, before the click, so back and
+            // forward act on it.
+            const focus = {
+              onMouseDownCapture: () => workspace.focusPane(index),
+              onFocusCapture: () => workspace.focusPane(index),
+            };
+            const body = (
+              <section
+                aria-label={
+                  split ? t("shell.pane", { number: index + 1 }) : undefined
+                }
+                className="flex min-h-0 min-w-0 flex-1 flex-col"
+                {...focus}
+              >
+                {pane.path !== null && imageTypeOf(pane.path) !== null && (
+                  <div className="min-h-0 flex-1">
+                    <ImageView
+                      key={pane.path}
+                      vault={vault}
+                      path={pane.path}
+                      history={history}
+                    />
+                  </div>
+                )}
+                {pane.path !== null && imageTypeOf(pane.path) === null && (
+                  <div className="min-h-0 flex-1">
+                    <NoteEditor
+                      key={pane.path}
+                      vault={vault}
+                      path={pane.path}
+                      history={history}
+                      sourceMode={sourceMode.on}
+                      onToggleSourceMode={sourceMode.toggle}
+                      readingMode={readingMode.on}
+                      onToggleReadingMode={readingMode.toggle}
+                      // One outline: of the note in the active pane.
+                      outline={active ? outline.link : undefined}
+                      active={active}
+                    />
+                  </div>
+                )}
+              </section>
+            );
+            return column(
+              pane.id,
+              index,
+              // With two panes, the one not worked in is dimmed.
+              <div
+                className={split && !active ? "opacity-60" : undefined}
+                {...focus}
+              >
+                <TabBar
+                  tabs={pane.tabs.map((tab) => ({
+                    id: tab.id,
+                    label: nameOf(tab.path).replace(/\.md$/i, ""),
+                    title: tab.path,
+                  }))}
+                  activeId={pane.activeTabId}
+                  onActivate={workspace.activateTab}
+                  onClose={workspace.closeTab}
+                  // The first bar starts at the left edge, under the mark.
+                  leaveRoomStart={index === 0}
+                  // The right end of the top row holds the window buttons.
+                  leaveRoom={!right.open && index === last}
                 />
-              </div>
-            )}
-            {pane.path !== null && imageTypeOf(pane.path) === null && (
-              <div className="min-h-0 flex-1">
-                <NoteEditor
-                  key={pane.path}
-                  vault={vault}
-                  path={pane.path}
-                  history={history}
-                  sourceMode={sourceMode.on}
-                  onToggleSourceMode={sourceMode.toggle}
-                  readingMode={readingMode.on}
-                  onToggleReadingMode={readingMode.toggle}
-                  // One outline: of the note in the active pane.
-                  outline={active ? outline.link : undefined}
-                  active={active}
-                />
-              </div>
-            )}
-          </section>
-        );
-      })}
+              </div>,
+              body,
+            );
+          })}
       {rightPanel}
     </div>
   );

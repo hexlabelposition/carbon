@@ -66,10 +66,11 @@ export function ResizeHandle({
       aria-valuemin={percent(SIDEBAR_MIN)}
       aria-valuemax={percent(SIDEBAR_MAX)}
       tabIndex={0}
-      // Below the top row, as the line at the edge of the panel: the row
-      // runs on into the one beside it and drags the window.
-      className={`absolute top-12 bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
-        side === "left" ? "right-0" : "left-0"
+      // The right panel has a top row of its own, which runs on into the
+      // one beside it and drags the window: the handle starts below it, as
+      // the line at its edge. The left panel stands below the top row.
+      className={`absolute bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
+        side === "left" ? "top-0 right-0" : "top-12 left-0"
       }`}
       onPointerDown={(event) => {
         // Not the start of a text selection, which the drag would stretch.

@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
 
+/** How wide the toolbar is open: `w-12`, as the mark above it, in rem. */
+export const TOOLBAR_WIDTH = "3rem";
+
 /** A button of the toolbar. */
 export interface ToolbarItem {
   id: string;
@@ -27,20 +30,18 @@ interface ToolbarProps {
 
 /**
  * The strip at the left edge of the window with small buttons, one above
- * the other: as wide as the top row is tall, so the mark in the corner is
- * its top. Layout only: what the buttons do comes from outside.
+ * the other, below the top row: as wide as that row is tall, so it stands
+ * right under the mark in the corner. Layout only: what the buttons do
+ * comes from outside.
  */
 export function Toolbar({ open, items, footer }: ToolbarProps) {
   const t = useT();
   return (
-    // `w-12`, as the mark and the top row: in rem.
-    <SlidePanel open={open} width="3rem">
+    <SlidePanel open={open} width={TOOLBAR_WIDTH}>
       <nav
         aria-label={t("shell.toolbar")}
         className="flex h-full flex-col border-r border-line bg-panel"
       >
-        {/* Under the mark, which is fixed over it: drags the window. */}
-        <div data-tauri-drag-region className="h-12 shrink-0" />
         <ToolbarGroup items={items} />
         <div data-tauri-drag-region className="min-h-0 flex-1" />
         <ToolbarGroup items={footer} />
