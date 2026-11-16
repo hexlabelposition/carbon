@@ -5,7 +5,9 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import {
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import { keys, useCommands } from "../commands/commands";
@@ -68,6 +70,16 @@ const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
   ru: "settings.language.ru",
 };
 
+/** The groups of settings, listed at the left of the dialog. */
+type SettingsGroup = "general" | "appearance" | "fonts" | "notes";
+
+const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
+  { group: "general", label: "settings.general" },
+  { group: "appearance", label: "settings.appearance" },
+  { group: "fonts", label: "settings.fonts" },
+  { group: "notes", label: "settings.notes" },
+];
+
 /**
  * The settings of the app: applies the note settings and the language,
  * offers "Open settings" (Ctrl+, or Cmd+, on a Mac) and shows the dialog
@@ -79,6 +91,8 @@ export function Settings() {
   const t = useT();
   const language = useLanguage();
   const open = useSyncExternalStore(subscribe, () => isOpen);
+  /** The group shown: the last one, while the app runs. */
+  const [group, setGroup] = useState<SettingsGroup>("general");
 
   // The language of the page: hyphenation and spelling follow it.
   useEffect(() => {
@@ -136,45 +150,117 @@ export function Settings() {
         {/* Centered by its margins, not moved back by half its size: a
             move of half an odd size lands between pixels, and the text in
             it is drawn blurred. */}
-        <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-fit w-[440px] max-w-[calc(100vw-32px)] flex-col gap-5 rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog outline-none">
-          <header className="flex items-center justify-between">
-            <Dialog.Title className="text-h3 font-semibold">
+        <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog outline-none">
+          {/* The groups at the left, one shown at a time at the right. */}
+          <nav className="flex w-44 shrink-0 flex-col gap-3 border-r border-line bg-panel p-2">
+            <Dialog.Title className="px-2.5 pt-2.5 text-h3 font-semibold">
               {t("settings.title")}
             </Dialog.Title>
-            <Dialog.Close
-              aria-label={t("common.close")}
-              title={t("common.closeEscape")}
-              className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-            >
-              <svg
-                viewBox="0 0 10 10"
-                width="10"
-                height="10"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1"
+            <GroupTabs current={group} onShow={setGroup} />
+          </nav>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
+              <h3 className="text-h3 font-semibold">
+                {t(
+                  GROUPS.find((g) => g.group === group)?.label ??
+                    "settings.general",
+                )}
+              </h3>
+              <Dialog.Close
+                aria-label={t("common.close")}
+                title={t("common.closeEscape")}
+                className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
               >
-                <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-              </svg>
-            </Dialog.Close>
-          </header>
-          <AppearanceSettings />
-          <FontSettings />
-          <NoteSettings />
+                <svg
+                  viewBox="0 0 10 10"
+                  width="10"
+                  height="10"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                >
+                  <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+                </svg>
+              </Dialog.Close>
+            </header>
+            <div
+              role="tabpanel"
+              id="settings-panel"
+              aria-labelledby={`settings-tab-${group}`}
+              className="min-h-0 flex-1 overflow-auto px-5 pb-5"
+            >
+              {group === "general" && <GeneralSettings />}
+              {group === "appearance" && <AppearanceSettings />}
+              {group === "fonts" && <FontSettings />}
+              {group === "notes" && <NoteSettings />}
+            </div>
+          </div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
   );
 }
 
-function AppearanceSettings() {
+/**
+ * The groups as a column of tabs. Up and Down move between them, as the
+ * arrows of other lists do.
+ */
+function GroupTabs({
+  current,
+  onShow,
+}: {
+  current: SettingsGroup;
+  onShow: (group: SettingsGroup) => void;
+}) {
   const t = useT();
-  const theme = themePreference.use();
-  const zoom = zoomPreference.use();
+  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const step =
+      event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    const at = GROUPS.findIndex((g) => g.group === current);
+    const next = GROUPS[(at + step + GROUPS.length) % GROUPS.length].group;
+    onShow(next);
+    document.getElementById(`settings-tab-${next}`)?.focus();
+  }
+  return (
+    <div
+      role="tablist"
+      aria-orientation="vertical"
+      aria-label={t("settings.title")}
+      className="flex flex-col gap-0.5"
+      onKeyDown={onKeyDown}
+    >
+      {GROUPS.map(({ group, label }) => {
+        const selected = group === current;
+        return (
+          <button
+            key={group}
+            type="button"
+            role="tab"
+            id={`settings-tab-${group}`}
+            aria-selected={selected}
+            aria-controls="settings-panel"
+            tabIndex={selected ? 0 : -1}
+            className={`flex h-7 items-center rounded-md px-2.5 text-left outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
+              selected ? "bg-selected font-medium text-fg" : "text-muted"
+            }`}
+            onClick={() => onShow(group)}
+          >
+            {t(label)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function GeneralSettings() {
+  const t = useT();
   const language = languagePreference.use();
   return (
-    <Section title={t("settings.appearance")}>
+    <Rows>
       <Row label={t("settings.language")}>
         <SettingSelect
           label={t("settings.language")}
@@ -186,6 +272,16 @@ function AppearanceSettings() {
           onChange={languagePreference.set}
         />
       </Row>
+    </Rows>
+  );
+}
+
+function AppearanceSettings() {
+  const t = useT();
+  const theme = themePreference.use();
+  const zoom = zoomPreference.use();
+  return (
+    <Rows>
       <Row label={t("settings.theme")}>
         <ToggleGroup
           aria-label={t("settings.theme")}
@@ -218,7 +314,7 @@ function AppearanceSettings() {
           onChange={zoomPreference.set}
         />
       </Row>
-    </Section>
+    </Rows>
   );
 }
 
@@ -227,7 +323,7 @@ function NoteSettings() {
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   return (
-    <Section title={t("settings.notes")}>
+    <Rows>
       <Row label={t("settings.fontSize")}>
         <SettingSelect
           label={t("settings.fontSize")}
@@ -250,7 +346,7 @@ function NoteSettings() {
           onChange={noteWidthPreference.set}
         />
       </Row>
-    </Section>
+    </Rows>
   );
 }
 
@@ -275,7 +371,7 @@ function FontSettings() {
     }));
   };
   return (
-    <Section title={t("settings.fonts")}>
+    <Rows>
       <Row label={t("settings.font.ui")}>
         <SettingSelect
           label={t("settings.font.ui")}
@@ -303,19 +399,13 @@ function FontSettings() {
           onChange={monoFontPreference.set}
         />
       </Row>
-    </Section>
+    </Rows>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-1">
-      <h3 className="mb-1 text-label font-semibold tracking-[0.06em] text-faint uppercase">
-        {title}
-      </h3>
-      {children}
-    </section>
-  );
+/** The settings of a group, one row each. */
+function Rows({ children }: { children: ReactNode }) {
+  return <div className="flex flex-col gap-1">{children}</div>;
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
