@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseFrontmatter } from "../src/parser/frontmatter";
+import { parseFrontmatter, readFrontmatter } from "../src/parser/frontmatter";
 
 /** The frontmatter of a note with these lines of YAML. */
 const read = (...lines: string[]) =>
@@ -137,5 +137,32 @@ describe("parseFrontmatter", () => {
         properties: {},
       });
     });
+  });
+});
+
+describe("readFrontmatter", () => {
+  test("gives the keys in written order, tags and aliases as lists", () => {
+    const text = '---\ntitle: A\ntags: "a, #b"\naliases: Nick\nn: 1\n---\nBody';
+    expect(readFrontmatter(text)).toEqual({
+      length: text.indexOf("Body"),
+      entries: [
+        { key: "title", value: "A" },
+        { key: "tags", value: ["a", "b"] },
+        { key: "aliases", value: ["Nick"] },
+        { key: "n", value: 1 },
+      ],
+    });
+  });
+
+  test("is an empty block for empty YAML", () => {
+    expect(readFrontmatter("---\n---\n")).toEqual({ length: 8, entries: [] });
+    expect(readFrontmatter("---\n\n---")).toEqual({ length: 8, entries: [] });
+  });
+
+  test("is null without a frontmatter or with YAML that does not fit", () => {
+    expect(readFrontmatter("# Title")).toBeNull();
+    expect(readFrontmatter("---\ntags: [a\n---\n")).toBeNull();
+    expect(readFrontmatter("---\n- a\n---\n")).toBeNull();
+    expect(readFrontmatter("---\njust text\n---\n")).toBeNull();
   });
 });

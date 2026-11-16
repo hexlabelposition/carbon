@@ -7,6 +7,7 @@ import { syntaxTree } from "@codemirror/language";
 import { Facet, type EditorState } from "@codemirror/state";
 import type { SyntaxNode } from "@lezer/common";
 import type { TagCount } from "@carbon/core";
+import { frontmatterEnd } from "./frontmatter-range";
 
 /** What the editor needs to suggest tags. */
 export interface TagHost {
@@ -24,8 +25,6 @@ export const tagHost = Facet.define<TagHost, TagHost | null>({
 
 /** What a tag label may hold while it is typed: see `hashtag`. */
 const LABEL = /^[\p{L}\p{N}\p{M}_/-]*$/u;
-/** The longest a frontmatter is looked for; past that it is text. */
-const FRONTMATTER_LOOKUP = 65536;
 
 /**
  * Suggests tags of the vault while a tag is typed: after "#" and a
@@ -103,17 +102,8 @@ function writtenTags(state: EditorState, except: number): string[] {
   return tags;
 }
 
-/**
- * Whether `pos` is inside the frontmatter at the start of the note: from
- * a "---" first line to the "---" or "..." line that closes it.
- */
+/** Whether `pos` is inside the frontmatter at the start of the note. */
 function inFrontmatter(state: EditorState, pos: number): boolean {
-  if (!/^---[ \t]*$/.test(state.doc.line(1).text)) return false;
-  const limit = Math.min(state.doc.length, FRONTMATTER_LOOKUP);
-  for (let n = 2; n <= state.doc.lines; n++) {
-    const line = state.doc.line(n);
-    if (line.from > limit) return false;
-    if (/^(---|\.\.\.)[ \t]*$/.test(line.text)) return pos <= line.to;
-  }
-  return false;
+  const end = frontmatterEnd(state);
+  return end !== null && pos <= end;
 }

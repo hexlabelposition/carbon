@@ -12,6 +12,7 @@ import type { SyntaxNode } from "@lezer/common";
 import { isMissing, missingChanged } from "./missing-links";
 import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
+import { frontmatterEnd } from "./frontmatter-range";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -292,6 +293,8 @@ function decorate(view: EditorView): DecorationSet {
     }
   }
 
+  // The frontmatter is YAML, not Markdown: `frontmatterPreview` draws it.
+  const frontmatter = frontmatterEnd(state) ?? -1;
   // Where the previous visible range ended: an element that reaches into
   // the next one must not be decorated twice.
   let done = 0;
@@ -300,6 +303,7 @@ function decorate(view: EditorView): DecorationSet {
       from,
       to,
       enter({ name, node }) {
+        if (node.to <= frontmatter) return false;
         // Quotes and code blocks can be long: they are drawn line by line,
         // and only their lines in view are visited.
         const eachLineInView = (visit: (line: Line) => void) => {

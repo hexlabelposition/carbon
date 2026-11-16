@@ -34,6 +34,7 @@ import { linkPreview } from "./link-preview";
 import { useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
+import { frontmatterPreview } from "./live-preview-frontmatter";
 import {
   outlineHost,
   outlineOf,
@@ -88,6 +89,7 @@ interface MarkdownEditorProps {
 /** Everything live preview adds; source mode leaves it out. */
 const livePreviewExtensions: Extension = [
   livePreview,
+  frontmatterPreview,
   tablePreview,
   imagePreview,
   followOnClick,

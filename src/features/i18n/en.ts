@@ -40,6 +40,8 @@ export const en = {
   "conflict.keepNote": "Keep my note",
   "conflict.later": "Decide later",
   "conflict.useDisk": "Use the version on disk",
+  "editor.frontmatter": "Frontmatter",
+  "editor.frontmatterEmpty": "Empty frontmatter",
   "editor.noteName": "Note name",
   "editor.read": "Read",
   "editor.readHint": "Reading mode: no typing, tasks can still be ticked",

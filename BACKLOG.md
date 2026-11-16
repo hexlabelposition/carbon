@@ -121,7 +121,7 @@ Done when: tags and frontmatter are indexed, visible and usable for navigation.
 - [x] **C-404** (P0) Tags panel: tree of tags with counts, click shows notes
 - [x] **C-405** (P0) Aliases used in link resolution and `[[` autocomplete
 - [x] **C-406** (P1) Tag autocomplete after `#`
-- [ ] **C-407** (P1) Frontmatter rendered as a compact block in live preview
+- [x] **C-407** (P1) Frontmatter rendered as a compact block in live preview
 - [ ] **C-408** (P2) Properties editor UI (edit frontmatter without writing YAML)
 - [ ] **C-409** (P2) Rename a tag across the vault
 

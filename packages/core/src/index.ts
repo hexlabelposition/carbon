@@ -22,6 +22,8 @@ export { parseFiles } from "./parser/parse-files";
 export { markdownParser, parseNote } from "./parser/parse-note";
 export { wikiLink } from "./parser/wiki-link";
 export { hashtag } from "./parser/hashtag";
+export { readFrontmatter } from "./parser/frontmatter";
+export type { FrontmatterEntry } from "./parser/frontmatter";
 
 export { IndexStore, SCHEMA_VERSION, indexFileName } from "./index/index-store";
 export type { FollowedLink, Links } from "./links/links";

@@ -30,6 +30,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "conflict.keepNote": "Оставить мою заметку",
   "conflict.later": "Решить позже",
   "conflict.useDisk": "Взять версию с диска",
+  "editor.frontmatter": "Frontmatter",
+  "editor.frontmatterEmpty": "Пустой frontmatter",
   "editor.noteName": "Название заметки",
   "editor.read": "Чтение",
   "editor.readHint": "Режим чтения: печатать нельзя, но задачи можно отмечать",

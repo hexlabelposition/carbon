@@ -42,13 +42,8 @@ export function parseFrontmatter(text: string): Frontmatter {
   const empty: Frontmatter = { tags: [], aliases: [], properties: {} };
   const found = findFrontmatter(text);
   if (found === null) return empty;
-
-  // A repeated key is a mistake YAML refuses; the last one wins instead,
-  // as the rest of the frontmatter is still worth reading.
-  const doc = parseDocument(found.yaml, { uniqueKeys: false });
-  if (doc.errors.length > 0) return empty;
-  const data: unknown = doc.toJS();
-  if (!isRecord(data)) return empty;
+  const data = readYaml(found.yaml);
+  if (data === null) return empty;
 
   const { tags, aliases, ...properties } = data;
   return {
@@ -56,6 +51,52 @@ export function parseFrontmatter(text: string): Frontmatter {
     aliases: aliasesOf(aliases),
     properties,
   };
+}
+
+/** One key of a frontmatter and its value. */
+export interface FrontmatterEntry {
+  key: string;
+  /**
+   * The value as YAML reads it; for `tags` and `aliases` the list
+   * `parseFrontmatter` makes of it.
+   */
+  value: unknown;
+}
+
+/**
+ * The frontmatter of a note as it is written, for showing it: how long
+ * the block is, and its keys in written order. `null` without a
+ * frontmatter, or when its YAML does not parse or is not a mapping: then
+ * it is shown as the text it is. An empty block has no keys.
+ */
+export function readFrontmatter(
+  text: string,
+): { length: number; entries: FrontmatterEntry[] } | null {
+  const found = findFrontmatter(text);
+  if (found === null) return null;
+  const blank = found.yaml.trim() === "";
+  const data = blank ? {} : readYaml(found.yaml);
+  if (data === null) return null;
+  const entries = Object.entries(data).map(([key, value]) => ({
+    key,
+    value:
+      key === "tags"
+        ? tagsOf(value)
+        : key === "aliases"
+          ? aliasesOf(value)
+          : value,
+  }));
+  return { length: found.block.length, entries };
+}
+
+/** A YAML mapping; `null` for YAML that does not parse or is no mapping. */
+function readYaml(yaml: string): Record<string, unknown> | null {
+  // A repeated key is a mistake YAML refuses; the last one wins instead,
+  // as the rest of the frontmatter is still worth reading.
+  const doc = parseDocument(yaml, { uniqueKeys: false });
+  if (doc.errors.length > 0) return null;
+  const data: unknown = doc.toJS();
+  return isRecord(data) ? data : null;
 }
 
 function tagsOf(value: unknown): string[] {
