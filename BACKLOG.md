@@ -145,7 +145,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-601** (P0) Settings screen: theme, font, font size, editor options
 - [x] **C-602** (P0) Performance pass against the budgets, fix regressions
 - [x] **C-603** (P0) App icon and branding in the app and installers
-- [ ] **C-604** (P0) Packaging for Linux: AppImage, deb
+- [x] **C-604** (P0) Packaging for Linux: AppImage, deb
 - [ ] **C-605** (P0) Use Carbon for my own notes for two weeks, fix what hurts
 - [ ] **C-606** (P0) Error handling pass: clear messages, local log file
 - [ ] **C-607** (P1) Auto-update

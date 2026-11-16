@@ -74,6 +74,14 @@ Formatting is Prettier with its default settings, so there is nothing to decide.
 - New ideas go to "Ideas under consideration" in the backlog first, not into the current milestone.
 - A decision that changes the architecture is recorded in the decision log in [ARCHITECTURE.md](ARCHITECTURE.md#12-decision-log).
 
+## Releases
+
+1. Raise the version, the same in `tauri/tauri.conf.json`, `tauri/Cargo.toml` and `package.json`, and commit it.
+2. Tag the commit `v` and the version, such as `v0.1.0`, and push the tag.
+3. The release workflow checks the tag against the version, builds the deb and the AppImage on Ubuntu 22.04 and attaches them to a draft release on GitHub. Try them, then publish the release.
+
+To build the packages on your machine: `bun tauri build`. They land in `tauri/target/release/bundle/deb` and `tauri/target/release/bundle/appimage`.
+
 ## License
 
 By contributing you agree that your work is released under the [MIT license](LICENSE).

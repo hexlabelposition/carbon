@@ -34,7 +34,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["deb", "appimage"],
     "category": "Productivity",
     "shortDescription": "Fast, local-first notes with links",
     "longDescription": "Carbon keeps notes as plain Markdown files in a folder of your own and links them with [[wiki links]]: live preview, backlinks, tags, full-text search and a quick switcher, fast on vaults of ten thousand notes.",
@@ -49,6 +49,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "section": "text",
+        "recommends": ["hunspell-en-us", "hunspell-ru"]
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   }
 }

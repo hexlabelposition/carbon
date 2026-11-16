@@ -1,0 +1,59 @@
+name: Release
+
+# Builds the Linux packages for a version tag, such as v0.1.0, and puts
+# them on a draft GitHub release, to check and publish by hand (C-604).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  # To create the release and upload the packages to it.
+  contents: write
+
+jobs:
+  linux:
+    name: Linux packages
+    # The oldest Ubuntu the runners have: an AppImage runs where the glibc
+    # is as old as the one it was built with, or newer.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      # The packages are named by the version in tauri.conf.json, not by
+      # the tag: the two must agree.
+      - name: Check the tag against the version
+        run: |
+          version=$(jq -r .version tauri/tauri.conf.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "The tag $GITHUB_REF_NAME is not v$version, the version in tauri/tauri.conf.json"
+            exit 1
+          fi
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri -> target
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # The deb and the AppImage of tauri.conf.json, on a draft release.
+      - name: Build the packages and attach them to a draft release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: bun tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: Carbon ${{ github.ref_name }}
+          releaseBody: See the assets below to download Carbon for Linux.
+          releaseDraft: true
+          prerelease: true
