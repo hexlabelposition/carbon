@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
 import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
@@ -14,10 +13,6 @@ export interface TabBarTab {
 interface TabBarProps {
   tabs: readonly TabBarTab[];
   activeId: number | null;
-  canGoBack: boolean;
-  canGoForward: boolean;
-  onBack: () => void;
-  onForward: () => void;
   onActivate: (id: number) => void;
   onClose: (id: number) => void;
   /** The bar is at the top right: it leaves the window buttons room. */
@@ -27,16 +22,13 @@ interface TabBarProps {
 }
 
 /**
- * The row of tabs above the note, with back and forward. Layout only. Its
- * empty space drags the window, which has no system title bar.
+ * The row of tabs above the note. Layout only. Its empty space drags the
+ * window, which has no system title bar. A line closes each tab at its
+ * right: the first starts at the edge, with no line before it.
  */
 export function TabBar({
   tabs,
   activeId,
-  canGoBack,
-  canGoForward,
-  onBack,
-  onForward,
   onActivate,
   onClose,
   leaveRoom = false,
@@ -52,25 +44,6 @@ export function TabBar({
     >
       <div
         data-tauri-drag-region
-        className="flex shrink-0 items-center gap-0.5 px-1.5"
-      >
-        <ArrowButton
-          label={t("tabs.back")}
-          disabled={!canGoBack}
-          onClick={onBack}
-        >
-          <path d="M10 4l-4 4 4 4" />
-        </ArrowButton>
-        <ArrowButton
-          label={t("tabs.forward")}
-          disabled={!canGoForward}
-          onClick={onForward}
-        >
-          <path d="M6 4l4 4-4 4" />
-        </ArrowButton>
-      </div>
-      <div
-        data-tauri-drag-region
         role="tablist"
         aria-label={t("tabs.openNotes")}
         className="flex min-w-0 flex-1 items-stretch overflow-x-auto"
@@ -80,7 +53,7 @@ export function TabBar({
           return (
             <div
               key={tab.id}
-              className={`flex max-w-60 min-w-24 flex-1 items-center border-l border-line ${
+              className={`flex max-w-60 min-w-24 flex-1 items-center border-r border-line ${
                 active ? "bg-bg text-fg" : "text-muted hover:bg-raise"
               }`}
               // The middle button closes a tab, as in a browser.
@@ -118,37 +91,5 @@ export function TabBar({
         })}
       </div>
     </div>
-  );
-}
-
-interface ArrowButtonProps {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  /** The `<path>` of the arrow. */
-  children: ReactNode;
-}
-
-function ArrowButton({ label, disabled, onClick, children }: ArrowButtonProps) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      className="flex size-6 items-center justify-center rounded-sm text-muted hover:bg-raise hover:text-fg disabled:text-faint disabled:opacity-50 disabled:hover:bg-transparent"
-      onClick={onClick}
-    >
-      <svg
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        className="size-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      >
-        {children}
-      </svg>
-    </button>
   );
 }

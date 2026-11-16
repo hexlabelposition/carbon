@@ -1,5 +1,5 @@
 import type { Vault } from "@carbon/core";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import { imageTypeOf } from "./image-file";
 import { FittedImage } from "./FittedImage";
@@ -13,7 +13,16 @@ type Loaded =
  * An image file of the vault, shown in a tab where a note would be: opened
  * from the file tree. Give it a `key` of its path: it loads the image once.
  */
-export function ImageView({ vault, path }: { vault: Vault; path: string }) {
+export function ImageView({
+  vault,
+  path,
+  history,
+}: {
+  vault: Vault;
+  path: string;
+  /** Back and forward, at the start of the bar above the image. */
+  history?: ReactNode;
+}) {
   const t = useT();
   const [image, setImage] = useState<Loaded>({ status: "loading" });
 
@@ -42,7 +51,8 @@ export function ImageView({ vault, path }: { vault: Vault; path: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex h-9 shrink-0 items-center border-b border-line px-3">
+      <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
+        {history}
         <span className="min-w-0 flex-1 truncate text-muted" title={path}>
           {path}
         </span>

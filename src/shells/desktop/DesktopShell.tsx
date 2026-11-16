@@ -46,6 +46,7 @@ import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
 import { useWorkspace } from "../../features/workspace/workspace";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
+import { HistoryButtons } from "../../features/workspace/HistoryButtons";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useFileDropGuard } from "./use-file-drop-guard";
@@ -516,6 +517,14 @@ function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
     <div className="flex min-h-0 flex-1">
       {workspace.panes.map((pane, index) => {
         const active = index === workspace.activePane;
+        const history = (
+          <HistoryButtons
+            canGoBack={pane.canGoBack}
+            canGoForward={pane.canGoForward}
+            onBack={workspace.back}
+            onForward={workspace.forward}
+          />
+        );
         return (
           <section
             key={pane.id}
@@ -539,10 +548,6 @@ function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
                   title: tab.path,
                 }))}
                 activeId={pane.activeTabId}
-                canGoBack={pane.canGoBack}
-                canGoForward={pane.canGoForward}
-                onBack={workspace.back}
-                onForward={workspace.forward}
                 onActivate={workspace.activateTab}
                 onClose={workspace.closeTab}
                 // With the toolbar and the left panel shut, the bar starts
@@ -552,9 +557,16 @@ function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
                 leaveRoom={!right.open && index === last}
               />
             </div>
+            {/* The pane is focused on the press, before the click: back
+                and forward act on it. */}
             {pane.path !== null && imageTypeOf(pane.path) !== null && (
               <div className="min-h-0 flex-1">
-                <ImageView key={pane.path} vault={vault} path={pane.path} />
+                <ImageView
+                  key={pane.path}
+                  vault={vault}
+                  path={pane.path}
+                  history={history}
+                />
               </div>
             )}
             {pane.path !== null && imageTypeOf(pane.path) === null && (
@@ -563,6 +575,7 @@ function NoteArea({ vault, startCovered, right }: NoteAreaProps) {
                   key={pane.path}
                   vault={vault}
                   path={pane.path}
+                  history={history}
                   sourceMode={sourceMode.on}
                   onToggleSourceMode={sourceMode.toggle}
                   readingMode={readingMode.on}

@@ -1,5 +1,5 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
@@ -17,6 +17,8 @@ import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 interface NoteEditorProps {
   vault: Vault;
   path: NotePath;
+  /** Back and forward, at the start of the bar above the note. */
+  history?: ReactNode;
   /** Shows the raw Markdown in place of live preview. */
   sourceMode: boolean;
   onToggleSourceMode: () => void;
@@ -30,12 +32,14 @@ interface NoteEditorProps {
 }
 
 /**
- * The editor of one note, with its name and save state above it. Mount it
+ * The editor of one note, with back and forward, its name and save state
+ * above it. Mount it
  * with `key={path}`, so each note gets an editor of its own.
  */
 export function NoteEditor({
   vault,
   path,
+  history,
   sourceMode,
   onToggleSourceMode,
   readingMode,
@@ -74,7 +78,8 @@ export function NoteEditor({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line px-3">
+      <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
+        {history}
         <span className="min-w-0 flex-1 truncate text-muted" title={path}>
           {name}
         </span>
