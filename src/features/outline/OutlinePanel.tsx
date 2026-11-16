@@ -1,5 +1,6 @@
 import type { Heading } from "../editor/outline";
 import { useT } from "../i18n/i18n";
+import { Tooltip } from "../ui/Tooltip";
 
 interface OutlinePanelProps {
   headings: readonly Heading[];
@@ -32,18 +33,19 @@ export function OutlinePanel({
         {headings.map((heading, index) => (
           // Headings can repeat; their order is what tells them apart.
           <li key={index}>
-            <button
-              type="button"
-              aria-current={index === current ? "location" : undefined}
-              title={heading.text}
-              className={`block w-full truncate py-0.5 pr-3 text-left hover:bg-raise hover:text-fg ${
-                index === current ? "bg-selected text-fg" : "text-muted"
-              }`}
-              style={{ paddingLeft: `${12 + (heading.level - top) * 12}px` }}
-              onClick={() => onReveal(index)}
-            >
-              {heading.text || t("outline.emptyHeading")}
-            </button>
+            <Tooltip label={heading.text}>
+              <button
+                type="button"
+                aria-current={index === current ? "location" : undefined}
+                className={`block w-full truncate py-0.5 pr-3 text-left hover:bg-raise hover:text-fg ${
+                  index === current ? "bg-selected text-fg" : "text-muted"
+                }`}
+                style={{ paddingLeft: `${12 + (heading.level - top) * 12}px` }}
+                onClick={() => onReveal(index)}
+              >
+                {heading.text || t("outline.emptyHeading")}
+              </button>
+            </Tooltip>
           </li>
         ))}
       </ul>

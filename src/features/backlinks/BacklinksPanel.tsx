@@ -1,6 +1,7 @@
 import type { Backlink, NotePath } from "@carbon/core";
 import { useT } from "../i18n/i18n";
 import type { BacklinksState } from "./use-backlinks";
+import { Tooltip } from "../ui/Tooltip";
 
 interface BacklinksPanelProps {
   state: BacklinksState;
@@ -40,14 +41,15 @@ export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
         <ul aria-label={t("shell.backlinks")}>
           {groups.map(({ source, title, links }) => (
             <li key={source} className="pb-1">
-              <button
-                type="button"
-                title={source}
-                className="block w-full truncate px-3 py-0.5 text-left font-semibold hover:bg-raise"
-                onClick={() => onOpen(source)}
-              >
-                {title}
-              </button>
+              <Tooltip label={source}>
+                <button
+                  type="button"
+                  className="block w-full truncate px-3 py-0.5 text-left font-semibold hover:bg-raise"
+                  onClick={() => onOpen(source)}
+                >
+                  {title}
+                </button>
+              </Tooltip>
               <ul>
                 {links.map((link) => (
                   <li key={link.start}>

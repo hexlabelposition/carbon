@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
+import { Tooltip } from "../../features/ui/Tooltip";
 
 /** How wide the toolbar is open: as the mark above it (`w-bar`). */
 export const TOOLBAR_WIDTH = "var(--spacing-bar)";
@@ -66,37 +67,38 @@ function ToolbarButton({
   item: ToolbarItem;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={pressed}
-      title={shortcut === undefined ? label : `${label} (${shortcut})`}
-      // The whole width of the strip takes the click; only a rounded square
-      // around the icon lights up, as on the panel buttons.
-      className={`group flex h-10 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
-        pressed === true ? "text-fg" : "text-muted"
-      }`}
-      onClick={run}
-    >
-      <span
-        className={`flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
-          pressed === true ? "bg-selected" : ""
+    <Tooltip label={label} shortcut={shortcut} side="right">
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        // The whole width of the strip takes the click; only a rounded square
+        // around the icon lights up, as on the panel buttons.
+        className={`group flex h-10 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
+          pressed === true ? "text-fg" : "text-muted"
         }`}
+        onClick={run}
       >
-        <svg
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-          className="size-4.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.25"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <span
+          className={`flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
+            pressed === true ? "bg-selected" : ""
+          }`}
         >
-          {icon}
-        </svg>
-      </span>
-    </button>
+          <svg
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            className="size-4.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {icon}
+          </svg>
+        </span>
+      </button>
+    </Tooltip>
   );
 }
 

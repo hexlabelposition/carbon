@@ -2,6 +2,7 @@ import type { Mention, NotePath } from "@carbon/core";
 import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
 import type { UnlinkedMentions } from "./use-unlinked-mentions";
+import { Tooltip } from "../ui/Tooltip";
 
 interface UnlinkedMentionsPanelProps {
   mentions: UnlinkedMentions;
@@ -79,14 +80,15 @@ function MentionList({
     <ul aria-label={t("mentions.title")}>
       {groups.map(({ source, title, mentions }) => (
         <li key={source} className="pb-1">
-          <button
-            type="button"
-            title={source}
-            className="block w-full truncate px-3 py-0.5 text-left hover:bg-raise"
-            onClick={() => onOpen(source)}
-          >
-            {title}
-          </button>
+          <Tooltip label={source}>
+            <button
+              type="button"
+              className="block w-full truncate px-3 py-0.5 text-left hover:bg-raise"
+              onClick={() => onOpen(source)}
+            >
+              {title}
+            </button>
+          </Tooltip>
           <ul>
             {mentions.map((mention) => (
               <li
@@ -104,14 +106,15 @@ function MentionList({
                     className="rounded-xs bg-highlight text-fg"
                   />
                 </button>
-                <button
-                  type="button"
-                  title={t("mentions.linkHint", { name: title })}
-                  className="mt-0.5 shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-selected hover:text-fg"
-                  onClick={() => link(mention)}
-                >
-                  {t("mentions.link")}
-                </button>
+                <Tooltip label={t("mentions.linkHint", { name: title })}>
+                  <button
+                    type="button"
+                    className="mt-0.5 shrink-0 rounded-sm px-1.5 text-small text-muted hover:bg-selected hover:text-fg"
+                    onClick={() => link(mention)}
+                  >
+                    {t("mentions.link")}
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>

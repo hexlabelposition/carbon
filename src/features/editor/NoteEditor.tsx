@@ -15,6 +15,7 @@ import { useNoteLinks } from "./use-note-links";
 import { useNoteTags } from "./use-note-tags";
 import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
+import { Tooltip } from "../ui/Tooltip";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -85,36 +86,38 @@ export function NoteEditor({
     <div ref={wheelTextSize} className="flex h-full flex-col">
       <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
         {history}
-        <span className="min-w-0 flex-1 truncate text-muted" title={path}>
-          {name}
-        </span>
+        <Tooltip label={path}>
+          <span className="min-w-0 flex-1 truncate text-muted">{name}</span>
+        </Tooltip>
         <SaveIndicator
           save={note.save}
           onRetry={actions.saveNow}
           onResolve={() => setPostponed(false)}
         />
-        <button
-          type="button"
-          aria-pressed={sourceMode}
-          title={t("editor.sourceHint", { shortcut: SOURCE_MODE_SHORTCUT })}
-          className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
-            sourceMode ? "bg-selected text-fg" : "text-muted"
-          }`}
-          onClick={onToggleSourceMode}
-        >
-          {t("editor.source")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={readingMode}
-          title={t("editor.readHint")}
-          className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
-            readingMode ? "bg-selected text-fg" : "text-muted"
-          }`}
-          onClick={onToggleReadingMode}
-        >
-          {t("editor.read")}
-        </button>
+        <Tooltip label={t("editor.sourceHint")} shortcut={SOURCE_MODE_SHORTCUT}>
+          <button
+            type="button"
+            aria-pressed={sourceMode}
+            className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+              sourceMode ? "bg-selected text-fg" : "text-muted"
+            }`}
+            onClick={onToggleSourceMode}
+          >
+            {t("editor.source")}
+          </button>
+        </Tooltip>
+        <Tooltip label={t("editor.readHint")}>
+          <button
+            type="button"
+            aria-pressed={readingMode}
+            className={`h-6 shrink-0 rounded-sm px-1.5 text-small hover:bg-raise hover:text-fg ${
+              readingMode ? "bg-selected text-fg" : "text-muted"
+            }`}
+            onClick={onToggleReadingMode}
+          >
+            {t("editor.read")}
+          </button>
+        </Tooltip>
       </header>
       {images.error !== null && (
         <EditorAlert message={images.error} onDismiss={images.dismissError} />
@@ -235,9 +238,11 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   }
   return (
     <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
-      <span className="truncate text-danger" title={save.message}>
-        {t("save.failed", { reason: save.message })}
-      </span>
+      <Tooltip label={save.message}>
+        <span className="truncate text-danger">
+          {t("save.failed", { reason: save.message })}
+        </span>
+      </Tooltip>
       <button type="button" className={indicatorButton} onClick={onRetry}>
         {t("save.retry")}
       </button>

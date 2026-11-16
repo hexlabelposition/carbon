@@ -51,6 +51,7 @@ import {
   useNoteStyle,
   wheelTextSizePreference,
 } from "./note-style";
+import { Tooltip } from "../ui/Tooltip";
 
 /** Opens the settings dialog; another dialog open closes. */
 export function openSettings(): void {
@@ -195,23 +196,24 @@ export function Settings() {
                     "settings.general",
                 )}
               </h3>
-              <Dialog.Close
-                aria-label={t("common.close")}
-                title={t("common.closeEscape")}
-                className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-              >
-                <svg
-                  viewBox="0 0 10 10"
-                  width="10"
-                  height="10"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
+              <Tooltip label={t("common.close")} shortcut="Esc">
+                <Dialog.Close
+                  aria-label={t("common.close")}
+                  className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
                 >
-                  <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-                </svg>
-              </Dialog.Close>
+                  <svg
+                    viewBox="0 0 10 10"
+                    width="10"
+                    height="10"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  >
+                    <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+                  </svg>
+                </Dialog.Close>
+              </Tooltip>
             </header>
             <div
               role="tabpanel"
@@ -522,28 +524,29 @@ function ResetButton({
   onReset: () => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      // Framed as the list button beside it.
-      className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line-strong bg-panel text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel disabled:hover:text-muted"
-      onClick={onReset}
-    >
-      <svg
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        className="size-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <Tooltip label={label}>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        // Framed as the list button beside it.
+        className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line-strong bg-panel text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel disabled:hover:text-muted"
+        onClick={onReset}
       >
-        <path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5V5h2.5" />
-      </svg>
-    </button>
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5V5h2.5" />
+        </svg>
+      </button>
+    </Tooltip>
   );
 }
 

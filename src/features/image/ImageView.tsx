@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import { imageTypeOf } from "./image-file";
 import { FittedImage } from "./FittedImage";
+import { Tooltip } from "../ui/Tooltip";
 
 type Loaded =
   | { status: "loading" }
@@ -53,9 +54,9 @@ export function ImageView({
     <div className="flex h-full flex-col">
       <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
         {history}
-        <span className="min-w-0 flex-1 truncate text-muted" title={path}>
-          {path}
-        </span>
+        <Tooltip label={path}>
+          <span className="min-w-0 flex-1 truncate text-muted">{path}</span>
+        </Tooltip>
       </header>
       <div className="min-h-0 flex-1">
         {image.status === "ready" && <FittedImage url={image.url} alt={path} />}

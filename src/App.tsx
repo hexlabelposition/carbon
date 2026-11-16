@@ -2,6 +2,7 @@ import { CommandsProvider } from "./features/commands/CommandsProvider";
 import { AppSettingsProvider } from "./features/settings/AppSettingsProvider";
 import { Settings } from "./features/settings/Settings";
 import { VaultProvider } from "./features/vault/VaultProvider";
+import { TooltipProvider } from "./features/ui/Tooltip";
 import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import {
@@ -22,16 +23,18 @@ const platform = { ...tauriPlatform, parser: createWorkerParser() };
  */
 function App() {
   return (
-    <AppSettingsProvider store={tauriPlatform.settings}>
-      <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
-        <CommandsProvider>
-          <InterfaceZoom apply={setInterfaceZoom} />
-          <ThemeSwitch />
-          <Settings />
-          <DesktopShell frame={tauriWindow} />
-        </CommandsProvider>
-      </VaultProvider>
-    </AppSettingsProvider>
+    <TooltipProvider>
+      <AppSettingsProvider store={tauriPlatform.settings}>
+        <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
+          <CommandsProvider>
+            <InterfaceZoom apply={setInterfaceZoom} />
+            <ThemeSwitch />
+            <Settings />
+            <DesktopShell frame={tauriWindow} />
+          </CommandsProvider>
+        </VaultProvider>
+      </AppSettingsProvider>
+    </TooltipProvider>
   );
 }
 

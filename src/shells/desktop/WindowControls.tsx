@@ -9,6 +9,7 @@ import {
 import { useCommands } from "../../features/commands/commands";
 import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
+import { Tooltip } from "../../features/ui/Tooltip";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -315,33 +316,34 @@ function ControlButton({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      className={`flex h-full w-bar shrink-0 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
-        danger
-          ? "hover:bg-danger hover:text-on-danger active:bg-danger/80"
-          : "hover:bg-selected hover:text-fg active:bg-line-strong"
-      }`}
-      onClick={onClick}
-    >
-      {/* Drawn as the other icons of the app, on 16 by 16 and scaled
+    <Tooltip label={label}>
+      <button
+        type="button"
+        aria-label={label}
+        className={`flex h-full w-bar shrink-0 items-center justify-center text-muted transition-colors duration-100 outline-none focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-inset ${
+          danger
+            ? "hover:bg-danger hover:text-on-danger active:bg-danger/80"
+            : "hover:bg-selected hover:text-fg active:bg-line-strong"
+        }`}
+        onClick={onClick}
+      >
+        {/* Drawn as the other icons of the app, on 16 by 16 and scaled
           with the interface: whole at any zoom. Lines snapped to whole
           pixels were sharper at 100%, but lost an edge zoomed out. */}
-      <svg
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        className="size-4.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {children}
-      </svg>
-    </button>
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {children}
+        </svg>
+      </button>
+    </Tooltip>
   );
 }
 

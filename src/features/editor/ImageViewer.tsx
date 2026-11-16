@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useT } from "../i18n/i18n";
 import { FittedImage } from "../image/FittedImage";
 import type { ShownImage } from "./live-preview-image";
+import { Tooltip } from "../ui/Tooltip";
 
 /**
  * An image of a note on its own, over the whole window, fit into it.
@@ -39,31 +40,29 @@ export function ImageViewer({
       }}
     >
       <FittedImage url={image.url} alt={image.alt} onClickBeside={onClose} />
-      <p
-        className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-16 py-4 text-center text-small text-muted"
-        title={image.target}
-      >
+      <p className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-16 py-4 text-center text-small text-muted">
         {image.alt || name}
       </p>
-      <button
-        type="button"
-        aria-label={t("common.close")}
-        title={t("common.closeEscape")}
-        className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-        onClick={onClose}
-      >
-        <svg
-          viewBox="0 0 10 10"
-          width="10"
-          height="10"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1"
+      <Tooltip label={t("common.close")} shortcut="Esc">
+        <button
+          type="button"
+          aria-label={t("common.close")}
+          className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+          onClick={onClose}
         >
-          <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-        </svg>
-      </button>
+          <svg
+            viewBox="0 0 10 10"
+            width="10"
+            height="10"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+          >
+            <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+          </svg>
+        </button>
+      </Tooltip>
     </dialog>
   );
 }

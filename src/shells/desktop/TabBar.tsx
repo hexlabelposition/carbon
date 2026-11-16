@@ -1,6 +1,7 @@
 import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
 import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
+import { Tooltip } from "../../features/ui/Tooltip";
 
 export interface TabBarTab {
   id: number;
@@ -66,16 +67,17 @@ export function TabBar({
                 if (event.button === 1) onClose(tab.id);
               }}
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={active}
-                title={tab.title}
-                className="h-full min-w-0 flex-1 truncate rounded-md pr-1 pl-2.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-line-strong"
-                onClick={() => onActivate(tab.id)}
-              >
-                {tab.label}
-              </button>
+              <Tooltip label={tab.title}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className="h-full min-w-0 flex-1 truncate rounded-md pr-1 pl-2.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-line-strong"
+                  onClick={() => onActivate(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              </Tooltip>
               <button
                 type="button"
                 aria-label={t("tabs.close", { name: tab.label })}

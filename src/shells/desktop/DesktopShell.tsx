@@ -91,6 +91,7 @@ import {
   useWindowShape,
   type WindowFrame,
 } from "./WindowControls";
+import { Tooltip } from "../../features/ui/Tooltip";
 
 // Dev builds only: in a release build the condition is false at build time
 // and neither is bundled.
@@ -734,9 +735,9 @@ function IndexState({ vault }: { vault: Vault }) {
         ? status.error.message
         : String(status.error);
     return (
-      <p className="text-danger" title={reason}>
-        {t("shell.indexFailed")}
-      </p>
+      <Tooltip label={reason}>
+        <p className="text-danger">{t("shell.indexFailed")}</p>
+      </Tooltip>
     );
   }
   const { done, total } = status;

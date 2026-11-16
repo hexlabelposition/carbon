@@ -44,7 +44,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.renameProperty": "Переименовать",
   "editor.replaceInNote": "Заменить в заметке",
   "editor.source": "Исходник",
-  "editor.sourceHint": "Показать исходный Markdown ({shortcut})",
+  "editor.sourceHint": "Показать исходный Markdown",
   "editor.taskDone": "Задача выполнена",
   "editor.toggleReading": "Включить или выключить режим чтения",
   "editor.toggleSource": "Показать или скрыть исходный Markdown",

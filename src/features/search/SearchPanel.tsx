@@ -3,6 +3,7 @@ import { useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import { useT } from "../i18n/i18n";
 import { Highlighted } from "./Highlighted";
 import type { Search } from "./use-search";
+import { Tooltip } from "../ui/Tooltip";
 
 /** How a match looks in a hit. */
 const MATCH = "rounded-xs bg-highlight text-fg";
@@ -74,18 +75,19 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b border-line px-2 py-1.5">
-        <input
-          ref={field}
-          type="search"
-          aria-label={t("search.placeholder")}
-          placeholder={t("search.placeholder")}
-          title={t("search.syntax")}
-          spellCheck={false}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={onFieldKeyDown}
-          className="h-6 w-full rounded-sm border border-line-strong bg-bg px-1.5 outline-none focus:border-fg"
-        />
+        <Tooltip label={t("search.syntax")} hoverOnly>
+          <input
+            ref={field}
+            type="search"
+            aria-label={t("search.placeholder")}
+            placeholder={t("search.placeholder")}
+            spellCheck={false}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onFieldKeyDown}
+            className="h-6 w-full rounded-sm border border-line-strong bg-bg px-1.5 outline-none focus:border-fg"
+          />
+        </Tooltip>
       </div>
       <div className="min-h-0 flex-1 overflow-auto py-1">
         <Status results={results} />
@@ -97,30 +99,31 @@ export function SearchPanel({ search, focusRequest }: SearchPanelProps) {
           >
             {hits.map((hit) => (
               <li key={hit.path}>
-                <button
-                  type="button"
-                  title={hit.path}
-                  className="block w-full px-3 py-1 text-left outline-none hover:bg-raise focus-visible:bg-selected"
-                  onClick={(event) => onHitClick(event, hit)}
-                  onAuxClick={(event) => onHitAuxClick(event, hit)}
-                >
-                  <span className="block truncate font-semibold">
-                    <Highlighted
-                      text={hit.title}
-                      ranges={hit.titleMatches}
-                      className={MATCH}
-                    />
-                  </span>
-                  {hit.snippet !== "" && (
-                    <span className="line-clamp-3 text-small text-muted">
+                <Tooltip label={hit.path}>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-1 text-left outline-none hover:bg-raise focus-visible:bg-selected"
+                    onClick={(event) => onHitClick(event, hit)}
+                    onAuxClick={(event) => onHitAuxClick(event, hit)}
+                  >
+                    <span className="block truncate font-semibold">
                       <Highlighted
-                        text={hit.snippet}
-                        ranges={hit.snippetMatches}
+                        text={hit.title}
+                        ranges={hit.titleMatches}
                         className={MATCH}
                       />
                     </span>
-                  )}
-                </button>
+                    {hit.snippet !== "" && (
+                      <span className="line-clamp-3 text-small text-muted">
+                        <Highlighted
+                          text={hit.snippet}
+                          ranges={hit.snippetMatches}
+                          className={MATCH}
+                        />
+                      </span>
+                    )}
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>

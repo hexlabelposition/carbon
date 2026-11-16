@@ -1,6 +1,7 @@
 import type { IndexStatus } from "@carbon/core";
 import { useEffect } from "react";
 import { timing } from "./timing";
+import { Tooltip } from "../ui/Tooltip";
 
 /**
  * How long the startup scan took, where it waited, and how long after the
@@ -25,22 +26,24 @@ export function IndexTiming({ status }: { status: IndexStatus }) {
   if (ready === null || sinceStart === null) return null;
   const { list, read, parse, write } = ready.waits;
   return (
-    <div title="For measuring the budgets (C-602)">
-      <p>
-        {ready.notes} notes · {ready.indexed} indexed in {seconds(ready.ms)} ·
-        ready {seconds(sinceStart)} after start
-      </p>
-      {timing.shownAt !== null && timing.openedAt !== null && (
+    <Tooltip label="For measuring the budgets (C-602)">
+      <div>
         <p>
-          window shown {seconds(timing.shownAt)} after start · opened to ready{" "}
-          {seconds(sinceStart - timing.openedAt)}
+          {ready.notes} notes · {ready.indexed} indexed in {seconds(ready.ms)} ·
+          ready {seconds(sinceStart)} after start
         </p>
-      )}
-      <p>
-        waited: list {seconds(list)} · read {seconds(read)} · parse{" "}
-        {seconds(parse)} · write {seconds(write)}
-      </p>
-    </div>
+        {timing.shownAt !== null && timing.openedAt !== null && (
+          <p>
+            window shown {seconds(timing.shownAt)} after start · opened to ready{" "}
+            {seconds(sinceStart - timing.openedAt)}
+          </p>
+        )}
+        <p>
+          waited: list {seconds(list)} · read {seconds(read)} · parse{" "}
+          {seconds(parse)} · write {seconds(write)}
+        </p>
+      </div>
+    </Tooltip>
   );
 }
 

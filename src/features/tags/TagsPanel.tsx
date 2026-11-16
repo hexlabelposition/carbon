@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { NameInput } from "../file-tree/NameInput";
 import { useT } from "../i18n/i18n";
 import type { TagsView } from "./use-tags";
+import { Tooltip } from "../ui/Tooltip";
 
 interface TagsPanelProps {
   tags: TagsView;
@@ -183,24 +184,25 @@ function TagRow({
             onCancel={tags.cancelRename}
           />
         ) : (
-          <button
-            ref={name}
-            type="button"
-            title={`#${node.tag}`}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none hover:text-fg"
-            onClick={() => tags.select(selected ? null : node.tag)}
-            onKeyDown={(event) => {
-              if (event.key === "F2") {
-                event.preventDefault();
-                tags.startRename(node.tag);
-              }
-            }}
-          >
-            <span className="truncate">{node.name}</span>
-            <span className="ml-auto shrink-0 text-small text-faint tabular-nums">
-              {node.count}
-            </span>
-          </button>
+          <Tooltip label={`#${node.tag}`}>
+            <button
+              ref={name}
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none hover:text-fg"
+              onClick={() => tags.select(selected ? null : node.tag)}
+              onKeyDown={(event) => {
+                if (event.key === "F2") {
+                  event.preventDefault();
+                  tags.startRename(node.tag);
+                }
+              }}
+            >
+              <span className="truncate">{node.name}</span>
+              <span className="ml-auto shrink-0 text-small text-faint tabular-nums">
+                {node.count}
+              </span>
+            </button>
+          </Tooltip>
         )}
       </div>
       {open && (
@@ -239,26 +241,29 @@ function TagNotes({
       className="flex max-h-[50%] shrink-0 flex-col border-t border-line"
     >
       <div className="flex h-7 shrink-0 items-center gap-2 pr-1 pl-3">
-        <span className="truncate text-small font-semibold" title={`#${tag}`}>
-          {t("tags.notesOf", { tag })}
-        </span>
-        <button
-          type="button"
-          aria-label={t("common.close")}
-          title={t("common.close")}
-          className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-raise hover:text-fg"
-          onClick={() => tags.select(null)}
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3">
-            <path
-              d="M4 4l8 8M12 4l-8 8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+        <Tooltip label={`#${tag}`}>
+          <span className="truncate text-small font-semibold">
+            {t("tags.notesOf", { tag })}
+          </span>
+        </Tooltip>
+        <Tooltip label={t("common.close")}>
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-raise hover:text-fg"
+            onClick={() => tags.select(null)}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </Tooltip>
       </div>
       <div className="min-h-0 flex-1 overflow-auto pb-1">
         {notes.status === "error" ? (
@@ -271,20 +276,21 @@ function TagNotes({
           <ul>
             {notes.notes.map((path) => (
               <li key={path}>
-                <button
-                  type="button"
-                  title={path}
-                  className="block w-full truncate px-3 py-0.5 text-left text-muted hover:bg-raise hover:text-fg"
-                  onClick={(event) =>
-                    onOpen(path, event.ctrlKey || event.metaKey)
-                  }
-                  onAuxClick={(event) => {
-                    // The middle button opens a note in a new tab.
-                    if (event.button === 1) onOpen(path, true);
-                  }}
-                >
-                  {titleOf(path)}
-                </button>
+                <Tooltip label={path}>
+                  <button
+                    type="button"
+                    className="block w-full truncate px-3 py-0.5 text-left text-muted hover:bg-raise hover:text-fg"
+                    onClick={(event) =>
+                      onOpen(path, event.ctrlKey || event.metaKey)
+                    }
+                    onAuxClick={(event) => {
+                      // The middle button opens a note in a new tab.
+                      if (event.button === 1) onOpen(path, true);
+                    }}
+                  >
+                    {titleOf(path)}
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>

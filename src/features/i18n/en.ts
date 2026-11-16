@@ -54,7 +54,7 @@ export const en = {
   "editor.renameProperty": "Rename",
   "editor.replaceInNote": "Replace in note",
   "editor.source": "Source",
-  "editor.sourceHint": "Show raw Markdown ({shortcut})",
+  "editor.sourceHint": "Show raw Markdown",
   "editor.taskDone": "Task done",
   "editor.toggleReading": "Toggle reading mode",
   "editor.toggleSource": "Toggle source mode",

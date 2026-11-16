@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useT } from "../i18n/i18n";
+import { Tooltip } from "../ui/Tooltip";
 
 interface HistoryButtonsProps {
   canGoBack: boolean;
@@ -58,24 +59,25 @@ function ArrowButton({
   children,
 }: ArrowButtonProps) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={`${label} (${shortcut})`}
-      disabled={disabled}
-      className="flex size-6 items-center justify-center rounded-sm text-muted hover:bg-raise hover:text-fg disabled:text-faint disabled:opacity-50 disabled:hover:bg-transparent"
-      onClick={onClick}
-    >
-      <svg
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        className="size-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
+    <Tooltip label={label} shortcut={shortcut}>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        className="flex size-6 items-center justify-center rounded-sm text-muted hover:bg-raise hover:text-fg disabled:text-faint disabled:opacity-50 disabled:hover:bg-transparent"
+        onClick={onClick}
       >
-        {children}
-      </svg>
-    </button>
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          {children}
+        </svg>
+      </button>
+    </Tooltip>
   );
 }

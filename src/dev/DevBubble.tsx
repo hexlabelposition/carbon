@@ -7,6 +7,7 @@ import { IndexTiming, seconds } from "../features/vault/IndexTiming";
 import { timing } from "../features/vault/timing";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";
+import { Tooltip } from "../features/ui/Tooltip";
 
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: a round
@@ -102,15 +103,19 @@ function DevBubble({
             </Section>
 
             <div className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                className={action}
-                disabled={session.opening}
-                title="A copy of fixtures/test-vault, made afresh each time"
-                onClick={openTestVault}
+              <Tooltip
+                label="A copy of fixtures/test-vault, made afresh each time"
+                side="left"
               >
-                Open test vault
-              </button>
+                <button
+                  type="button"
+                  className={action}
+                  disabled={session.opening}
+                  onClick={openTestVault}
+                >
+                  Open test vault
+                </button>
+              </Tooltip>
               <button
                 type="button"
                 className={action}
