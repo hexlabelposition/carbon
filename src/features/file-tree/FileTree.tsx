@@ -1,4 +1,5 @@
-import type { Vault } from "@carbon/core";
+import { ContextMenu } from "@base-ui/react/context-menu";
+import type { TreeNode, Vault } from "@carbon/core";
 import {
   useEffect,
   useMemo,
@@ -6,6 +7,7 @@ import {
   useState,
   type DragEvent,
   type KeyboardEvent,
+  type MouseEvent,
 } from "react";
 import { isWithin, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
@@ -19,14 +21,11 @@ const ROW_HEIGHT = 26;
 /** How far a level of the tree is shifted to the right, in pixels. */
 const INDENT = 14;
 
-const toolButton =
-  "h-6 rounded-sm px-1.5 text-small text-muted hover:bg-raise hover:text-fg disabled:text-faint disabled:hover:bg-transparent";
-
 /**
- * The file tree of the sidebar. Works with the mouse (click, drag to move)
- * and with the keyboard alone: arrows, Enter, F2, Delete, and Ctrl+X then
- * Ctrl+V to move. Ctrl+click, the middle button and Ctrl+Enter open a note
- * in a new tab.
+ * The file tree of the sidebar. Works with the mouse (click, drag to move,
+ * the right button for a menu of what can be done) and with the keyboard
+ * alone: arrows, Enter, F2, Delete, and Ctrl+X then Ctrl+V to move.
+ * Ctrl+click, the middle button and Ctrl+Enter open a note in a new tab.
  */
 export function FileTree({
   vault,
@@ -71,7 +70,39 @@ export function FileTree({
     scrollToIndex(tree.selectedIndex);
   }, [scrollToIndex, tree.selectedIndex]);
 
-  const hasSelection = tree.selectedIndex !== -1;
+  /**
+   * What the menu of the right button acts on: the row pressed, which it
+   * selects, or `null` for the empty space below the rows: the root.
+   */
+  const [menuTarget, setMenuTarget] = useState<TreeNode | null>(null);
+  /**
+   * What a menu item that types a name does, run once the menu is shut:
+   * while it is open it holds the focus, and the field would lose it.
+   */
+  const pendingEdit = useRef<(() => void) | null>(null);
+
+  function onContextMenu(event: MouseEvent<HTMLDivElement>) {
+    const row =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-path]")
+        : null;
+    const path = row?.dataset.path ?? null;
+    const node =
+      path === null
+        ? undefined
+        : tree.rows.find(
+            (r): r is Extract<typeof r, { kind: "node" }> =>
+              r.kind === "node" && r.node.path === path,
+          )?.node;
+    tree.select(node?.path ?? null);
+    setMenuTarget(node ?? null);
+    pendingEdit.current = null;
+  }
+
+  /** For a menu item that starts typing a name: runs `action` once shut. */
+  function editLater(action: () => void) {
+    pendingEdit.current = action;
+  }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     // Keys typed into a name field belong to the field.
@@ -127,171 +158,235 @@ export function FileTree({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 flex-wrap gap-0.5 border-b border-line px-1.5 py-1">
-        <button
-          type="button"
-          className={toolButton}
-          onClick={() => tree.startNew("note")}
-        >
-          {t("tree.newNote")}
-        </button>
-        <button
-          type="button"
-          className={toolButton}
-          onClick={() => tree.startNew("folder")}
-        >
-          {t("tree.newFolder")}
-        </button>
-        <button
-          type="button"
-          className={toolButton}
-          disabled={!hasSelection}
-          onClick={tree.startRename}
-        >
-          {t("tree.rename")}
-        </button>
-        <button
-          type="button"
-          className={toolButton}
-          disabled={!hasSelection}
-          onClick={tree.remove}
-        >
-          {t("tree.delete")}
-        </button>
-      </div>
-
       <Notice tree={tree} />
 
-      <div
-        ref={viewportRef}
-        role="tree"
-        aria-label={t("shell.files")}
-        aria-activedescendant={
-          tree.selected === null ? undefined : rowId(tree.selected)
-        }
-        tabIndex={0}
-        className={`min-h-0 flex-1 overflow-auto outline-none focus-visible:bg-bg/40 ${
-          dropFolder === "" ? "bg-raise" : ""
-        }`}
-        onScroll={onScroll}
-        onKeyDown={onKeyDown}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-            setDropFolder(null);
-          }
+      <ContextMenu.Root
+        onOpenChangeComplete={(open) => {
+          const edit = pendingEdit.current;
+          pendingEdit.current = null;
+          // After the menu is gone and has handed the focus back, in a
+          // task of its own: then the field can keep the focus.
+          if (!open && edit !== null) setTimeout(edit, 0);
         }}
-        {...dropZone("")}
       >
-        {tree.loading ? null : tree.rows.length === 0 ? (
-          <p className="px-3 py-4 text-center text-faint">{t("tree.empty")}</p>
-        ) : (
-          <div style={{ height: totalHeight }}>
-            <div
-              style={{
-                transform: `translateY(${first * ROW_HEIGHT}px)`,
-              }}
-            >
-              {tree.rows.slice(first, end).map((row) => {
-                const indent = { paddingLeft: row.depth * INDENT + 6 };
-                if (row.kind === "new") {
-                  return (
-                    <div
-                      key="new"
-                      className="flex items-center gap-1 pr-2"
-                      style={{ ...indent, height: ROW_HEIGHT }}
-                    >
-                      <Chevron hidden />
-                      <NameInput
-                        label={t(
-                          row.what === "note"
-                            ? "tree.newNoteName"
-                            : "tree.newFolderName",
-                        )}
-                        initial=""
-                        onCommit={(text) =>
-                          finishEdit(() => tree.commitEdit(text))
-                        }
-                        onCancel={() => finishEdit(tree.cancelEdit)}
-                      />
-                    </div>
-                  );
-                }
+        {/* The right button anywhere in the tree: on a row, or below them. */}
+        <ContextMenu.Trigger
+          className="flex min-h-0 flex-1 flex-col"
+          onContextMenu={onContextMenu}
+        >
+          <div
+            ref={viewportRef}
+            role="tree"
+            aria-label={t("shell.files")}
+            aria-activedescendant={
+              tree.selected === null ? undefined : rowId(tree.selected)
+            }
+            tabIndex={0}
+            className={`min-h-0 flex-1 overflow-auto outline-none focus-visible:bg-bg/40 ${
+              dropFolder === "" ? "bg-raise" : ""
+            }`}
+            onScroll={onScroll}
+            onKeyDown={onKeyDown}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setDropFolder(null);
+              }
+            }}
+            {...dropZone("")}
+          >
+            {tree.loading ? null : tree.rows.length === 0 ? (
+              <p className="px-3 py-4 text-center text-faint">
+                {t("tree.empty")}
+              </p>
+            ) : (
+              <div style={{ height: totalHeight }}>
+                <div
+                  style={{
+                    transform: `translateY(${first * ROW_HEIGHT}px)`,
+                  }}
+                >
+                  {tree.rows.slice(first, end).map((row) => {
+                    const indent = { paddingLeft: row.depth * INDENT + 6 };
+                    if (row.kind === "new") {
+                      return (
+                        <div
+                          key="new"
+                          className="flex items-center gap-1 pr-2"
+                          style={{ ...indent, height: ROW_HEIGHT }}
+                        >
+                          <Chevron hidden />
+                          <NameInput
+                            label={t(
+                              row.what === "note"
+                                ? "tree.newNoteName"
+                                : "tree.newFolderName",
+                            )}
+                            initial=""
+                            onCommit={(text) =>
+                              finishEdit(() => tree.commitEdit(text))
+                            }
+                            onCancel={() => finishEdit(tree.cancelEdit)}
+                          />
+                        </div>
+                      );
+                    }
 
-                const { node } = row;
-                const isFolder = node.kind === "folder";
-                const selected = tree.selected === node.path;
-                const renaming =
-                  tree.edit?.kind === "rename" && tree.edit.path === node.path;
-                const inDrop =
-                  dropFolder !== null &&
-                  dropFolder !== "" &&
-                  isWithin(node.path, dropFolder);
-                return (
-                  <div
-                    key={node.path}
-                    id={rowId(node.path)}
-                    role="treeitem"
-                    aria-level={row.depth + 1}
-                    aria-selected={selected}
-                    aria-expanded={
-                      isFolder ? tree.isExpanded(node.path) : undefined
-                    }
-                    draggable={!renaming}
-                    className={`flex cursor-default items-center gap-1 pr-2 select-none ${
-                      tree.activePath === node.path || inDrop
-                        ? "bg-selected"
-                        : "hover:bg-raise"
-                    } ${
-                      selected
-                        ? "outline-1 -outline-offset-1 outline-line-strong"
-                        : ""
-                    } ${
-                      tree.cut === node.path || dragging === node.path
-                        ? "opacity-50"
-                        : ""
-                    } ${node.kind === "file" ? "text-muted" : ""}`}
-                    style={{ ...indent, height: ROW_HEIGHT }}
-                    onClick={(event) =>
-                      tree.activate(node, event.ctrlKey || event.metaKey)
-                    }
-                    onAuxClick={(event) => {
-                      // The middle button opens a note in a new tab.
-                      if (event.button === 1 && !isFolder) {
-                        tree.activate(node, true);
-                      }
-                    }}
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData("text/plain", node.path);
-                      event.dataTransfer.effectAllowed = "move";
-                      setDragging(node.path);
-                    }}
-                    onDragEnd={endDrag}
-                    {...dropZone(isFolder ? node.path : parentOf(node.path))}
-                  >
-                    <Chevron
-                      hidden={!isFolder}
-                      open={isFolder && tree.isExpanded(node.path)}
-                    />
-                    {renaming ? (
-                      <NameInput
-                        label={t("tree.newName", { name: nameOf(node.path) })}
-                        initial={labelOf(node)}
-                        onCommit={(text) =>
-                          finishEdit(() => tree.commitEdit(text))
+                    const { node } = row;
+                    const isFolder = node.kind === "folder";
+                    const selected = tree.selected === node.path;
+                    const renaming =
+                      tree.edit?.kind === "rename" &&
+                      tree.edit.path === node.path;
+                    const inDrop =
+                      dropFolder !== null &&
+                      dropFolder !== "" &&
+                      isWithin(node.path, dropFolder);
+                    return (
+                      <div
+                        key={node.path}
+                        id={rowId(node.path)}
+                        data-path={node.path}
+                        role="treeitem"
+                        aria-level={row.depth + 1}
+                        aria-selected={selected}
+                        aria-expanded={
+                          isFolder ? tree.isExpanded(node.path) : undefined
                         }
-                        onCancel={() => finishEdit(tree.cancelEdit)}
-                      />
-                    ) : (
-                      <span className="truncate">{labelOf(node)}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                        draggable={!renaming}
+                        className={`flex cursor-default items-center gap-1 pr-2 select-none ${
+                          tree.activePath === node.path || inDrop
+                            ? "bg-selected"
+                            : "hover:bg-raise"
+                        } ${
+                          selected
+                            ? "outline-1 -outline-offset-1 outline-line-strong"
+                            : ""
+                        } ${
+                          tree.cut === node.path || dragging === node.path
+                            ? "opacity-50"
+                            : ""
+                        } ${node.kind === "file" ? "text-muted" : ""}`}
+                        style={{ ...indent, height: ROW_HEIGHT }}
+                        onClick={(event) =>
+                          tree.activate(node, event.ctrlKey || event.metaKey)
+                        }
+                        onAuxClick={(event) => {
+                          // The middle button opens a note in a new tab.
+                          if (event.button === 1 && !isFolder) {
+                            tree.activate(node, true);
+                          }
+                        }}
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData("text/plain", node.path);
+                          event.dataTransfer.effectAllowed = "move";
+                          setDragging(node.path);
+                        }}
+                        onDragEnd={endDrag}
+                        {...dropZone(
+                          isFolder ? node.path : parentOf(node.path),
+                        )}
+                      >
+                        <Chevron
+                          hidden={!isFolder}
+                          open={isFolder && tree.isExpanded(node.path)}
+                        />
+                        {renaming ? (
+                          <NameInput
+                            label={t("tree.newName", {
+                              name: nameOf(node.path),
+                            })}
+                            initial={labelOf(node)}
+                            onCommit={(text) =>
+                              finishEdit(() => tree.commitEdit(text))
+                            }
+                            onCancel={() => finishEdit(tree.cancelEdit)}
+                          />
+                        ) : (
+                          <span className="truncate">{labelOf(node)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </ContextMenu.Trigger>
+        <TreeMenu
+          target={menuTarget}
+          // After an item that starts typing a name, the field has the
+          // focus; after the others, the tree takes it back.
+          finalFocus={() =>
+            pendingEdit.current !== null ? false : viewportRef.current
+          }
+          onNewNote={() => editLater(() => tree.startNew("note"))}
+          onNewFolder={() => editLater(() => tree.startNew("folder"))}
+          onRename={() => editLater(tree.startRename)}
+          onDelete={tree.remove}
+        />
+      </ContextMenu.Root>
     </div>
+  );
+}
+
+interface TreeMenuProps {
+  /** The row it was opened on, or `null` for the root. */
+  target: TreeNode | null;
+  finalFocus: () => HTMLElement | false | null;
+  onNewNote: () => void;
+  onNewFolder: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}
+
+const menuItem =
+  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
+
+/**
+ * The menu of the right button: new things in the folder of the row, or
+ * at the root; and for a row, rename and delete it, with their keys.
+ */
+function TreeMenu({
+  target,
+  finalFocus,
+  onNewNote,
+  onNewFolder,
+  onRename,
+  onDelete,
+}: TreeMenuProps) {
+  const t = useT();
+  return (
+    <ContextMenu.Portal>
+      <ContextMenu.Positioner className="z-50 outline-none">
+        <ContextMenu.Popup
+          finalFocus={finalFocus}
+          className="min-w-44 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+        >
+          <ContextMenu.Item className={menuItem} onClick={onNewNote}>
+            {t("tree.newNote")}
+          </ContextMenu.Item>
+          <ContextMenu.Item className={menuItem} onClick={onNewFolder}>
+            {t("tree.newFolder")}
+          </ContextMenu.Item>
+          {target !== null && (
+            <>
+              <ContextMenu.Separator className="mx-1 my-1 h-px bg-line" />
+              <ContextMenu.Item className={menuItem} onClick={onRename}>
+                {t("tree.rename")}
+                <span className="text-small text-faint">F2</span>
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                className={`${menuItem} text-danger`}
+                onClick={onDelete}
+              >
+                {t("tree.delete")}
+                <span className="text-small text-faint">Del</span>
+              </ContextMenu.Item>
+            </>
+          )}
+        </ContextMenu.Popup>
+      </ContextMenu.Positioner>
+    </ContextMenu.Portal>
   );
 }
 
@@ -357,11 +452,25 @@ interface NameInputProps {
   onCancel: () => void;
 }
 
-/** The field a name is typed into. Enter or leaving it keeps the name. */
+/** A moment after the field appears, in milliseconds: see `NameInput`. */
+const SETTLING = 300;
+
+/**
+ * The field a name is typed into. Enter or leaving it keeps the name.
+ *
+ * Started from the menu of the right button, it appears as the menu goes,
+ * and the menu then gives the focus back to where it was before, such as
+ * the editor. A loss of focus in its first moment is that: the field takes
+ * the focus back instead of ending.
+ */
 function NameInput({ label, initial, onCommit, onCancel }: NameInputProps) {
   const [text, setText] = useState(initial);
   /** Enter is followed by a blur; only the first of them counts. */
   const done = useRef(false);
+  const shownAt = useRef(0);
+  useEffect(() => {
+    shownAt.current = performance.now();
+  }, []);
 
   const finish = (action: () => void) => {
     if (done.current) return;
@@ -380,7 +489,14 @@ function NameInput({ label, initial, onCommit, onCancel }: NameInputProps) {
       onChange={(event) => setText(event.target.value)}
       onFocus={(event) => event.currentTarget.select()}
       onClick={(event) => event.stopPropagation()}
-      onBlur={() => finish(() => onCommit(text))}
+      onBlur={(event) => {
+        const field = event.currentTarget;
+        if (performance.now() - shownAt.current < SETTLING) {
+          requestAnimationFrame(() => field.focus());
+          return;
+        }
+        finish(() => onCommit(text));
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter") finish(() => onCommit(text));
         else if (event.key === "Escape") finish(onCancel);

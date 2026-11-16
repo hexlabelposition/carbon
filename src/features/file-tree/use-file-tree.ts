@@ -35,7 +35,8 @@ export interface FileTree {
   trashFailure: { path: string; message: string } | null;
 
   isExpanded(path: string): boolean;
-  select(path: string): void;
+  /** Selects `path`; `null` selects nothing, so new things go to the root. */
+  select(path: string | null): void;
   /**
    * A click or Enter: opens a note, opens or closes a folder. With
    * `newTab` the note gets a tab of its own.
