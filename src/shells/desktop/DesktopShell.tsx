@@ -53,6 +53,7 @@ import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { HistoryButtons } from "../../features/workspace/HistoryButtons";
 import { Sidebar, sidebarWidth } from "./Sidebar";
 import { TabBar } from "./TabBar";
+import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
@@ -119,6 +120,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
   const toolbar = useSidePanel("carbon.desktop.toolbar", true);
   const { toggle: toggleToolbar } = toolbar;
   useFileDropGuard();
+  useContextMenuGuard();
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
