@@ -34,7 +34,7 @@ import { linkPreview } from "./link-preview";
 import { useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
-import { frontmatterPreview } from "./live-preview-frontmatter";
+import { addProperty, frontmatterPreview } from "./live-preview-frontmatter";
 import {
   outlineHost,
   outlineOf,
@@ -272,6 +272,17 @@ export function MarkdownEditor({
           shortcut: keys("Mod+F"),
           run: () => {
             if (editor.current !== null) openSearchPanel(editor.current);
+          },
+        },
+        {
+          id: "editor.addProperty",
+          title: t("editor.addProperty"),
+          run: () => {
+            const view = editor.current;
+            // The block that takes it is drawn only in live preview.
+            if (view === null || latest.current.sourceMode) return;
+            if (latest.current.readOnly) return;
+            addProperty(view);
           },
         },
         {
