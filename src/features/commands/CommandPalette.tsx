@@ -1,6 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
 import { Highlighted } from "../search/Highlighted";
+import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
 import { Shortcut } from "./Shortcut";
 import type { CommandPalette as Palette } from "./use-command-palette";
 
@@ -72,38 +73,40 @@ export function CommandPalette({ palette }: { palette: Palette }) {
       {items.length === 0 ? (
         <p className="px-3 py-2 text-small text-faint">{t("palette.empty")}</p>
       ) : (
-        <ul
-          id="palette-list"
-          ref={list}
-          role="listbox"
-          aria-label={t("palette.commands")}
-          className="max-h-[50vh] overflow-auto py-1"
-        >
-          {items.map(({ command, matches }, index) => (
-            <li
-              key={command.id}
-              id={`palette-row-${index}`}
-              role="option"
-              aria-selected={index === selected}
-              className={`flex w-full items-baseline gap-2 px-3 py-1 ${
-                index === selected ? "bg-selected" : "hover:bg-raise"
-              }`}
-              onMouseMove={() => select(index)}
-              onClick={() => run(command)}
-            >
-              <span className="min-w-0 flex-1 truncate">
-                <Highlighted
-                  text={command.title}
-                  ranges={matches}
-                  className="bg-transparent font-semibold text-fg"
-                />
-              </span>
-              {command.shortcut !== undefined && (
-                <Shortcut text={command.shortcut} />
-              )}
-            </li>
-          ))}
-        </ul>
+        <ScrollArea className="max-h-[50vh]">
+          <ul
+            id="palette-list"
+            ref={list}
+            role="listbox"
+            aria-label={t("palette.commands")}
+            className={`py-1 ${SCROLLBAR_ROOM}`}
+          >
+            {items.map(({ command, matches }, index) => (
+              <li
+                key={command.id}
+                id={`palette-row-${index}`}
+                role="option"
+                aria-selected={index === selected}
+                className={`flex w-full items-baseline gap-2 px-3 py-1 ${
+                  index === selected ? "bg-selected" : "hover:bg-raise"
+                }`}
+                onMouseMove={() => select(index)}
+                onClick={() => run(command)}
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  <Highlighted
+                    text={command.title}
+                    ranges={matches}
+                    className="bg-transparent font-semibold text-fg"
+                  />
+                </span>
+                {command.shortcut !== undefined && (
+                  <Shortcut text={command.shortcut} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
       )}
     </dialog>
   );
