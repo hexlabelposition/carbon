@@ -6,6 +6,7 @@ import {
   updateNotes,
   type IndexContext,
   type ScanOptions,
+  type ScanResult,
 } from "./scan";
 
 export interface IndexerOptions {
@@ -39,10 +40,8 @@ export class Indexer {
   }
 
   /** Runs the startup scan. Paths touched meanwhile are handled after it. */
-  scan(onProgress?: ScanOptions["onProgress"]): Promise<void> {
-    const scan = this.after(async () => {
-      await scanVault({ ...this.context, onProgress });
-    });
+  scan(onProgress?: ScanOptions["onProgress"]): Promise<ScanResult> {
+    const scan = this.after(() => scanVault({ ...this.context, onProgress }));
     // The work goes on after a failed scan; the failure is the caller's.
     this.work = scan.catch(() => {});
     return scan;

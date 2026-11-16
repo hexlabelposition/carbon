@@ -1,5 +1,6 @@
 import { Emitter } from "../events";
 import { Indexer } from "../index/indexer";
+import type { ScanResult } from "../index/scan";
 import { IndexStore } from "../index/index-store";
 import { Links } from "../links/links";
 import { LinkRewriter } from "../links/rename";
@@ -23,8 +24,19 @@ export type IndexStatus =
    * are indexed. `total` is `null` until the scan has counted them.
    */
   | { state: "scanning"; done: number; total: number | null }
-  /** The startup scan is done; later changes are indexed as they come. */
-  | { state: "ready" }
+  /**
+   * The startup scan is done; later changes are indexed as they come. It
+   * found `notes` notes and indexed the `indexed` new and changed ones,
+   * `ms` milliseconds after the index began to open, and was done at
+   * `doneAt` (`Date.now()`): for measuring the budgets (C-602).
+   */
+  | {
+      state: "ready";
+      notes: number;
+      indexed: number;
+      ms: number;
+      doneAt: number;
+    }
   /** The index could not be opened or scanned; the notes work without it. */
   | { state: "failed"; error: unknown };
 
@@ -280,12 +292,16 @@ export class Vault {
    */
   private startIndexing(): void {
     const { platform, root } = this;
+    const started = Date.now();
     this.store = IndexStore.open(platform, root);
     // A failure is reported by `indexed()` and the queries, not here.
     this.store.catch(() => {});
     this.indexing = this.store
-      .then((store) => {
-        if (this.closed) return store.close();
+      .then(async (store): Promise<ScanResult | undefined> => {
+        if (this.closed) {
+          await store.close();
+          return undefined;
+        }
         // At once, so no change made from now on is missed: a change made
         // before is seen by the scan.
         this.indexer = new Indexer({
@@ -301,9 +317,16 @@ export class Vault {
         });
       })
       .then(
-        () => {
-          if (this.closed) return;
-          this.status = { state: "ready" };
+        (scan) => {
+          if (this.closed || scan === undefined) return;
+          const doneAt = Date.now();
+          this.status = {
+            state: "ready",
+            notes: scan.notes,
+            indexed: scan.indexed,
+            ms: doneAt - started,
+            doneAt,
+          };
           this.emitter.emit("index:ready", undefined);
         },
         (error: unknown) => {

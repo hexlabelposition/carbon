@@ -1,8 +1,9 @@
-import type { Vault } from "@carbon/core";
+import type { IndexStatus, Vault } from "@carbon/core";
 import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -375,14 +376,50 @@ function VaultStatus({ vault }: { vault: Vault }) {
   const index = useIndexStatus(vault);
   // A scan with nothing to do is over a moment later: not worth a line.
   const indexing = index.state === "scanning" && index.total !== 0;
-  if (vault.watching && index.state !== "failed" && !indexing) return null;
+  if (
+    vault.watching &&
+    index.state !== "failed" &&
+    !indexing &&
+    !import.meta.env.DEV
+  ) {
+    return null;
+  }
   return (
     <div className="flex shrink-0 flex-col gap-1 border-t border-line px-3 py-2 text-small text-faint">
       {!vault.watching && (
         <p className="text-danger">{t("shell.notWatching")}</p>
       )}
       <IndexState vault={vault} />
+      {import.meta.env.DEV && <IndexTiming status={index} />}
     </div>
+  );
+}
+
+/**
+ * Dev builds only: how long the startup scan took, and how long after the
+ * page began to load the vault was ready, for measuring the budgets
+ * (C-602). Not translated, as the dev panel.
+ */
+function IndexTiming({ status }: { status: IndexStatus }) {
+  const ready = status.state === "ready" ? status : null;
+  // From the moment the page began to load: the start of the app.
+  const sinceStart =
+    ready === null ? null : ready.doneAt - performance.timeOrigin;
+  useEffect(() => {
+    if (ready === null || sinceStart === null) return;
+    console.info(
+      `[carbon] ${ready.notes} notes, ${ready.indexed} indexed in ` +
+        `${(ready.ms / 1000).toFixed(2)} s, ready ` +
+        `${(sinceStart / 1000).toFixed(2)} s after the page began to load`,
+    );
+  }, [ready, sinceStart]);
+  if (ready === null || sinceStart === null) return null;
+  return (
+    <p title="Dev builds only (C-602)">
+      {ready.notes} notes · {ready.indexed} indexed in{" "}
+      {(ready.ms / 1000).toFixed(2)} s · ready {(sinceStart / 1000).toFixed(2)}{" "}
+      s after start
+    </p>
   );
 }
 

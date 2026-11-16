@@ -43,7 +43,11 @@ describe("index events", () => {
     ]);
     expect(statuses[0]).toEqual({ state: "scanning", done: 0, total: null });
     expect(statuses[2]).toEqual({ state: "scanning", done: 200, total: 450 });
-    expect(vault.indexStatus).toEqual({ state: "ready" });
+    expect(vault.indexStatus).toMatchObject({
+      state: "ready",
+      notes: 450,
+      indexed: 450,
+    });
     vault.close();
   });
 
@@ -57,6 +61,11 @@ describe("index events", () => {
     const { events } = listen(vault);
     await vault.indexed();
     expect(events).toEqual([{ done: 0, total: 0 }, "ready"]);
+    expect(vault.indexStatus).toMatchObject({
+      state: "ready",
+      notes: 3,
+      indexed: 0,
+    });
     vault.close();
   });
 
