@@ -61,7 +61,7 @@ describe("search", () => {
         words: ["tea"],
         phrases: [],
         paths: [],
-        tags: ["idea", "Area/topic", "a"],
+        tags: ["idea", "Area/topic", "a/"],
       });
     });
 
@@ -419,20 +419,23 @@ describe("search", () => {
       ]);
     });
 
-    test("filters by tag, nested ones too, ignoring case", async () => {
+    test("filters by the start of a tag, ignoring case", async () => {
       const search = await searchOver(
         note("a.md", "app #Area"),
         note("b.md", "app #area/topic"),
         note("c.md", "---\ntags: [areas, other]\n---\napp"),
-        note("d.md", "app, area is a word here"),
+        note("d.md", "app, area is a word here #other/area"),
       );
       expect(paths(await search.query("app tag:area")).sort()).toEqual([
         "a.md",
         "b.md",
+        "c.md",
       ]);
-      expect(paths(await search.query("tag:#AREA/topic"))).toEqual(["b.md"]);
-      expect(paths(await search.query("tag:other app"))).toEqual(["c.md"]);
-      expect(paths(await search.query("tag:area tag:other"))).toEqual([]);
+      expect(paths(await search.query("tag:are tag:#OTH"))).toEqual(["c.md"]);
+      expect(paths(await search.query("tag:#AREA/top"))).toEqual(["b.md"]);
+      expect(paths(await search.query("tag:area/")).sort()).toEqual(["b.md"]);
+      expect(paths(await search.query("tag:other/ app"))).toEqual(["d.md"]);
+      expect(paths(await search.query("tag:topic"))).toEqual([]);
       expect(paths(await search.query("tag:area path:b"))).toEqual(["b.md"]);
     });
 

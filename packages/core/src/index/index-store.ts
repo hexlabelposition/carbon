@@ -470,22 +470,23 @@ export class IndexStore {
    * The notes that match `query`, at most `limit` of them, the best
    * first: the ones whose title and body match its FTS5 query, ranked by
    * BM25 with a word in the title worth `TITLE_WEIGHT` words in the body,
-   * whose path keys have each of its `paths`, and that have each of its
-   * `tags` or a tag nested in it. With filters alone, the notes in path
+   * whose path keys have each of its `paths`, and that have a tag that
+   * starts with each of its `tags`. With filters alone, the notes in path
    * order, each with the start of its body. Rejects on a query that is
    * not valid FTS5.
    */
   async search(query: FullTextQuery, limit: number): Promise<SearchHit[]> {
     const where = [
       ...query.paths.map(() => "AND instr(n.path_key, ?) > 0"),
+      // Not LIKE: "_" is fine in a tag.
       ...query.tags.map(
         () => `AND EXISTS (SELECT 1 FROM tags t WHERE t.note_id = n.id
-           AND (t.tag_key = ? OR substr(t.tag_key, 1, length(?)) = ?))`,
+           AND substr(t.tag_key, 1, length(?)) = ?)`,
       ),
     ].join(" ");
     const filters = [
       ...query.paths,
-      ...query.tags.flatMap((tag) => [tag, `${tag}/`, `${tag}/`]),
+      ...query.tags.flatMap((tag) => [tag, tag]),
     ];
     if (query.match === null) {
       const rows = await this.db.select<{

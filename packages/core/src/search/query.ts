@@ -25,8 +25,8 @@ export interface ParsedQuery {
   /** Text the path of a note must have, from `path:folder`. */
   paths: string[];
   /**
-   * Tags a note must have, itself or nested in it, from `tag:name`,
-   * without "#".
+   * Starts of tags a note must have, from `tag:name`, without "#": as
+   * with words, a tag being typed already finds something.
    */
   tags: string[];
 }
@@ -52,8 +52,7 @@ export function parseQuery(text: string): ParsedQuery {
       const path = (quotedPath ?? plainPath).trim();
       if (path !== "") query.paths.push(path);
     } else if (tag !== undefined) {
-      // "tag:a/" while a nested tag is typed: the tag so far.
-      const name = tag.replace(/^#/, "").replace(/\/+$/, "");
+      const name = tag.replace(/^#/, "");
       if (name !== "") query.tags.push(name);
     } else if (phrase !== undefined) {
       const words = queryWords(phrase);
@@ -71,7 +70,7 @@ export interface FullTextQuery {
   match: string | null;
   /** Text the path key of a note must have (`matchKey`). */
   paths: string[];
-  /** Keys of tags a note must have, itself or nested in it (`matchKey`). */
+  /** Starts of the keys of tags a note must have (`matchKey`). */
   tags: string[];
 }
 

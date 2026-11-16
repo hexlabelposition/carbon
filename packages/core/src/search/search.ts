@@ -47,7 +47,8 @@ export class Search {
    * The notes that have every word of `text`, as a word or the start of
    * one, and every `"exact phrase"`, in the title or the body; ignoring
    * case. With `path:folder`, only notes whose path has that text; with
-   * `tag:name`, only notes with that tag or one nested in it. The
+   * `tag:name`, only notes with a tag that starts with it, so `tag:area`
+   * finds `#area/topic` and `#areas`. The
    * best first: a word in the title counts for more than one in the body.
    * Empty if `text` asks for nothing (`fullTextQuery`).
    */
