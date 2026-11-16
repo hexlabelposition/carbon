@@ -118,7 +118,7 @@ Done when: tags and frontmatter are indexed, visible and usable for navigation.
 - [x] **C-401** (P0) Lezer extension for inline `#tag` and nested `#area/topic`
 - [x] **C-402** (P0) Parse YAML frontmatter (`tags`, `aliases`, other properties)
 - [x] **C-403** (P0) Index tags, aliases, properties
-- [ ] **C-404** (P0) Tags panel: tree of tags with counts, click shows notes
+- [x] **C-404** (P0) Tags panel: tree of tags with counts, click shows notes
 - [ ] **C-405** (P0) Aliases used in link resolution and `[[` autocomplete
 - [ ] **C-406** (P1) Tag autocomplete after `#`
 - [ ] **C-407** (P1) Frontmatter rendered as a compact block in live preview

@@ -32,6 +32,8 @@ import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
+import { TagsPanel } from "../../features/tags/TagsPanel";
+import { useTags } from "../../features/tags/use-tags";
 import { useSearch } from "../../features/search/use-search";
 import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
 import { NEW_NOTE, useNewNote } from "../../features/new-note/use-new-note";
@@ -172,6 +174,14 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
           },
         },
         {
+          id: "shell.tags",
+          title: t("shell.showTags"),
+          run: () => {
+            revealSidebar();
+            showSidebarView("tags");
+          },
+        },
+        {
           id: "shell.search",
           title: t("shell.searchAll"),
           shortcut: keys("Mod+Shift+F"),
@@ -289,8 +299,9 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 }
 
 /**
- * The views of the sidebar, files and search, with tabs to switch. Both
- * stay mounted: switching keeps the open folders and the search.
+ * The views of the sidebar, files, search and tags, with tabs to switch.
+ * They stay mounted: switching keeps the open folders, the search and the
+ * open tags.
  */
 function SidebarContent({
   vault,
@@ -304,6 +315,8 @@ function SidebarContent({
 }) {
   const t = useT();
   const search = useSearch(vault);
+  const tags = useTags(vault, view === "tags");
+  const { open } = useWorkspace();
   // For what the file tree starts from elsewhere, such as "New note" from
   // the palette: its name field must be where it can be typed in.
   const showFiles = useCallback(() => {
@@ -317,6 +330,7 @@ function SidebarContent({
         views={[
           { view: "files", label: t("shell.files") },
           { view: "search", label: t("shell.search") },
+          { view: "tags", label: t("shell.tags") },
         ]}
         current={view}
         onShow={show}
@@ -334,6 +348,18 @@ function SidebarContent({
         className={view === "search" ? "min-h-0 flex-1" : "hidden"}
       >
         <SearchPanel search={search} focusRequest={searchRequest} />
+      </div>
+      <div
+        role="tabpanel"
+        aria-label={t("shell.tags")}
+        className={view === "tags" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <TagsPanel
+          tags={tags}
+          onOpen={(path, newTab) =>
+            open(path, { target: newTab ? "newTab" : "here" })
+          }
+        />
       </div>
       <VaultStatus vault={vault} />
     </div>
@@ -428,6 +454,7 @@ function ToolbarHost({
           toolbarIcons.search,
           keys("Mod+Shift+F"),
         ),
+        sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_PALETTE, toolbarIcons.commands),
       ]}

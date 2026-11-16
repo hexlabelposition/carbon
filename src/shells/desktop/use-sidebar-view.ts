@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { shortcutLetter } from "../../features/workspace/shortcut-letter";
 
 /** What the sidebar shows. */
-export type SidebarView = "files" | "search";
+export type SidebarView = "files" | "search" | "tags";
 
 export interface SidebarViewState {
   view: SidebarView;
