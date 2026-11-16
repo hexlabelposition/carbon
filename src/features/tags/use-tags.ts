@@ -40,6 +40,13 @@ export interface TagsView {
   cancelRename(): void;
   /** Renames `tag` to `name` in every note (`Tags.rename`). */
   commitRename(tag: string, name: string): void;
+  /**
+   * The tag that takes the focus once it is drawn: the one that was
+   * renamed, after its field is gone. `null` once it has it.
+   */
+  focusTag: string | null;
+  /** Called by the tag once it took the focus. */
+  focused(): void;
   /** What went wrong with the last rename, until dismissed. */
   renameError: string | null;
   dismissRenameError(): void;
@@ -53,6 +60,7 @@ export interface TagsView {
 export function useTags(vault: Vault, enabled: boolean): TagsView {
   const t = useT();
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [focusTag, setFocusTag] = useState<string | null>(null);
   /**
    * A rename is writing notes one by one: the index has the old tag in
    * some and the new one in others, so the tree is not asked for until
@@ -136,20 +144,33 @@ export function useTags(vault: Vault, enabled: boolean): TagsView {
     (tag: string, name: string) => {
       setRenaming(null);
       const next = name.trim().replace(/^#/, "");
+      const valid = isTagLabel(next);
+      // The field is gone: the focus goes back to the tag, by its new name.
+      setFocusTag(valid ? next : tag);
       if (next === "" || next === tag) return;
       setRenameError(null);
       busy.current = true;
       // Shown at once, before the notes are written: the tree, the open
       // tags and the picked one already have the new name. The counts
       // are guessed until the index answers.
-      if (isTagLabel(next)) {
+      if (valid) {
         const moved = (current: string) => renamedTag(current, tag, next);
         setTree((old) =>
           old.status === "ready"
             ? { ...old, tags: renamedTree(old.tags, tag, next) }
             : old,
         );
-        setExpanded((old) => new Set([...old].map(moved)));
+        // The tags the new name is nested in open, so it can be seen.
+        const parents = next
+          .split("/")
+          .slice(0, -1)
+          .map((_, i, parts) =>
+            parts
+              .slice(0, i + 1)
+              .join("/")
+              .toLowerCase(),
+          );
+        setExpanded((old) => new Set([...[...old].map(moved), ...parents]));
         setSelected((current) => (current === null ? null : moved(current)));
         // The notes listed stay until the index answers for the new name.
         setAnswer((old) =>
@@ -180,7 +201,11 @@ export function useTags(vault: Vault, enabled: boolean): TagsView {
     [vault, t],
   );
 
-  const cancelRename = useCallback(() => setRenaming(null), []);
+  const cancelRename = useCallback(() => {
+    setFocusTag(renaming);
+    setRenaming(null);
+  }, [renaming]);
+  const focused = useCallback(() => setFocusTag(null), []);
   const dismissRenameError = useCallback(() => setRenameError(null), []);
 
   return {
@@ -197,6 +222,8 @@ export function useTags(vault: Vault, enabled: boolean): TagsView {
     startRename: setRenaming,
     cancelRename,
     commitRename,
+    focusTag,
+    focused,
     renameError,
     dismissRenameError,
   };

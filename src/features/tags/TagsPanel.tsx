@@ -1,6 +1,6 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { NotePath, TagNode } from "@carbon/core";
-import { useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { NameInput } from "../file-tree/NameInput";
 import { useT } from "../i18n/i18n";
 import type { TagsView } from "./use-tags";
@@ -87,7 +87,12 @@ export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
           ) : (
             <ul role="tree" aria-label={t("shell.tags")}>
               {tree.tags.map((node) => (
-                <TagRow key={node.tag} node={node} depth={0} tags={tags} />
+                <TagRow
+                  key={node.tag.toLowerCase()}
+                  node={node}
+                  depth={0}
+                  tags={tags}
+                />
               ))}
             </ul>
           )}
@@ -134,6 +139,15 @@ function TagRow({
   const open = nested && tags.isExpanded(node.tag);
   const selected = tags.selected?.toLowerCase() === node.tag.toLowerCase();
   const renaming = tags.renaming === node.tag;
+  const name = useRef<HTMLButtonElement>(null);
+  const { focusTag, focused } = tags;
+  const takesFocus =
+    !renaming && focusTag?.toLowerCase() === node.tag.toLowerCase();
+  useEffect(() => {
+    if (!takesFocus || name.current === null) return;
+    name.current.focus();
+    focused();
+  }, [takesFocus, focused]);
   return (
     <li
       data-tag={node.tag}
@@ -169,6 +183,7 @@ function TagRow({
           />
         ) : (
           <button
+            ref={name}
             type="button"
             title={`#${node.tag}`}
             className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-fg"
@@ -191,7 +206,9 @@ function TagRow({
         <ul role="group">
           {node.children.map((child) => (
             <TagRow
-              key={child.tag}
+              // By the tag as the index matches it: a new spelling from
+              // the index keeps the row, and the focus in it.
+              key={child.tag.toLowerCase()}
               node={child}
               depth={depth + 1}
               tags={tags}
