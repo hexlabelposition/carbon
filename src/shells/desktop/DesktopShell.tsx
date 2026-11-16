@@ -43,6 +43,7 @@ import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
+import { SettingsOpener } from "../../features/settings/Settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { timing } from "../../features/vault/timing";
 import { useIndexStatus } from "../../features/vault/use-index-status";
@@ -303,7 +304,13 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
           </WorkspaceProvider>
         )}
       </div>
-      <CommandPaletteHost />
+      {/* Not on the start screen: there a vault is opened or made. */}
+      {vault !== null && (
+        <>
+          <CommandPaletteHost />
+          <SettingsOpener />
+        </>
+      )}
     </div>
   );
 }

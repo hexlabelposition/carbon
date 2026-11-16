@@ -57,6 +57,45 @@ export function openSettings(): void {
   openDialog("settings");
 }
 
+/**
+ * Offers "Open settings" (Ctrl+, or Cmd+, on a Mac) while it is mounted.
+ * The shell mounts it only where the settings may open: not on the start
+ * screen, where a vault is opened or made.
+ */
+export function SettingsOpener() {
+  const t = useT();
+
+  useCommands(
+    useMemo(
+      () => [
+        {
+          id: "settings.open",
+          title: t("settings.open"),
+          shortcut: keys("Mod+,"),
+          run: openSettings,
+        },
+      ],
+      [t],
+    ),
+  );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const command = event.ctrlKey || event.metaKey;
+      if (!command || event.shiftKey || event.altKey) return;
+      if (event.code !== "Comma" && shortcutLetter(event) !== ",") return;
+      event.preventDefault();
+      event.stopPropagation();
+      openSettings();
+    }
+    // Capture: the shortcut is taken before the focused element sees it.
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, []);
+
+  return null;
+}
+
 const THEME_LABELS: Record<Theme, MessageKey> = {
   system: "settings.theme.system",
   light: "settings.theme.light",
@@ -81,9 +120,9 @@ const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
 ];
 
 /**
- * The settings of the app: applies the note settings and the language,
- * offers "Open settings" (Ctrl+, or Cmd+, on a Mac) and shows the dialog
- * while it is open. Mount it once, inside the commands provider.
+ * The settings of the app: applies the note settings and the language
+ * and shows the dialog while it is open. Mount it once, inside the
+ * commands provider. What opens it is `SettingsOpener`, mounted apart.
  */
 export function Settings() {
   useNoteStyle();
@@ -103,12 +142,6 @@ export function Settings() {
     useMemo(
       () => [
         {
-          id: "settings.open",
-          title: t("settings.open"),
-          shortcut: keys("Mod+,"),
-          run: openSettings,
-        },
-        {
           id: "settings.resetNoteSize",
           title: t("settings.resetNoteSize"),
           run: resetNoteSize,
@@ -117,20 +150,6 @@ export function Settings() {
       [t],
     ),
   );
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (event.code !== "Comma" && shortcutLetter(event) !== ",") return;
-      event.preventDefault();
-      event.stopPropagation();
-      openSettings();
-    }
-    // Capture: the shortcut is taken before the focused element sees it.
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
 
   return (
     <Dialog.Root
