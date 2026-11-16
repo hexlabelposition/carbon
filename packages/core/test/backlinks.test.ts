@@ -110,6 +110,16 @@ describe("backlinks", () => {
       vault.close();
     });
 
+    test("gives the aliases of the notes from the index", async () => {
+      const vault = await openVault({
+        "people/Someone.md": "---\naliases: [Nick]\n---\n",
+      });
+      expect(await vault.links.aliases()).toEqual([
+        { path: "people/Someone.md", alias: "Nick" },
+      ]);
+      vault.close();
+    });
+
     test("rejects after the vault is closed", async () => {
       const vault = await openVault({});
       vault.close();

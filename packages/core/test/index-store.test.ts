@@ -277,6 +277,33 @@ describe("IndexStore", () => {
     });
   });
 
+  describe("aliases", () => {
+    test("are every alias by path, in written order", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("b.md", "---\naliases: [Zed, Alpha]\n---\n"),
+        entry("a.md", "---\naliases: Only\n---\n"),
+        entry("c.md", "no frontmatter"),
+      ]);
+      expect(await store.aliases()).toEqual([
+        { path: "a.md", alias: "Only" },
+        { path: "b.md", alias: "Zed" },
+        { path: "b.md", alias: "Alpha" },
+      ]);
+    });
+
+    test("follow a note indexed again and forget a removed one", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("a.md", "---\naliases: [Old]\n---\n"),
+        entry("b.md", "---\naliases: [Gone]\n---\n"),
+      ]);
+      await store.replaceNotes([entry("a.md", "---\naliases: [New]\n---\n")]);
+      await store.removeNotes(["b.md"]);
+      expect(await store.aliases()).toEqual([{ path: "a.md", alias: "New" }]);
+    });
+  });
+
   describe("tags", () => {
     test("are every tag with its notes, ignoring case", async () => {
       const { store } = await openStore();

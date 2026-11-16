@@ -270,7 +270,7 @@ vault.folders.create(path) / rename(from, to) / remove(path)
 vault.attachments.read(path) / save(name, bytes) / import(source) / find(note, target)
 
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
-vault.links.unlinked(path) / linkMention(source, at, target)
+vault.links.unlinked(path) / linkMention(source, at, target) / aliases()
 vault.search.query(text) / locate(path, text) / titles(text)
 vault.tags.all() / tree() / notes(tag)
 vault.graph.global() / local(path, depth)
@@ -392,7 +392,7 @@ Three rules that keep a second shell cheap:
 - **Live preview** is built with CodeMirror decorations: syntax marks are hidden and formatting is shown when the cursor is outside the element, raw Markdown is shown when the cursor is inside it.
 - The document on disk is always plain Markdown.
 - Save flow: edits are debounced, then `vault.notes.write(path, content, baseHash)`. The core rejects the write if the file on disk no longer matches `baseHash`, which triggers the conflict flow.
-- `[[` opens autocomplete backed by `vault.links.suggest`.
+- `[[` opens autocomplete with the notes of the vault tree and the aliases from `vault.links.aliases`. An alias is written as `[[Note|alias]]`: the link finds the note by its name and reads as the alias.
 
 ### Graph
 

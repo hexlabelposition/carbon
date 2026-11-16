@@ -52,6 +52,12 @@ export interface ParsedNote {
 /** The frontmatter of a note as the index has it: `ParsedNote` fields. */
 export type NoteMetadata = Pick<ParsedNote, "tags" | "aliases" | "properties">;
 
+/** An alias of a note, from its frontmatter. */
+export interface NoteAlias {
+  path: NotePath;
+  alias: string;
+}
+
 /** A tag and the number of notes that have it. */
 export interface TagCount {
   tag: string;

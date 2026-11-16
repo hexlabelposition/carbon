@@ -7,7 +7,7 @@ import {
 } from "@codemirror/autocomplete";
 import { Facet } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import type { Link, NotePath } from "@carbon/core";
+import type { Link, NoteAlias, NotePath } from "@carbon/core";
 import type { OpenTarget } from "../workspace/workspace";
 import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
@@ -16,6 +16,8 @@ import { headingsOf, type Heading } from "./outline";
 export interface LinkHost {
   /** Every note of the vault. */
   notes(): Promise<readonly NotePath[]>;
+  /** Every alias of every note; empty while the index is not open. */
+  aliases(): Promise<readonly NoteAlias[]>;
   /** The note being edited: it is not suggested. */
   current: NotePath;
   /**
@@ -51,10 +53,12 @@ export const linkHost = Facet.define<LinkHost, LinkHost | null>({
 });
 
 /**
- * Suggests notes after "[[", and their headings after "[[Note#" (the
- * headings of this note after "[[#"): the list narrows while the user
- * types, and picking one writes it and closes the link with "]]". Typing
- * on goes on as usual; Escape closes the list.
+ * Suggests notes after "[[", by their names and their aliases, and their
+ * headings after "[[Note#" (the headings of this note after "[[#"): the
+ * list narrows while the user types, and picking one writes it and closes
+ * the link with "]]". An alias is written as `[[Note|alias]]`, so the
+ * link finds the note by its name and reads as the alias. Typing on goes
+ * on as usual; Escape closes the list.
  */
 export const linkCompletion = [
   autocompletion({ override: [suggestNotes, suggestHeadings], icons: false }),
@@ -104,36 +108,57 @@ async function suggestNotes(
   const from = typed.from + 2;
   const { to, closed } = partEnd(state, pos, NAME_END, /^(\]\]|[|#])/);
 
-  const notes = (await host.notes()).filter((path) => path !== host.current);
+  const [allNotes, aliases] = await Promise.all([host.notes(), host.aliases()]);
   if (context.aborted) return null;
+  const notes = allNotes.filter((path) => path !== host.current);
+  // "[[Alias|" or "[[Alias#" has its next part written already: only the
+  // note goes in, as there is no room for the alias.
+  const nextPart = /^[|#]/.test(state.sliceDoc(to, to + 1));
   const titleCount = new Map<string, number>();
   for (const path of notes) {
     const key = titleOf(path).toLowerCase();
     titleCount.set(key, (titleCount.get(key) ?? 0) + 1);
   }
 
-  const options = notes.map((path): Completion => {
+  /** How a link names the note: two notes of one name need the path. */
+  const nameOf = (path: NotePath) => {
     const title = titleOf(path);
-    // Two notes of one name: the path tells which one is meant.
-    const unique = titleCount.get(title.toLowerCase()) === 1;
-    const name = unique ? title : path.replace(/\.md$/i, "");
+    return titleCount.get(title.toLowerCase()) === 1
+      ? title
+      : path.replace(/\.md$/i, "");
+  };
+  const write = (text: string): Completion["apply"] => {
+    const insert = closed ? text : `${text}]]`;
+    return (view, completion, start, end) => {
+      view.dispatch({
+        changes: { from: start, to: end, insert },
+        selection: { anchor: start + insert.length },
+        userEvent: "input.complete",
+        annotations: pickedCompletion.of(completion),
+      });
+    };
+  };
+
+  const options = notes.map((path): Completion => {
     const folder = path.includes("/")
       ? path.slice(0, path.lastIndexOf("/"))
       : undefined;
-    return {
-      label: title,
-      detail: folder,
-      apply: (view, completion, start, end) => {
-        const insert = closed ? name : `${name}]]`;
-        view.dispatch({
-          changes: { from: start, to: end, insert },
-          selection: { anchor: start + insert.length },
-          userEvent: "input.complete",
-          annotations: pickedCompletion.of(completion),
-        });
-      },
-    };
+    return { label: titleOf(path), detail: folder, apply: write(nameOf(path)) };
   });
+  for (const { path, alias } of aliases) {
+    if (path === host.current) continue;
+    // An alias that is the name of its note adds nothing to the list; one
+    // with a character that ends a part of a link cannot be typed or
+    // written into one.
+    if (alias.toLowerCase() === titleOf(path).toLowerCase()) continue;
+    if (NAME_END.test(alias)) continue;
+    const name = nameOf(path);
+    options.push({
+      label: alias,
+      detail: `→ ${titleOf(path)}`,
+      apply: write(nextPart ? name : `${name}|${alias}`),
+    });
+  }
   return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
 }
 

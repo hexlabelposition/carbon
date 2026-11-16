@@ -5,6 +5,7 @@ import type { FullTextQuery } from "../search/query";
 import type {
   Backlink,
   Heading,
+  NoteAlias,
   NoteMetadata,
   NotePath,
   OutgoingLink,
@@ -303,6 +304,17 @@ export class IndexStore {
       aliases: aliases.map((row) => row.alias),
       properties: values,
     };
+  }
+
+  /**
+   * Every alias of every note, by the path of the note, then in the order
+   * its frontmatter gives them.
+   */
+  async aliases(): Promise<NoteAlias[]> {
+    return this.db.select<NoteAlias>(
+      `SELECT n.path, a.alias FROM aliases a JOIN notes n ON n.id = a.note_id
+       ORDER BY n.path, a.rowid`,
+    );
   }
 
   /**

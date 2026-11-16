@@ -6,6 +6,7 @@ import type {
   Heading,
   Link,
   Mention,
+  NoteAlias,
   NotePath,
   TextRange,
   UnresolvedTarget,
@@ -56,6 +57,14 @@ export class Links {
   /** The links in other notes that point to the note at `path`. */
   async backlinks(path: NotePath): Promise<Backlink[]> {
     return (await this.context.index()).backlinks(path);
+  }
+
+  /**
+   * Every alias of every note, by path: other names a link finds the note
+   * by (ARCHITECTURE.md, section 4.4).
+   */
+  async aliases(): Promise<NoteAlias[]> {
+    return (await this.context.index()).aliases();
   }
 
   /** The notes that links point to but that do not exist, with the links. */

@@ -31,6 +31,8 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
     () => ({
       // The tree is listed once and reused while nothing changes.
       notes: async () => notesIn(await vault.tree()),
+      // While the index opens, links are suggested by name alone.
+      aliases: () => vault.links.aliases().catch(() => []),
       current: path,
       headings: async (target) => {
         const note = await vault.links

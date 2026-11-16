@@ -180,6 +180,8 @@ export function MarkdownEditor({
           missingLinks,
           linkHost.of({
             notes: () => latest.current.links?.notes() ?? Promise.resolve([]),
+            aliases: () =>
+              latest.current.links?.aliases() ?? Promise.resolve([]),
             get current() {
               return latest.current.links?.current ?? "";
             },

@@ -119,7 +119,7 @@ Done when: tags and frontmatter are indexed, visible and usable for navigation.
 - [x] **C-402** (P0) Parse YAML frontmatter (`tags`, `aliases`, other properties)
 - [x] **C-403** (P0) Index tags, aliases, properties
 - [x] **C-404** (P0) Tags panel: tree of tags with counts, click shows notes
-- [ ] **C-405** (P0) Aliases used in link resolution and `[[` autocomplete
+- [x] **C-405** (P0) Aliases used in link resolution and `[[` autocomplete
 - [ ] **C-406** (P1) Tag autocomplete after `#`
 - [ ] **C-407** (P1) Frontmatter rendered as a compact block in live preview
 - [ ] **C-408** (P2) Properties editor UI (edit frontmatter without writing YAML)

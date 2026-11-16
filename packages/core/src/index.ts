@@ -58,6 +58,7 @@ export type {
   Heading,
   Link,
   Mention,
+  NoteAlias,
   NoteMetadata,
   NotePath,
   OutgoingLink,
