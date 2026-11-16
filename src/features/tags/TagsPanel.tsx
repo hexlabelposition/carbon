@@ -157,7 +157,8 @@ function TagRow({
       aria-expanded={nested ? open : undefined}
     >
       <div
-        className={`flex h-6 items-center gap-1 pr-3 ${
+        // The focus shows on the whole row, as the selection in the file tree.
+        className={`flex h-6 items-center gap-1 pr-3 has-[button:focus-visible]:outline-1 has-[button:focus-visible]:-outline-offset-1 has-[button:focus-visible]:outline-line-strong ${
           selected ? "bg-selected text-fg" : "text-muted hover:bg-raise"
         }`}
         style={{ paddingLeft: depth * INDENT + 6 }}
@@ -166,7 +167,7 @@ function TagRow({
           type="button"
           tabIndex={nested ? 0 : -1}
           aria-label={t("tags.toggle", { tag: node.tag })}
-          className={`flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-selected ${
+          className={`flex size-4 shrink-0 items-center justify-center rounded-sm outline-none hover:bg-selected ${
             nested ? "" : "invisible"
           }`}
           onClick={() => tags.toggle(node.tag)}
@@ -186,7 +187,7 @@ function TagRow({
             ref={name}
             type="button"
             title={`#${node.tag}`}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-fg"
+            className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none hover:text-fg"
             onClick={() => tags.select(selected ? null : node.tag)}
             onKeyDown={(event) => {
               if (event.key === "F2") {
