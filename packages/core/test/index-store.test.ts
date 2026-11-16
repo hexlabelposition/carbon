@@ -101,6 +101,7 @@ describe("IndexStore", () => {
         "notes_fts_docsize",
         "notes_fts_idx",
         "properties",
+        "tag_parts",
         "tags",
       ]);
     });

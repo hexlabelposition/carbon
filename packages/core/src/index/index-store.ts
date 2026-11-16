@@ -38,7 +38,7 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Notes, their headings, aliases, tags, properties and links. A link
@@ -84,6 +84,16 @@ const SCHEMA = [
    )`,
   `CREATE INDEX tags_note ON tags (note_id)`,
   `CREATE INDEX tags_key ON tags (tag_key)`,
+  // Each tag of a note and every tag it is nested in, once per note:
+  // "a/b/c" gives "a", "a/b" and "a/b/c". Written with the note, so
+  // counting the notes of a tag and its nested ones is a plain GROUP BY.
+  `CREATE TABLE tag_parts (
+     note_id INTEGER NOT NULL,
+     tag TEXT NOT NULL,
+     tag_key TEXT NOT NULL
+   )`,
+  `CREATE INDEX tag_parts_note ON tag_parts (note_id)`,
+  `CREATE INDEX tag_parts_key ON tag_parts (tag_key)`,
   `CREATE TABLE properties (
      note_id INTEGER NOT NULL,
      key TEXT NOT NULL,
@@ -325,27 +335,12 @@ export class IndexStore {
    * one, spelled as in the note with the first path.
    */
   async tags(): Promise<TagCount[]> {
-    // `parts` walks each tag from its first part on, giving every tag it
-    // is nested in: "a/b/c" gives "a", "a/b" and "a/b/c". The key and the
-    // spelling are split alike, as case folding keeps the slashes. The
-    // bare `tag` comes from the row of `MIN(n.path)`, as SQLite does for a
-    // query with one `MIN`.
+    // The bare `tag` comes from the row of `MIN(n.path)`, as SQLite does
+    // for a query with one `MIN`; a note has each key once.
     const rows = await this.db.select<TagCount & { first: string }>(
-      `WITH RECURSIVE parts (note_id, key, tag, key_rest, tag_rest) AS (
-         SELECT note_id, '', '', tag_key || '/', tag || '/' FROM tags
-         UNION ALL
-         SELECT note_id,
-           key || iif(key = '', '', '/')
-             || substr(key_rest, 1, instr(key_rest, '/') - 1),
-           tag || iif(tag = '', '', '/')
-             || substr(tag_rest, 1, instr(tag_rest, '/') - 1),
-           substr(key_rest, instr(key_rest, '/') + 1),
-           substr(tag_rest, instr(tag_rest, '/') + 1)
-         FROM parts WHERE key_rest <> ''
-       )
-       SELECT p.tag, COUNT(DISTINCT p.note_id) AS count, MIN(n.path) AS first
-       FROM parts p JOIN notes n ON n.id = p.note_id
-       WHERE p.key <> '' GROUP BY p.key ORDER BY p.key`,
+      `SELECT p.tag, COUNT(*) AS count, MIN(n.path) AS first
+       FROM tag_parts p JOIN notes n ON n.id = p.note_id
+       GROUP BY p.tag_key ORDER BY p.tag_key`,
     );
     return rows.map(({ tag, count }) => ({ tag, count }));
   }
@@ -358,10 +353,9 @@ export class IndexStore {
   async notesWithTag(tag: string): Promise<NotePath[]> {
     const key = matchKey(tag.replace(/^#/, ""));
     const rows = await this.db.select<{ path: string }>(
-      `SELECT DISTINCT n.path FROM tags t JOIN notes n ON n.id = t.note_id
-       WHERE t.tag_key = ? OR substr(t.tag_key, 1, length(?)) = ?
-       ORDER BY n.path`,
-      [key, `${key}/`, `${key}/`],
+      `SELECT n.path FROM tag_parts p JOIN notes n ON n.id = p.note_id
+       WHERE p.tag_key = ? ORDER BY n.path`,
+      [key],
     );
     return rows.map((row) => row.path);
   }
@@ -624,6 +618,13 @@ export class IndexStore {
     );
     await insertRows(
       this.db,
+      "tag_parts (note_id, tag, tag_key)",
+      entries.flatMap(({ note }) =>
+        tagParts(note.tags).map(([tag, key]) => [idOf(note.path), tag, key]),
+      ),
+    );
+    await insertRows(
+      this.db,
       "properties (note_id, key, value)",
       entries.flatMap(({ note }) =>
         Object.entries(note.properties).map(([key, value]) => [
@@ -725,6 +726,10 @@ export class IndexStore {
       paths,
     );
     await this.db.execute(
+      `DELETE FROM tag_parts WHERE note_id IN ${ofNotes}`,
+      paths,
+    );
+    await this.db.execute(
       `DELETE FROM properties WHERE note_id IN ${ofNotes}`,
       paths,
     );
@@ -779,6 +784,23 @@ async function insertRows(
       chunk.flat(),
     );
   }
+}
+
+/**
+ * The tags of a note and every tag they are nested in, each key once, as
+ * `[tag, key]`: spelled as the first tag that has it.
+ */
+function tagParts(tags: readonly string[]): [string, string][] {
+  const parts = new Map<string, string>();
+  for (const tag of tags) {
+    const pieces = tag.split("/");
+    for (let i = 1; i <= pieces.length; i++) {
+      const part = pieces.slice(0, i).join("/");
+      const key = matchKey(part);
+      if (!parts.has(key)) parts.set(key, part);
+    }
+  }
+  return [...parts].map(([key, tag]) => [tag, key]);
 }
 
 /** `?, ?, ?` for `count` parameters. */
