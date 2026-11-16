@@ -306,18 +306,34 @@ export class IndexStore {
   }
 
   /**
-   * Every tag of the vault with the number of notes that have it, ordered
-   * by the tag, ignoring case. Tags that differ only in case are one,
-   * spelled as in the note with the first path. A nested tag counts on
-   * its own: `a/b` adds nothing to `a`.
+   * Every tag of the vault with the number of notes that have it or a tag
+   * nested in it, as `notesWithTag` finds them, ordered by the tag,
+   * ignoring case. A tag that only has tags nested in it is there too:
+   * `a/b` alone gives `a` and `a/b`. Tags that differ only in case are
+   * one, spelled as in the note with the first path.
    */
   async tags(): Promise<TagCount[]> {
-    // The bare `tag` comes from the row of `MIN(n.path)`, as SQLite does
-    // for a query with one `MIN`; a note has each key once.
+    // `parts` walks each tag from its first part on, giving every tag it
+    // is nested in: "a/b/c" gives "a", "a/b" and "a/b/c". The key and the
+    // spelling are split alike, as case folding keeps the slashes. The
+    // bare `tag` comes from the row of `MIN(n.path)`, as SQLite does for a
+    // query with one `MIN`.
     const rows = await this.db.select<TagCount & { first: string }>(
-      `SELECT t.tag, COUNT(*) AS count, MIN(n.path) AS first
-       FROM tags t JOIN notes n ON n.id = t.note_id
-       GROUP BY t.tag_key ORDER BY t.tag_key`,
+      `WITH RECURSIVE parts (note_id, key, tag, key_rest, tag_rest) AS (
+         SELECT note_id, '', '', tag_key || '/', tag || '/' FROM tags
+         UNION ALL
+         SELECT note_id,
+           key || iif(key = '', '', '/')
+             || substr(key_rest, 1, instr(key_rest, '/') - 1),
+           tag || iif(tag = '', '', '/')
+             || substr(tag_rest, 1, instr(tag_rest, '/') - 1),
+           substr(key_rest, instr(key_rest, '/') + 1),
+           substr(tag_rest, instr(tag_rest, '/') + 1)
+         FROM parts WHERE key_rest <> ''
+       )
+       SELECT p.tag, COUNT(DISTINCT p.note_id) AS count, MIN(n.path) AS first
+       FROM parts p JOIN notes n ON n.id = p.note_id
+       WHERE p.key <> '' GROUP BY p.key ORDER BY p.key`,
     );
     return rows.map(({ tag, count }) => ({ tag, count }));
   }

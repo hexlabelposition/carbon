@@ -90,6 +90,7 @@ carbon/
         index/              # schema, indexer, startup scan
         links/              # resolution, backlinks, rename, graph queries
         search/             # full-text queries, fuzzy title matching
+        tags/               # tag counts, the tree of tags, notes of a tag
         config/             # vault and app settings
         index.ts            # public API
       test/
@@ -244,6 +245,11 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 - Languages: the `unicode61` tokenizer folds case in every script and the diacritics of Latin letters. Look-alike letters it keeps apart, Russian "е" and "ё", Polish "l" and "ł", are searched for in every spelling. Text without spaces between words (Chinese, Japanese) is found only by its start; a trigram index would fix that, at the cost of a much larger index.
 - Quick switcher: fuzzy matching of titles with fuzzysort (ADR-022), over the notes of the vault tree kept in memory: it works before the index is ready and knows a new note at once. Aliases join when they are parsed (M4).
 
+### tags
+
+- Every tag with the number of its notes, counting the notes of the tags nested in it once each, and the tree of tags built from that.
+- The notes of a tag are those of the tags nested in it too: `area` finds `area/topic`. Case is ignored, as for links.
+
 ### config
 
 - App settings (recent vaults, last opened note, theme) in the app config directory, through the `SettingsStore` interface.
@@ -266,7 +272,7 @@ vault.attachments.read(path) / save(name, bytes) / import(source) / find(note, t
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.links.unlinked(path) / linkMention(source, at, target)
 vault.search.query(text) / locate(path, text) / titles(text)
-vault.tags.list() / notes(tag)
+vault.tags.all() / tree() / notes(tag)
 vault.graph.global() / local(path, depth)
 
 vault.on('changed', ...)        // file added, changed or removed outside the editor

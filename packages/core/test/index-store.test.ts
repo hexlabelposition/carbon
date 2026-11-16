@@ -282,16 +282,36 @@ describe("IndexStore", () => {
       const { store } = await openStore();
       await store.replaceNotes([
         entry("b.md", "#Work #idea"),
-        entry("a.md", "---\ntags: [work]\n---\n#area/topic"),
-        entry("c.md", "#ёлка #Ёлка #area"),
+        entry("a.md", "---\ntags: [work]\n---\n#topic"),
+        entry("c.md", "#ёлка #Ёлка"),
       ]);
       expect(await store.tags()).toEqual([
-        { tag: "area", count: 1 },
-        { tag: "area/topic", count: 1 },
         { tag: "idea", count: 1 },
+        { tag: "topic", count: 1 },
         // As in a.md, the first path.
         { tag: "work", count: 2 },
         { tag: "ёлка", count: 1 },
+      ]);
+    });
+
+    test("count the notes of the tags nested in them, once each", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("a.md", "#area #area/topic #area/topic/deep"),
+        entry("b.md", "#Area/Topic"),
+        entry("c.md", "#area/other #areas"),
+        entry("d.md", "#x/y/z"),
+      ]);
+      expect(await store.tags()).toEqual([
+        { tag: "area", count: 3 },
+        { tag: "area/other", count: 1 },
+        { tag: "area/topic", count: 2 },
+        { tag: "area/topic/deep", count: 1 },
+        { tag: "areas", count: 1 },
+        // Only nested tags: the tags they are in are there too.
+        { tag: "x", count: 1 },
+        { tag: "x/y", count: 1 },
+        { tag: "x/y/z", count: 1 },
       ]);
     });
 

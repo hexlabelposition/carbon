@@ -5,6 +5,7 @@ import { Links } from "../links/links";
 import { LinkRewriter } from "../links/rename";
 import { inlineParser } from "../parser/parse-files";
 import { Search } from "../search/search";
+import { Tags } from "../tags/tags";
 import { Attachments } from "./attachments";
 import type { Platform } from "../platform";
 import type { NotePath } from "../types";
@@ -80,6 +81,7 @@ export class Vault {
   readonly attachments: Attachments;
   readonly links: Links;
   readonly search: Search;
+  readonly tags: Tags;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -138,6 +140,7 @@ export class Vault {
       read: (path) => this.notes.read(path),
       tree: () => this.tree(),
     });
+    this.tags = new Tags({ index });
     this.watch = new VaultWatch({
       root,
       fs,

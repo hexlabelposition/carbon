@@ -30,6 +30,8 @@ export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";
 export type { Search, SearchOptions, TitleOptions } from "./search/search";
 export type { TitleHit } from "./search/titles";
+export { tagTree } from "./tags/tags";
+export type { TagNode, Tags } from "./tags/tags";
 
 export type {
   Entry,
