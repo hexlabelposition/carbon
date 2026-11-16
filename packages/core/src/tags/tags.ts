@@ -37,6 +37,60 @@ export class Tags {
     return tagTree(await this.all());
   }
 
+  /**
+   * The tags of the note at `path` as the index has them: as it was last
+   * saved. Empty if it is not indexed.
+   */
+  async of(path: NotePath): Promise<string[]> {
+    const metadata = await (await this.context.index()).metadata(path);
+    return metadata?.tags ?? [];
+  }
+
+  /**
+   * The tags to offer while a tag is typed in the note at `path`, whose
+   * text has the tags `written` now, the one being typed left out. The
+   * index has the note as last saved, which may hold a tag typed half
+   * way: a tag only that note has comes from `written` instead. A tag of
+   * `written` brings the tags it is nested in. Each with its count of
+   * notes, the note at `path` counted once; in no order.
+   */
+  async suggestions(
+    path: NotePath,
+    written: readonly string[],
+  ): Promise<TagCount[]> {
+    const [all, own] = await Promise.all([this.all(), this.of(path)]);
+    const inside = (tags: Iterable<string>) => {
+      const keys = new Set<string>();
+      for (const tag of tags) {
+        const parts = matchKey(tag).split("/");
+        for (let i = 1; i <= parts.length; i++) {
+          keys.add(parts.slice(0, i).join("/"));
+        }
+      }
+      return keys;
+    };
+    const saved = inside(own);
+    const now = inside(written);
+
+    const result = new Map<string, TagCount>();
+    for (const { tag, count } of all) {
+      const key = matchKey(tag);
+      // Less the note itself as saved, plus the note as it is now.
+      const others = count - (saved.has(key) ? 1 : 0);
+      const total = others + (now.has(key) ? 1 : 0);
+      if (total > 0) result.set(key, { tag, count: total });
+    }
+    for (const tag of written) {
+      const parts = tag.split("/");
+      for (let i = 1; i <= parts.length; i++) {
+        const nested = parts.slice(0, i).join("/");
+        const key = matchKey(nested);
+        if (!result.has(key)) result.set(key, { tag: nested, count: 1 });
+      }
+    }
+    return [...result.values()];
+  }
+
   /** The notes with the tag or a tag nested in it, by path. */
   async notes(tag: string): Promise<NotePath[]> {
     return (await this.context.index()).notesWithTag(tag);

@@ -85,6 +85,58 @@ describe("vault.tags", () => {
     vault.close();
   });
 
+  test("gives the tags of one note as last indexed", async () => {
+    const vault = await openVault({
+      "a.md": "---\ntags: [x]\n---\n#y #x",
+    });
+    expect(await vault.tags.of("a.md")).toEqual(["x", "y"]);
+    expect(await vault.tags.of("missing.md")).toEqual([]);
+    vault.close();
+  });
+
+  describe("suggestions", () => {
+    /** The suggestions as `tag count`, sorted, the easiest form to read. */
+    const suggest = async (
+      vault: Vault,
+      path: string,
+      written: string[],
+    ): Promise<string[]> =>
+      (await vault.tags.suggestions(path, written))
+        .map(({ tag, count }) => `${tag} ${count}`)
+        .sort();
+
+    test("are the tags of the vault and of the note as it is now", async () => {
+      const vault = await openVault({
+        "a.md": "#idea #area/topic",
+        "b.md": "#idea",
+      });
+      expect(await suggest(vault, "new.md", ["fresh/one"])).toEqual([
+        "area 1",
+        "area/topic 1",
+        "fresh 1",
+        "fresh/one 1",
+        "idea 2",
+      ]);
+      vault.close();
+    });
+
+    test("leave out a tag only the note had when saved", async () => {
+      // "#pro" was saved while "#project" was being typed.
+      const vault = await openVault({
+        "a.md": "#pro #shared #only/inner",
+        "b.md": "#shared",
+      });
+      expect(await suggest(vault, "a.md", ["shared"])).toEqual(["shared 2"]);
+      vault.close();
+    });
+
+    test("count the note once, ignoring case", async () => {
+      const vault = await openVault({ "a.md": "#Idea", "b.md": "#idea" });
+      expect(await suggest(vault, "a.md", ["IDEA"])).toEqual(["Idea 2"]);
+      vault.close();
+    });
+  });
+
   test("rejects after the vault is closed", async () => {
     const vault = await openVault({});
     vault.close();

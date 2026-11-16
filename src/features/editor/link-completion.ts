@@ -11,6 +11,7 @@ import type { Link, NoteAlias, NotePath } from "@carbon/core";
 import type { OpenTarget } from "../workspace/workspace";
 import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
+import { suggestTags } from "./tag-completion";
 
 /** What the editor needs to suggest notes to link to, and to follow links. */
 export interface LinkHost {
@@ -61,7 +62,11 @@ export const linkHost = Facet.define<LinkHost, LinkHost | null>({
  * on as usual; Escape closes the list.
  */
 export const linkCompletion = [
-  autocompletion({ override: [suggestNotes, suggestHeadings], icons: false }),
+  // Tags too: the editor has one list of suggestions for all of them.
+  autocompletion({
+    override: [suggestNotes, suggestHeadings, suggestTags],
+    icons: false,
+  }),
   EditorView.baseTheme({
     ".cm-tooltip.cm-tooltip-autocomplete": {
       border: "1px solid var(--cb-line-strong)",

@@ -12,6 +12,7 @@ import { useNoteImages } from "./use-note-images";
 import { useSmoothWheel } from "./use-smooth-wheel";
 import { useWheelTextSize } from "./use-wheel-text-size";
 import { useNoteLinks } from "./use-note-links";
+import { useNoteTags } from "./use-note-tags";
 import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 
@@ -52,6 +53,7 @@ export function NoteEditor({
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
+  const tags = useNoteTags(vault, path);
   const title = useNoteTitle(vault, path);
   const { reveal } = useWorkspace();
   const smoothWheel = useSmoothWheel();
@@ -148,6 +150,7 @@ export function NoteEditor({
           outline={outline}
           active={active}
           links={links.host}
+          tags={tags}
           reveal={reveal?.path === path ? reveal : null}
         />
       </div>

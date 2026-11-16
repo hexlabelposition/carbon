@@ -272,7 +272,7 @@ vault.attachments.read(path) / save(name, bytes) / import(source) / find(note, t
 vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.links.unlinked(path) / linkMention(source, at, target) / aliases()
 vault.search.query(text) / locate(path, text) / titles(text)
-vault.tags.all() / tree() / notes(tag)
+vault.tags.all() / tree() / notes(tag) / of(path) / suggestions(path, written)
 vault.graph.global() / local(path, depth)
 
 vault.on('changed', ...)        // file added, changed or removed outside the editor

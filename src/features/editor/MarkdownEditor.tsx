@@ -28,6 +28,7 @@ import {
   type ImageHost,
 } from "./live-preview-image";
 import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
+import { tagHost, type TagHost } from "./tag-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
 import { linkPreview } from "./link-preview";
 import { useT } from "../i18n/i18n";
@@ -70,6 +71,8 @@ interface MarkdownEditorProps {
   outline?: OutlineLink;
   /** Suggests notes to link to after "[[", and follows links. */
   links?: LinkHost;
+  /** Suggests tags while one is typed; without it, none are. */
+  tags?: TagHost;
   /**
    * A place to go to: the cursor moves to offset `at` and the editor
    * scrolls it into view. A new `id` goes there again.
@@ -103,6 +106,7 @@ export function MarkdownEditor({
   readOnly = false,
   outline,
   links,
+  tags,
   reveal = null,
   active = false,
 }: MarkdownEditorProps) {
@@ -123,6 +127,7 @@ export function MarkdownEditor({
     readOnly,
     outline,
     links,
+    tags,
   });
   useEffect(() => {
     latest.current = {
@@ -134,8 +139,19 @@ export function MarkdownEditor({
       readOnly,
       outline,
       links,
+      tags,
     };
-  }, [text, onChange, onSave, images, sourceMode, readOnly, outline, links]);
+  }, [
+    text,
+    onChange,
+    onSave,
+    images,
+    sourceMode,
+    readOnly,
+    outline,
+    links,
+    tags,
+  ]);
 
   // Before the first paint, so a note never shows as an empty area first.
   useLayoutEffect(() => {
@@ -197,6 +213,10 @@ export function MarkdownEditor({
               Promise.reject(new Error("No preview here")),
             follow: (link, options) =>
               latest.current.links?.follow(link, options),
+          }),
+          tagHost.of({
+            suggestions: (written) =>
+              latest.current.tags?.suggestions(written) ?? Promise.resolve([]),
           }),
           outlineTracker,
           outlineHost.of({
