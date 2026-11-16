@@ -72,7 +72,7 @@
     -webkit-font-smoothing: antialiased;
 
     /* The note text, as the settings set it (note-style.ts). */
-    --cb-note-size: 15px;
+    --cb-note-size: 14px; /* NOTE_SIZE_DEFAULT */
     --cb-note-width: 784px;
     --cb-note-font: var(--font-sans);
     /* The fonts as the settings set them (fonts.ts). */

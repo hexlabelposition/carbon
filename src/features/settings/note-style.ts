@@ -2,8 +2,11 @@ import { useLayoutEffect } from "react";
 import type { MessageKey } from "../i18n/i18n";
 import { oneOf, preference } from "./preference";
 
-/** Sizes of the note text, in pixels; 15 is the default. */
+/** Sizes of the note text, in pixels. */
 export const NOTE_SIZES: readonly number[] = [13, 14, 15, 16, 17, 18, 20];
+
+/** The size of the note text until another is chosen, in pixels. */
+export const NOTE_SIZE_DEFAULT = 14;
 
 export type NoteWidth = "narrow" | "normal" | "wide" | "full";
 export type NoteFont = "inter" | "system" | "serif" | "mono";
@@ -42,9 +45,25 @@ const FONT: Record<NoteFont, string> = {
 
 export const noteSizePreference = preference<number>(
   "carbon.note.size",
-  15,
+  NOTE_SIZE_DEFAULT,
   (stored) =>
     NOTE_SIZES.includes(Number(stored)) ? Number(stored) : undefined,
+);
+
+/** Puts the note text back to its default size. */
+export function resetNoteSize(): void {
+  noteSizePreference.set(NOTE_SIZE_DEFAULT);
+}
+
+/**
+ * Whether Ctrl and the mouse wheel over a note change its text size, and
+ * Ctrl and a press of the wheel put it back.
+ */
+export const wheelTextSizePreference = preference<boolean>(
+  "carbon.note.wheelSize",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
 );
 
 export const noteWidthPreference = preference<NoteWidth>(

@@ -10,6 +10,7 @@ import { useNoteDocument } from "./use-note-document";
 import { ImageViewer } from "./ImageViewer";
 import { useNoteImages } from "./use-note-images";
 import { useSmoothWheel } from "./use-smooth-wheel";
+import { useWheelTextSize } from "./use-wheel-text-size";
 import { useNoteLinks } from "./use-note-links";
 import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
@@ -54,6 +55,7 @@ export function NoteEditor({
   const title = useNoteTitle(vault, path);
   const { reveal } = useWorkspace();
   const smoothWheel = useSmoothWheel();
+  const wheelTextSize = useWheelTextSize();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
 
@@ -77,7 +79,8 @@ export function NoteEditor({
   };
 
   return (
-    <div className="flex h-full flex-col">
+    // Ctrl and the wheel anywhere over the note change its text size.
+    <div ref={wheelTextSize} className="flex h-full flex-col">
       <header className="flex h-9 shrink-0 items-center gap-3 border-b border-line pr-3 pl-1.5">
         {history}
         <span className="min-w-0 flex-1 truncate text-muted" title={path}>

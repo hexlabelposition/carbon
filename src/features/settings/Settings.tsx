@@ -1,5 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Select } from "@base-ui/react/select";
+import { Switch } from "@base-ui/react/switch";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import {
@@ -33,12 +34,15 @@ import {
 } from "./fonts";
 import {
   NOTE_FONTS,
+  NOTE_SIZE_DEFAULT,
   NOTE_SIZES,
   NOTE_WIDTHS,
   noteFontPreference,
   noteSizePreference,
   noteWidthPreference,
+  resetNoteSize,
   useNoteStyle,
+  wheelTextSizePreference,
 } from "./note-style";
 
 // Whether the settings dialog is open: anything may open it.
@@ -107,6 +111,11 @@ export function Settings() {
           title: t("settings.open"),
           shortcut: keys("Mod+,"),
           run: openSettings,
+        },
+        {
+          id: "settings.resetNoteSize",
+          title: t("settings.resetNoteSize"),
+          run: resetNoteSize,
         },
       ],
       [t],
@@ -322,18 +331,28 @@ function NoteSettings() {
   const t = useT();
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
+  const wheelSize = wheelTextSizePreference.use();
   return (
     <Rows>
       <Row label={t("settings.fontSize")}>
-        <SettingSelect
-          label={t("settings.fontSize")}
-          value={size}
-          items={NOTE_SIZES.map((pixels) => ({
-            value: pixels,
-            label: t("settings.pixels", { count: pixels }),
-          }))}
-          onChange={noteSizePreference.set}
-        />
+        <div className="flex items-center gap-1.5">
+          <ResetButton
+            label={t("settings.resetTo", {
+              value: t("settings.pixels", { count: NOTE_SIZE_DEFAULT }),
+            })}
+            disabled={size === NOTE_SIZE_DEFAULT}
+            onReset={resetNoteSize}
+          />
+          <SettingSelect
+            label={t("settings.fontSize")}
+            value={size}
+            items={NOTE_SIZES.map((pixels) => ({
+              value: pixels,
+              label: t("settings.pixels", { count: pixels }),
+            }))}
+            onChange={noteSizePreference.set}
+          />
+        </div>
       </Row>
       <Row label={t("settings.width")}>
         <SettingSelect
@@ -344,6 +363,13 @@ function NoteSettings() {
             label: t(label),
           }))}
           onChange={noteWidthPreference.set}
+        />
+      </Row>
+      <Row label={t("settings.wheelSize", { key: keys("Mod") })}>
+        <SettingSwitch
+          label={t("settings.wheelSize", { key: keys("Mod") })}
+          checked={wheelSize}
+          onChange={wheelTextSizePreference.set}
         />
       </Row>
     </Rows>
@@ -414,6 +440,68 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <span>{label}</span>
       {children}
     </div>
+  );
+}
+
+/**
+ * Puts a setting back to its default: an arrow turning back, framed as
+ * the control of the setting beside it. Faded while the setting is the
+ * default, so the row keeps its layout.
+ */
+function ResetButton({
+  label,
+  disabled,
+  onReset,
+}: {
+  label: string;
+  disabled: boolean;
+  onReset: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      // Framed as the list button beside it.
+      className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line-strong bg-panel text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel disabled:hover:text-muted"
+      onClick={onReset}
+    >
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        className="size-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5V5h2.5" />
+      </svg>
+    </button>
+  );
+}
+
+/** A setting that is on or off. */
+function SettingSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <Switch.Root
+      aria-label={label}
+      checked={checked}
+      onCheckedChange={onChange}
+      className="relative flex h-5 w-9 shrink-0 items-center rounded-full bg-line-strong p-0.5 outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-line-strong focus-visible:ring-offset-1 focus-visible:ring-offset-bg data-checked:bg-solid motion-reduce:transition-none"
+    >
+      <Switch.Thumb className="block size-4 rounded-full bg-bg shadow-sm transition-transform duration-150 data-checked:translate-x-4 motion-reduce:transition-none" />
+    </Switch.Root>
   );
 }
 
