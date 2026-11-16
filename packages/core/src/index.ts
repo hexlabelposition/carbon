@@ -56,10 +56,12 @@ export type {
   Heading,
   Link,
   Mention,
+  NoteMetadata,
   NotePath,
   OutgoingLink,
   ParsedNote,
   SearchHit,
+  TagCount,
   TextRange,
   UnresolvedTarget,
 } from "./types";

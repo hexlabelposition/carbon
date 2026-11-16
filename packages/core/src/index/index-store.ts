@@ -5,10 +5,12 @@ import type { FullTextQuery } from "../search/query";
 import type {
   Backlink,
   Heading,
+  NoteMetadata,
   NotePath,
   OutgoingLink,
   ParsedNote,
   SearchHit,
+  TagCount,
   UnresolvedTarget,
 } from "../types";
 import { contentHash } from "../util/hash";
@@ -35,15 +37,17 @@ export interface IndexEntry {
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
- * Notes, their headings, aliases and links. A link keeps its target as
- * written, the keys it is matched by (`links/resolve.ts`), and the note it
- * resolves to: `target_id` is `NULL` while that note does not exist.
+ * Notes, their headings, aliases, tags, properties and links. A link
+ * keeps its target as written, the keys it is matched by
+ * (`links/resolve.ts`), and the note it resolves to: `target_id` is
+ * `NULL` while that note does not exist. A tag and an alias keep their
+ * spelling and a key that ignores case; a property keeps its value as
+ * JSON. The rows of a note are in the order the parser gave them.
  * `notes_fts` holds the title and the plain text of every note for
- * full-text search, under the row id of the note. Tags and the rest of
- * the frontmatter are M4; they add their tables with a new schema version.
+ * full-text search, under the row id of the note.
  */
 const SCHEMA = [
   `CREATE TABLE notes (
@@ -72,6 +76,19 @@ const SCHEMA = [
    )`,
   `CREATE INDEX aliases_note ON aliases (note_id)`,
   `CREATE INDEX aliases_key ON aliases (alias_key)`,
+  `CREATE TABLE tags (
+     note_id INTEGER NOT NULL,
+     tag TEXT NOT NULL,
+     tag_key TEXT NOT NULL
+   )`,
+  `CREATE INDEX tags_note ON tags (note_id)`,
+  `CREATE INDEX tags_key ON tags (tag_key)`,
+  `CREATE TABLE properties (
+     note_id INTEGER NOT NULL,
+     key TEXT NOT NULL,
+     value TEXT NOT NULL
+   )`,
+  `CREATE INDEX properties_note ON properties (note_id)`,
   `CREATE TABLE links (
      source_id INTEGER NOT NULL,
      kind TEXT NOT NULL,
@@ -246,6 +263,79 @@ export class IndexStore {
        WHERE n.path = ? ORDER BY h.pos`,
       [path],
     );
+  }
+
+  /**
+   * The tags, aliases and properties of a note, as the parser gave them,
+   * except a property value JSON cannot hold, which is `null`. `null` if
+   * the note is not indexed.
+   */
+  async metadata(path: NotePath): Promise<NoteMetadata | null> {
+    const [note] = await this.db.select<{ id: number }>(
+      "SELECT id FROM notes WHERE path = ?",
+      [path],
+    );
+    if (note === undefined) return null;
+    const tags = await this.db.select<{ tag: string }>(
+      "SELECT tag FROM tags WHERE note_id = ? ORDER BY rowid",
+      [note.id],
+    );
+    const aliases = await this.db.select<{ alias: string }>(
+      "SELECT alias FROM aliases WHERE note_id = ? ORDER BY rowid",
+      [note.id],
+    );
+    const properties = await this.db.select<{ key: string; value: string }>(
+      "SELECT key, value FROM properties WHERE note_id = ? ORDER BY rowid",
+      [note.id],
+    );
+    const values: Record<string, unknown> = {};
+    for (const { key, value } of properties) {
+      // Not `values[key] =`: a key named "__proto__" stays a key.
+      Object.defineProperty(values, key, {
+        value: JSON.parse(value) as unknown,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return {
+      tags: tags.map((row) => row.tag),
+      aliases: aliases.map((row) => row.alias),
+      properties: values,
+    };
+  }
+
+  /**
+   * Every tag of the vault with the number of notes that have it, ordered
+   * by the tag, ignoring case. Tags that differ only in case are one,
+   * spelled as in the note with the first path. A nested tag counts on
+   * its own: `a/b` adds nothing to `a`.
+   */
+  async tags(): Promise<TagCount[]> {
+    // The bare `tag` comes from the row of `MIN(n.path)`, as SQLite does
+    // for a query with one `MIN`; a note has each key once.
+    const rows = await this.db.select<TagCount & { first: string }>(
+      `SELECT t.tag, COUNT(*) AS count, MIN(n.path) AS first
+       FROM tags t JOIN notes n ON n.id = t.note_id
+       GROUP BY t.tag_key ORDER BY t.tag_key`,
+    );
+    return rows.map(({ tag, count }) => ({ tag, count }));
+  }
+
+  /**
+   * The notes with the tag `tag`, or a tag nested in it, by path: `a`
+   * finds the notes with `a` and with `a/b`. Case is ignored, and so is a
+   * "#" in front.
+   */
+  async notesWithTag(tag: string): Promise<NotePath[]> {
+    const key = matchKey(tag.replace(/^#/, ""));
+    const rows = await this.db.select<{ path: string }>(
+      `SELECT DISTINCT n.path FROM tags t JOIN notes n ON n.id = t.note_id
+       WHERE t.tag_key = ? OR substr(t.tag_key, 1, length(?)) = ?
+       ORDER BY n.path`,
+      [key, `${key}/`, `${key}/`],
+    );
+    return rows.map((row) => row.path);
   }
 
   /**
@@ -489,6 +579,26 @@ export class IndexStore {
     );
     await insertRows(
       this.db,
+      "tags (note_id, tag, tag_key)",
+      entries.flatMap(({ note }) =>
+        note.tags.map((tag) => [idOf(note.path), tag, matchKey(tag)]),
+      ),
+    );
+    await insertRows(
+      this.db,
+      "properties (note_id, key, value)",
+      entries.flatMap(({ note }) =>
+        Object.entries(note.properties).map(([key, value]) => [
+          idOf(note.path),
+          key,
+          // `?? null`: a value JSON has no form for, such as a function,
+          // is stored as null rather than lost with its key.
+          JSON.stringify(value) ?? "null",
+        ]),
+      ),
+    );
+    await insertRows(
+      this.db,
       `links (source_id, kind, target_raw, target_path, target_name,
               alias, fragment, pos_start, pos_end, snippet)`,
       entries.flatMap(({ note }) =>
@@ -570,6 +680,14 @@ export class IndexStore {
     );
     await this.db.execute(
       `DELETE FROM aliases WHERE note_id IN ${ofNotes}`,
+      paths,
+    );
+    await this.db.execute(
+      `DELETE FROM tags WHERE note_id IN ${ofNotes}`,
+      paths,
+    );
+    await this.db.execute(
+      `DELETE FROM properties WHERE note_id IN ${ofNotes}`,
       paths,
     );
     await this.db.execute(

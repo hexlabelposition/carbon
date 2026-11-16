@@ -49,6 +49,15 @@ export interface ParsedNote {
   plainText: string;
 }
 
+/** The frontmatter of a note as the index has it: `ParsedNote` fields. */
+export type NoteMetadata = Pick<ParsedNote, "tags" | "aliases" | "properties">;
+
+/** A tag and the number of notes that have it. */
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
 export interface Backlink {
   /** The note that contains the link. */
   source: NotePath;

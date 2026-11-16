@@ -149,11 +149,10 @@ notes(id INTEGER PRIMARY KEY, path TEXT UNIQUE, title TEXT,
 links(source_id INTEGER, target_raw TEXT, target_id INTEGER NULL,
       alias TEXT NULL, fragment TEXT NULL, pos_start INTEGER, pos_end INTEGER)
 
-tags(id INTEGER PRIMARY KEY, name TEXT UNIQUE)
-note_tags(note_id INTEGER, tag_id INTEGER)
+tags(note_id INTEGER, tag TEXT, tag_key TEXT)
 
-aliases(note_id INTEGER, alias TEXT)
-properties(note_id INTEGER, key TEXT, value TEXT)
+aliases(note_id INTEGER, alias TEXT, alias_key TEXT)
+properties(note_id INTEGER, key TEXT, value TEXT)  -- value as JSON
 headings(note_id INTEGER, level INTEGER, text TEXT, pos INTEGER)
 
 notes_fts  -- FTS5 virtual table over title and body

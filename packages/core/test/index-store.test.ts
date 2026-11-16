@@ -100,6 +100,8 @@ describe("IndexStore", () => {
         "notes_fts_data",
         "notes_fts_docsize",
         "notes_fts_idx",
+        "properties",
+        "tags",
       ]);
     });
 
@@ -214,6 +216,109 @@ describe("IndexStore", () => {
         target: "O'Brien",
         alias: "Ünïcødé",
       });
+    });
+  });
+
+  describe("metadata", () => {
+    test("is the tags, aliases and properties as parsed, in order", async () => {
+      const { store } = await openStore();
+      const text = [
+        "---",
+        "tags: [b, A]",
+        "aliases: [Second, First]",
+        'title: It\'s "quoted"',
+        "count: 3",
+        "nested: {list: [1, x], none: null}",
+        "__proto__: kept",
+        "---",
+        "#c",
+      ].join("\n");
+      await store.replaceNotes([entry("a.md", text)]);
+      const parsed = parseNote("a.md", text);
+
+      const metadata = await store.metadata("a.md");
+      expect(metadata).toEqual({
+        tags: parsed.tags,
+        aliases: parsed.aliases,
+        properties: parsed.properties,
+      });
+      expect(Object.keys(metadata?.properties ?? {})).toEqual([
+        "title",
+        "count",
+        "nested",
+        "__proto__",
+      ]);
+    });
+
+    test("is null for a note not indexed", async () => {
+      const { store } = await openStore();
+      expect(await store.metadata("a.md")).toBeNull();
+    });
+
+    test("follows a note indexed again and forgets a removed one", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("a.md", "---\ntags: [x]\naliases: [Y]\nz: 1\n---\n"),
+      ]);
+      await store.replaceNotes([entry("a.md", "#w")]);
+      expect(await store.metadata("a.md")).toEqual({
+        tags: ["w"],
+        aliases: [],
+        properties: {},
+      });
+
+      await store.removeNotes(["a.md"]);
+      await store.replaceNotes([entry("a.md", "")]);
+      expect(await store.metadata("a.md")).toEqual({
+        tags: [],
+        aliases: [],
+        properties: {},
+      });
+    });
+  });
+
+  describe("tags", () => {
+    test("are every tag with its notes, ignoring case", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("b.md", "#Work #idea"),
+        entry("a.md", "---\ntags: [work]\n---\n#area/topic"),
+        entry("c.md", "#ёлка #Ёлка #area"),
+      ]);
+      expect(await store.tags()).toEqual([
+        { tag: "area", count: 1 },
+        { tag: "area/topic", count: 1 },
+        { tag: "idea", count: 1 },
+        // As in a.md, the first path.
+        { tag: "work", count: 2 },
+        { tag: "ёлка", count: 1 },
+      ]);
+    });
+
+    test("forget the tags of removed notes", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([entry("a.md", "#x"), entry("b.md", "#x #y")]);
+      await store.removeNotes(["b.md"]);
+      expect(await store.tags()).toEqual([{ tag: "x", count: 1 }]);
+    });
+
+    test("find notes by a tag and the tags nested in it", async () => {
+      const { store } = await openStore();
+      await store.replaceNotes([
+        entry("c.md", "#area/topic/deep"),
+        entry("a.md", "#Area"),
+        entry("b.md", "#area/topic #area"),
+        entry("d.md", "#areas #area_x"),
+        entry("e.md", "#other/area"),
+      ]);
+      expect(await store.notesWithTag("area")).toEqual([
+        "a.md",
+        "b.md",
+        "c.md",
+      ]);
+      expect(await store.notesWithTag("#AREA/Topic")).toEqual(["b.md", "c.md"]);
+      expect(await store.notesWithTag("area/top")).toEqual([]);
+      expect(await store.notesWithTag("missing")).toEqual([]);
     });
   });
 
