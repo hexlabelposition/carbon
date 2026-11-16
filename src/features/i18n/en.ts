@@ -187,7 +187,6 @@ export const en = {
   "shell.sidebarViews": "Sidebar views",
   "shell.tags": "Tags",
   "shell.toggleBacklinks": "Toggle backlinks",
-  "shell.toggleDevPanel": "Toggle dev panel",
   "shell.toggleLeftPanel": "Toggle left panel",
   "shell.toggleOutline": "Toggle outline",
   "shell.toggleRightPanel": "Toggle right panel",
@@ -202,13 +201,10 @@ export const en = {
   "start.newVaultHint":
     "Next you choose where to put it. Carbon creates a folder with this name there.",
   "start.newVaultName": "Name of the new vault",
-  "start.openTestVault": "Open test vault",
   "start.openVault": "Open vault",
   "start.recentVaults": "Recent vaults",
   "start.removeRecent": "Remove",
   "start.removeRecentLabel": "Remove {name} from the recent vaults",
-  "start.testVaultHint":
-    "Dev build only: a copy of fixtures/test-vault, made afresh each time",
   "switcher.create": "Create",
   "switcher.createFailed": "The note could not be created: {reason}",
   "switcher.label": "Quick switcher",

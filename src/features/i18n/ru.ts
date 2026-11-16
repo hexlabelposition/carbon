@@ -182,7 +182,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.sidebarViews": "Виды левой панели",
   "shell.tags": "Теги",
   "shell.toggleBacklinks": "Показать или скрыть обратные ссылки",
-  "shell.toggleDevPanel": "Показать или скрыть панель разработчика",
   "shell.toggleLeftPanel": "Показать или скрыть левую панель",
   "shell.toggleOutline": "Показать или скрыть оглавление",
   "shell.toggleRightPanel": "Показать или скрыть правую панель",
@@ -198,13 +197,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "start.newVaultHint":
     "Затем выберите, где его разместить: Carbon создаст там папку с этим названием.",
   "start.newVaultName": "Название нового хранилища",
-  "start.openTestVault": "Открыть тестовое хранилище",
   "start.openVault": "Открыть хранилище",
   "start.recentVaults": "Недавние хранилища",
   "start.removeRecent": "Убрать",
   "start.removeRecentLabel": "Убрать {name} из недавних хранилищ",
-  "start.testVaultHint":
-    "Только в dev-сборке: копия fixtures/test-vault, каждый раз заново",
   "switcher.create": "Создать",
   "switcher.createFailed": "Не удалось создать заметку: {reason}",
   "switcher.label": "Быстрый переход",

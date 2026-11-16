@@ -1,4 +1,4 @@
-import type { IndexStatus, Vault } from "@carbon/core";
+import type { Vault } from "@carbon/core";
 import {
   lazy,
   Suspense,
@@ -15,7 +15,6 @@ import {
   keys,
   useCommandList,
   useCommands,
-  type Command,
 } from "../../features/commands/commands";
 import {
   OPEN_PALETTE,
@@ -46,6 +45,7 @@ import { useAppSettings } from "../../features/settings/app-settings";
 import { SettingsOpener } from "../../features/settings/Settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { timing } from "../../features/vault/timing";
+import { IndexTiming } from "../../features/vault/IndexTiming";
 import { useIndexStatus } from "../../features/vault/use-index-status";
 import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
@@ -89,9 +89,12 @@ import {
 } from "./WindowControls";
 
 // Dev builds only: in a release build the condition is false at build time
-// and the panel is not bundled.
+// and neither is bundled.
 const DevPanel = import.meta.env.DEV
   ? lazy(() => import("../../dev/DevPanel"))
+  : null;
+const DevBubble = import.meta.env.DEV
+  ? lazy(() => import("../../dev/DevBubble"))
   : null;
 
 /**
@@ -137,17 +140,8 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
 
   useCommands(
     useMemo(() => {
-      const commands: Command[] = [];
-      if (DevPanel !== null) {
-        commands.push({
-          id: "shell.devPanel",
-          title: t("shell.toggleDevPanel"),
-          run: () => setDevOpen((open) => !open),
-        });
-      }
-      if (vault === null || showDev) return commands;
+      if (vault === null || showDev) return [];
       return [
-        ...commands,
         {
           id: "shell.sidebar",
           title: t("shell.toggleLeftPanel"),
@@ -311,6 +305,15 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
           <SettingsOpener />
         </>
       )}
+      {DevBubble !== null && (
+        <Suspense fallback={null}>
+          <DevBubble
+            vault={vault}
+            panelOpen={devOpen}
+            onTogglePanel={() => setDevOpen((open) => !open)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -407,57 +410,12 @@ function VaultStatus({ vault }: { vault: Vault }) {
 }
 
 /**
- * Whether the sidebar shows how long the startup scan took: in dev builds,
- * and in a build made with `VITE_CARBON_TIMING=1`, to measure a release
- * build against the budgets (C-602).
+ * Whether the sidebar shows how long the startup scan took: in a build
+ * made with `VITE_CARBON_TIMING=1`, to measure a release build against
+ * the budgets (C-602). A dev build shows it in the dev bubble instead.
  */
 const SHOW_TIMING =
-  import.meta.env.DEV || import.meta.env.VITE_CARBON_TIMING === "1";
-
-/**
- * How long the startup scan took, where it waited, and how long after the
- * page began to load the vault was ready (`SHOW_TIMING`). Not translated,
- * as the dev panel.
- */
-function IndexTiming({ status }: { status: IndexStatus }) {
-  const ready = status.state === "ready" ? status : null;
-  // From the moment the page began to load: the start of the app.
-  const sinceStart =
-    ready === null ? null : ready.doneAt - performance.timeOrigin;
-  useEffect(() => {
-    if (ready === null || sinceStart === null) return;
-    console.info(
-      `[carbon] ${ready.notes} notes, ${ready.indexed} indexed in ` +
-        `${seconds(ready.ms)}, ready ${seconds(sinceStart)} after the page ` +
-        "began to load",
-      ready.waits,
-    );
-  }, [ready, sinceStart]);
-  if (ready === null || sinceStart === null) return null;
-  const { list, read, parse, write } = ready.waits;
-  return (
-    <div title="For measuring the budgets (C-602)">
-      <p>
-        {ready.notes} notes · {ready.indexed} indexed in {seconds(ready.ms)} ·
-        ready {seconds(sinceStart)} after start
-      </p>
-      {timing.shownAt !== null && timing.openedAt !== null && (
-        <p>
-          window shown {seconds(timing.shownAt)} after start · opened to ready{" "}
-          {seconds(sinceStart - timing.openedAt)}
-        </p>
-      )}
-      <p>
-        waited: list {seconds(list)} · read {seconds(read)} · parse{" "}
-        {seconds(parse)} · write {seconds(write)}
-      </p>
-    </div>
-  );
-}
-
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(2)} s`;
-}
+  !import.meta.env.DEV && import.meta.env.VITE_CARBON_TIMING === "1";
 
 /**
  * The toolbar at the left edge: files and search, which show in the sidebar

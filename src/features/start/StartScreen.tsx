@@ -79,17 +79,6 @@ export function StartScreen() {
           >
             {t("start.createVault")}
           </button>
-          {import.meta.env.DEV && start.openTestVault !== null && (
-            <button
-              type="button"
-              className={secondary}
-              disabled={start.busy}
-              title={t("start.testVaultHint")}
-              onClick={start.openTestVault}
-            >
-              {t("start.openTestVault")}
-            </button>
-          )}
         </div>
       )}
 
