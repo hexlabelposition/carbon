@@ -63,7 +63,7 @@ export function ResizeHandle({
       aria-orientation="vertical"
       aria-label={label}
       aria-valuenow={percent(fraction)}
-      aria-valuemin={percent(SIDEBAR_MIN)}
+      aria-valuemin={percent(SIDEBAR_MIN())}
       aria-valuemax={percent(SIDEBAR_MAX)}
       tabIndex={0}
       // The right panel has a top row of its own, which runs on into the

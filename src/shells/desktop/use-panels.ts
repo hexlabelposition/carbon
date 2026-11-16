@@ -3,7 +3,6 @@ import { keys } from "../../features/commands/commands";
 import { shortcutLetter } from "../../features/workspace/shortcut-letter";
 import { useSidePanel } from "./use-side-panel";
 import { usePanelWidth, type PanelWidth } from "./use-sidebar";
-import { controlsRoomFraction } from "./WindowControls";
 
 /** The keys that show or hide the panels, as the user reads them. */
 export const LEFT_PANEL_SHORTCUT = keys("Mod+B");
@@ -45,13 +44,8 @@ export function useRightPanel(): RightPanel {
     before.outline || before.backlinks,
   );
   // About 16rem, the width it had before it could be resized, on a
-  // window 1280 pixels wide. At its narrowest its edge meets the buttons
-  // in the corner above it, not a share of the window that may be wider.
-  const width = usePanelWidth(
-    "carbon.desktop.rightPanel.width",
-    0.2,
-    controlsRoomFraction,
-  );
+  // window 1280 pixels wide.
+  const width = usePanelWidth("carbon.desktop.rightPanel.width", 0.2);
   const [view, setView] = useState<RightPanelView>(() =>
     loadView(before.backlinks && !before.outline ? "backlinks" : "outline"),
   );

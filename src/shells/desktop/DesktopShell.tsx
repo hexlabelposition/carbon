@@ -52,7 +52,7 @@ import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-sh
 import { useWorkspace } from "../../features/workspace/workspace";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { HistoryButtons } from "../../features/workspace/HistoryButtons";
-import { Sidebar, sidebarWidth } from "./Sidebar";
+import { panelWidth, Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useFileDropGuard } from "./use-file-drop-guard";
@@ -266,7 +266,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
                 vault={vault}
                 right={rightPanel}
                 startWidth={`calc(${toolbar.open ? TOOLBAR_WIDTH : "0px"} + ${
-                  sidebar.collapsed ? "0px" : sidebarWidth(sidebar.fraction)
+                  sidebar.collapsed ? "0px" : panelWidth(sidebar.fraction)
                 })`}
                 start={
                   <>
@@ -549,9 +549,9 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const rightPanel = (
     <SlidePanel
       open={right.open}
-      // As the sidebar: a share of the window, at least 180 pixels, and
-      // never narrower than the buttons in the corner above it.
-      width={`max(11.25rem, var(--cb-controls-room), ${right.width.fraction * 100}vw)`}
+      // As the sidebar: at its narrowest its edge meets the buttons in
+      // the corner above it.
+      width={panelWidth(right.width.fraction)}
       animate={!resizingRight}
       keepMounted={false}
     >

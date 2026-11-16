@@ -30,7 +30,7 @@ export function Sidebar({
   const [resizing, setResizing] = useState(false);
 
   return (
-    <SlidePanel open={open} width={sidebarWidth(fraction)} animate={!resizing}>
+    <SlidePanel open={open} width={panelWidth(fraction)} animate={!resizing}>
       <aside
         aria-label={t("shell.leftPanel")}
         className="relative flex h-full flex-col border-r border-line bg-panel"
@@ -51,10 +51,12 @@ export function Sidebar({
 }
 
 /**
- * How wide the sidebar is open, as a CSS length: a share of the window,
- * which it starts near the left edge of (`vw`), never narrower than 180
- * pixels.
+ * How wide a side panel is open, as a CSS length: a share of the window
+ * (`vw`), never narrower than the buttons in the top right corner, nor
+ * than 180 pixels while those fold away over the whole screen. The same
+ * for the sidebar and the right panel. Temporary, as `SIDEBAR_MIN`
+ * (use-sidebar.ts): the tie to the corner buttons is to be replaced.
  */
-export function sidebarWidth(fraction: number): string {
-  return `max(11.25rem, ${fraction * 100}vw)`;
+export function panelWidth(fraction: number): string {
+  return `max(11.25rem, var(--cb-controls-room), ${fraction * 100}vw)`;
 }

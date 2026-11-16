@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
+import { controlsRoomFraction } from "./WindowControls";
 
 /**
  * The sidebar width is a share of the window width, not pixels, so the
  * layout keeps its proportions on any screen (ARCHITECTURE.md, section 8).
+ * At its narrowest a side panel is as wide as the buttons in the top right
+ * corner, the same on any window: `SIDEBAR_MIN` asks how much that is now.
+ *
+ * Temporary: tying the minimum to those buttons is a stopgap, so both
+ * panels share one minimum for now. It is to be worked out another way
+ * later; `panelWidth` (Sidebar.tsx) changes with it.
  */
-export const SIDEBAR_MIN = 0.12;
+export const SIDEBAR_MIN = controlsRoomFraction;
 export const SIDEBAR_MAX = 0.5;
 const SIDEBAR_DEFAULT = 0.22;
 /** One arrow-key press on the resize handle. */
@@ -54,8 +61,8 @@ export function useSidebar(): Sidebar {
   return { ...state, resize, nudge, toggle };
 }
 
-function clamp(fraction: number, min = SIDEBAR_MIN): number {
-  return Math.min(SIDEBAR_MAX, Math.max(min, fraction));
+function clamp(fraction: number): number {
+  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN(), fraction));
 }
 
 function load(): SidebarState {
@@ -84,20 +91,17 @@ export interface PanelWidth {
 }
 
 /**
- * The width of a side panel other than the sidebar, remembered between
- * app starts under `storageKey`. The limits are those of the sidebar,
- * unless `min` gives the narrowest share, asked for at each change: the
- * panel may follow something that changes with the window.
+ * The width of a side panel other than the sidebar, with the same limits,
+ * remembered between app starts under `storageKey`.
  */
 export function usePanelWidth(
   storageKey: string,
   fallback: number,
-  min: () => number = () => SIDEBAR_MIN,
 ): PanelWidth {
   const [fraction, setFraction] = useState(() => {
     try {
       const saved = Number(localStorage.getItem(storageKey) ?? Number.NaN);
-      return Number.isFinite(saved) ? clamp(saved, min()) : fallback;
+      return Number.isFinite(saved) ? clamp(saved) : fallback;
     } catch {
       return fallback;
     }
@@ -111,14 +115,10 @@ export function usePanelWidth(
     }
   }, [storageKey, fraction]);
 
-  const resize = useCallback(
-    (next: number) => setFraction(clamp(next, min())),
-    [min],
-  );
+  const resize = useCallback((next: number) => setFraction(clamp(next)), []);
   const nudge = useCallback(
-    (steps: number) =>
-      setFraction((f) => clamp(f + steps * SIDEBAR_STEP, min())),
-    [min],
+    (steps: number) => setFraction((f) => clamp(f + steps * SIDEBAR_STEP)),
+    [],
   );
   return { fraction, resize, nudge };
 }
