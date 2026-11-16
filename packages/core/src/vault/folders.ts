@@ -1,4 +1,5 @@
 import {
+  copyEntry,
   deleteEntry,
   expectFree,
   makeFolders,
@@ -36,6 +37,15 @@ export class Folders {
     const rewrite = await this.links.prepare(from, to, "dir");
     await moveEntry(this.context, from, to, "dir");
     return rewrite.apply();
+  }
+
+  /**
+   * Copies a folder with everything inside to `to`. Rejects if the target
+   * is taken, its parent does not exist, or it is inside the folder
+   * itself. Links in the copies stay as written.
+   */
+  async copy(from: string, to: string): Promise<void> {
+    await copyEntry(this.context, from, to, "dir");
   }
 
   /**

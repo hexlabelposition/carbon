@@ -84,6 +84,56 @@ export async function moveEntry(
 }
 
 /**
+ * Copies a file or folder, with everything inside, to `to`. Never
+ * overwrites: if the target is taken, the copy is rejected. The target
+ * folder must exist. Links in the copies are left as they are.
+ */
+export async function copyEntry(
+  context: VaultContext,
+  from: string,
+  to: string,
+  kind: EntryKind,
+): Promise<void> {
+  const { root } = context;
+  const source = resolveInVault(root, from);
+  const target = resolveNewInVault(root, to);
+  await expectKind(context, from, kind);
+  if (
+    kind === "dir" &&
+    (target === source || target.startsWith(`${source}/`))
+  ) {
+    throw new Error(`Cannot copy a folder into itself: ${from}`);
+  }
+  await expectFree(context, to);
+  await copyTree(context, source, target, kind);
+}
+
+/** Copies the absolute path `source` to the free `target`, folders whole. */
+async function copyTree(
+  context: VaultContext,
+  source: string,
+  target: string,
+  kind: EntryKind,
+): Promise<void> {
+  const { fs, own } = context;
+  if (kind === "file") {
+    await fs.writeBytesAtomic(target, await fs.readBytes(source));
+    await own.wrote(target);
+    return;
+  }
+  await fs.mkdir(target);
+  await own.wrote(target);
+  for (const entry of await fs.list(source)) {
+    await copyTree(
+      context,
+      `${source}/${entry.name}`,
+      `${target}/${entry.name}`,
+      entry.kind,
+    );
+  }
+}
+
+/**
  * Deletes a file or folder: to the system trash, or for good if asked. If
  * the trash is not available the call rejects and nothing is deleted;
  * deleting for good is never a silent fallback.

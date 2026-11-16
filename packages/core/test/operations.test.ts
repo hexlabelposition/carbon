@@ -250,3 +250,46 @@ describe("vault.folders", () => {
     expect(await vault.notes.read("Inbox.md")).toBe("# Inbox");
   });
 });
+
+describe("vault copies", () => {
+  test("copies a note, leaving the original", async () => {
+    const { vault } = await openVault();
+    await vault.notes.copy("Inbox.md", "projects/Inbox.md");
+    expect(await vault.notes.read("projects/Inbox.md")).toBe("# Inbox");
+    expect(await vault.notes.read("Inbox.md")).toBe("# Inbox");
+  });
+
+  test("copies a folder with everything inside", async () => {
+    const { vault } = await openVault();
+    await vault.folders.copy("projects", "work");
+    expect(await vault.notes.read("work/Carbon.md")).toBe("carbon");
+    expect(await vault.notes.read("work/archive/Old.md")).toBe("old");
+    expect(await vault.notes.read("projects/archive/Old.md")).toBe("old");
+    expect(await paths(vault)).toContain("work/archive/");
+  });
+
+  test("never overwrites, and refuses a folder into itself", async () => {
+    const { vault } = await openVault();
+    await expect(vault.notes.copy("Inbox.md", "projects.md")).rejects.toThrow(
+      "Already exists",
+    );
+    expect(await vault.notes.read("projects.md")).toBe("not the folder");
+    await expect(
+      vault.folders.copy("projects", "projects/archive/projects"),
+    ).rejects.toThrow("into itself");
+    await expect(vault.folders.copy("Inbox.md", "x")).rejects.toThrow(
+      "Not a folder",
+    );
+    await expect(vault.notes.copy("projects", "x.md")).rejects.toThrow(
+      "Not a file",
+    );
+  });
+
+  test("rejects a target outside the vault", async () => {
+    const { vault, fs } = await openVault();
+    await expect(
+      vault.notes.copy("Inbox.md", "../outside/Inbox.md"),
+    ).rejects.toThrow("Invalid vault path");
+    expect(await fs.exists("/outside/Inbox.md")).toBe(false);
+  });
+});

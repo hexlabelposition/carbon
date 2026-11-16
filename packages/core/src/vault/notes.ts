@@ -2,6 +2,7 @@ import type { LinkRewriter, LinkUpdate } from "../links/rename";
 import type { NotePath } from "../types";
 import { contentHash } from "../util/hash";
 import {
+  copyEntry,
   deleteEntry,
   expectFree,
   makeFolders,
@@ -88,6 +89,14 @@ export class Notes {
     await makeFolders(this.context, parentOf(target));
     await fs.writeTextAtomic(target, content);
     await own.wrote(target);
+  }
+
+  /**
+   * Copies a note, or another file, to `to`. Rejects if the target is
+   * taken or its folder does not exist. Links in the copy stay as written.
+   */
+  async copy(from: NotePath, to: NotePath): Promise<void> {
+    await copyEntry(this.context, from, to, "file");
   }
 
   /**
