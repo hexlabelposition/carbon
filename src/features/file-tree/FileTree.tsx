@@ -19,6 +19,12 @@ import { useT } from "../i18n/i18n";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
+/** Room between two rows, in pixels. */
+const ROW_GAP = 3;
+/** From the top of a row to the top of the next one. */
+const ROW_STEP = ROW_HEIGHT + ROW_GAP;
+/** Room around the rows, in pixels: Tailwind's `px-2` at the sides. */
+const LIST_PADDING = 8;
 /** How far a level of the tree is shifted to the right, in pixels. */
 const INDENT = 14;
 
@@ -70,7 +76,7 @@ export function FileTree({
     ),
   );
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
-    useVirtualRows(tree.rows.length, ROW_HEIGHT);
+    useVirtualRows(tree.rows.length, ROW_STEP, LIST_PADDING);
   const [dragging, setDragging] = useState<string | null>(null);
   /** The folder a drop would go to; "" is the vault root. */
   const [dropFolder, setDropFolder] = useState<string | null>(null);
@@ -213,10 +219,12 @@ export function FileTree({
                 {t("tree.empty")}
               </p>
             ) : (
-              <div style={{ height: totalHeight }}>
+              <div className="px-2" style={{ height: totalHeight }}>
                 <div
+                  className="flex flex-col"
                   style={{
-                    transform: `translateY(${first * ROW_HEIGHT}px)`,
+                    gap: ROW_GAP,
+                    transform: `translateY(${LIST_PADDING + first * ROW_STEP}px)`,
                   }}
                 >
                   {tree.rows.slice(first, end).map((row) => {
@@ -225,7 +233,7 @@ export function FileTree({
                       return (
                         <div
                           key="new"
-                          className="flex items-center gap-1 pr-2"
+                          className="flex shrink-0 items-center gap-1 pr-2"
                           style={{ ...indent, height: ROW_HEIGHT }}
                         >
                           <Chevron hidden />
@@ -267,7 +275,7 @@ export function FileTree({
                           isFolder ? tree.isExpanded(node.path) : undefined
                         }
                         draggable={!renaming}
-                        className={`flex cursor-default items-center gap-1 pr-2 select-none ${
+                        className={`flex shrink-0 cursor-default items-center gap-1 rounded-md pr-2 select-none ${
                           tree.activePath === node.path || inDrop
                             ? "bg-selected"
                             : "hover:bg-raise"

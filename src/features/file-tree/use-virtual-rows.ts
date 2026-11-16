@@ -18,7 +18,10 @@ export interface VirtualRows {
   /** Rows `first` up to, not including, `end` are worth rendering. */
   first: number;
   end: number;
-  /** Height of all rows together, for the element that makes the scrollbar. */
+  /**
+   * Height of all rows together with the padding, for the element that
+   * makes the scrollbar.
+   */
   totalHeight: number;
   /** Scrolls just enough to make a row fully visible. */
   scrollToIndex: (index: number) => void;
@@ -27,8 +30,14 @@ export interface VirtualRows {
 /**
  * Windowing for a list of equal-height rows: only the rows in view are
  * rendered, so a vault with 10,000 notes scrolls like a small one.
+ * `rowHeight` is the step from one row to the next, a gap between them
+ * included; `padding` is the room above the first row and below the last.
  */
-export function useVirtualRows(count: number, rowHeight: number): VirtualRows {
+export function useVirtualRows(
+  count: number,
+  rowHeight: number,
+  padding = 0,
+): VirtualRows {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [height, setHeight] = useState(0);
@@ -49,20 +58,27 @@ export function useVirtualRows(count: number, rowHeight: number): VirtualRows {
     (index: number) => {
       const viewport = viewportRef.current;
       if (viewport === null || index < 0) return;
-      const top = index * rowHeight;
-      const bottom = top + rowHeight;
+      // The padding comes into view with the first row and the last.
+      const top = index === 0 ? 0 : padding + index * rowHeight;
+      const bottom =
+        index === count - 1
+          ? 2 * padding + count * rowHeight
+          : padding + (index + 1) * rowHeight;
       if (top < viewport.scrollTop) viewport.scrollTop = top;
       else if (bottom > viewport.scrollTop + viewport.clientHeight) {
         viewport.scrollTop = bottom - viewport.clientHeight;
       }
     },
-    [rowHeight],
+    [rowHeight, padding, count],
   );
 
-  const first = Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN);
+  const first = Math.max(
+    0,
+    Math.floor((scrollTop - padding) / rowHeight) - OVERSCAN,
+  );
   const end = Math.min(
     count,
-    Math.ceil((scrollTop + height) / rowHeight) + OVERSCAN,
+    Math.ceil((scrollTop - padding + height) / rowHeight) + OVERSCAN,
   );
 
   return {
@@ -70,7 +86,7 @@ export function useVirtualRows(count: number, rowHeight: number): VirtualRows {
     onScroll,
     first,
     end,
-    totalHeight: count * rowHeight,
+    totalHeight: count * rowHeight + 2 * padding,
     scrollToIndex,
   };
 }
