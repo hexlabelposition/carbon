@@ -54,8 +54,8 @@ export function useSidebar(): Sidebar {
   return { ...state, resize, nudge, toggle };
 }
 
-function clamp(fraction: number): number {
-  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, fraction));
+function clamp(fraction: number, min = SIDEBAR_MIN): number {
+  return Math.min(SIDEBAR_MAX, Math.max(min, fraction));
 }
 
 function load(): SidebarState {
@@ -84,17 +84,20 @@ export interface PanelWidth {
 }
 
 /**
- * The width of a side panel other than the sidebar, with the same limits,
- * remembered between app starts under `storageKey`.
+ * The width of a side panel other than the sidebar, remembered between
+ * app starts under `storageKey`. The limits are those of the sidebar,
+ * unless `min` gives the narrowest share, asked for at each change: the
+ * panel may follow something that changes with the window.
  */
 export function usePanelWidth(
   storageKey: string,
   fallback: number,
+  min: () => number = () => SIDEBAR_MIN,
 ): PanelWidth {
   const [fraction, setFraction] = useState(() => {
     try {
       const saved = Number(localStorage.getItem(storageKey) ?? Number.NaN);
-      return Number.isFinite(saved) ? clamp(saved) : fallback;
+      return Number.isFinite(saved) ? clamp(saved, min()) : fallback;
     } catch {
       return fallback;
     }
@@ -108,10 +111,14 @@ export function usePanelWidth(
     }
   }, [storageKey, fraction]);
 
-  const resize = useCallback((next: number) => setFraction(clamp(next)), []);
+  const resize = useCallback(
+    (next: number) => setFraction(clamp(next, min())),
+    [min],
+  );
   const nudge = useCallback(
-    (steps: number) => setFraction((f) => clamp(f + steps * SIDEBAR_STEP)),
-    [],
+    (steps: number) =>
+      setFraction((f) => clamp(f + steps * SIDEBAR_STEP, min())),
+    [min],
   );
   return { fraction, resize, nudge };
 }

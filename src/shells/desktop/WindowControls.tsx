@@ -185,6 +185,20 @@ function toggleFullscreen(frame: WindowFrame): void {
 export const WINDOW_CONTROLS_ROOM = "pr-(--cb-controls-room)";
 
 /**
+ * The buttons in the top right corner, as a share of the window width:
+ * `--cb-controls-room` over the window. `0` until they are measured.
+ */
+export function controlsRoomFraction(): number {
+  const room = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(
+      "--cb-controls-room",
+    ),
+  );
+  const width = window.innerWidth;
+  return Number.isFinite(room) && width > 0 ? room / width : 0;
+}
+
+/**
  * Minimize, maximize or restore, and close, in the top right corner of the
  * window, over the top row of the layout, with `panels` before them: the
  * buttons of the side panels. The element at the right end of that row
