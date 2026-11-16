@@ -62,10 +62,13 @@ export type {
 
 export type {
   Backlink,
+  GraphEdge,
+  GraphNode,
   Heading,
   Link,
   Mention,
   NoteAlias,
+  NoteGraph,
   NoteMetadata,
   NotePath,
   OutgoingLink,
