@@ -17,9 +17,10 @@ export const SCROLLBAR_ROOM = "group-data-has-overflow-y/scroll:pr-3";
 
 /**
  * A scrolling area with a scrollbar of our own (ADR-024): thin, in the
- * colors of the theme, shown while the pointer is over the area or it
- * scrolls. The scrollbar of the system is hidden; in WebKitGTK it is
- * drawn over the content and grows when the pointer comes near it.
+ * colors of the theme, always shown while there is something to scroll,
+ * so it says at a glance that the list goes on. The scrollbar of the
+ * system is hidden; in WebKitGTK it is drawn over the content and grows
+ * when the pointer comes near it.
  * Scrolls by the wheel, the keys and the thumb, as any other element.
  */
 export function ScrollArea({ className = "", children }: ScrollAreaProps) {
@@ -32,7 +33,7 @@ export function ScrollArea({ className = "", children }: ScrollAreaProps) {
       </Base.Viewport>
       <Base.Scrollbar
         orientation="vertical"
-        className="flex w-3 justify-center p-0.5 opacity-0 transition-opacity delay-300 duration-150 data-hovering:opacity-100 data-hovering:delay-0 data-scrolling:opacity-100 data-scrolling:delay-0 motion-reduce:transition-none"
+        className="flex w-3 justify-center p-0.5"
       >
         <Base.Thumb className="w-full rounded-full bg-line-strong hover:bg-faint" />
       </Base.Scrollbar>

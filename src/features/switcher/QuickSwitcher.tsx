@@ -89,13 +89,17 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
           {t("switcher.createFailed", { reason: error })}
         </p>
       )}
-      {query.trim() === "" && hits.length > 0 && (
-        <p className="px-3 pt-1.5 text-small text-faint">
-          {t("switcher.recent")}
-        </p>
-      )}
       {rows > 0 && (
+        // The heading scrolls with the list: the scrollbar runs the whole
+        // height below the field, as in the command palette.
         <ScrollArea className="max-h-[50vh]">
+          {query.trim() === "" && hits.length > 0 && (
+            <p
+              className={`px-3 pt-1.5 text-small text-faint ${SCROLLBAR_ROOM}`}
+            >
+              {t("switcher.recent")}
+            </p>
+          )}
           <ul
             id="switcher-list"
             ref={list}
@@ -115,18 +119,18 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
                   activate(index, event.ctrlKey || event.metaKey)
                 }
               >
-                <span className="min-w-0 shrink truncate">
+                <span className="min-w-0 flex-1 truncate">
                   <Highlighted
                     text={hit.title}
                     ranges={hit.matches}
                     className="bg-transparent font-semibold text-fg"
                   />
                 </span>
-                {/* The folder of the note, "/" for the root, in a box. */}
-                <span className="flex min-w-0 flex-1 justify-end">
-                  <span className="min-w-0 truncate rounded-sm border border-line-strong bg-panel px-1 text-small text-faint">
-                    {folderOf(hit.path)}
-                  </span>
+                {/* The folder of the note, "/" for the root, in a box. The
+                    title is cut short first; the folder only past half the
+                    row. */}
+                <span className="max-w-1/2 shrink-0 truncate rounded-sm border border-line-strong bg-panel px-1 text-small text-faint">
+                  {folderOf(hit.path)}
                 </span>
               </li>
             ))}
