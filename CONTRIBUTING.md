@@ -27,6 +27,7 @@ bun tauri dev
 | `bun run format`      | Format with Prettier (`format:check` only checks) |
 | `bun gen:vault <dir>` | Generate a test vault with 10,000 notes           |
 | `bun run bench <dir>` | Measure the core against the budgets on a vault   |
+| `bun run icons`       | Make every app icon from `tauri/app-icon.svg`     |
 
 CI runs the type check, lint, format check and tests, and builds the app on Linux and Windows. Run the first four locally before pushing.
 

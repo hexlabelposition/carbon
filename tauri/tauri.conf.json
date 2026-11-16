@@ -35,8 +35,16 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Fast, local-first notes with links",
+    "longDescription": "Carbon keeps notes as plain Markdown files in a folder of your own and links them with [[wiki links]]: live preview, backlinks, tags, full-text search and a quick switcher, fast on vaults of ten thousand notes.",
+    "publisher": "Vladyslav Kudriashov",
+    "copyright": "Copyright (c) 2026 Vladyslav Kudriashov",
+    "license": "MIT",
+    "homepage": "https://github.com/hexlabelposition/carbon",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",

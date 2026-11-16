@@ -19,6 +19,7 @@
     "preview": "vite preview",
     "gen:vault": "bun scripts/generate-vault.ts",
     "bench": "bun packages/core/bench/bench.ts",
+    "icons": "tauri icon tauri/app-icon.svg --output tauri/icons && rm -rf tauri/icons/android tauri/icons/ios",
     "tauri": "tauri",
     "test": "bun test",
     "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && bun run --filter '*' typecheck"

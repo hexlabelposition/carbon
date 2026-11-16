@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- The source of every icon of the app: `bun run icons` makes them (C-603).
+       The mark of the logo for a dark background (carbon-mark-for-dark-bg),
+       on a dark tile, so it reads on light and dark panels alike. -->
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="#16181a"/>
+  <!-- The edge of the tile, to stand off a dark panel. -->
+  <rect x="68" y="68" width="888" height="888" rx="196" fill="none" stroke="#2c2f33" stroke-width="8"/>
+  <g transform="translate(512,512) scale(1.85)">
+    <polygon fill="#f4f5f7" transform="translate(0,-117)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#d9dce0" transform="translate(-101.3,-58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#d9dce0" transform="translate(101.3,-58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#a9afb6" transform="translate(-101.3,58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#a9afb6" transform="translate(101.3,58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#7e858d" transform="translate(0,117)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+    <polygon fill="#ffffff" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  </g>
+</svg>
