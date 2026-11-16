@@ -126,6 +126,18 @@ function DevBubble({
               >
                 {panelOpen ? "Close dev panel" : "Open dev panel"}
               </button>
+              <Tooltip
+                label="Loads the app page afresh, as F5 in a browser"
+                side="left"
+              >
+                <button
+                  type="button"
+                  className={action}
+                  onClick={() => window.location.reload()}
+                >
+                  Reload page
+                </button>
+              </Tooltip>
             </div>
           </Popover.Popup>
         </Popover.Positioner>
