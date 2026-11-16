@@ -100,7 +100,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "search.partial": "Идёт индексация: некоторых заметок может не быть.",
   "search.placeholder": "Искать в заметках",
   "search.results": "Результаты поиска",
-  "search.syntax": 'Слова, "точная фраза", path:папка',
+  "search.syntax": 'Слова, "точная фраза", path:папка, tag:тег',
   "settings.appearance": "Оформление",
   "settings.font.inter": "Inter",
   "settings.font.mono": "Моноширинный",

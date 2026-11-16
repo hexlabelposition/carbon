@@ -24,27 +24,37 @@ export interface ParsedQuery {
   phrases: { words: string[]; open: boolean }[];
   /** Text the path of a note must have, from `path:folder`. */
   paths: string[];
+  /**
+   * Tags a note must have, itself or nested in it, from `tag:name`,
+   * without "#".
+   */
+  tags: string[];
 }
 
 /**
- * `path:` with a quoted or a plain value, a quoted phrase, or anything up
- * to the next space. A quote that is not closed runs to the end.
+ * `path:` with a quoted or a plain value, `tag:` with a plain one, a
+ * quoted phrase, or anything up to the next space. A quote that is not
+ * closed runs to the end.
  */
-const PART = /path:(?:"([^"]*)"?|(\S*))|"([^"]*)("?)|(\S+)/giu;
+const PART = /path:(?:"([^"]*)"?|(\S*))|tag:(\S*)|"([^"]*)("?)|(\S+)/giu;
 
 /**
- * Reads what the user typed into its parts: words, `"exact phrases"` and
- * `path:` filters, as `path:projects` or `path:"my notes"`. Operators
- * that are not known are plain words: `title:x` is the words "title" and
- * "x". `tag:` comes with the tags (C-403).
+ * Reads what the user typed into its parts: words, `"exact phrases"`,
+ * `path:` filters, as `path:projects` or `path:"my notes"`, and `tag:`
+ * filters, as `tag:idea` or `tag:#area/topic`. Operators that are not
+ * known are plain words: `title:x` is the words "title" and "x".
  */
 export function parseQuery(text: string): ParsedQuery {
-  const query: ParsedQuery = { words: [], phrases: [], paths: [] };
+  const query: ParsedQuery = { words: [], phrases: [], paths: [], tags: [] };
   for (const match of text.matchAll(PART)) {
-    const [, quotedPath, plainPath, phrase, closed, plain] = match;
+    const [, quotedPath, plainPath, tag, phrase, closed, plain] = match;
     if (quotedPath !== undefined || plainPath !== undefined) {
       const path = (quotedPath ?? plainPath).trim();
       if (path !== "") query.paths.push(path);
+    } else if (tag !== undefined) {
+      // "tag:a/" while a nested tag is typed: the tag so far.
+      const name = tag.replace(/^#/, "").replace(/\/+$/, "");
+      if (name !== "") query.tags.push(name);
     } else if (phrase !== undefined) {
       const words = queryWords(phrase);
       if (words.length > 0) query.phrases.push({ words, open: closed === "" });
@@ -57,10 +67,12 @@ export function parseQuery(text: string): ParsedQuery {
 
 /** A search as the index runs it. */
 export interface FullTextQuery {
-  /** The FTS5 query, or `null` to filter by path alone. */
+  /** The FTS5 query, or `null` to filter by path and tags alone. */
   match: string | null;
   /** Text the path key of a note must have (`matchKey`). */
   paths: string[];
+  /** Keys of tags a note must have, itself or nested in it (`matchKey`). */
+  tags: string[];
 }
 
 /**
@@ -71,18 +83,21 @@ export interface FullTextQuery {
  * never read as FTS5 syntax, so `OR`, `-` or `NEAR` are plain text.
  */
 export function fullTextQuery(text: string): FullTextQuery | null {
-  const { words, phrases, paths } = parseQuery(text);
+  const { words, phrases, paths, tags } = parseQuery(text);
   const terms = [
     ...words.map((word) => anyOf(spellings(word), "*")),
     ...phrases.map((phrase) =>
       anyOf(spellings(phrase.words.join(" ")), phrase.open ? "*" : ""),
     ),
   ];
-  if (terms.length === 0 && paths.length === 0) return null;
+  if (terms.length === 0 && paths.length === 0 && tags.length === 0) {
+    return null;
+  }
   return {
     // Spelled out: FTS5 takes no implicit AND next to parentheses.
     match: terms.length === 0 ? null : terms.join(" AND "),
     paths: paths.map(matchKey),
+    tags: tags.map(matchKey),
   };
 }
 

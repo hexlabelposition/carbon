@@ -107,7 +107,7 @@ export const en = {
   "search.partial": "Indexing: some notes may be missing.",
   "search.placeholder": "Search notes",
   "search.results": "Search results",
-  "search.syntax": 'Words, "exact phrase", path:folder',
+  "search.syntax": 'Words, "exact phrase", path:folder, tag:name',
   "settings.appearance": "Appearance",
   "settings.font.inter": "Inter",
   "settings.font.mono": "Monospace",

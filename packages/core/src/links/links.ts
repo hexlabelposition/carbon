@@ -84,7 +84,7 @@ export class Links {
     if (match === null) return [];
     const index = await this.context.index();
     const candidates = (
-      await index.search({ match, paths: [] }, MENTION_NOTES)
+      await index.search({ match, paths: [], tags: [] }, MENTION_NOTES)
     ).filter((hit) => hit.path !== path);
     const found = await mapPool(candidates, READ_CONCURRENCY, async (hit) => {
       let text: string;

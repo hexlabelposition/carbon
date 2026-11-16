@@ -241,7 +241,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 
 ### search
 
-- Full text: SQLite FTS5 with snippets and ranking. Words are found by their start, `"exact phrase"` as written, and `path:folder` keeps notes whose path has that text.
+- Full text: SQLite FTS5 with snippets and ranking. Words are found by their start, `"exact phrase"` as written, `path:folder` keeps notes whose path has that text, and `tag:name` notes with that tag or one nested in it.
 - Languages: the `unicode61` tokenizer folds case in every script and the diacritics of Latin letters. Look-alike letters it keeps apart, Russian "е" and "ё", Polish "l" and "ł", are searched for in every spelling. Text without spaces between words (Chinese, Japanese) is found only by its start; a trigram index would fix that, at the cost of a much larger index.
 - Quick switcher: fuzzy matching of titles with fuzzysort (ADR-022), over the notes of the vault tree kept in memory: it works before the index is ready and knows a new note at once. Aliases join when they are parsed (M4).
 

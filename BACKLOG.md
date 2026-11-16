@@ -108,7 +108,7 @@ Done when: I can find any note by title or content in a 10k-note vault without n
 - [x] **C-305** (P0) Find and replace inside the current note
 - [x] **C-306** (P1) Command palette (Ctrl/Cmd+P) for all app actions
 - [x] **C-307** (P1) Search works for non-English text (check tokenizer for Cyrillic)
-- [ ] **C-308** (P2) Search operators: `tag:`, `path:`, exact phrase. `path:` and the phrase are done; `tag:` waits for C-403
+- [x] **C-308** (P2) Search operators: `tag:`, `path:`, exact phrase
 - [x] **C-309** (P2) Recent notes in the quick switcher when the query is empty
 
 ## M4. Tags and metadata

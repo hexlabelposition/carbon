@@ -52,6 +52,16 @@ describe("search", () => {
         words: ["green", "tea"],
         phrases: [{ words: ["black", "tea"], open: false }],
         paths: ["drinks"],
+        tags: [],
+      });
+    });
+
+    test("reads tags, with or without #, nested ones too", () => {
+      expect(parseQuery("tag:idea tea tag:#Area/topic tag:a/")).toEqual({
+        words: ["tea"],
+        phrases: [],
+        paths: [],
+        tags: ["idea", "Area/topic", "a"],
       });
     });
 
@@ -68,10 +78,11 @@ describe("search", () => {
     });
 
     test("leaves out empty parts and reads unknown operators as words", () => {
-      expect(parseQuery('path: "" title:x')).toEqual({
+      expect(parseQuery('path: tag: tag:# "" title:x')).toEqual({
         words: ["title", "x"],
         phrases: [],
         paths: [],
+        tags: [],
       });
     });
   });
@@ -107,14 +118,33 @@ describe("search", () => {
       expect(fullTextQuery("path:Проекты tea")).toEqual({
         match: '"tea"*',
         paths: ["проекты"],
+        tags: [],
       });
-      expect(fullTextQuery("path:x")).toEqual({ match: null, paths: ["x"] });
+      expect(fullTextQuery("path:x")).toEqual({
+        match: null,
+        paths: ["x"],
+        tags: [],
+      });
+    });
+
+    test("filters by tag keys, with or without words", () => {
+      expect(fullTextQuery("tag:Ёлка tea")).toEqual({
+        match: '"tea"*',
+        paths: [],
+        tags: ["ёлка"],
+      });
+      expect(fullTextQuery("tag:x")).toEqual({
+        match: null,
+        paths: [],
+        tags: ["x"],
+      });
     });
 
     test("is null when it asks for nothing", () => {
       expect(fullTextQuery("")).toBeNull();
       expect(fullTextQuery('  "*-:() ')).toBeNull();
       expect(fullTextQuery("path:")).toBeNull();
+      expect(fullTextQuery("tag:#")).toBeNull();
     });
   });
 
@@ -387,6 +417,23 @@ describe("search", () => {
       expect(paths(await search.query('path:"carbon old"'))).toEqual([
         "archive/Carbon old.md",
       ]);
+    });
+
+    test("filters by tag, nested ones too, ignoring case", async () => {
+      const search = await searchOver(
+        note("a.md", "app #Area"),
+        note("b.md", "app #area/topic"),
+        note("c.md", "---\ntags: [areas, other]\n---\napp"),
+        note("d.md", "app, area is a word here"),
+      );
+      expect(paths(await search.query("app tag:area")).sort()).toEqual([
+        "a.md",
+        "b.md",
+      ]);
+      expect(paths(await search.query("tag:#AREA/topic"))).toEqual(["b.md"]);
+      expect(paths(await search.query("tag:other app"))).toEqual(["c.md"]);
+      expect(paths(await search.query("tag:area tag:other"))).toEqual([]);
+      expect(paths(await search.query("tag:area path:b"))).toEqual(["b.md"]);
     });
 
     test("lists the notes of a path without words", async () => {
