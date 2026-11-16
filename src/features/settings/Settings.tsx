@@ -1,8 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Select } from "@base-ui/react/select";
 import { Switch } from "@base-ui/react/switch";
-import { Toggle } from "@base-ui/react/toggle";
-import { ToggleGroup } from "@base-ui/react/toggle-group";
 import {
   useEffect,
   useMemo,
@@ -292,25 +290,15 @@ function AppearanceSettings() {
   return (
     <Rows>
       <Row label={t("settings.theme")}>
-        <ToggleGroup
-          aria-label={t("settings.theme")}
-          value={[theme]}
-          // Pressing the theme that is on would turn it off: keep it.
-          onValueChange={([next]: Theme[]) => {
-            if (next !== undefined) themePreference.set(next);
-          }}
-          className="inline-flex rounded-md border border-line-strong bg-panel p-0.5"
-        >
-          {THEMES.map((value) => (
-            <Toggle
-              key={value}
-              value={value}
-              className="h-6 rounded-sm px-3 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong data-pressed:bg-solid data-pressed:font-medium data-pressed:text-on-solid"
-            >
-              {t(THEME_LABELS[value])}
-            </Toggle>
-          ))}
-        </ToggleGroup>
+        <SettingSelect
+          label={t("settings.theme")}
+          value={theme}
+          items={THEMES.map((value) => ({
+            value,
+            label: t(THEME_LABELS[value]),
+          }))}
+          onChange={themePreference.set}
+        />
       </Row>
       <Row label={t("settings.zoom")}>
         <SettingSelect
