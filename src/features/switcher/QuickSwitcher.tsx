@@ -1,6 +1,8 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
+import { Shortcut } from "../commands/Shortcut";
 import { Highlighted } from "../search/Highlighted";
+import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
 import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
 
 /**
@@ -93,59 +95,71 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
         </p>
       )}
       {rows > 0 && (
-        <ul
-          id="switcher-list"
-          ref={list}
-          role="listbox"
-          aria-label={t("switcher.notes")}
-          className="max-h-[50vh] overflow-auto py-1"
-        >
-          {hits.map((hit, index) => (
-            <li
-              key={hit.path}
-              id={`switcher-row-${index}`}
-              role="option"
-              aria-selected={index === selected}
-              className={row(index)}
-              onMouseMove={() => select(index)}
-              onClick={(event) =>
-                activate(index, event.ctrlKey || event.metaKey)
-              }
-            >
-              <span className="min-w-0 shrink truncate">
-                <Highlighted
-                  text={hit.title}
-                  ranges={hit.matches}
-                  className="bg-transparent font-semibold text-fg"
-                />
-              </span>
-              {hit.path.includes("/") && (
-                <span className="min-w-0 flex-1 truncate text-right text-small text-faint">
-                  {hit.path.slice(0, hit.path.lastIndexOf("/"))}
+        <ScrollArea className="max-h-[50vh]">
+          <ul
+            id="switcher-list"
+            ref={list}
+            role="listbox"
+            aria-label={t("switcher.notes")}
+            className={`py-1 ${SCROLLBAR_ROOM}`}
+          >
+            {hits.map((hit, index) => (
+              <li
+                key={hit.path}
+                id={`switcher-row-${index}`}
+                role="option"
+                aria-selected={index === selected}
+                className={row(index)}
+                onMouseMove={() => select(index)}
+                onClick={(event) =>
+                  activate(index, event.ctrlKey || event.metaKey)
+                }
+              >
+                <span className="min-w-0 shrink truncate">
+                  <Highlighted
+                    text={hit.title}
+                    ranges={hit.matches}
+                    className="bg-transparent font-semibold text-fg"
+                  />
                 </span>
-              )}
-            </li>
-          ))}
-          {newNote !== null && (
-            <li
-              id={`switcher-row-${hits.length}`}
-              role="option"
-              aria-selected={selected === hits.length}
-              className={row(hits.length)}
-              onMouseMove={() => select(hits.length)}
-              onClick={(event) =>
-                switcher.create(event.ctrlKey || event.metaKey)
-              }
-            >
-              <span className="text-muted">{t("switcher.create")}</span>
-              <span className="min-w-0 truncate">{newNote}</span>
-              <span className="ml-auto shrink-0 text-small text-faint">
-                Shift+Enter
-              </span>
-            </li>
-          )}
-        </ul>
+                {/* The folder of the note, "/" for the root, in a box. */}
+                <span className="flex min-w-0 flex-1 justify-end">
+                  <span className="min-w-0 truncate rounded-sm border border-line-strong bg-panel px-1 text-small text-faint">
+                    {folderOf(hit.path)}
+                  </span>
+                </span>
+              </li>
+            ))}
+            {newNote !== null && (
+              <li
+                id={`switcher-row-${hits.length}`}
+                role="option"
+                aria-selected={selected === hits.length}
+                className={row(hits.length)}
+                onMouseMove={() => select(hits.length)}
+                onClick={(event) =>
+                  switcher.create(event.ctrlKey || event.metaKey)
+                }
+              >
+                <span className="text-muted">{t("switcher.create")}</span>
+                <span className="min-w-0 truncate">{newNote}</span>
+                <span className="ml-auto">
+                  <Shortcut text="Shift+Enter" />
+                </span>
+              </li>
+            )}
+          </ul>
+        </ScrollArea>
       )}
     </dialog>
   );
+}
+
+/**
+ * The folder a note is in, as a path from the vault root: "/projects"
+ * for "projects/Carbon.md", "/" for the root.
+ */
+function folderOf(path: string): string {
+  const slash = path.lastIndexOf("/");
+  return `/${slash === -1 ? "" : path.slice(0, slash)}`;
 }
