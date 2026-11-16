@@ -7,6 +7,7 @@ import {
   type VaultError,
   type VaultSession,
 } from "./vault-session";
+import { timing } from "./timing";
 
 interface VaultProviderProps {
   platform: Platform;
@@ -66,18 +67,27 @@ export function VaultProvider({
     [replace, addRecentVault],
   );
 
+  /** Opens a vault, noting when for the timings (C-602). */
+  const openVault = useCallback(
+    (root: string) => {
+      timing.openedAt = performance.now();
+      return Vault.open(root, platform);
+    },
+    [platform],
+  );
+
   const open = useCallback(
-    (root: string) => attempt(root, () => Vault.open(root, platform)),
-    [attempt, platform],
+    (root: string) => attempt(root, () => openVault(root)),
+    [attempt, openVault],
   );
 
   const pickAndOpen = useCallback(
     () =>
       attempt(null, async () => {
         const root = await pickFolder(t("vault.pickOpen"));
-        return root === null ? null : Vault.open(root, platform);
+        return root === null ? null : openVault(root);
       }),
-    [attempt, pickFolder, platform],
+    [attempt, pickFolder, openVault],
   );
 
   const pickAndCreate = useCallback(
@@ -93,8 +103,8 @@ export function VaultProvider({
 
   const openPrepared = useCallback(
     (prepare: () => Promise<string>) =>
-      attempt(null, async () => Vault.open(await prepare(), platform), false),
-    [attempt, platform],
+      attempt(null, async () => openVault(await prepare()), false),
+    [attempt, openVault],
   );
 
   const close = useCallback(() => {

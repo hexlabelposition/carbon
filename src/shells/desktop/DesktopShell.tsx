@@ -44,6 +44,7 @@ import { useOutline } from "../../features/outline/use-outline";
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { StartScreen } from "../../features/start/StartScreen";
+import { timing } from "../../features/vault/timing";
 import { useIndexStatus } from "../../features/vault/use-index-status";
 import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
@@ -97,6 +98,12 @@ const DevPanel = import.meta.env.DEV
  * their hooks (ARCHITECTURE.md, section 8).
  */
 export function DesktopShell({ frame }: { frame: WindowFrame }) {
+  // The first frame the app draws: the window shows something (C-602).
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      timing.shownAt ??= performance.now();
+    });
+  }, []);
   useWindowShape(frame);
   useFullscreenShortcut(frame);
   const t = useT();
@@ -376,12 +383,7 @@ function VaultStatus({ vault }: { vault: Vault }) {
   const index = useIndexStatus(vault);
   // A scan with nothing to do is over a moment later: not worth a line.
   const indexing = index.state === "scanning" && index.total !== 0;
-  if (
-    vault.watching &&
-    index.state !== "failed" &&
-    !indexing &&
-    !import.meta.env.DEV
-  ) {
+  if (vault.watching && index.state !== "failed" && !indexing && !SHOW_TIMING) {
     return null;
   }
   return (
@@ -390,15 +392,23 @@ function VaultStatus({ vault }: { vault: Vault }) {
         <p className="text-danger">{t("shell.notWatching")}</p>
       )}
       <IndexState vault={vault} />
-      {import.meta.env.DEV && <IndexTiming status={index} />}
+      {SHOW_TIMING && <IndexTiming status={index} />}
     </div>
   );
 }
 
 /**
- * Dev builds only: how long the startup scan took, and how long after the
- * page began to load the vault was ready, for measuring the budgets
- * (C-602). Not translated, as the dev panel.
+ * Whether the sidebar shows how long the startup scan took: in dev builds,
+ * and in a build made with `VITE_CARBON_TIMING=1`, to measure a release
+ * build against the budgets (C-602).
+ */
+const SHOW_TIMING =
+  import.meta.env.DEV || import.meta.env.VITE_CARBON_TIMING === "1";
+
+/**
+ * How long the startup scan took, where it waited, and how long after the
+ * page began to load the vault was ready (`SHOW_TIMING`). Not translated,
+ * as the dev panel.
  */
 function IndexTiming({ status }: { status: IndexStatus }) {
   const ready = status.state === "ready" ? status : null;
@@ -409,18 +419,35 @@ function IndexTiming({ status }: { status: IndexStatus }) {
     if (ready === null || sinceStart === null) return;
     console.info(
       `[carbon] ${ready.notes} notes, ${ready.indexed} indexed in ` +
-        `${(ready.ms / 1000).toFixed(2)} s, ready ` +
-        `${(sinceStart / 1000).toFixed(2)} s after the page began to load`,
+        `${seconds(ready.ms)}, ready ${seconds(sinceStart)} after the page ` +
+        "began to load",
+      ready.waits,
     );
   }, [ready, sinceStart]);
   if (ready === null || sinceStart === null) return null;
+  const { list, read, parse, write } = ready.waits;
   return (
-    <p title="Dev builds only (C-602)">
-      {ready.notes} notes · {ready.indexed} indexed in{" "}
-      {(ready.ms / 1000).toFixed(2)} s · ready {(sinceStart / 1000).toFixed(2)}{" "}
-      s after start
-    </p>
+    <div title="For measuring the budgets (C-602)">
+      <p>
+        {ready.notes} notes · {ready.indexed} indexed in {seconds(ready.ms)} ·
+        ready {seconds(sinceStart)} after start
+      </p>
+      {timing.shownAt !== null && timing.openedAt !== null && (
+        <p>
+          window shown {seconds(timing.shownAt)} after start · opened to ready{" "}
+          {seconds(sinceStart - timing.openedAt)}
+        </p>
+      )}
+      <p>
+        waited: list {seconds(list)} · read {seconds(read)} · parse{" "}
+        {seconds(parse)} · write {seconds(write)}
+      </p>
+    </div>
   );
+}
+
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(2)} s`;
 }
 
 /**
