@@ -911,12 +911,12 @@ function Watermark({ label }: { label: string }) {
       <CarbonMark shadow className="h-auto w-[min(15rem,50%)] text-line" />
       <span className="sr-only">{label}</span>
       {commands.length > 0 && (
-        <ul className="flex w-full max-w-72 flex-col">
+        <ul className="flex w-full max-w-72 flex-col gap-1.5">
           {commands.map((command) => (
             <li key={command.id}>
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-4 rounded-md px-2 py-1 text-muted hover:bg-raise hover:text-fg"
+                className="flex w-full items-center justify-between gap-4 rounded-md px-2 py-1 text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
                 onClick={command.run}
               >
                 <span className="truncate">{command.title}</span>

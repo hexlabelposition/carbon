@@ -148,6 +148,16 @@
   ::selection {
     background: var(--cb-selection);
   }
+
+  /*
+   * The focus ring of an element that draws none of its own: a thin line
+   * in the colors of the theme, as `focus-visible:ring-1` elsewhere, not
+   * the blue one of the WebView. `outline-none` on an element still wins.
+   */
+  :focus-visible {
+    outline: 1px solid var(--color-line-strong);
+    outline-offset: -1px;
+  }
 }
 
 /*
