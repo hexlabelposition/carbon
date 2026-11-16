@@ -74,6 +74,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "mentions.linkHint": "Сделать это упоминание в «{name}» ссылкой",
   "mentions.looking": "Поиск…",
   "mentions.title": "Упоминания без ссылки",
+  "newNote.hint": "Папки пишутся перед названием: projects/Идея",
+  "newNote.willCreate": "Будет создана {path}",
   "outline.empty": "Заголовков нет",
   "outline.emptyHeading": "(пустой заголовок)",
   "palette.commands": "Команды",

@@ -81,6 +81,8 @@ export const en = {
   "mentions.linkHint": "Link this mention in {name}",
   "mentions.looking": "Looking…",
   "mentions.title": "Unlinked mentions",
+  "newNote.hint": "Put folders before the name: projects/Idea",
+  "newNote.willCreate": "Creates {path}",
   "outline.empty": "No headings",
   "outline.emptyHeading": "(empty heading)",
   "palette.commands": "Commands",

@@ -5,6 +5,7 @@ import { useT } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
 import { shortcutLetter } from "../workspace/shortcut-letter";
+import { newNotePath } from "../new-note/new-note-path";
 
 export interface QuickSwitcher {
   isOpen: boolean;
@@ -158,14 +159,4 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
     create,
     error,
   };
-}
-
-/**
- * The path of a note named as typed: at the vault root, or in the folders
- * typed before it, as `projects/Idea`. `null` if nothing is typed.
- */
-function newNotePath(query: string): NotePath | null {
-  const name = query.trim().replace(/^\/+|\/+$/g, "");
-  if (name === "") return null;
-  return /\.md$/i.test(name) ? name : `${name}.md`;
 }

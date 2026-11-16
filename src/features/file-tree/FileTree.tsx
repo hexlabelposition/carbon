@@ -11,7 +11,7 @@ import { isWithin, nameOf, parentOf } from "../vault/paths";
 import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { shortcutLetter } from "../workspace/shortcut-letter";
-import { keys, useCommands } from "../commands/commands";
+import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
@@ -35,7 +35,7 @@ export function FileTree({
   vault: Vault;
   /**
    * Makes the tree visible, for a command of the palette that acts in
-   * it, such as "New note".
+   * it, such as "New folder".
    */
   onReveal?: () => void;
 }) {
@@ -50,15 +50,6 @@ export function FileTree({
     useMemo(
       () => [
         {
-          id: "fileTree.newNote",
-          title: t("tree.newNote"),
-          shortcut: keys("Mod+N"),
-          run: () => {
-            onReveal?.();
-            startNewRef.current("note");
-          },
-        },
-        {
           id: "fileTree.newFolder",
           title: t("tree.newFolder"),
           run: () => {
@@ -70,21 +61,6 @@ export function FileTree({
       [t, onReveal],
     ),
   );
-  // Ctrl+N, or Cmd+N on a Mac, starts a new note from anywhere.
-  useEffect(() => {
-    function onKeyDown(event: globalThis.KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (shortcutLetter(event) !== "n") return;
-      event.preventDefault();
-      event.stopPropagation();
-      onReveal?.();
-      startNewRef.current("note");
-    }
-    // Capture: the shortcut is taken before the focused element sees it.
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [onReveal]);
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
     useVirtualRows(tree.rows.length, ROW_HEIGHT);
   const [dragging, setDragging] = useState<string | null>(null);

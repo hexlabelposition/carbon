@@ -33,6 +33,8 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
 import { useSearch } from "../../features/search/use-search";
+import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
+import { NEW_NOTE, useNewNote } from "../../features/new-note/use-new-note";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import { useOutline } from "../../features/outline/use-outline";
@@ -265,6 +267,7 @@ export function DesktopShell({ frame }: { frame: WindowFrame }) {
               />
             </main>
             <QuickSwitcherHost vault={vault} />
+            <NewNoteHost vault={vault} />
           </WorkspaceProvider>
         )}
       </div>
@@ -428,6 +431,12 @@ function ToolbarHost({
 function CommandPaletteHost() {
   const palette = useCommandPalette();
   return palette.isOpen ? <CommandPalette palette={palette} /> : null;
+}
+
+/** The "New note" dialog, shown while it is open (Ctrl+N). */
+function NewNoteHost({ vault }: { vault: Vault }) {
+  const newNote = useNewNote(vault);
+  return newNote.isOpen ? <NewNoteDialog newNote={newNote} /> : null;
 }
 
 /** The quick switcher, shown while it is open (Ctrl+O). */
@@ -742,7 +751,7 @@ function BacklinksView({
 
 /** The commands offered below the watermark, in this order. */
 const WATERMARK_COMMANDS = [
-  "fileTree.newNote",
+  NEW_NOTE,
   "switcher.open",
   OPEN_PALETTE,
   "settings.open",
