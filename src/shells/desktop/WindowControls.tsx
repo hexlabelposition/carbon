@@ -260,25 +260,19 @@ export function WindowControls({
           label={t("window.minimize")}
           onClick={act(frame.minimize)}
         >
-          <path d="M0 5.5h11" shapeRendering="crispEdges" />
+          <path d="M2.5 8h11" />
         </ControlButton>
         <ControlButton
           label={maximized ? t("window.restore") : t("window.maximize")}
           onClick={act(frame.toggleMaximize)}
         >
           {maximized ? (
-            <g shapeRendering="crispEdges">
-              <rect x="0.5" y="2.5" width="8" height="8" />
-              <path d="M2.5 2.5v-2h8v8h-2" />
-            </g>
+            <>
+              <rect x="2.5" y="4.5" width="9" height="9" rx="1" />
+              <path d="M4.5 4.5v-1a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-1" />
+            </>
           ) : (
-            <rect
-              x="0.5"
-              y="0.5"
-              width="10"
-              height="10"
-              shapeRendering="crispEdges"
-            />
+            <rect x="2.5" y="2.5" width="11" height="11" rx="1" />
           )}
         </ControlButton>
         <ControlButton
@@ -286,7 +280,7 @@ export function WindowControls({
           danger
           onClick={act(frame.close)}
         >
-          <path d="M0.5 0.5l10 10M10.5 0.5l-10 10" />
+          <path d="M3 3l10 10M13 3L3 13" />
         </ControlButton>
       </div>
     </div>
@@ -318,16 +312,18 @@ function ControlButton({
       }`}
       onClick={onClick}
     >
-      {/* 11 by 11 pixels with 1-pixel lines, as the window buttons of
-          Windows and VS Code: lines on whole pixels stay sharp. */}
+      {/* Drawn as the other icons of the app, on 16 by 16 and scaled
+          with the interface: whole at any zoom. Lines snapped to whole
+          pixels were sharper at 100%, but lost an edge zoomed out. */}
       <svg
-        viewBox="0 0 11 11"
-        width="11"
-        height="11"
+        viewBox="0 0 16 16"
         aria-hidden="true"
+        className="size-4.5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
         {children}
       </svg>
