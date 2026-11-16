@@ -124,3 +124,34 @@ export interface SearchHit {
   /** How well the note matches; higher is better. */
   score: number;
 }
+
+/** A note in the graph of the vault, or a note that links miss. */
+export interface GraphNode {
+  path: NotePath;
+  title: string;
+  /**
+   * True for a note that does not exist but that links point to: its
+   * `path` is where they would find it (`UnresolvedTarget.path`).
+   */
+  missing: boolean;
+}
+
+/** The links from one note to another, as one edge of the graph. */
+export interface GraphEdge {
+  /** The note the links are written in. */
+  source: NotePath;
+  /** The note they point to. */
+  target: NotePath;
+  /** How many links of `source` point to `target`. */
+  count: number;
+}
+
+/**
+ * Notes and the links between them: the graph view draws it. Nodes are
+ * ordered by path, edges by source, then target. A note that links to
+ * itself has no edge to itself.
+ */
+export interface NoteGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}

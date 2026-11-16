@@ -4,13 +4,23 @@ import type {
   SqlStatement,
   SqlValue,
 } from "../platform";
-import { linkKeys, linkPath, matchKey, noteKeys } from "../links/resolve";
+import {
+  linkKeys,
+  linkPath,
+  linksToFile,
+  matchKey,
+  noteKeys,
+} from "../links/resolve";
+import { titleOf } from "../parser/parse-note";
 import { MATCH_END, MATCH_START, readMarks } from "../search/marks";
 import type { FullTextQuery } from "../search/query";
 import type {
   Backlink,
+  GraphEdge,
+  GraphNode,
   Heading,
   NoteAlias,
+  NoteGraph,
   NoteMetadata,
   NotePath,
   OutgoingLink,
@@ -450,6 +460,219 @@ export class IndexStore {
       for (const { path } of rows) sources.add(path);
     }
     return [...sources].sort();
+  }
+
+  /**
+   * The graph of the whole vault: every note, and an edge from each note
+   * to each note it links to. With `missing`, also the notes that links
+   * point to but that do not exist (`missingNotes`).
+   */
+  async graph(missing: boolean): Promise<NoteGraph> {
+    return this.graphOf(null, missing);
+  }
+
+  /**
+   * The graph around the note at `path`: the notes at most `depth` links
+   * away from it, whichever way the links go, and the edges between
+   * them. With `missing`, also the missing notes (`missingNotes`) that
+   * notes less than `depth` links away link to: a missing note is one
+   * link further. Empty if the note is not indexed.
+   */
+  async localGraph(
+    path: NotePath,
+    depth: number,
+    missing: boolean,
+  ): Promise<NoteGraph> {
+    const [start] = await this.db.select<{ id: number }>(
+      "SELECT id FROM notes WHERE path = ?",
+      [path],
+    );
+    if (start === undefined) return { nodes: [], edges: [] };
+    const seen = new Set([start.id]);
+    /** The notes less than `depth` links away. */
+    const inner: number[] = [];
+    let frontier = [start.id];
+    for (let level = 0; level < depth && frontier.length > 0; level++) {
+      inner.push(...frontier);
+      const next: number[] = [];
+      // Each id is a parameter twice.
+      for (const chunk of chunks(frontier, PATHS_PER_QUERY / 2)) {
+        const list = marks(chunk.length);
+        const rows = await this.db.select<{ id: number }>(
+          `SELECT target_id AS id FROM links
+           WHERE source_id IN (${list}) AND target_id IS NOT NULL
+           UNION
+           SELECT source_id AS id FROM links WHERE target_id IN (${list})`,
+          [...chunk, ...chunk],
+        );
+        for (const { id } of rows) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          next.push(id);
+        }
+      }
+      frontier = next;
+    }
+    return this.graphOf({ notes: seen, sources: inner }, missing);
+  }
+
+  /**
+   * The graph of the notes of `scope`, with the missing notes that its
+   * `sources` link to; of the whole vault for `null`.
+   */
+  private async graphOf(
+    scope: { notes: ReadonlySet<number>; sources: readonly number[] } | null,
+    missing: boolean,
+  ): Promise<NoteGraph> {
+    const notes =
+      scope === null
+        ? await this.db.select<{ id: number; path: string; title: string }>(
+            "SELECT id, path, title FROM notes",
+          )
+        : await this.selectIn<{ id: number; path: string; title: string }>(
+            [...scope.notes],
+            (list) => `SELECT id, path, title FROM notes WHERE id IN (${list})`,
+          );
+    const pathOf = new Map(notes.map((note) => [note.id, note.path]));
+    const nodes = new Map<NotePath, GraphNode>();
+    for (const { path, title } of notes) {
+      nodes.set(path, { path, title, missing: false });
+    }
+
+    type EdgeRow = { source: number; target: number; count: number };
+    const edgeQuery = (where: string) =>
+      `SELECT source_id AS source, target_id AS target, COUNT(*) AS count
+       FROM links
+       WHERE target_id IS NOT NULL AND source_id <> target_id ${where}
+       GROUP BY source_id, target_id`;
+    const edgeRows =
+      scope === null
+        ? await this.db.select<EdgeRow>(edgeQuery(""))
+        : await this.selectIn<EdgeRow>([...scope.notes], (list) =>
+            edgeQuery(`AND source_id IN (${list})`),
+          );
+    const edges: GraphEdge[] = [];
+    for (const row of edgeRows) {
+      const source = pathOf.get(row.source);
+      const target = pathOf.get(row.target);
+      if (source === undefined || target === undefined) continue;
+      edges.push({ source, target, count: row.count });
+    }
+
+    if (missing) {
+      const sources = scope === null ? null : scope.sources;
+      for (const edge of await this.missingEdges(sources)) {
+        const source = pathOf.get(edge.source);
+        if (source === undefined) continue;
+        if (!nodes.has(edge.path)) {
+          nodes.set(edge.path, {
+            path: edge.path,
+            title: titleOf(edge.path),
+            missing: true,
+          });
+        }
+        edges.push({ source, target: edge.path, count: edge.count });
+      }
+    }
+
+    const byPath = (a: NotePath, b: NotePath) => (a < b ? -1 : a > b ? 1 : 0);
+    return {
+      nodes: [...nodes.values()].sort((a, b) => byPath(a.path, b.path)),
+      edges: edges.sort(
+        (a, b) => byPath(a.source, b.source) || byPath(a.target, b.target),
+      ),
+    };
+  }
+
+  /**
+   * The links of the notes with the ids `sources`, or of every note for
+   * `null`, to notes that do not exist, one per note they miss, with the
+   * number of links. Only links that could find a note count: not those
+   * to a file that is not a note, such as `[[file.pdf]]` or
+   * `[doc](file.pdf)`, or above the vault root. A missing note is
+   * grouped and spelled as `unresolved` does it, so it has the same path
+   * whatever the sources.
+   */
+  private async missingEdges(
+    sources: readonly number[] | null,
+  ): Promise<{ source: number; path: NotePath; count: number }[]> {
+    type Row = Pick<OutgoingLink, "kind" | "target"> & {
+      source: number;
+      key: string;
+    };
+    const query = (where: string) =>
+      `SELECT l.source_id AS source, l.target_path AS key,
+              l.kind, l.target_raw AS target
+       FROM links l
+       WHERE l.target_id IS NULL AND l.target_path LIKE '%.md' ${where}`;
+    const rows = (
+      sources === null
+        ? await this.db.select<Row>(query(""))
+        : await this.selectIn<Row>([...sources], (list) =>
+            query(`AND l.source_id IN (${list})`),
+          )
+    ).filter((row) => !linksToFile(row));
+
+    const counts = new Map<string, Map<number, number>>();
+    for (const { source, key } of rows) {
+      let bySource = counts.get(key);
+      if (bySource === undefined) {
+        bySource = new Map();
+        counts.set(key, bySource);
+      }
+      bySource.set(source, (bySource.get(source) ?? 0) + 1);
+    }
+
+    // Spelled as by the first link to it in the vault, as `unresolved`
+    // spells it, not the first of `sources`.
+    type First = Pick<OutgoingLink, "kind" | "target"> & {
+      key: string;
+      path: string;
+    };
+    const spelling = (where: string) =>
+      `SELECT l.target_path AS key, l.kind, l.target_raw AS target,
+              s.path
+       FROM links l JOIN notes s ON s.id = l.source_id
+       WHERE l.target_id IS NULL ${where}
+       ORDER BY l.target_path, s.path, l.pos_start`;
+    const keys = [...counts.keys()];
+    const firsts =
+      sources === null
+        ? await this.db.select<First>(spelling("AND l.target_path LIKE '%.md'"))
+        : await this.selectIn<First>(keys, (list) =>
+            spelling(`AND l.target_path IN (${list})`),
+          );
+    const pathOf = new Map<string, NotePath>();
+    for (const { key, kind, target, path } of firsts) {
+      if (pathOf.has(key) || linksToFile({ kind, target })) continue;
+      pathOf.set(key, linkPath(path, { kind, target }) ?? key);
+    }
+
+    const result: { source: number; path: NotePath; count: number }[] = [];
+    for (const [key, bySource] of counts) {
+      const path = pathOf.get(key) ?? key;
+      for (const [source, count] of bySource) {
+        result.push({ source, path, count });
+      }
+    }
+    return result;
+  }
+
+  /**
+   * The rows `query` selects for `values`, a chunk of them at a time:
+   * `query` gets the list of parameters for one chunk.
+   */
+  private async selectIn<T>(
+    values: readonly SqlValue[],
+    query: (list: string) => string,
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    for (const chunk of chunks(values, PATHS_PER_QUERY)) {
+      rows.push(
+        ...(await this.db.select<T>(query(marks(chunk.length)), chunk)),
+      );
+    }
+    return rows;
   }
 
   /**
