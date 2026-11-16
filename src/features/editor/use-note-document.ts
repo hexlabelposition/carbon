@@ -210,12 +210,21 @@ export function useNoteDocument(
       else showDisk(disk);
     }
 
-    const stopWatching = vault.on("changed", (change) => {
+    const stopChanged = vault.on("changed", (change) => {
       if (change.kind === "removed") {
         // Deleting a folder deletes the notes inside it.
         if (isWithin(path, change.path)) void onOutsideChange(true);
       } else if (change.path === path) void onOutsideChange(false);
     });
+    // The vault itself rewrote the note: its links or its tags. For the
+    // editor it is as if another program did.
+    const stopRewritten = vault.on("rewritten", (change) => {
+      if (change.path === path) void onOutsideChange(false);
+    });
+    const stopWatching = () => {
+      stopChanged();
+      stopRewritten();
+    };
 
     const flush = () => current?.saver.flush() ?? Promise.resolve();
     const stopFlushing = onFlush(flush);

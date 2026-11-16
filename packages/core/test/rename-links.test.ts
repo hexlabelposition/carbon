@@ -31,6 +31,19 @@ describe("renaming rewrites links", () => {
     expect(update).toEqual({ updated: ["src.md"], failed: [] });
   });
 
+  test("tells an editor of each note it rewrote", async () => {
+    const { vault } = await openVault({
+      "Old.md": "",
+      "src.md": "[[Old]]",
+      "other.md": "nothing",
+    });
+    const rewritten: string[] = [];
+    vault.on("rewritten", ({ path }) => rewritten.push(path));
+    await vault.notes.rename("Old.md", "New.md");
+    expect(rewritten).toEqual(["src.md"]);
+    vault.close();
+  });
+
   test("a name stays a name while it finds the note", async () => {
     const { vault, read } = await openVault({
       "Note.md": "",

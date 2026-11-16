@@ -115,7 +115,9 @@ export class Tags {
    * Renames the tag `from` to `to` in every note that has it, and the tags
    * nested in it with it (`renameTagIn`), inline and in the frontmatter.
    * "#" in front of either is allowed. Each note is written only if it
-   * did not change since it was read. Rejects if `to` cannot be a tag.
+   * did not change since it was read. Resolves once the index has every
+   * note written, so the tags asked for then are the new ones. Rejects if
+   * `to` cannot be a tag.
    */
   async rename(from: string, to: string): Promise<TagRename> {
     const old = from.replace(/^#/, "");
@@ -136,6 +138,7 @@ export class Tags {
         result.failed.push(path);
       }
     }
+    await this.context.caughtUp();
     return result;
   }
 

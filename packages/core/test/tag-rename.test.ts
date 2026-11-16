@@ -67,20 +67,23 @@ describe("vault.tags.rename", () => {
       "b.md": "---\ntags: [idea/x]\n---\nbody",
       "c.md": "#other",
     });
+    const rewritten: string[] = [];
+    vault.on("rewritten", ({ path }) => rewritten.push(path));
     expect(await vault.tags.rename("#idea", "thought")).toEqual({
       updated: ["a.md", "b.md"],
       failed: [],
     });
-    expect(await vault.notes.read("a.md")).toBe("#thought here");
-    expect(await vault.notes.read("b.md")).toBe(
-      "---\ntags: [thought/x]\n---\nbody",
-    );
-    await vault.indexed();
+    expect(rewritten).toEqual(["a.md", "b.md"]);
+    // Done renaming, the index has the new tags already.
     expect((await vault.tags.all()).map((t) => t.tag)).toEqual([
       "other",
       "thought",
       "thought/x",
     ]);
+    expect(await vault.notes.read("a.md")).toBe("#thought here");
+    expect(await vault.notes.read("b.md")).toBe(
+      "---\ntags: [thought/x]\n---\nbody",
+    );
     vault.close();
   });
 

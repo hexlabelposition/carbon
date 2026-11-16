@@ -51,6 +51,13 @@ export interface VaultEvents {
   /** An open note changed on disk while it has unsaved edits. */
   conflict: { path: NotePath };
   /**
+   * This vault object rewrote a note on its own, not for its editor: the
+   * links in it to a note that moved, or a tag that was renamed. An editor
+   * that shows the note reads it again, as after a change by another
+   * program.
+   */
+  rewritten: { path: NotePath };
+  /**
    * This vault object added, moved or deleted a note, file or folder, so
    * `tree()` now gives another result. Together with `changed`, which
    * covers everyone else, it tells when to list the vault again.
@@ -118,10 +125,16 @@ export class Vault {
       if (this.store === null) throw new Error("The index is not open");
       return this.store;
     };
+    /** `Notes.write` for a note the vault changes on its own. */
+    const rewrite = async (path: NotePath, text: string, baseHash: string) => {
+      const hash = await this.notes.write(path, text, baseHash);
+      this.emitter.emit("rewritten", { path });
+      return hash;
+    };
     const rewriter = new LinkRewriter({
       index: caughtUp,
       read: (path) => this.notes.read(path),
-      write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
+      write: rewrite,
     });
     this.notes = new Notes({ root, fs, trash, own }, rewriter);
     this.folders = new Folders({ root, fs, trash, own }, rewriter);
@@ -144,7 +157,7 @@ export class Vault {
       index,
       caughtUp,
       read: (path) => this.notes.read(path),
-      write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
+      write: rewrite,
     });
     this.watch = new VaultWatch({
       root,
