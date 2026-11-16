@@ -2,6 +2,7 @@ import type { TextRange } from "@carbon/core";
 import fuzzysort from "fuzzysort";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "../i18n/i18n";
+import { useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommandList, useCommands, type Command } from "./commands";
 
@@ -38,7 +39,7 @@ export function useCommandPalette(): CommandPalette {
     () => all.filter((command) => command.id !== OPEN_PALETTE),
     [all],
   );
-  const [isOpen, setOpen] = useState(false);
+  const [isOpen, setOpen] = useDialog("palette");
   const [query, setQueryState] = useState("");
   const [selected, select] = useState(0);
 
@@ -50,7 +51,13 @@ export function useCommandPalette(): CommandPalette {
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
-  }, [setQuery]);
+  }, [setOpen, setQuery]);
+
+  // Empty each time: another dialog may have closed it, not `close`.
+  const show = useCallback(() => {
+    setQuery("");
+    setOpen(true);
+  }, [setOpen, setQuery]);
 
   // For places that offer it, such as the area where no note is open.
   useCommands(
@@ -60,10 +67,10 @@ export function useCommandPalette(): CommandPalette {
           id: OPEN_PALETTE,
           title: t("palette.open"),
           shortcut: keys("Mod+P"),
-          run: () => setOpen(true),
+          run: show,
         },
       ],
-      [t],
+      [t, show],
     ),
   );
 
@@ -72,7 +79,7 @@ export function useCommandPalette(): CommandPalette {
       const command = event.ctrlKey || event.metaKey;
       if (!command || event.shiftKey || event.altKey) return;
       if (shortcutLetter(event) !== "p") return;
-      setOpen(true);
+      show();
       // Not the browser's "print", nor the editor's use of the key.
       event.preventDefault();
       event.stopPropagation();
@@ -80,7 +87,7 @@ export function useCommandPalette(): CommandPalette {
     // Capture: the shortcut is taken before the focused element sees it.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
+  }, [show]);
 
   const items = useMemo(() => {
     if (query.trim() === "") {

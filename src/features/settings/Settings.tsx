@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
@@ -19,6 +18,7 @@ import {
   type MessageKey,
 } from "../i18n/i18n";
 import { THEMES, themePreference, type Theme } from "../theme/use-theme";
+import { openDialog, openDialogId, useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
 import {
@@ -43,21 +43,9 @@ import {
   wheelTextSizePreference,
 } from "./note-style";
 
-// Whether the settings dialog is open: anything may open it.
-const listeners = new Set<() => void>();
-let isOpen = false;
-function setOpen(open: boolean) {
-  isOpen = open;
-  for (const listener of listeners) listener();
-}
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
-
-/** Opens the settings dialog. */
+/** Opens the settings dialog; another dialog open closes. */
 export function openSettings(): void {
-  setOpen(true);
+  openDialog("settings");
 }
 
 const THEME_LABELS: Record<Theme, MessageKey> = {
@@ -92,7 +80,7 @@ export function Settings() {
   useFonts();
   const t = useT();
   const language = useLanguage();
-  const open = useSyncExternalStore(subscribe, () => isOpen);
+  const [open, setOpen] = useDialog("settings");
   /** The group shown: the last one, while the app runs. */
   const [group, setGroup] = useState<SettingsGroup>("general");
 
@@ -157,7 +145,12 @@ export function Settings() {
         {/* Centered by its margins, not moved back by half its size: a
             move of half an odd size lands between pixels, and the text in
             it is drawn blurred. */}
-        <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog outline-none">
+        <Dialog.Popup
+          // Closed for another dialog: the focus is that one's to keep,
+          // not given back to where it was before the settings.
+          finalFocus={() => openDialogId() === null}
+          className="fixed inset-0 z-50 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog outline-none"
+        >
           {/* The groups at the left, one shown at a time at the right. */}
           <nav className="flex w-44 shrink-0 flex-col gap-3 border-r border-line bg-panel p-2">
             <Dialog.Title className="px-2.5 pt-2.5 text-h3 font-semibold">

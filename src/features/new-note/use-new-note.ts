@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
+import { useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { newNotePath } from "./new-note-path";
 
@@ -30,7 +31,7 @@ export interface NewNote {
 export function useNewNote(vault: Vault): NewNote {
   const t = useT();
   const { open } = useWorkspace();
-  const [isOpen, setOpen] = useState(false);
+  const [isOpen, setOpen] = useDialog("newNote");
   const [name, setNameState] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,13 @@ export function useNewNote(vault: Vault): NewNote {
   const close = useCallback(() => {
     setOpen(false);
     setName("");
-  }, [setName]);
+  }, [setOpen, setName]);
+
+  // Empty each time: another dialog may have closed it, not `close`.
+  const show = useCallback(() => {
+    setName("");
+    setOpen(true);
+  }, [setOpen, setName]);
 
   useCommands(
     useMemo(
@@ -52,10 +59,10 @@ export function useNewNote(vault: Vault): NewNote {
           id: NEW_NOTE,
           title: t("tree.newNote"),
           shortcut: keys("Mod+N"),
-          run: () => setOpen(true),
+          run: show,
         },
       ],
-      [t],
+      [t, show],
     ),
   );
 
@@ -64,7 +71,7 @@ export function useNewNote(vault: Vault): NewNote {
       const command = event.ctrlKey || event.metaKey;
       if (!command || event.shiftKey || event.altKey) return;
       if (shortcutLetter(event) !== "n") return;
-      setOpen(true);
+      show();
       // Not the browser's "new window", nor the editor's use of the key.
       event.preventDefault();
       event.stopPropagation();
@@ -72,7 +79,7 @@ export function useNewNote(vault: Vault): NewNote {
     // Capture: the shortcut is taken before the focused element sees it.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
+  }, [show]);
 
   const path = newNotePath(name);
 

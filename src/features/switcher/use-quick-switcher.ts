@@ -4,6 +4,7 @@ import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
+import { useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { newNotePath } from "../new-note/new-note-path";
 
@@ -37,7 +38,7 @@ export interface QuickSwitcher {
  */
 export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   const t = useT();
-  const [isOpen, setOpen] = useState(false);
+  const [isOpen, setOpen] = useDialog("switcher");
   const [query, setQueryState] = useState("");
   const [answer, setAnswer] = useState<{
     query: string;
@@ -65,7 +66,13 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
-  }, [setQuery]);
+  }, [setOpen, setQuery]);
+
+  // Empty each time: another dialog may have closed it, not `close`.
+  const show = useCallback(() => {
+    setQuery("");
+    setOpen(true);
+  }, [setOpen, setQuery]);
 
   useCommands(
     useMemo(
@@ -74,10 +81,10 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
           id: "switcher.open",
           title: t("switcher.open"),
           shortcut: keys("Mod+O"),
-          run: () => setOpen(true),
+          run: show,
         },
       ],
-      [t],
+      [t, show],
     ),
   );
 
@@ -86,7 +93,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
       const command = event.ctrlKey || event.metaKey;
       if (!command || event.shiftKey || event.altKey) return;
       if (shortcutLetter(event) !== "o") return;
-      setOpen(true);
+      show();
       // Not the browser's "open file", nor the editor's use of the key.
       event.preventDefault();
       event.stopPropagation();
@@ -94,7 +101,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
     // Capture: the shortcut is taken before the focused element sees it.
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
+  }, [show]);
 
   useEffect(() => {
     if (!isOpen) return;
