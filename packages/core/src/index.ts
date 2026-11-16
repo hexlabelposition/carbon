@@ -29,6 +29,8 @@ export type { PropertyEdit, TextChange } from "./parser/frontmatter-edit";
 
 export { IndexStore, SCHEMA_VERSION, indexFileName } from "./index/index-store";
 export type { FollowedLink, Links } from "./links/links";
+export { LOCAL_GRAPH_DEPTH } from "./links/graph";
+export type { Graph, GraphOptions } from "./links/graph";
 export { linksToFile } from "./links/resolve";
 export type { LinkUpdate } from "./links/rename";
 export type { IndexEntry, NoteStamp } from "./index/index-store";

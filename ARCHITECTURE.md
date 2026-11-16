@@ -238,7 +238,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 ### links
 
 - Link resolution, backlinks with context snippets, unresolved links, rename refactoring.
-- Graph queries: whole vault, or local graph around one note with depth N.
+- Graph queries: whole vault, or local graph around one note with depth N, the links followed either way. Nodes are notes, edges the links from one note to another, counted. Notes that links miss can join as nodes marked missing, spelled as the list of unresolved links spells them; links to files that are not notes never make one.
 
 ### search
 
@@ -275,7 +275,7 @@ vault.links.backlinks(path) / outgoing(path) / unresolved() / suggest(prefix)
 vault.links.unlinked(path) / linkMention(source, at, target) / aliases()
 vault.search.query(text) / locate(path, text) / titles(text)
 vault.tags.all() / tree() / notes(tag) / of(path) / suggestions(path, written) / rename(from, to)
-vault.graph.global() / local(path, depth)
+vault.graph.global({ missing }) / local(path, depth, { missing })
 
 vault.on('changed', ...)        // file added, changed or removed outside the editor
 vault.on('index:progress', ...) // startup scan: done of total new and changed notes

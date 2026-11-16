@@ -2,6 +2,7 @@ import { Emitter } from "../events";
 import { Indexer } from "../index/indexer";
 import type { ScanResult, ScanWaits } from "../index/scan";
 import { IndexStore } from "../index/index-store";
+import { Graph } from "../links/graph";
 import { Links } from "../links/links";
 import { LinkRewriter } from "../links/rename";
 import { inlineParser } from "../parser/parse-files";
@@ -91,8 +92,7 @@ export interface VaultOptions {
 const DEFAULT_CHANGE_DELAY_MS = 100;
 
 /**
- * The single entry point for the UI. Later milestones add `tags` and
- * `graph` (ARCHITECTURE.md, section 6).
+ * The single entry point for the UI (ARCHITECTURE.md, section 6).
  */
 export class Vault {
   /** Absolute path of the vault folder, `/` separated. */
@@ -103,6 +103,7 @@ export class Vault {
   readonly links: Links;
   readonly search: Search;
   readonly tags: Tags;
+  readonly graph: Graph;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -173,6 +174,7 @@ export class Vault {
       read: (path) => this.notes.read(path),
       write: rewrite,
     });
+    this.graph = new Graph({ index });
     this.watch = new VaultWatch({
       root,
       fs,

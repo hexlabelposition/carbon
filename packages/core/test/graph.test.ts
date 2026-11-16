@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   IndexStore,
   parseNote,
+  Vault,
   type IndexEntry,
   type NoteGraph,
 } from "../src/index";
@@ -197,5 +198,63 @@ describe("local graph", () => {
     const graph = await store.localGraph("hub.md", 2, false);
     expect(graph.nodes).toHaveLength(2401);
     expect(graph.edges).toHaveLength(2400);
+  });
+});
+
+describe("vault.graph", () => {
+  async function openVault(files: Record<string, string>) {
+    const platform = createMemoryPlatform(
+      Object.fromEntries(
+        Object.entries(files).map(([path, text]) => [`/v/${path}`, text]),
+      ),
+    );
+    await platform.fs.mkdir("/v");
+    const vault = await Vault.open("/v", platform, { changeDelayMs: 5 });
+    await vault.indexed();
+    return vault;
+  }
+
+  test("gives the global and the local graph, and sees saves", async () => {
+    const vault = await openVault({
+      "a.md": "[[b]] [[ghost]]",
+      "b.md": "[[c]]",
+      "c.md": "",
+    });
+    expect(shape(await vault.graph.global())).toEqual({
+      nodes: ["a.md", "b.md", "c.md"],
+      edges: ["a.md>b.md*1", "b.md>c.md*1"],
+    });
+    expect(shape(await vault.graph.global({ missing: true })).nodes).toEqual([
+      "a.md",
+      "b.md",
+      "c.md",
+      "ghost.md?",
+    ]);
+    expect(shape(await vault.graph.local("a.md")).nodes).toEqual([
+      "a.md",
+      "b.md",
+    ]);
+    expect(shape(await vault.graph.local("a.md", 2)).nodes).toEqual([
+      "a.md",
+      "b.md",
+      "c.md",
+    ]);
+
+    await vault.notes.write("d.md", "[[a]]", null);
+    await vault.indexed();
+    expect(shape(await vault.graph.local("a.md")).nodes).toEqual([
+      "a.md",
+      "b.md",
+      "d.md",
+    ]);
+    vault.close();
+  });
+
+  test("rejects a depth that is not a whole number of 0 or more", async () => {
+    const vault = await openVault({ "a.md": "" });
+    for (const depth of [-1, 1.5, Number.NaN, Infinity]) {
+      expect(vault.graph.local("a.md", depth)).rejects.toThrow(/depth/);
+    }
+    vault.close();
   });
 });
