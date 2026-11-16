@@ -5,7 +5,7 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { syntaxHighlighting } from "@codemirror/language";
+import { indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { hashtag, wikiLink } from "@carbon/core";
 import { languages } from "@codemirror/language-data";
 import {
@@ -28,6 +28,12 @@ import {
   type ImageHost,
 } from "./live-preview-image";
 import { linkCompletion, linkHost, type LinkHost } from "./link-completion";
+import {
+  indentPreference,
+  indentText,
+  spellcheckPreference,
+  type Indent,
+} from "../settings/editor-options";
 import { tagHost, type TagHost } from "./tag-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
 import { linkPreview } from "./link-preview";
@@ -119,6 +125,10 @@ export function MarkdownEditor({
   const preview = useRef(new Compartment());
   /** Holds whether the note can be edited, switched in place too. */
   const editing = useRef(new Compartment());
+  /** Holds the indent and the spell checking the settings choose. */
+  const options = useRef(new Compartment());
+  const indent = indentPreference.use();
+  const spellcheck = spellcheckPreference.use();
   // The latest values, so new ones do not rebuild the editor.
   const latest = useRef({
     text,
@@ -179,6 +189,9 @@ export function MarkdownEditor({
             latest.current.sourceMode ? noPreview : livePreviewExtensions,
           ),
           editing.current.of(editable(!latest.current.readOnly)),
+          options.current.of(
+            editorOptions(indentPreference.get(), spellcheckPreference.get()),
+          ),
           imageInput,
           imageHost.of({
             load: (target) =>
@@ -320,6 +333,12 @@ export function MarkdownEditor({
   }, [sourceMode]);
 
   useEffect(() => {
+    editor.current?.dispatch({
+      effects: options.current.reconfigure(editorOptions(indent, spellcheck)),
+    });
+  }, [indent, spellcheck]);
+
+  useEffect(() => {
     const view = editor.current;
     if (view === null) return;
     view.dispatch({
@@ -393,6 +412,22 @@ function difference(
  * Whether the user can change the note. Not editable, the text takes no
  * focus, so live preview never shows the Markdown under a cursor.
  */
+/**
+ * What Tab puts in for one level (`indentWithTab` follows it), and
+ * whether the WebView checks the spelling of the text.
+ */
+function editorOptions(indent: Indent, spellcheck: boolean) {
+  const text = indentText(indent);
+  return [
+    indentUnit.of(text),
+    // A tab is as wide as a level of spaces would be.
+    EditorState.tabSize.of(indent === "tab" ? 4 : text.length),
+    EditorView.contentAttributes.of({
+      spellcheck: spellcheck ? "true" : "false",
+    }),
+  ];
+}
+
 function editable(on: boolean) {
   return [EditorView.editable.of(on), EditorState.readOnly.of(!on)];
 }

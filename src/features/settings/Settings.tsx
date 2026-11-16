@@ -18,6 +18,13 @@ import {
   type MessageKey,
 } from "../i18n/i18n";
 import { THEMES, themePreference, type Theme } from "../theme/use-theme";
+import {
+  INDENTS,
+  indentPreference,
+  spellcheckPreference,
+  START_MODES,
+  startModePreference,
+} from "./editor-options";
 import { openDialog, openDialogId, useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
@@ -38,6 +45,8 @@ import {
   noteFontPreference,
   noteSizePreference,
   noteWidthPreference,
+  lineHeightPreference,
+  LINE_HEIGHTS,
   resetNoteSize,
   useNoteStyle,
   wheelTextSizePreference,
@@ -61,13 +70,14 @@ const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
 };
 
 /** The groups of settings, listed at the left of the dialog. */
-type SettingsGroup = "general" | "appearance" | "fonts" | "notes";
+type SettingsGroup = "general" | "appearance" | "fonts" | "notes" | "editor";
 
 const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
   { group: "general", label: "settings.general" },
   { group: "appearance", label: "settings.appearance" },
   { group: "fonts", label: "settings.fonts" },
   { group: "notes", label: "settings.notes" },
+  { group: "editor", label: "settings.editor" },
 ];
 
 /**
@@ -194,6 +204,7 @@ export function Settings() {
               {group === "appearance" && <AppearanceSettings />}
               {group === "fonts" && <FontSettings />}
               {group === "notes" && <NoteSettings />}
+              {group === "editor" && <EditorSettings />}
             </div>
           </div>
         </Dialog.Popup>
@@ -313,6 +324,7 @@ function NoteSettings() {
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   const wheelSize = wheelTextSizePreference.use();
+  const lineHeight = lineHeightPreference.use();
   return (
     <Rows>
       <Row label={t("settings.fontSize")}>
@@ -335,6 +347,17 @@ function NoteSettings() {
           />
         </div>
       </Row>
+      <Row label={t("settings.lineHeight")}>
+        <SettingSelect
+          label={t("settings.lineHeight")}
+          value={lineHeight}
+          items={LINE_HEIGHTS.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
+          onChange={lineHeightPreference.set}
+        />
+      </Row>
       <Row label={t("settings.width")}>
         <SettingSelect
           label={t("settings.width")}
@@ -351,6 +374,47 @@ function NoteSettings() {
           label={t("settings.wheelSize", { key: keys("Mod") })}
           checked={wheelSize}
           onChange={wheelTextSizePreference.set}
+        />
+      </Row>
+    </Rows>
+  );
+}
+
+/** How the editor behaves: the mode to start in, Tab, spell checking. */
+function EditorSettings() {
+  const t = useT();
+  const startMode = startModePreference.use();
+  const indent = indentPreference.use();
+  const spellcheck = spellcheckPreference.use();
+  return (
+    <Rows>
+      <Row label={t("settings.startMode")}>
+        <SettingSelect
+          label={t("settings.startMode")}
+          value={startMode}
+          items={START_MODES.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
+          onChange={startModePreference.set}
+        />
+      </Row>
+      <Row label={t("settings.indent")}>
+        <SettingSelect
+          label={t("settings.indent")}
+          value={indent}
+          items={INDENTS.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
+          onChange={indentPreference.set}
+        />
+      </Row>
+      <Row label={t("settings.spellcheck")}>
+        <SettingSwitch
+          label={t("settings.spellcheck")}
+          checked={spellcheck}
+          onChange={spellcheckPreference.set}
         />
       </Row>
     </Rows>

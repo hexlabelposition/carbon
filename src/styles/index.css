@@ -81,6 +81,7 @@
     --cb-note-size: 14px; /* NOTE_SIZE_DEFAULT */
     --cb-note-width: 784px;
     --cb-note-font: var(--font-sans);
+    --cb-note-line-height: 1.65;
     /* The fonts as the settings set them (fonts.ts). */
     --cb-ui-font: var(--font-sans);
     --cb-mono-font: var(--font-mono);

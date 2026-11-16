@@ -30,7 +30,7 @@ export const editorTheme = EditorView.theme({
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": {
     fontFamily: "var(--cb-note-font)",
-    lineHeight: "1.65",
+    lineHeight: "var(--cb-note-line-height)",
     overflow: "visible",
     flexGrow: "1",
     // Inter raises a bracket that follows a tall character such as "!".

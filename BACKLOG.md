@@ -142,7 +142,7 @@ Done when: the graph of a 10k-note vault opens and stays smooth while panning an
 
 Done when: a stranger on Linux can download Carbon, create a vault and use it daily.
 
-- [ ] **C-601** (P0) Settings screen: theme, font, font size, editor options
+- [x] **C-601** (P0) Settings screen: theme, font, font size, editor options
 - [ ] **C-602** (P0) Performance pass against the budgets, fix regressions
 - [ ] **C-603** (P0) App icon and branding in the app and installers
 - [ ] **C-604** (P0) Packaging for Linux: AppImage, deb

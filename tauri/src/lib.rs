@@ -41,6 +41,26 @@ async fn import_file(app: tauri::AppHandle, source: String, target: String) -> R
     .map_err(|error| error.to_string())
 }
 
+/// Turns spell checking on in the WebView of Linux, for English and Russian,
+/// the languages of the interface. WebKitGTK checks nothing until its web
+/// context allows it, and Tauri leaves it off; the `spellcheck` attribute of
+/// the editor, which the settings set, then decides (ADR-027). A language
+/// without a dictionary installed is left out by WebKitGTK.
+#[cfg(target_os = "linux")]
+fn enable_spell_checking(app: &tauri::App) {
+    use tauri::Manager;
+    use webkit2gtk::{WebContextExt, WebViewExt};
+
+    for window in app.webview_windows().values() {
+        let _ = window.with_webview(|webview| {
+            if let Some(context) = webview.inner().context() {
+                context.set_spell_checking_enabled(true);
+                context.set_spell_checking_languages(&["en_US", "ru_RU"]);
+            }
+        });
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -52,6 +72,13 @@ pub fn run() {
         // This keeps the grant, so a recent vault opens after a restart.
         // It must come after the `fs` plugin.
         .plugin(tauri_plugin_persisted_scope::init())
+        .setup(|app| {
+            #[cfg(target_os = "linux")]
+            enable_spell_checking(app);
+            #[cfg(not(target_os = "linux"))]
+            let _ = app;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![move_to_trash, import_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

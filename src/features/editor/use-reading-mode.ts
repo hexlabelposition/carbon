@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
+import { startModePreference } from "../settings/editor-options";
 
 const STORAGE_KEY = "carbon.editor.readingMode";
 
@@ -13,7 +14,8 @@ export interface ReadingMode {
 /**
  * Whether notes are shown to read: no cursor, no Markdown shown on a
  * click, no typing; tasks can still be ticked. One switch for every note,
- * as source mode, remembered between app starts.
+ * as source mode, remembered between app starts unless the settings
+ * choose the mode to start in.
  */
 export function useReadingMode(): ReadingMode {
   const t = useT();
@@ -45,6 +47,8 @@ export function useReadingMode(): ReadingMode {
 }
 
 function load(): boolean {
+  const start = startModePreference.get();
+  if (start !== "remember") return start === "reading";
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "false") === true;
   } catch {

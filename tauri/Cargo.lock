@@ -472,6 +472,7 @@ dependencies = [
  "tauri-plugin-persisted-scope",
  "tauri-plugin-sql",
  "trash",
+ "webkit2gtk",
 ]
 
 [[package]]

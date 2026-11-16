@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
+import { startModePreference } from "../settings/editor-options";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 
 const STORAGE_KEY = "carbon.editor.sourceMode";
@@ -19,7 +20,8 @@ export interface SourceMode {
 /**
  * Whether notes are shown as raw Markdown. One switch for every note, so
  * a tab that is opened looks like the one before it. Remembered between
- * app starts. Ctrl+E, or Cmd+E on a Mac, switches it.
+ * app starts, unless the settings choose the mode to start in. Ctrl+E, or
+ * Cmd+E on a Mac, switches it.
  */
 export function useSourceMode(): SourceMode {
   const t = useT();
@@ -68,6 +70,8 @@ export function useSourceMode(): SourceMode {
 }
 
 function load(): boolean {
+  const start = startModePreference.get();
+  if (start !== "remember") return start === "source";
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "false") === true;
   } catch {

@@ -29,6 +29,10 @@ tauri-plugin-dialog = "2"
 trash = "5"
 tauri-plugin-persisted-scope = "2"
 
+# Spell checking in the WebView of Linux (ADR-027): the version Tauri uses.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "2.0"
+
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

@@ -9,6 +9,7 @@ export const NOTE_SIZES: readonly number[] = [13, 14, 15, 16, 17, 18, 20];
 export const NOTE_SIZE_DEFAULT = 14;
 
 export type NoteWidth = "narrow" | "normal" | "wide" | "full";
+export type LineHeight = "compact" | "normal" | "relaxed";
 export type NoteFont = "inter" | "system" | "serif" | "mono";
 
 /** The widths of the content of a note, with the keys of their names. */
@@ -18,6 +19,20 @@ export const NOTE_WIDTHS: readonly { value: NoteWidth; label: MessageKey }[] = [
   { value: "wide", label: "settings.width.wide" },
   { value: "full", label: "settings.width.full" },
 ];
+
+/** The spacing of the lines of the note text, with the keys of their names. */
+export const LINE_HEIGHTS: readonly { value: LineHeight; label: MessageKey }[] =
+  [
+    { value: "compact", label: "settings.lineHeight.compact" },
+    { value: "normal", label: "settings.lineHeight.normal" },
+    { value: "relaxed", label: "settings.lineHeight.relaxed" },
+  ];
+
+const LINE_HEIGHT: Record<LineHeight, string> = {
+  compact: "1.45",
+  normal: "1.65",
+  relaxed: "1.85",
+};
 
 /** The fonts of the note text, with the keys of their names. */
 export const NOTE_FONTS: readonly { value: NoteFont; label: MessageKey }[] = [
@@ -72,6 +87,12 @@ export const noteWidthPreference = preference<NoteWidth>(
   oneOf(NOTE_WIDTHS.map((width) => width.value)),
 );
 
+export const lineHeightPreference = preference<LineHeight>(
+  "carbon.note.lineHeight",
+  "normal",
+  oneOf(LINE_HEIGHTS.map((height) => height.value)),
+);
+
 export const noteFontPreference = preference<NoteFont>(
   "carbon.note.font",
   "inter",
@@ -80,13 +101,15 @@ export const noteFontPreference = preference<NoteFont>(
 
 /**
  * Applies the note settings as CSS variables on the root element, which
- * the editor and the note name read: `--cb-note-size`, `--cb-note-width`
- * and `--cb-note-font`. Their defaults are in index.css.
+ * the editor and the note name read: `--cb-note-size`, `--cb-note-width`,
+ * `--cb-note-font` and `--cb-note-line-height`. Their defaults are in
+ * index.css.
  */
 export function useNoteStyle(): void {
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   const font = noteFontPreference.use();
+  const lineHeight = lineHeightPreference.use();
 
   // Before the paint, so a note never shows in the default style first.
   useLayoutEffect(() => {
@@ -94,5 +117,6 @@ export function useNoteStyle(): void {
     style.setProperty("--cb-note-size", `${size}px`);
     style.setProperty("--cb-note-width", WIDTH[width]);
     style.setProperty("--cb-note-font", FONT[font]);
-  }, [size, width, font]);
+    style.setProperty("--cb-note-line-height", LINE_HEIGHT[lineHeight]);
+  }, [size, width, font, lineHeight]);
 }
