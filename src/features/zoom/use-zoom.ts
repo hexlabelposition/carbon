@@ -4,11 +4,11 @@ import { useT } from "../i18n/i18n";
 import { preference } from "../settings/preference";
 
 /**
- * The zoom levels, the steps of browsers; 1 is 100%. Past these ends the
- * interface is too small to read, or too large to hold a note.
+ * The zoom levels, three on each side of 1, which is 100%. Past these ends
+ * the interface is too small to read, or too large to hold a note.
  */
 export const ZOOM_LEVELS: readonly number[] = [
-  0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5,
+  0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.4,
 ];
 
 /** The scale of the interface, 1 for 100%: always one of `ZOOM_LEVELS`. */
