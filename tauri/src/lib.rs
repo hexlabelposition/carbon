@@ -41,6 +41,73 @@ async fn import_file(app: tauri::AppHandle, source: String, target: String) -> R
     .map_err(|error| error.to_string())
 }
 
+/// A note found by `list_notes`: its path below the folder listed, `/`
+/// separated, its size in bytes and its last change in milliseconds since
+/// the Unix epoch, as the `fs` plugin gives them.
+#[derive(serde::Serialize)]
+struct NoteStat {
+    path: String,
+    size: u64,
+    mtime: u64,
+}
+
+/// Every note under `dir`, with its size and time, in one call: the startup
+/// scan needs them for every note, and the `fs` plugin has one call per file
+/// for them, 1.5 s for 10,000 notes (ARCHITECTURE.md, ADR-028). A note is a
+/// `.md` file; names that start with "." are skipped, folders and all, and so
+/// are symlinks, as the vault tree does. `dir` must be inside a folder the
+/// user opened.
+#[tauri::command]
+async fn list_notes(app: tauri::AppHandle, dir: String) -> Result<Vec<NoteStat>, String> {
+    use tauri_plugin_fs::FsExt;
+
+    #[cfg(windows)]
+    let dir = dir.replace('/', "\\");
+    if !app.fs_scope().is_allowed(&dir) {
+        return Err(format!("Not inside an opened folder: {dir}"));
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let root = std::path::PathBuf::from(&dir);
+        let mut notes = Vec::new();
+        let mut folders = vec![(root, String::new())];
+        while let Some((folder, prefix)) = folders.pop() {
+            for entry in std::fs::read_dir(&folder)? {
+                let entry = entry?;
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if name.starts_with('.') {
+                    continue;
+                }
+                let path = if prefix.is_empty() {
+                    name.clone()
+                } else {
+                    format!("{prefix}/{name}")
+                };
+                // Not followed: a link cannot lead outside the vault or loop.
+                let kind = entry.file_type()?;
+                if kind.is_dir() {
+                    folders.push((entry.path(), path));
+                } else if kind.is_file() && name.to_lowercase().ends_with(".md") {
+                    let meta = entry.metadata()?;
+                    let mtime = meta
+                        .modified()
+                        .ok()
+                        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map_or(0, |since| since.as_millis() as u64);
+                    notes.push(NoteStat {
+                        path,
+                        size: meta.len(),
+                        mtime,
+                    });
+                }
+            }
+        }
+        Ok::<_, std::io::Error>(notes)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())
+}
+
 /// Turns spell checking on in the WebView of Linux, for English and Russian,
 /// the languages of the interface. WebKitGTK checks nothing until its web
 /// context allows it, and Tauri leaves it off; the `spellcheck` attribute of
@@ -79,7 +146,11 @@ pub fn run() {
             let _ = app;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![move_to_trash, import_file])
+        .invoke_handler(tauri::generate_handler![
+            move_to_trash,
+            import_file,
+            list_notes
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

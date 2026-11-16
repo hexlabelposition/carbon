@@ -19,6 +19,14 @@ export interface FileSystem {
   importFile(source: string, target: string): Promise<void>;
   /** Direct children of `dir`, not recursive. */
   list(dir: string): Promise<Entry[]>;
+  /**
+   * Every note under `dir`, in all its folders, with its size and time:
+   * what the startup scan compares with the index, in one call instead of
+   * a `stat` for each note (ADR-028). A note is a `.md` file; names that
+   * start with "." are left out, folders with all inside, as by the vault
+   * tree. Paths are below `dir`, `/` separated, in no order.
+   */
+  listNotes(dir: string): Promise<NoteStat[]>;
   /** Rejects if nothing exists at `path`. */
   stat(path: string): Promise<Stat>;
   exists(path: string): Promise<boolean>;
@@ -46,6 +54,16 @@ export interface Entry {
   /** File or folder name without the parent path. */
   name: string;
   kind: EntryKind;
+}
+
+/** A note found by `listNotes`. */
+export interface NoteStat {
+  /** Below the folder listed, `/` separated. */
+  path: string;
+  /** Size in bytes. */
+  size: number;
+  /** Last modification time, milliseconds since the Unix epoch. */
+  mtime: number;
 }
 
 export interface Stat {

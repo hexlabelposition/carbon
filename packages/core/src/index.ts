@@ -52,6 +52,7 @@ export type {
   SqlDatabase,
   SqlDatabases,
   SqlValue,
+  NoteStat,
   Stat,
   Trash,
   Watcher,

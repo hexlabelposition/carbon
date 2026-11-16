@@ -10,6 +10,7 @@ export type {
   EntryKind,
   FileSystem,
   RemoveOptions,
+  NoteStat,
   Stat,
 } from "./file-system";
 export type { SqlDatabase, SqlDatabases, SqlValue } from "./sql";

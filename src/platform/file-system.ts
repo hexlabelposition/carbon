@@ -1,4 +1,4 @@
-import type { Entry, FileSystem, Stat } from "@carbon/core";
+import type { Entry, FileSystem, NoteStat, Stat } from "@carbon/core";
 import { invoke } from "@tauri-apps/api/core";
 import {
   exists,
@@ -59,6 +59,15 @@ export const tauriFileSystem: FileSystem = {
       else if (entry.isFile) entries.push({ name: entry.name, kind: "file" });
     }
     return entries;
+  },
+
+  async listNotes(dir) {
+    try {
+      return await invoke<NoteStat[]>("list_notes", { dir });
+    } catch (reason) {
+      // A command rejects with a plain string, the core expects an `Error`.
+      throw new Error(String(reason), { cause: reason });
+    }
   },
 
   async stat(path): Promise<Stat> {

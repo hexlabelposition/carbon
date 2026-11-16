@@ -152,18 +152,30 @@ describe("scanVault", () => {
     expect((await store.stamps()).size).toBe(0);
   });
 
-  test("handles a note gone between listing and looking at it", async () => {
-    const { platform, store, scan } = await setup({
-      "a.md": "# A",
-      "b.md": "",
-    });
-    await scan();
+  test("takes sizes and times from one listing, no stat for each note", async () => {
+    const { platform, scan } = await setup({ "a.md": "# A", "b/c.md": "" });
+    let stats = 0;
     const stat = platform.fs.stat.bind(platform.fs);
-    platform.fs.stat = (path) =>
-      path.endsWith("b.md") ? Promise.reject(new Error("ENOENT")) : stat(path);
+    platform.fs.stat = (path) => {
+      stats++;
+      return stat(path);
+    };
+    expect(await scan()).toEqual({ notes: 2, indexed: 2, removed: 0 });
+    expect(await scan()).toEqual({ notes: 2, indexed: 0, removed: 0 });
+    expect(stats).toBe(0);
+  });
 
-    expect(await scan()).toEqual({ notes: 2, indexed: 0, removed: 1 });
-    expect(sorted((await store.stamps()).keys())).toEqual(["a.md"]);
+  test("leaves out hidden files and folders, and files that are not notes", async () => {
+    const { store, scan } = await setup({
+      "a.md": "",
+      ".hidden.md": "",
+      ".git/x.md": "",
+      "d/.e/y.md": "",
+      "d/z.MD": "",
+      "picture.png": "",
+    });
+    expect((await scan()).notes).toBe(2);
+    expect(sorted((await store.stamps()).keys())).toEqual(["a.md", "d/z.MD"]);
   });
 
   test("works in batches and reports progress", async () => {

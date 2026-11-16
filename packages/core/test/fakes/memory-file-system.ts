@@ -1,4 +1,10 @@
-import type { Entry, FileSystem, RemoveOptions, Stat } from "../../src/index";
+import type {
+  Entry,
+  FileSystem,
+  NoteStat,
+  RemoveOptions,
+  Stat,
+} from "../../src/index";
 
 interface FileNode {
   /** Text files hold a string, files written as bytes hold the bytes. */
@@ -83,6 +89,24 @@ export class MemoryFileSystem implements FileSystem {
       }
     }
     return entries.sort((a, b) => (a.name < b.name ? -1 : 1));
+  }
+
+  async listNotes(dir: string): Promise<NoteStat[]> {
+    this.dir(dir);
+    const notes: NoteStat[] = [];
+    for (const [path, file] of this.files) {
+      if (!isWithin(path, dir) || path === dir) continue;
+      const below = path.slice(dir.length + 1);
+      // Hidden names are left out, and everything in a hidden folder.
+      if (below.split("/").some((part) => part.startsWith("."))) continue;
+      if (!/\.md$/i.test(below)) continue;
+      notes.push({
+        path: below,
+        size: toBytes(file.content).length,
+        mtime: file.mtime,
+      });
+    }
+    return notes;
   }
 
   async stat(path: string): Promise<Stat> {
