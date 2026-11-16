@@ -129,18 +129,18 @@
 @keyframes cb-logo-wave {
   0%,
   100% {
-    fill: var(--cb-logo-top);
+    fill: var(--cb-logo-wave-top);
   }
   16.667%,
   83.333% {
-    fill: var(--cb-logo-upper);
+    fill: var(--cb-logo-wave-upper);
   }
   33.333%,
   66.667% {
-    fill: var(--cb-logo-lower);
+    fill: var(--cb-logo-wave-lower);
   }
   50% {
-    fill: var(--cb-logo-bottom);
+    fill: var(--cb-logo-wave-bottom);
   }
 }
 

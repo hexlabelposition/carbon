@@ -35,9 +35,9 @@ const WORDMARK =
 
 /**
  * The cells, each in its color, or all in `fill`. With `wave` the light runs
- * clockwise around the ring: each cell walks through the shades of the ring,
- * a sixth of a turn behind the one before it, so the first frame is the
- * still mark.
+ * clockwise around the ring: each cell walks through the shades of the ring
+ * (`--cb-logo-wave-*`, stronger than the still ones), a sixth of a turn
+ * behind the one before it, so the first frame is laid out as the still mark.
  */
 function Cells({ fill, wave = false }: { fill?: string; wave?: boolean }) {
   return CELLS.map(({ x, y, color, ring }) => (

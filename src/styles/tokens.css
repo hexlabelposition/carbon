@@ -58,6 +58,14 @@
   --cb-logo-bottom: #61676e;
   --cb-logo-center: #2f3338;
   --cb-logo-text: #1e2124;
+  /*
+   * The ring of the logo while the light runs around it (cb-logo-wave):
+   * the same shades pulled further apart, so the wave reads clearly.
+   */
+  --cb-logo-wave-top: #f0f2f4;
+  --cb-logo-wave-upper: #c4c9cf;
+  --cb-logo-wave-lower: #8a9198;
+  --cb-logo-wave-bottom: #50565c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,6 +94,10 @@
     --cb-logo-bottom: #7e858d;
     --cb-logo-center: #ffffff;
     --cb-logo-text: #f4f5f7;
+    --cb-logo-wave-top: #e9ebee;
+    --cb-logo-wave-upper: #babfc5;
+    --cb-logo-wave-lower: #7a8189;
+    --cb-logo-wave-bottom: #43484e;
   }
 }
 
@@ -114,4 +126,8 @@
   --cb-logo-bottom: #7e858d;
   --cb-logo-center: #ffffff;
   --cb-logo-text: #f4f5f7;
+  --cb-logo-wave-top: #e9ebee;
+  --cb-logo-wave-upper: #babfc5;
+  --cb-logo-wave-lower: #7a8189;
+  --cb-logo-wave-bottom: #43484e;
 }
