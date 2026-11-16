@@ -96,30 +96,23 @@ export function NoteEditor({
           onRetry={actions.saveNow}
           onResolve={() => setPostponed(false)}
         />
-        <Tooltip label={t("editor.sourceHint")} shortcut={SOURCE_MODE_SHORTCUT}>
-          <button
-            type="button"
-            aria-pressed={sourceMode}
-            className={`h-8 shrink-0 rounded-md px-2.5 text-small transition-colors duration-100 hover:bg-selected hover:text-fg ${
-              sourceMode ? "bg-selected text-fg" : "text-muted"
-            }`}
-            onClick={onToggleSourceMode}
-          >
-            {t("editor.source")}
-          </button>
-        </Tooltip>
-        <Tooltip label={t("editor.readHint")}>
-          <button
-            type="button"
-            aria-pressed={readingMode}
-            className={`h-8 shrink-0 rounded-md px-2.5 text-small transition-colors duration-100 hover:bg-selected hover:text-fg ${
-              readingMode ? "bg-selected text-fg" : "text-muted"
-            }`}
-            onClick={onToggleReadingMode}
-          >
-            {t("editor.read")}
-          </button>
-        </Tooltip>
+        <ModeButton
+          label={t("editor.source")}
+          hint={t("editor.sourceHint")}
+          shortcut={SOURCE_MODE_SHORTCUT}
+          pressed={sourceMode}
+          onToggle={onToggleSourceMode}
+        >
+          <path d="M5 4.5 1.5 8 5 11.5M11 4.5 14.5 8 11 11.5M9.25 2.75l-2.5 10.5" />
+        </ModeButton>
+        <ModeButton
+          label={t("editor.read")}
+          hint={t("editor.readHint")}
+          pressed={readingMode}
+          onToggle={onToggleReadingMode}
+        >
+          <path d="M8 4.25C6.5 3.1 4.5 2.75 1.75 2.75v9.75c2.75 0 4.75.35 6.25 1.5 1.5-1.15 3.5-1.5 6.25-1.5V2.75C11.5 2.75 9.5 3.1 8 4.25zM8 4.25V14" />
+        </ModeButton>
       </header>
       {images.error !== null && (
         <EditorAlert message={images.error} onDismiss={images.dismissError} />
@@ -194,6 +187,55 @@ function EditorAlert({
         {t("common.dismiss")}
       </button>
     </div>
+  );
+}
+
+/**
+ * A mode of the note that is on or off, as an icon in a square, lit while
+ * on, as the buttons of the toolbar: source (code brackets) and reading
+ * (an open book). The name is for screen readers, the hint in the tooltip.
+ */
+function ModeButton({
+  label,
+  hint,
+  shortcut,
+  pressed,
+  onToggle,
+  children,
+}: {
+  label: string;
+  hint: string;
+  shortcut?: string;
+  pressed: boolean;
+  onToggle: () => void;
+  /** The shapes of the icon, drawn on 16 by 16. */
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip label={hint} shortcut={shortcut}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        className={`flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-100 hover:bg-selected hover:text-fg ${
+          pressed ? "bg-selected text-fg" : "text-muted"
+        }`}
+        onClick={onToggle}
+      >
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {children}
+        </svg>
+      </button>
+    </Tooltip>
   );
 }
 
