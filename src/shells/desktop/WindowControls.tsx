@@ -233,10 +233,12 @@ export function WindowControls({
       className="fixed top-0 right-0 z-40 flex h-12 border-b border-line bg-panel"
     >
       {panels !== undefined && (
-        // A little apart from the buttons of the window.
+        // Set off by a line at each side: from the tabs or the right panel
+        // before it, and from the buttons of the window after it. Over the
+        // whole screen those fold away, and the line after them fades.
         <div
-          className={`flex transition-[margin] duration-200 ease-out motion-reduce:transition-none ${
-            fullscreen ? "mr-0" : "mr-2"
+          className={`flex border-x border-l-line px-1.5 transition-colors duration-200 ease-out motion-reduce:transition-none ${
+            fullscreen ? "border-r-transparent" : "border-r-line"
           }`}
         >
           {panels}
