@@ -129,7 +129,7 @@ Done when: tags and frontmatter are indexed, visible and usable for navigation.
 
 Done when: the graph of a 10k-note vault opens and stays smooth while panning and zooming.
 
-- [ ] **C-501** (P0) Core: `graph.global` (nodes, edges) and `graph.local` (around a note, depth N)
+- [x] **C-501** (P0) Core: `graph.global` (nodes, edges) and `graph.local` (around a note, depth N)
 - [ ] **C-502** (P0) Prototype renderers with a 10k-node vault and pick one (open question 2)
 - [ ] **C-503** (P0) Graph view: force layout in a Web Worker, pan, zoom, click to open a note
 - [ ] **C-504** (P0) Local graph panel for the current note
