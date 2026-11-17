@@ -16,6 +16,15 @@ export interface GraphOptions {
   missing?: boolean;
 }
 
+/** Which notes the graph of the vault shows. */
+export interface GlobalGraphOptions extends GraphOptions {
+  /**
+   * Only the notes with this tag or one nested in it: `area` keeps
+   * `#area/topic` too. Case and a "#" in front are ignored.
+   */
+  tag?: string;
+}
+
 /** How many links away from its note a local graph reaches by default. */
 export const LOCAL_GRAPH_DEPTH = 1;
 
@@ -28,9 +37,16 @@ export const LOCAL_GRAPH_DEPTH = 1;
 export class Graph {
   constructor(private readonly context: GraphContext) {}
 
-  /** Every note of the vault and the links between them. */
-  async global(options: GraphOptions = {}): Promise<NoteGraph> {
-    return (await this.context.index()).graph(options.missing ?? false);
+  /**
+   * Every note of the vault and the links between them, or those of the
+   * notes with a tag.
+   */
+  async global(options: GlobalGraphOptions = {}): Promise<NoteGraph> {
+    const tag = options.tag?.trim() ?? "";
+    return (await this.context.index()).graph(
+      options.missing ?? false,
+      tag === "" ? null : tag,
+    );
   }
 
   /**

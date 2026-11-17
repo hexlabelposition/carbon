@@ -465,16 +465,24 @@ export class IndexStore {
   /**
    * The graph of the whole vault: every note, and an edge from each note
    * to each note it links to. With `missing`, also the notes that links
-   * point to but that do not exist (`missingNotes`).
+   * point to but that do not exist (`missingEdges`). With `tag`, only the
+   * notes with that tag or one nested in it, as `notesWithTag` finds
+   * them, the links between them, and the missing notes they link to.
    */
-  async graph(missing: boolean): Promise<NoteGraph> {
-    return this.graphOf(null, missing);
+  async graph(missing: boolean, tag: string | null = null): Promise<NoteGraph> {
+    if (tag === null) return this.graphOf(null, missing);
+    const rows = await this.db.select<{ id: number }>(
+      "SELECT note_id AS id FROM tag_parts WHERE tag_key = ?",
+      [matchKey(tag.replace(/^#/, ""))],
+    );
+    const ids = rows.map((row) => row.id);
+    return this.graphOf({ notes: new Set(ids), sources: ids }, missing);
   }
 
   /**
    * The graph around the note at `path`: the notes at most `depth` links
    * away from it, whichever way the links go, and the edges between
-   * them. With `missing`, also the missing notes (`missingNotes`) that
+   * them. With `missing`, also the missing notes (`missingEdges`) that
    * notes less than `depth` links away link to: a missing note is one
    * link further. Empty if the note is not indexed.
    */

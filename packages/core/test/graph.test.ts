@@ -258,3 +258,61 @@ describe("vault.graph", () => {
     vault.close();
   });
 });
+
+describe("graph of the notes with a tag", () => {
+  const tagged = () =>
+    openStore(
+      note("a.md", "#area/topic [[b]] [[c]] [[gone]]"),
+      note("b.md", "---\ntags: [Area]\n---\n[[a]]"),
+      note("c.md", "#other [[a]]"),
+      note("d.md", "#areas [[a]]"),
+    );
+
+  test("only those notes, with nested tags, and the links between them", async () => {
+    const store = await tagged();
+    expect(shape(await store.graph(false, "area"))).toEqual({
+      nodes: ["a.md", "b.md"],
+      edges: ["a.md>b.md*1", "b.md>a.md*1"],
+    });
+  });
+
+  test("ignores case and a # in front", async () => {
+    const store = await tagged();
+    expect(shape(await store.graph(false, "#AREA/topic")).nodes).toEqual([
+      "a.md",
+    ]);
+  });
+
+  test("with the missing notes they link to", async () => {
+    const store = await tagged();
+    expect(shape(await store.graph(true, "area")).nodes).toEqual([
+      "a.md",
+      "b.md",
+      "gone.md?",
+    ]);
+  });
+
+  test("empty for a tag no note has", async () => {
+    const store = await tagged();
+    expect(await store.graph(true, "nope")).toEqual({ nodes: [], edges: [] });
+  });
+
+  test("vault.graph.global takes the tag, a blank one being none", async () => {
+    const platform = createMemoryPlatform({
+      "/v/a.md": "#x [[b]]",
+      "/v/b.md": "#x",
+      "/v/c.md": "[[a]]",
+    });
+    await platform.fs.mkdir("/v");
+    const vault = await Vault.open("/v", platform, { changeDelayMs: 5 });
+    await vault.indexed();
+    expect(shape(await vault.graph.global({ tag: "x" })).nodes).toEqual([
+      "a.md",
+      "b.md",
+    ]);
+    expect(shape(await vault.graph.global({ tag: "  " })).nodes).toHaveLength(
+      3,
+    );
+    vault.close();
+  });
+});
