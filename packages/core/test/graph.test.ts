@@ -35,10 +35,10 @@ describe("graph of the vault", () => {
     );
     const graph = await store.graph(false);
     expect(graph.nodes).toEqual([
-      { path: "a.md", title: "a", missing: false },
-      { path: "b.md", title: "b", missing: false },
-      { path: "dir/c.md", title: "c", missing: false },
-      { path: "lonely.md", title: "lonely", missing: false },
+      { path: "a.md", title: "a", missing: false, tags: [] },
+      { path: "b.md", title: "b", missing: false, tags: [] },
+      { path: "dir/c.md", title: "c", missing: false, tags: [] },
+      { path: "lonely.md", title: "lonely", missing: false, tags: [] },
     ]);
     expect(shape(graph).edges).toEqual([
       "a.md>dir/c.md*1",
@@ -74,6 +74,7 @@ describe("graph of the vault", () => {
       path: "missing.md",
       title: "missing",
       missing: true,
+      tags: [],
     });
   });
 
@@ -314,5 +315,25 @@ describe("graph of the notes with a tag", () => {
       3,
     );
     vault.close();
+  });
+});
+
+describe("tags of the nodes", () => {
+  test("each note with its tags in order, a missing note with none", async () => {
+    const store = await openStore(
+      note("a.md", "---\ntags: [Zeta, area/topic]\n---\n#idea [[gone]] [[b]]"),
+      note("b.md"),
+    );
+    const graph = await store.graph(true);
+    expect(graph.nodes.map((node) => [node.path, node.tags])).toEqual([
+      ["a.md", ["Zeta", "area/topic", "idea"]],
+      ["b.md", []],
+      ["gone.md", []],
+    ]);
+    const local = await store.localGraph("b.md", 1, false);
+    expect(local.nodes.map((node) => node.tags)).toEqual([
+      ["Zeta", "area/topic", "idea"],
+      [],
+    ]);
   });
 });
