@@ -17,6 +17,7 @@ import {
 import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
+import { scrollParentOf } from "./glide";
 import { findReplace, openReplace } from "./find-replace";
 import { keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
@@ -435,7 +436,7 @@ function editable(on: boolean) {
 /**
  * Runs `change`, then scrolls so that the line at the top of the view is
  * where it was before, for a change that makes lines taller or shorter.
- * At once, not gliding: the scroll may be set to glide.
+ * At once, not gliding, whatever the scroll is set to.
  */
 function keepingPlace(view: EditorView, change: () => void): void {
   const scroller = scrollParentOf(view.dom);
@@ -459,13 +460,4 @@ function keepingPlace(view: EditorView, change: () => void): void {
       });
     },
   });
-}
-
-/** The element that scrolls `element` up and down, if one does. */
-function scrollParentOf(element: HTMLElement): HTMLElement | null {
-  for (let at = element.parentElement; at !== null; at = at.parentElement) {
-    const { overflowY } = getComputedStyle(at);
-    if (overflowY === "auto" || overflowY === "scroll") return at;
-  }
-  return null;
 }

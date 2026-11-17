@@ -2,6 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { Facet, type EditorState } from "@codemirror/state";
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { glideTo } from "./glide";
 import { wikiLinkLabel } from "./wiki-link";
 
 /** A heading of the note, as the outline shows it. */
@@ -104,11 +105,10 @@ export function revealHeading(view: EditorView, index: number): void {
   const heading = headingsIn(view.state)[index];
   if (heading === undefined) return;
   const line = view.state.doc.lineAt(heading.from);
-  view.dispatch({
-    selection: { anchor: line.to },
-    effects: EditorView.scrollIntoView(line.from, { y: "start", yMargin: 24 }),
-  });
+  view.dispatch({ selection: { anchor: line.to } });
   view.focus();
+  // Gliding, as the jump to a heading far away is easier to follow so.
+  glideTo(view, line.from, 24);
 }
 
 /** Blocks that hold no headings: the walk does not go into them. */

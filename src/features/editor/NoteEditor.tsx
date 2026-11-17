@@ -120,9 +120,10 @@ export function NoteEditor({
         <EditorAlert message={links.error} onDismiss={links.dismissError} />
       )}
       {/* One scroll for the name and the text: the name scrolls away.
-          It glides when the editor scrolls it, by setting `scrollTop` here,
-          for Page Up and Page Down and for jumps to a heading or a match.
-          The wheel is the system's, as in every other list. */}
+          No CSS glide: on a long jump the editor measures the lines it
+          passes and sets `scrollTop` again to keep its place, and each of
+          those would start a CSS glide anew, so the scroll stopped short.
+          The outline glides by itself instead (`glideTo`). */}
       <ScrollArea
         rootClassName="flex-1"
         // The name and the editor fill the height: a click below the text
@@ -135,7 +136,7 @@ export function NoteEditor({
         onMouseDown={(event) => {
           if (readingMode) event.currentTarget.focus({ preventScroll: true });
         }}
-        className="flex flex-1 flex-col scroll-smooth"
+        className="flex flex-1 flex-col"
       >
         <NoteTitleField title={title} readOnly={readingMode} />
         <MarkdownEditor
