@@ -162,6 +162,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-618** (P2) A setting for where deleting goes, the vault trash or the system trash; taking items out of the vault trash moves them to the system trash or deletes them for good
 - [x] **C-619** (P2) Search all notes in a dialog, opened by Ctrl+Shift+F or the toolbar, instead of a sidebar view; the last query stays
 - [x] **C-620** (P2) Favorites: notes and images kept in `.carbon/favorites.json`, a sidebar view with a toolbar button, "Add to favorites" in the file tree menu and the palette
+- [x] **C-621** (P1) Open the vault left open at the last start; the start screen if the user closed it or it is gone
 
 ---
 

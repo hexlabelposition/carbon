@@ -263,7 +263,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 
 ### config
 
-- App settings (recent vaults, last opened note, theme) in the app config directory, through the `SettingsStore` interface.
+- App settings (recent vaults, last opened note, theme) in the app config directory, through the `SettingsStore` interface. They also hold the vault left open (C-621): the app opens it again at start, showing nothing until then rather than the start screen; a vault the user closed, or one that cannot be opened any more, leads to the start screen.
 - Vault settings in `.carbon/config.json`.
 
 ## 6. Public API and events
