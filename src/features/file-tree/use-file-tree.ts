@@ -1,6 +1,7 @@
 import { DRAFTS_FOLDER, type TreeNode, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { imageTypeOf } from "../image/image-file";
+import { deleteToPreference } from "../trash/delete-to";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
@@ -91,7 +92,7 @@ export interface FileTree {
   commitEdit(text: string): void;
   cancelEdit(): void;
 
-  /** Moves the selection to the trash of the vault. */
+  /** Moves the selection to the trash the settings choose. */
   remove(): void;
   /** After a failed `remove`: deletes that entry for good. */
   removeForGood(): void;
@@ -309,9 +310,10 @@ export function useFileTree(
   }
 
   function removeNode(node: TreeNode, permanent: boolean): Promise<void> {
+    const options = { permanent, system: isSystem() };
     return node.kind === "folder"
-      ? vault.folders.remove(node.path, { permanent })
-      : vault.notes.remove(node.path, { permanent });
+      ? vault.folders.remove(node.path, options)
+      : vault.notes.remove(node.path, options);
   }
 
   const canMove = (path: string, folder: string) =>
@@ -428,9 +430,10 @@ export function useFileTree(
       if (parentOf(change.path) !== "") expand(parentOf(change.path));
     } else {
       // To the trash, not for good: the copy can still be got back.
+      const options = { system: isSystem() };
       await (change.folder
-        ? vault.folders.remove(change.path)
-        : vault.notes.remove(change.path));
+        ? vault.folders.remove(change.path, options)
+        : vault.notes.remove(change.path, options));
       forget(change.path);
     }
   }
@@ -626,6 +629,11 @@ function freeName(node: TreeNode, taken: ReadonlySet<string>): string {
     const name = `${base} ${n}${ending}`;
     if (!taken.has(name.toLowerCase())) return name;
   }
+}
+
+/** Whether deleting goes to the system trash, as the settings say. */
+function isSystem(): boolean {
+  return deleteToPreference.get() === "system";
 }
 
 /** A note is a `.md` file, so the user does not have to type the ending. */

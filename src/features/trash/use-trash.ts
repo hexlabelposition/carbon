@@ -13,13 +13,19 @@ export interface TrashView {
   list: TrashListState;
   /** Puts an item back where it was (`VaultTrash.restore`). */
   restore(item: TrashItem): void;
-  /** Asks before deleting an item, or everything, for good. */
+  /**
+   * Asks what to do with an item, or with everything: to the system
+   * trash, or deleted for good.
+   */
   askRemove(item: TrashItem): void;
   askEmpty(): void;
   /** What is waiting for a yes, or `null`. */
   confirm: TrashConfirm | null;
-  /** Deletes for good what `confirm` names. */
-  confirmed(): void;
+  /**
+   * Takes what `confirm` names out of the trash: to the system trash with
+   * `system`, else deleted for good.
+   */
+  confirmed(system: boolean): void;
   cancel(): void;
   /** The last thing that went wrong, in words for the user. */
   error: string | null;
@@ -67,14 +73,14 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
     askRemove: (item) => setConfirm({ kind: "item", item }),
     askEmpty: () => setConfirm({ kind: "all" }),
     confirm,
-    confirmed() {
+    confirmed(system) {
       const current = confirm;
       setConfirm(null);
       if (current === null) return;
       run(() =>
         current.kind === "all"
-          ? vault.trash.empty()
-          : vault.trash.remove(current.item.id),
+          ? vault.trash.empty({ system })
+          : vault.trash.remove(current.item.id, { system }),
       );
     },
     cancel: () => setConfirm(null),

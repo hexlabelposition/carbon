@@ -8,8 +8,8 @@ import type { TrashView } from "./use-trash";
 /**
  * The trash of the vault: what was deleted, the latest first, each with
  * where it was and when it went. An item can be put back where it was or
- * deleted for good; the whole trash can be emptied. Deleting for good
- * asks first.
+ * taken out of the trash, and the whole trash emptied: what is taken out
+ * goes to the system trash or is deleted for good, as asked each time.
  */
 export function TrashPanel({ trash }: { trash: TrashView }) {
   const t = useT();
@@ -75,7 +75,7 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
                   <path d="M3 6.5h6.5a3.5 3.5 0 0 1 0 7H6M5.5 4L3 6.5 5.5 9" />
                 </RowButton>
                 <RowButton
-                  label={t("trash.deleteForGood")}
+                  label={t("trash.discard")}
                   danger
                   onClick={() => trash.askRemove(item)}
                 >
@@ -144,15 +144,20 @@ function Notice({ trash }: { trash: TrashView }) {
             ? t("trash.confirmEmpty")
             : t("trash.confirmDelete", { name: labelOf(confirm.item) })}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="h-6 rounded-sm bg-raise px-2 hover:bg-selected"
+            onClick={() => trash.confirmed(true)}
+          >
+            {t("trash.toSystem")}
+          </button>
           <button
             type="button"
             className="h-6 rounded-sm bg-danger px-2 text-on-danger"
-            onClick={trash.confirmed}
+            onClick={() => trash.confirmed(false)}
           >
-            {t(
-              confirm.kind === "all" ? "trash.emptyAll" : "tree.deleteForGood",
-            )}
+            {t("trash.deleteForGood")}
           </button>
           <button
             type="button"

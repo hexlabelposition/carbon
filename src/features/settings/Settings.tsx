@@ -18,6 +18,7 @@ import {
   type MessageKey,
 } from "../i18n/i18n";
 import { THEMES, themePreference, type Theme } from "../theme/use-theme";
+import { DELETE_TO, deleteToPreference } from "../trash/delete-to";
 import {
   INDENTS,
   indentPreference,
@@ -291,6 +292,7 @@ function GroupTabs({
 function GeneralSettings() {
   const t = useT();
   const language = languagePreference.use();
+  const deleteTo = deleteToPreference.use();
   return (
     <Rows>
       <Row label={t("settings.language")}>
@@ -302,6 +304,17 @@ function GeneralSettings() {
             label: t(LANGUAGE_LABELS[value]),
           }))}
           onChange={languagePreference.set}
+        />
+      </Row>
+      <Row label={t("settings.deleteTo")}>
+        <SettingSelect
+          label={t("settings.deleteTo")}
+          value={deleteTo}
+          items={DELETE_TO.map(({ value, label }) => ({
+            value,
+            label: t(label),
+          }))}
+          onChange={deleteToPreference.set}
         />
       </Row>
     </Rows>
