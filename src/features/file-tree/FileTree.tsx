@@ -490,7 +490,7 @@ function TreeMenu({
       <ContextMenu.Positioner className="z-50 outline-none">
         <ContextMenu.Popup
           finalFocus={finalFocus}
-          className="min-w-44 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+          className="min-w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
         >
           <ContextMenu.Item className={menuItem} onClick={onNewNote}>
             {t("tree.newNote")}
