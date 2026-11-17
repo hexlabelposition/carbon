@@ -158,7 +158,8 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [ ] **C-614** (P2) Errors from the core as codes, so the interface can show them in its language
 - [x] **C-615** (P1) Make `.carbon/` when a vault opens
 - [x] **C-616** (P1) Drafts: notes in `.carbon/drafts`, indexed but out of the file tree, with a panel and a toolbar button (ADR-031)
-- [x] **C-617** (P1) Trash inside the vault, `.carbon/trash`: restore, delete for good, empty, with a panel and a toolbar button; replaces the system trash (ADR-031)
+- [x] **C-617** (P1) Trash inside the vault, `.carbon/trash`: restore, delete for good, empty, with a panel and a toolbar button (ADR-031)
+- [x] **C-618** (P2) A setting for where deleting goes, the vault trash or the system trash; taking items out of the vault trash moves them to the system trash or deletes them for good
 
 ---
 
