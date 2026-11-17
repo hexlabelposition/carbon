@@ -20,6 +20,7 @@ import {
   isVaultPath,
   normalizeRoot,
 } from "./path";
+import { Favorites } from "./favorites";
 import { VaultTrash } from "./trash";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
@@ -86,6 +87,8 @@ export interface VaultEvents {
   tree: undefined;
   /** The trash got, gave back or dropped something: `trash.list()` differs. */
   trash: undefined;
+  /** The favorites changed: `favorites.list()` differs. */
+  favorites: undefined;
 }
 
 export interface VaultOptions {
@@ -114,6 +117,8 @@ export class Vault {
   readonly graph: Graph;
   /** Deleted notes, files and folders, until restored or emptied. */
   readonly trash: VaultTrash;
+  /** The notes and files marked as favorites. */
+  readonly favorites: Favorites;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
@@ -156,6 +161,12 @@ export class Vault {
       onChange: () => this.emitter.emit("trash", undefined),
     });
     this.trash = trash;
+    const favorites = new Favorites({
+      root,
+      fs,
+      onChange: () => this.emitter.emit("favorites", undefined),
+    });
+    this.favorites = favorites;
 
     this.root = root;
     this.platform = platform;
@@ -175,7 +186,7 @@ export class Vault {
       read: (path) => this.notes.read(path),
       write: rewrite,
     });
-    const context = { root, fs, trash, systemTrash, own };
+    const context = { root, fs, trash, systemTrash, favorites, own };
     this.notes = new Notes(context, rewriter);
     this.folders = new Folders(context, rewriter);
     this.attachments = new Attachments(context);
