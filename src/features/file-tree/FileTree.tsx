@@ -17,12 +17,19 @@ import {
   type TreeScope,
 } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
+import { ScrollArea } from "../ui/ScrollArea";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
 import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { canBeFavorite, type FavoritesView } from "../favorites/use-favorites";
+
+/**
+ * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
+ * with the margin that keeps the bar off the resize handle.
+ */
+const TREE_SCROLLBAR_ROOM = "group-data-has-overflow-y/scroll:pr-4.5";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -216,15 +223,19 @@ export function FileTree({
           className="flex min-h-0 flex-1 flex-col"
           onContextMenu={onContextMenu}
         >
-          <div
+          <ScrollArea
             ref={viewportRef}
+            rootClassName="flex-1"
+            // Off the edge of the sidebar: the handle that resizes it is
+            // there, as wide (`w-1.5`, ResizeHandle).
+            scrollbarClassName="mr-1.5"
             role="tree"
             aria-label={t(scope === "drafts" ? "shell.drafts" : "shell.files")}
             aria-activedescendant={
               tree.selected === null ? undefined : rowId(tree.selected)
             }
             tabIndex={0}
-            className={`min-h-0 flex-1 overflow-auto outline-none focus-visible:bg-bg/40 ${
+            className={`flex-1 focus-visible:bg-bg/40 ${
               dropFolder === tree.root ? "bg-raise" : ""
             }`}
             onScroll={onScroll}
@@ -241,7 +252,10 @@ export function FileTree({
                 {t(scope === "drafts" ? "drafts.empty" : "tree.empty")}
               </p>
             ) : (
-              <div className="px-2" style={{ height: totalHeight }}>
+              <div
+                className={`px-2 ${TREE_SCROLLBAR_ROOM}`}
+                style={{ height: totalHeight }}
+              >
                 <div
                   className="flex flex-col"
                   style={{
@@ -354,7 +368,7 @@ export function FileTree({
                 </div>
               </div>
             )}
-          </div>
+          </ScrollArea>
         </ContextMenu.Trigger>
         <TreeMenu
           target={menuTarget}
