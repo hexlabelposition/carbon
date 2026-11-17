@@ -35,12 +35,15 @@ export function AppSettingsProvider({
   );
   const [loaded, setLoaded] = useState(false);
   const [recentVaults, setRecentVaults] = useState(NO_VAULTS);
+  const [openVault, setOpenVaultState] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void ready.then((settings) => {
       if (cancelled) return;
       setRecentVaults(settings?.recentVaults ?? NO_VAULTS);
+      // Read once: what is open from now on is only saved, for next time.
+      setOpenVaultState(settings?.openVault ?? null);
       setLoaded(true);
     });
     return () => {
@@ -71,6 +74,10 @@ export function AppSettingsProvider({
     (root: string) => change((s) => s.removeRecentVault(root)),
     [change],
   );
+  const setOpenVault = useCallback(
+    (root: string | null) => change((s) => s.setOpenVault(root)),
+    [change],
+  );
   const setLastOpenedNote = useCallback(
     (root: string, note: NotePath | null) =>
       change((s) => s.setLastOpenedNote(root, note)),
@@ -87,16 +94,20 @@ export function AppSettingsProvider({
     () => ({
       loaded,
       recentVaults,
+      openVault,
       addRecentVault,
       removeRecentVault,
+      setOpenVault,
       setLastOpenedNote,
       moveNotes,
     }),
     [
       loaded,
       recentVaults,
+      openVault,
       addRecentVault,
       removeRecentVault,
+      setOpenVault,
       setLastOpenedNote,
       moveNotes,
     ],

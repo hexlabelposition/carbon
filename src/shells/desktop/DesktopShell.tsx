@@ -144,7 +144,7 @@ export function DesktopShell({
   useWindowShape(frame);
   useFullscreenShortcut(frame);
   const t = useT();
-  const { vault, close } = useVaultSession();
+  const { vault, close, restoring } = useVaultSession();
   const { recentVaults } = useAppSettings();
   const sidebar = useSidebar();
   const { collapsed, toggle: toggleSidebar } = sidebar;
@@ -307,7 +307,9 @@ export function DesktopShell({
           <main className="flex min-w-0 flex-1 flex-col">
             <DragStrip room roomStart />
             <div className="min-h-0 flex-1 overflow-auto">
-              <StartScreen />
+              {/* While the vault left open at the last start is opened
+                  again, nothing: the start screen would only flash. */}
+              {!restoring && <StartScreen />}
             </div>
           </main>
         ) : (

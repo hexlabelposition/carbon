@@ -7,6 +7,11 @@ export interface VaultSession {
   vault: Vault | null;
   /** True while a folder is being picked, created or opened. */
   opening: boolean;
+  /**
+   * True at start while the vault that was open when the app was closed
+   * is opened again: neither it nor the start screen is shown yet.
+   */
+  restoring: boolean;
   /** Why the last attempt to open a vault failed. */
   error: VaultError | null;
   /** Asks the user for a folder and opens it. Does nothing if cancelled. */
