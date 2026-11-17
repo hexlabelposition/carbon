@@ -44,14 +44,19 @@
     "@tauri-apps/plugin-fs": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "^2.6.0",
+    "d3-force": "3.0.0",
     "fuzzysort": "^4.0.2",
+    "graphology": "0.26.0",
+    "pixi.js": "8.22.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "sigma": "4.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/cli": "^2",
+    "@types/d3-force": "3.0.10",
     "@types/node": "^26.6.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -60,6 +65,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "graphology-types": "0.24.8",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
