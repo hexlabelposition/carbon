@@ -1,9 +1,27 @@
-import type { TreeNode, Vault } from "@carbon/core";
+import { DRAFTS_FOLDER, type TreeNode, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { imageTypeOf } from "../image/image-file";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
+
+/**
+ * What a tree shows: the vault without its hidden folders, or the drafts
+ * (ADR-031), which are a tree of their own with `DRAFTS_FOLDER` as root.
+ */
+export type TreeScope = "vault" | "drafts";
+
+/** The folder at the root of a tree of `scope`; "" is the vault root. */
+export function scopeRoot(scope: TreeScope): string {
+  return scope === "drafts" ? DRAFTS_FOLDER : "";
+}
+
+/** Whether `path` belongs in a tree of `scope`. */
+export function inScope(path: string, scope: TreeScope): boolean {
+  return scope === "drafts"
+    ? path.startsWith(`${DRAFTS_FOLDER}/`)
+    : !path.startsWith(".");
+}
 
 /** What is being typed into the tree: a new name, or a name for a new item. */
 export type TreeEdit =
@@ -45,6 +63,8 @@ export interface FileTree {
   canPaste: boolean;
   /** Whether the selection is in a folder and could go to the root. */
   canMoveToRoot: boolean;
+  /** The root of the tree: "" for the vault, the drafts folder for drafts. */
+  root: string;
   /** The last thing that went wrong, in words for the user. */
   error: string | null;
   /** Set when moving to the trash failed: the user may delete for good. */
@@ -71,7 +91,7 @@ export interface FileTree {
   commitEdit(text: string): void;
   cancelEdit(): void;
 
-  /** Moves the selection to the system trash. */
+  /** Moves the selection to the trash of the vault. */
   remove(): void;
   /** After a failed `remove`: deletes that entry for good. */
   removeForGood(): void;
@@ -88,15 +108,20 @@ export interface FileTree {
    * selection. A copy whose name is taken there gets a number: "Note 1".
    */
   paste(): void;
-  /** Moves the selection to the vault root. */
+  /** Moves the selection to the root of the tree. */
   moveToRoot(): void;
+  /**
+   * Moves the selection to the other tree: a note of the vault to the
+   * drafts, a draft to the vault root.
+   */
+  moveAcross(): void;
   /** Forgets what was cut or copied. */
   cancelCut(): void;
   /** Whether there is a change for `undo` to take back. */
   canUndo: boolean;
   /**
    * Takes back the last move, rename or copy made in the tree: moves the
-   * entry back, or moves the copy to the system trash.
+   * entry back, or moves the copy to the trash.
    */
   undo(): void;
   /** Whether there is a change taken back for `redo` to make again. */
@@ -106,8 +131,12 @@ export interface FileTree {
 }
 
 /** Everything the file tree does; the component only shows it. */
-export function useFileTree(vault: Vault): FileTree {
+export function useFileTree(
+  vault: Vault,
+  scope: TreeScope = "vault",
+): FileTree {
   const active = useWorkspace();
+  const root = scopeRoot(scope);
   const [tree, setTree] = useState<TreeNode[] | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(active.path);
@@ -160,7 +189,7 @@ export function useFileTree(vault: Vault): FileTree {
   useEffect(() => {
     // An older listing must not replace a newer one.
     let stale = false;
-    vault.tree().then(
+    (scope === "drafts" ? vault.drafts() : vault.tree()).then(
       (nodes) => {
         if (!stale) setTree(nodes);
       },
@@ -171,7 +200,13 @@ export function useFileTree(vault: Vault): FileTree {
     return () => {
       stale = true;
     };
-  }, [vault, version]);
+  }, [vault, scope, version]);
+
+  /** The node at `path`, which is relative to the vault root. */
+  const find = (path: string): TreeNode | undefined =>
+    tree === null || !isWithin(path, root) || path === root
+      ? undefined
+      : findNode(tree, root === "" ? path : path.slice(root.length + 1));
 
   /**
    * The open note as the tree shows it: once the listing has it. A note
@@ -182,9 +217,9 @@ export function useFileTree(vault: Vault): FileTree {
    */
   const [shownActive, setShownActive] = useState(active.path);
   const nextActive =
-    active.path === null
+    active.path === null || !inScope(active.path, scope)
       ? null
-      : tree === null || findNode(tree, active.path) !== undefined
+      : tree === null || find(active.path) !== undefined
         ? active.path
         : shownActive;
   if (nextActive !== shownActive) setShownActive(nextActive);
@@ -195,23 +230,22 @@ export function useFileTree(vault: Vault): FileTree {
   if (nextActive !== null && nextActive !== followed) {
     setFollowed(nextActive);
     setSelected(nextActive);
-    setExpanded((current) => withParents(current, nextActive));
+    setExpanded((current) => withParents(current, nextActive, root));
   }
 
   const rows = useMemo(
-    () => flatten(tree ?? [], expanded, edit),
-    [tree, expanded, edit],
+    () => flatten(tree ?? [], expanded, edit, scopeRoot(scope)),
+    [tree, expanded, edit, scope],
   );
   const selectedIndex = rows.findIndex(
     (row) => row.kind === "node" && row.node.path === selected,
   );
-  const selectedNode =
-    selected === null || tree === null ? undefined : findNode(tree, selected);
+  const selectedNode = selected === null ? undefined : find(selected);
 
   /** The folder new and pasted things go to: where the selection is. */
   const targetFolder =
     selectedNode === undefined
-      ? ""
+      ? root
       : selectedNode.kind === "folder"
         ? selectedNode.path
         : parentOf(selectedNode.path);
@@ -284,7 +318,7 @@ export function useFileTree(vault: Vault): FileTree {
     parentOf(path) !== folder && !isWithin(folder, path);
 
   function move(path: string, folder: string) {
-    const node = tree === null ? undefined : findNode(tree, path);
+    const node = find(path);
     if (node === undefined || !canMove(path, folder)) return;
     const to = joinPath(folder, node.name);
     void run(async () => {
@@ -296,21 +330,21 @@ export function useFileTree(vault: Vault): FileTree {
         to,
         folder: node.kind === "folder",
       });
-      if (folder !== "") expand(folder);
+      if (folder !== root && inScope(to, scope)) expand(folder);
     });
   }
 
   /** Copies `path` into `folder`, under a free name. */
   function copy(path: string, folder: string) {
-    const node = tree === null ? undefined : findNode(tree, path);
+    const node = find(path);
     if (node === undefined || tree === null) return;
     if (isWithin(folder, path)) {
       setError(t("tree.copyIntoItself"));
       return;
     }
-    const parent = folder === "" ? undefined : findNode(tree, folder);
+    const parent = find(folder);
     const siblings: readonly TreeNode[] =
-      folder === "" ? tree : parent?.kind === "folder" ? parent.children : [];
+      folder === root ? tree : parent?.kind === "folder" ? parent.children : [];
     const taken = new Set(siblings.map((n) => n.name.toLowerCase()));
     const to = joinPath(folder, freeName(node, taken));
     void run(async () => {
@@ -324,7 +358,7 @@ export function useFileTree(vault: Vault): FileTree {
         folder: node.kind === "folder",
       });
       setSelected(to);
-      if (folder !== "") expand(folder);
+      if (folder !== root) expand(folder);
     });
   }
 
@@ -356,7 +390,7 @@ export function useFileTree(vault: Vault): FileTree {
       return;
     }
 
-    const node = tree === null ? undefined : findNode(tree, current.path);
+    const node = find(current.path);
     if (node === undefined) return;
     const to = joinPath(
       parentOf(node.path),
@@ -393,7 +427,7 @@ export function useFileTree(vault: Vault): FileTree {
       setSelected(change.path);
       if (parentOf(change.path) !== "") expand(parentOf(change.path));
     } else {
-      // To the system trash, not for good: the copy can still be got back.
+      // To the trash, not for good: the copy can still be got back.
       await (change.folder
         ? vault.folders.remove(change.path)
         : vault.notes.remove(change.path));
@@ -429,7 +463,8 @@ export function useFileTree(vault: Vault): FileTree {
     cut: clipboard?.mode === "cut" ? clipboard.path : null,
     canPaste,
     canMoveToRoot:
-      selectedNode !== undefined && parentOf(selectedNode.path) !== "",
+      selectedNode !== undefined && parentOf(selectedNode.path) !== root,
+    root,
     error,
     trashFailure,
 
@@ -468,13 +503,13 @@ export function useFileTree(vault: Vault): FileTree {
       if (selectedNode === undefined) return;
       if (selectedNode.kind === "folder" && expanded.has(selectedNode.path)) {
         collapse(selectedNode.path);
-      } else if (parentOf(selectedNode.path) !== "") {
+      } else if (parentOf(selectedNode.path) !== root) {
         setSelected(parentOf(selectedNode.path));
       }
     },
 
     startNew(what) {
-      if (targetFolder !== "") expand(targetFolder);
+      if (targetFolder !== root) expand(targetFolder);
       setEdit({ kind: "new", what, parent: targetFolder });
     },
     startRename() {
@@ -497,10 +532,7 @@ export function useFileTree(vault: Vault): FileTree {
       });
     },
     removeForGood() {
-      const node =
-        trashFailure === null || tree === null
-          ? undefined
-          : findNode(tree, trashFailure.path);
+      const node = trashFailure === null ? undefined : find(trashFailure.path);
       if (node === undefined) {
         setTrashFailure(null);
         return;
@@ -529,7 +561,12 @@ export function useFileTree(vault: Vault): FileTree {
       else copy(clipboard.path, targetFolder);
     },
     moveToRoot() {
-      if (selectedNode) move(selectedNode.path, "");
+      if (selectedNode) move(selectedNode.path, root);
+    },
+    moveAcross() {
+      if (selectedNode) {
+        move(selectedNode.path, scope === "drafts" ? "" : DRAFTS_FOLDER);
+      }
     },
     cancelCut: () => setClipboard(null),
     canUndo,
@@ -544,6 +581,7 @@ function flatten(
   tree: readonly TreeNode[],
   expanded: ReadonlySet<string>,
   edit: TreeEdit | null,
+  root: string,
 ): TreeRow[] {
   const rows: TreeRow[] = [];
   const add = (nodes: readonly TreeNode[], folder: string, depth: number) => {
@@ -557,17 +595,20 @@ function flatten(
       }
     }
   };
-  add(tree, "", 0);
+  add(tree, root, 0);
   return rows;
 }
 
-/** `expanded` plus every folder above `path`. */
+/** `expanded` plus every folder above `path`, below the tree's `root`. */
 function withParents(
   expanded: ReadonlySet<string>,
   path: string,
+  root: string,
 ): ReadonlySet<string> {
   const next = new Set(expanded);
-  for (let p = parentOf(path); p !== ""; p = parentOf(p)) next.add(p);
+  for (let p = parentOf(path); p !== root && p !== ""; p = parentOf(p)) {
+    next.add(p);
+  }
   return next.size === expanded.size ? expanded : next;
 }
 

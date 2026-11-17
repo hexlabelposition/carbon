@@ -10,7 +10,12 @@ import {
   type MouseEvent,
 } from "react";
 import { isWithin, joinPath, nameOf, parentOf } from "../vault/paths";
-import { labelOf, useFileTree, type FileTree as Tree } from "./use-file-tree";
+import {
+  labelOf,
+  useFileTree,
+  type FileTree as Tree,
+  type TreeScope,
+} from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
@@ -38,10 +43,13 @@ const INDENT = 14;
  */
 export function FileTree({
   vault,
+  scope = "vault",
   onReveal,
   showInFileManager,
 }: {
   vault: Vault;
+  /** The vault, or the drafts (ADR-031), with a tree of their own. */
+  scope?: TreeScope;
   /**
    * Opens the file manager of the system at an absolute path: offered in
    * the menu when given.
@@ -54,7 +62,7 @@ export function FileTree({
   onReveal?: () => void;
 }) {
   const t = useT();
-  const tree = useFileTree(vault);
+  const tree = useFileTree(vault, scope);
   // The latest, so the commands stay the same while the tree changes.
   const startNewRef = useRef(tree.startNew);
   useEffect(() => {
@@ -63,22 +71,31 @@ export function FileTree({
   useCommands(
     useMemo(
       () => [
-        {
-          id: "fileTree.newFolder",
-          title: t("tree.newFolder"),
-          run: () => {
-            onReveal?.();
-            startNewRef.current("folder");
-          },
-        },
+        scope === "drafts"
+          ? {
+              id: "drafts.new",
+              title: t("drafts.new"),
+              run: () => {
+                onReveal?.();
+                startNewRef.current("note");
+              },
+            }
+          : {
+              id: "fileTree.newFolder",
+              title: t("tree.newFolder"),
+              run: () => {
+                onReveal?.();
+                startNewRef.current("folder");
+              },
+            },
       ],
-      [t, onReveal],
+      [t, onReveal, scope],
     ),
   );
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
     useVirtualRows(tree.rows.length, ROW_STEP, LIST_PADDING);
   const [dragging, setDragging] = useState<string | null>(null);
-  /** The folder a drop would go to; "" is the vault root. */
+  /** The folder a drop would go to; `tree.root` is the root of the tree. */
   const [dropFolder, setDropFolder] = useState<string | null>(null);
 
   useEffect(() => {
@@ -197,13 +214,13 @@ export function FileTree({
           <div
             ref={viewportRef}
             role="tree"
-            aria-label={t("shell.files")}
+            aria-label={t(scope === "drafts" ? "shell.drafts" : "shell.files")}
             aria-activedescendant={
               tree.selected === null ? undefined : rowId(tree.selected)
             }
             tabIndex={0}
             className={`min-h-0 flex-1 overflow-auto outline-none focus-visible:bg-bg/40 ${
-              dropFolder === "" ? "bg-raise" : ""
+              dropFolder === tree.root ? "bg-raise" : ""
             }`}
             onScroll={onScroll}
             onKeyDown={onKeyDown}
@@ -212,11 +229,11 @@ export function FileTree({
                 setDropFolder(null);
               }
             }}
-            {...dropZone("")}
+            {...dropZone(tree.root)}
           >
             {tree.loading ? null : tree.rows.length === 0 ? (
               <p className="px-3 py-4 text-center text-faint">
-                {t("tree.empty")}
+                {t(scope === "drafts" ? "drafts.empty" : "tree.empty")}
               </p>
             ) : (
               <div className="px-2" style={{ height: totalHeight }}>
@@ -261,7 +278,7 @@ export function FileTree({
                       tree.edit.path === node.path;
                     const inDrop =
                       dropFolder !== null &&
-                      dropFolder !== "" &&
+                      dropFolder !== tree.root &&
                       isWithin(node.path, dropFolder);
                     return (
                       <div
@@ -354,15 +371,22 @@ export function FileTree({
           onRedo={tree.redo}
           canRedo={tree.canRedo}
           onMoveToRoot={tree.canMoveToRoot ? tree.moveToRoot : undefined}
+          moveToRootLabel={t(
+            scope === "drafts" ? "drafts.moveToRoot" : "tree.moveToRoot",
+          )}
+          onMoveAcross={tree.moveAcross}
+          moveAcrossLabel={t(
+            scope === "drafts" ? "drafts.moveToVault" : "tree.moveToDrafts",
+          )}
           onShowInFileManager={
             showInFileManager === undefined
               ? undefined
               : () => {
-                  // The row of the menu, or the vault folder itself.
-                  const path =
-                    menuTarget === null
-                      ? vault.root
-                      : joinPath(vault.root, menuTarget.path);
+                  // The row of the menu, or the folder of the tree itself.
+                  const path = joinPath(
+                    vault.root,
+                    menuTarget === null ? tree.root : menuTarget.path,
+                  );
                   showInFileManager(path).catch((reason: unknown) =>
                     console.error("Could not open the file manager", reason),
                   );
@@ -395,6 +419,10 @@ interface TreeMenuProps {
   canRedo: boolean;
   /** Offered for a row in a folder, not for one at the root already. */
   onMoveToRoot?: () => void;
+  moveToRootLabel: string;
+  /** Moves a row to the other tree: to the drafts, or out of them. */
+  onMoveAcross: () => void;
+  moveAcrossLabel: string;
   /** Offered when the system file manager can be opened. */
   onShowInFileManager?: () => void;
 }
@@ -430,6 +458,9 @@ function TreeMenu({
   onRedo,
   canRedo,
   onMoveToRoot,
+  moveToRootLabel,
+  onMoveAcross,
+  moveAcrossLabel,
   onShowInFileManager,
 }: TreeMenuProps) {
   const t = useT();
@@ -483,13 +514,17 @@ function TreeMenu({
             {t("tree.redo")}
             <MenuKeys text={keys("Mod+Shift+Z")} />
           </ContextMenu.Item>
-          {((target !== null && onMoveToRoot !== undefined) ||
-            onShowInFileManager !== undefined) && (
+          {(target !== null || onShowInFileManager !== undefined) && (
             <ContextMenu.Separator className={separator} />
           )}
           {target !== null && onMoveToRoot !== undefined && (
             <ContextMenu.Item className={menuItem} onClick={onMoveToRoot}>
-              {t("tree.moveToRoot")}
+              {moveToRootLabel}
+            </ContextMenu.Item>
+          )}
+          {target !== null && (
+            <ContextMenu.Item className={menuItem} onClick={onMoveAcross}>
+              {moveAcrossLabel}
             </ContextMenu.Item>
           )}
           {onShowInFileManager !== undefined && (

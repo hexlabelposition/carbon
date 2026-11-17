@@ -33,6 +33,8 @@ import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchPanel } from "../../features/search/SearchPanel";
 import { TagsPanel } from "../../features/tags/TagsPanel";
+import { TrashPanel } from "../../features/trash/TrashPanel";
+import { useTrash } from "../../features/trash/use-trash";
 import { useTags } from "../../features/tags/use-tags";
 import { useSearch } from "../../features/search/use-search";
 import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
@@ -221,6 +223,22 @@ export function DesktopShell({
           },
         },
         {
+          id: "shell.drafts",
+          title: t("shell.showDrafts"),
+          run: () => {
+            revealSidebar();
+            showSidebarView("drafts");
+          },
+        },
+        {
+          id: "shell.trash",
+          title: t("shell.showTrash"),
+          run: () => {
+            revealSidebar();
+            showSidebarView("trash");
+          },
+        },
+        {
           id: "shell.search",
           title: t("shell.searchAll"),
           shortcut: keys("Mod+Shift+F"),
@@ -379,6 +397,7 @@ function SidebarContent({
   const t = useT();
   const search = useSearch(vault);
   const tags = useTags(vault, view === "tags");
+  const trash = useTrash(vault, view === "trash");
   const { open } = useWorkspace();
   // For what the file tree starts from elsewhere, such as "New note" from
   // the palette: its name field must be where it can be typed in.
@@ -386,6 +405,18 @@ function SidebarContent({
     reveal();
     show("files");
   }, [reveal, show]);
+  const showDrafts = useCallback(() => {
+    reveal();
+    show("drafts");
+  }, [reveal, show]);
+  // Drafts and trash have no tab of their own, the row would not fit them:
+  // the toolbar shows them, and their tab is there while they are shown.
+  const extraView =
+    view === "drafts"
+      ? [{ view, label: t("shell.drafts") }]
+      : view === "trash"
+        ? [{ view, label: t("shell.trash") }]
+        : [];
   return (
     <div className="flex h-full flex-col">
       <ViewTabs
@@ -394,6 +425,7 @@ function SidebarContent({
           { view: "files", label: t("shell.files") },
           { view: "search", label: t("shell.search") },
           { view: "tags", label: t("shell.tags") },
+          ...extraView,
         ]}
         current={view}
         onShow={show}
@@ -427,6 +459,25 @@ function SidebarContent({
             open(path, { target: newTab ? "newTab" : "here" })
           }
         />
+      </div>
+      <div
+        role="tabpanel"
+        aria-label={t("shell.drafts")}
+        className={view === "drafts" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <FileTree
+          vault={vault}
+          scope="drafts"
+          onReveal={showDrafts}
+          showInFileManager={showInFileManager}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        aria-label={t("shell.trash")}
+        className={view === "trash" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <TrashPanel trash={trash} />
       </div>
       <VaultStatus vault={vault} />
     </div>
@@ -533,12 +584,14 @@ function ToolbarHost({
           keys("Mod+Shift+F"),
         ),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
+        sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
         ...command(TOGGLE_GRAPH, toolbarIcons.graph),
         ...command(OPEN_PALETTE, toolbarIcons.commands),
       ]}
       footer={[
+        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
         ...command("settings.open", toolbarIcons.settings),
         ...command("shell.closeVault", toolbarIcons.closeVault),
       ]}

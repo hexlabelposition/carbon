@@ -119,6 +119,19 @@ export const toolbarIcons = {
       <circle cx="4.75" cy="5.25" r="1" />
     </>
   ),
+  // A page with a pencil across its corner.
+  drafts: (
+    <>
+      <path d="M8.5 14.5H4a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5h5l3.5 3.5v2" />
+      <path d="M9 1.5V5h3.5M13.25 8.75l1 1-4.5 4.5-1.5.5.5-1.5z" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.75 9.5a1 1 0 0 0 1 .9h4.5a1 1 0 0 0 1-.9L12 4" />
+      <path d="M6.75 7v4.5M9.25 7v4.5" />
+    </>
+  ),
   note: (
     <>
       <path d="M4 1.5h5l3.5 3.5v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5z" />
