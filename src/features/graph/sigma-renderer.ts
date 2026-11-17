@@ -1,7 +1,6 @@
 import Graph from "graphology";
 import Sigma from "sigma";
 import {
-  LABEL_NODE_PIXELS,
   NODE_RADIUS,
   type Camera,
   type GraphRendererFactory,
@@ -24,6 +23,7 @@ export const sigmaRenderer: GraphRendererFactory = (
   positions,
   initialCamera,
   initialColors,
+  labelPixels,
 ) => {
   // The graph view takes the pointer on the stage and moves the camera
   // itself. sigma listens on its container, so it gets one of its own
@@ -72,7 +72,7 @@ export const sigmaRenderer: GraphRendererFactory = (
     },
     settings: {
       renderLabels: true,
-      labelRenderedSizeThreshold: LABEL_NODE_PIXELS,
+      labelRenderedSizeThreshold: labelPixels,
       hideEdgesOnMove: false,
       minEdgeThickness: 1,
       itemSizesReference: "positions",

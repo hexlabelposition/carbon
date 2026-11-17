@@ -68,11 +68,15 @@ export const ru: Record<keyof typeof en, Message> = {
     many: "{count} заметок",
     other: "{count} заметки",
   },
+  "graph.depth": "Глубина",
   "graph.empty": "Нет заметок",
   "graph.failed": "Граф недоступен: {reason}",
   "graph.label":
     "Граф заметок. Перетаскивайте, чтобы двигать, колёсиком или плюсом и минусом меняйте масштаб, щелчок по заметке открывает её, Escape закрывает граф.",
   "graph.loading": "Граф загружается…",
+  "graph.localLabel":
+    "Граф вокруг заметки. Перетаскивайте, чтобы двигать, колёсиком или плюсом и минусом меняйте масштаб, щелчок по заметке открывает её.",
+  "graph.notIndexed": "Заметка ещё не проиндексирована.",
   "graph.partial": "Индексация: некоторых заметок может не хватать.",
   "graph.settling": "раскладка",
   "graph.title": "Граф",
@@ -175,6 +179,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.backlinks": "Обратные ссылки",
   "shell.closeVault": "Закрыть хранилище",
   "shell.files": "Файлы",
+  "shell.graph": "Граф",
   "shell.indexFailed":
     "Индекс недоступен: ссылки и обратные ссылки не работают",
   "shell.indexing": "Индексация…",
@@ -200,6 +205,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.sidebarViews": "Виды левой панели",
   "shell.tags": "Теги",
   "shell.toggleBacklinks": "Показать или скрыть обратные ссылки",
+  "shell.toggleLocalGraph": "Показать или скрыть локальный граф",
   "shell.toggleLeftPanel": "Показать или скрыть левую панель",
   "shell.toggleOutline": "Показать или скрыть оглавление",
   "shell.toggleRightPanel": "Показать или скрыть правую панель",

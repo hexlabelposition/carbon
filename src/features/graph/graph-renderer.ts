@@ -49,13 +49,15 @@ export type GraphRendererFactory = (
   positions: Float32Array,
   camera: Camera,
   colors: GraphColors,
+  /** Titles show once a note is this wide on screen, in CSS pixels. */
+  labelPixels: number,
 ) => GraphRenderer;
 
 /** Radius of a note, in units of the layout. */
 export const NODE_RADIUS = 4;
 /** A note is never drawn smaller than this, in CSS pixels. */
 export const MIN_NODE_PIXELS = 1.5;
-/** From this radius on screen, in CSS pixels, titles are drawn. */
+/** From this radius on screen, in CSS pixels, titles are drawn by default. */
 export const LABEL_NODE_PIXELS = 5;
 
 /** The colors of the graph in the theme shown now. */
@@ -73,12 +75,13 @@ export function readGraphColors(element: Element): GraphColors {
 
 /**
  * The camera that shows every position in a view of `width` by `height`,
- * with a margin around them.
+ * the positions taking up `fill` of its shorter side.
  */
 export function cameraToFit(
   positions: Float32Array,
   width: number,
   height: number,
+  fill = 0.9,
 ): Camera {
   let minX = Infinity;
   let minY = Infinity;
@@ -91,11 +94,10 @@ export function cameraToFit(
     maxY = Math.max(maxY, positions[i + 1]);
   }
   if (minX > maxX) return { x: 0, y: 0, scale: 1 };
-  const margin = 0.9;
   const span = Math.max(maxX - minX, maxY - minY, NODE_RADIUS * 20);
   return {
     x: (minX + maxX) / 2,
     y: (minY + maxY) / 2,
-    scale: (Math.min(width, height) / span) * margin,
+    scale: (Math.min(width, height) / span) * fill,
   };
 }

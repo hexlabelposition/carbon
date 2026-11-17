@@ -73,11 +73,15 @@ export const en = {
   "find.replaceHint": "Replace (Enter)",
   "find.wholeWord": "Whole word",
   "graph.count": { one: "{count} note", other: "{count} notes" },
+  "graph.depth": "Depth",
   "graph.empty": "No notes to show",
   "graph.failed": "The graph is not available: {reason}",
   "graph.label":
     "Graph of the notes. Drag to move, scroll or press plus and minus to zoom, click a note to open it, Escape to close.",
   "graph.loading": "Loading the graph…",
+  "graph.localLabel":
+    "Graph around the note. Drag to move, scroll or press plus and minus to zoom, click a note to open it.",
+  "graph.notIndexed": "This note is not indexed yet.",
   "graph.partial": "Indexing: some notes may be missing.",
   "graph.settling": "laying out",
   "graph.title": "Graph",
@@ -177,6 +181,7 @@ export const en = {
   "shell.backlinks": "Backlinks",
   "shell.closeVault": "Close vault",
   "shell.files": "Files",
+  "shell.graph": "Graph",
   "shell.indexFailed":
     "The index is not available: links and backlinks do not work",
   "shell.indexing": "Indexing…",
@@ -200,6 +205,7 @@ export const en = {
   "shell.sidebarViews": "Sidebar views",
   "shell.tags": "Tags",
   "shell.toggleBacklinks": "Toggle backlinks",
+  "shell.toggleLocalGraph": "Toggle local graph",
   "shell.toggleLeftPanel": "Toggle left panel",
   "shell.toggleOutline": "Toggle outline",
   "shell.toggleRightPanel": "Toggle right panel",
