@@ -160,6 +160,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-616** (P1) Drafts: notes in `.carbon/drafts`, indexed but out of the file tree, with a panel and a toolbar button (ADR-031)
 - [x] **C-617** (P1) Trash inside the vault, `.carbon/trash`: restore, delete for good, empty, with a panel and a toolbar button (ADR-031)
 - [x] **C-618** (P2) A setting for where deleting goes, the vault trash or the system trash; taking items out of the vault trash moves them to the system trash or deletes them for good
+- [x] **C-619** (P2) Search all notes in a dialog, opened by Ctrl+Shift+F or the toolbar, instead of a sidebar view; the last query stays
 
 ---
 
