@@ -70,6 +70,13 @@ interface GraphCanvasProps {
   data: GraphDataState;
   /** Under which the layout is kept: a graph opened again starts there. */
   layoutKey: string;
+  /**
+   * What is shown, such as the filters or the note of a local graph: a
+   * graph of the same view, updated as notes change, keeps the camera
+   * where the user left it; another view is fitted. `layoutKey` if not
+   * given.
+   */
+  viewKey?: string;
   /** The note of the active pane, drawn apart from the others. */
   current: NotePath | null;
   /** Opens a note: in a new tab with Ctrl or Cmd held. */
@@ -101,6 +108,7 @@ interface GraphCanvasProps {
 function GraphCanvas({
   data,
   layoutKey,
+  viewKey = layoutKey,
   current,
   onOpen,
   onClose,
@@ -126,6 +134,8 @@ function GraphCanvas({
   const fitScale = useRef(1);
   /** The user moved the camera: the layout no longer fits it. */
   const moved = useRef(false);
+  /** The view the camera was last fitted or moved in. */
+  const viewFor = useRef<string | null>(null);
   const grid = useRef<NodeGrid | null>(null);
   const latest = useRef<Float32Array | null>(null);
   /** The note under the pointer, by index, with the graph it is of. */
@@ -203,15 +213,21 @@ function GraphCanvas({
     const container = stage.current;
     const first = latest.current;
     if (container === null || graph === null || first === null) return;
-    const fitted = cameraToFit(
-      first,
-      container.clientWidth,
-      container.clientHeight,
-      fill,
-    );
-    camera.current = fitted;
-    fitScale.current = fitted.scale;
-    moved.current = false;
+    // The same view, updated as notes change: the camera stays where the
+    // user left it. Another view, such as other filters, is fitted.
+    if (viewFor.current !== viewKey || !moved.current) {
+      const fitted = cameraToFit(
+        first,
+        container.clientWidth,
+        container.clientHeight,
+        fill,
+      );
+      camera.current = fitted;
+      fitScale.current = fitted.scale;
+      moved.current = false;
+    }
+    viewFor.current = viewKey;
+    const fitted = camera.current;
     const colors = readGraphColors(document.documentElement);
     let made: GraphRenderer | null = null;
     for (const create of RENDERERS) {
@@ -241,7 +257,7 @@ function GraphCanvas({
       renderer.current = null;
       container.replaceChildren();
     };
-  }, [graph, hasPositions, labelPixels, fill]);
+  }, [graph, hasPositions, labelPixels, fill, viewKey]);
 
   useEffect(() => {
     const index = current === null ? undefined : graph?.indexOf.get(current);
@@ -532,6 +548,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
     <GraphCanvas
       data={data}
       layoutKey={vault.root}
+      viewKey={`${filters.tag}|${filters.orphans}|${filters.missing}`}
       current={current}
       onOpen={open}
       onClose={onClose}
@@ -577,6 +594,7 @@ export function LocalGraphView({ vault, path, onOpen }: LocalGraphViewProps) {
       data={data}
       // Apart from the graph of the vault, whose layout is far wider.
       layoutKey={`${vault.root}#local`}
+      viewKey={`${depth}:${path}`}
       current={path}
       onOpen={onOpen}
       // A local graph has few notes: their titles always show.

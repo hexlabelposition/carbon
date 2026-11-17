@@ -2,6 +2,9 @@ import type { NoteGraph, NotePath, Vault } from "@carbon/core";
 import type { GraphDisplay } from "./node-style";
 import { useEffect, useState } from "react";
 
+/** How long the graph waits after the last change it hears of, ms. */
+const LIVE_DELAY_MS = 300;
+
 export type GraphDataState =
   | { status: "loading" }
   | {
@@ -16,9 +19,11 @@ export type GraphDataState =
  * The graph of the whole vault (`vault.graph.global`) while `enabled`,
  * with the notes the filters keep (C-506): those with `tag` if it is not
  * blank, the notes that links miss with `missing`, notes without links
- * only with `orphans`. Asked for again when the startup scan is done and
- * when the filters change; later changes are left for the graph to
- * follow live (C-508).
+ * only with `orphans`. Asked for again when the startup scan is done,
+ * when the filters change, and a moment after the index takes in changes,
+ * so the graph follows the notes live (C-508); an answer equal to the
+ * graph shown is dropped, so saving a note whose links stay the same
+ * leaves the graph alone.
  */
 export function useGraphData(
   vault: Vault,
@@ -41,7 +46,13 @@ export function useGraphData(
           if (!fresh()) return;
           const partial = vault.indexStatus.state === "scanning";
           const graph = orphans ? found : withoutOrphans(found);
-          setState({ status: "ready", graph, partial });
+          setState((old) =>
+            old.status === "ready" &&
+            old.partial === partial &&
+            sameGraph(old.graph, graph)
+              ? old
+              : { status: "ready", graph, partial },
+          );
         },
         (reason: unknown) => {
           if (!fresh()) return;
@@ -53,10 +64,21 @@ export function useGraphData(
       );
     };
     ask();
-    const stop = vault.on("index:ready", ask);
+    // Changes come in bursts, a save and its rewrites, a folder moved:
+    // one answer for each burst.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const soon = () => {
+      clearTimeout(timer);
+      timer = setTimeout(ask, LIVE_DELAY_MS);
+    };
+    const stops = [
+      vault.on("index:ready", ask),
+      vault.on("index:updated", soon),
+    ];
     return () => {
       current = false;
-      stop();
+      clearTimeout(timer);
+      for (const stop of stops) stop();
     };
   }, [vault, enabled, tag, missing, orphans]);
 
@@ -162,7 +184,7 @@ export function useLocalGraphData(
   return answer?.for === key ? answer.state : { status: "loading" };
 }
 
-/** The same notes, with the same titles, and the same links. */
+/** The same notes, with the same titles and tags, and the same links. */
 function sameGraph(a: NoteGraph, b: NoteGraph): boolean {
   return (
     a.nodes.length === b.nodes.length &&
@@ -172,7 +194,9 @@ function sameGraph(a: NoteGraph, b: NoteGraph): boolean {
       return (
         node.path === other.path &&
         node.title === other.title &&
-        node.missing === other.missing
+        node.missing === other.missing &&
+        node.tags.length === other.tags.length &&
+        node.tags.every((tag, t) => tag === other.tags[t])
       );
     }) &&
     a.edges.every((edge, i) => {

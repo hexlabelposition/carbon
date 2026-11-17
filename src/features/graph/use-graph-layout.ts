@@ -67,33 +67,35 @@ export function useGraphLayout(
     settled: false,
   });
 
+  // Where the notes start: where they were, a new note by one it links
+  // to. Ready with the graph, so the renderer does not wait for the
+  // worker to draw it.
+  const start = useMemo(
+    () => (graph === null ? null : startPositions(root, graph)),
+    [root, graph],
+  );
+
   useEffect(() => {
-    if (graph === null) return;
-    const before = kept.get(root);
-    let start: Float32Array | null = null;
-    if (before !== undefined) {
-      const places = new Float32Array(graph.paths.length * 2).fill(NaN);
-      graph.paths.forEach((path, i) => {
-        const place = before.get(path);
-        if (place === undefined) return;
-        places[i * 2] = place[0];
-        places[i * 2 + 1] = place[1];
-      });
-      start = places;
-    }
+    if (graph === null || start === null) return;
     const worker = new Worker(
       new URL("../../workers/graph-layout-worker.ts", import.meta.url),
       { type: "module" },
     );
-    worker.onmessage = (event: MessageEvent<LayoutFrame>) => {
-      const { positions, settled } = event.data;
-      setLayout({ for: graph, positions, settled });
-      if (!settled) return;
+    let last = start.positions;
+    /** Keeps the positions, for the next layout of this vault. */
+    const keep = () => {
       const places = new Map<NotePath, [number, number]>();
       graph.paths.forEach((path, i) => {
-        places.set(path, [positions[i * 2], positions[i * 2 + 1]]);
+        places.set(path, [last[i * 2], last[i * 2 + 1]]);
       });
       kept.set(root, places);
+    };
+    worker.onmessage = (event: MessageEvent<LayoutFrame>) => {
+      const { positions, settled } = event.data;
+      last = positions;
+      setLayout({ for: graph, positions, settled });
+      if (!settled) return;
+      keep();
       worker.terminate();
     };
     worker.onerror = (event) => {
@@ -103,17 +105,83 @@ export function useGraphLayout(
     const request: LayoutRequest = {
       count: graph.paths.length,
       edges: graph.edges,
-      start,
+      start: start.fresh ? null : start.positions,
+      warm: start.warm,
     };
     worker.postMessage(request);
-    return () => worker.terminate();
-  }, [root, graph]);
+    return () => {
+      worker.terminate();
+      // A layout stopped half way, as a note changed, is kept as it was:
+      // the next starts from what was on screen.
+      keep();
+    };
+  }, [root, graph, start]);
 
   return useMemo(
     () =>
       layout.for === graph
         ? { positions: layout.positions, settled: layout.settled }
-        : { positions: null, settled: false },
-    [layout, graph],
+        : {
+            positions: start === null || start.fresh ? null : start.positions,
+            settled: false,
+          },
+    [layout, graph, start],
   );
+}
+
+/** Below this share of notes kept, a layout starts from the full heat. */
+const WARM_SHARE = 0.9;
+
+/**
+ * Where the notes of `graph` start: where the last layout of the vault
+ * at `root` left them; a note it did not have beside a note it links to
+ * or is linked from, a little apart, or else near the middle. `fresh`
+ * when nothing was kept: d3 places them then. `warm` when most notes are
+ * where they were: the layout only has to settle the rest.
+ */
+function startPositions(
+  root: string,
+  graph: IndexedGraph,
+): { positions: Float32Array; fresh: boolean; warm: boolean } {
+  const count = graph.paths.length;
+  const positions = new Float32Array(count * 2).fill(NaN);
+  const before = kept.get(root);
+  if (before === undefined) return { positions, fresh: true, warm: false };
+  let known = 0;
+  graph.paths.forEach((path, i) => {
+    const place = before.get(path);
+    if (place === undefined) return;
+    positions[i * 2] = place[0];
+    positions[i * 2 + 1] = place[1];
+    known++;
+  });
+  const placed = (i: number) => !Number.isNaN(positions[i * 2]);
+  // Spread around the point they start from, by a golden angle, so new
+  // notes beside one note do not start on top of each other.
+  const spread = (i: number, x: number, y: number) => {
+    const angle = i * 2.39996;
+    const distance = 20 + (i % 7) * 4;
+    positions[i * 2] = x + Math.cos(angle) * distance;
+    positions[i * 2 + 1] = y + Math.sin(angle) * distance;
+  };
+  // Each pass places the new notes beside a placed one, so a chain of new
+  // notes grows out from the old ones.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let edge = 0; edge < graph.edges.length / 2; edge++) {
+      const a = graph.edges[edge * 2];
+      const b = graph.edges[edge * 2 + 1];
+      const [from, to] = placed(a) && !placed(b) ? [a, b] : [b, a];
+      if (!placed(from) || placed(to)) continue;
+      spread(to, positions[from * 2], positions[from * 2 + 1]);
+      changed = true;
+    }
+  }
+  for (let i = 0; i < count; i++) if (!placed(i)) spread(i, 0, 0);
+  return {
+    positions,
+    fresh: false,
+    warm: count > 0 && known / count >= WARM_SHARE,
+  };
 }
