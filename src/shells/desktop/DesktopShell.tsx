@@ -666,6 +666,7 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const rightPanel = (
     <SlidePanel
       open={right.open}
+      side="right"
       // As the sidebar: at its narrowest its edge meets the buttons in
       // the corner above it.
       width={panelWidth(right.width.fraction)}

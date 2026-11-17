@@ -5,6 +5,12 @@ const SLIDE = 200;
 
 interface SlidePanelProps {
   open: boolean;
+  /**
+   * The side of the window it stands at. The panel slides out past that
+   * side: its inner edge, with the line drawn along it, stays in sight
+   * and moves, instead of being cut off first.
+   */
+  side?: "left" | "right";
   /** How wide it is open, as a CSS length. */
   width: string;
   /**
@@ -24,11 +30,13 @@ interface SlidePanelProps {
 /**
  * A panel at a side of the layout that slides open and shut: its width
  * glides between nothing and `width`. What is inside keeps that width all
- * the while, so its text does not wrap anew as the panel moves; the edge
- * cuts it. Shut, it can be neither seen nor reached.
+ * the while, so its text does not wrap anew as the panel moves, and it is
+ * held at the inner edge: the panel moves out past the side of the window,
+ * the outer edge cuts it. Shut, it can be neither seen nor reached.
  */
 export function SlidePanel({
   open,
+  side = "left",
   width,
   animate = true,
   keepMounted = true,
@@ -46,14 +54,16 @@ export function SlidePanel({
   return (
     <div
       inert={!open}
-      className={`h-full shrink-0 overflow-hidden ${
+      className={`flex h-full shrink-0 overflow-hidden ${
+        side === "left" ? "justify-end" : "justify-start"
+      } ${
         animate
           ? "transition-[width] duration-200 ease-out motion-reduce:transition-none"
           : ""
       }`}
       style={{ width: open ? width : 0 }}
     >
-      <div className="h-full" style={{ width }}>
+      <div className="h-full shrink-0" style={{ width }}>
         {(keepMounted || shown) && children}
       </div>
     </div>
