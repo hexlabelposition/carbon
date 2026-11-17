@@ -130,7 +130,7 @@ Done when: tags and frontmatter are indexed, visible and usable for navigation.
 Done when: the graph of a 10k-note vault opens and stays smooth while panning and zooming.
 
 - [x] **C-501** (P0) Core: `graph.global` (nodes, edges) and `graph.local` (around a note, depth N)
-- [ ] **C-502** (P0) Prototype renderers with a 10k-node vault and pick one (open question 2)
+- [x] **C-502** (P0) Prototype renderers with a 10k-node vault and pick one (open question 2)
 - [x] **C-503** (P0) Graph view: force layout in a Web Worker, pan, zoom, click to open a note
 - [x] **C-504** (P0) Local graph panel for the current note
 - [x] **C-505** (P1) Hover highlights a node and its neighbors
@@ -193,5 +193,4 @@ Tracked in [ARCHITECTURE.md, open questions](ARCHITECTURE.md#13-open-questions).
 | ------------------------------------ | -------------- |
 | State management library             | M1 UI work     |
 | Test runner (`bun test` or Vitest)   | First UI tests |
-| Graph renderer                       | M5 (C-502)     |
 | Stable note IDs for external renames | After v0.1     |

@@ -443,26 +443,26 @@ Three rules that keep a second shell cheap:
 - The graph follows the notes live (C-508): asked for again 300 ms after the last change the index takes in, an answer equal to the graph shown dropped, so a save that keeps the links leaves it still. A new layout starts from where the notes were, the one stopped half way included, a new note beside one it links to; with nine notes in ten kept it starts cool and only settles the rest. The camera stays where the user left it while the view is the same (the filters, or the note and depth of the local graph); another view is fitted.
 - Layout: d3-force in a worker (`src/workers/graph-layout-worker.ts`), Barnes-Hut with a coarse theta. It sends the positions every 100 ms as it settles, so the graph shows at once and settles in view, and the camera follows it until the user moves it. The positions are kept per vault while the app runs: opened again, the graph starts where it was left, cooler, and only new notes move far.
 - The camera, the pointer and picking are the graph view's own, the same whatever draws: drag to move, the wheel or plus and minus to zoom about the pointer, arrows to move, a click opens the note under the pointer (Ctrl or Cmd: in a new tab). Hovering a note (C-505) draws it, its neighbors and its links out, links in the ink of the text, with their titles at any zoom, and fades the rest; in sigma.js through its own `isHighlighted` states, so nothing is processed again. The note under the pointer is found in a grid of cells over the positions, not by the renderer.
-- A renderer only draws (`GraphRenderer`): the positions, the camera, the current note, the highlight, the colors of the theme. Notes are sized in units of the layout and grow with the zoom, never smaller than 1.5 px; links are one pixel wide; titles show once a note is 5 px across. sigma.js draws until C-502 decides, Canvas 2D where WebGL 2 is missing; both draw the same picture.
+- A renderer only draws (`GraphRenderer`): the positions, the camera, the current note, the highlight, the colors of the theme. Notes are sized in units of the layout and grow with the zoom, never smaller than 1.5 px; links are one pixel wide; titles show once a note is 5 px across. sigma.js draws (ADR-030), Canvas 2D where WebGL 2 is missing; both draw the same picture.
 - Filters of the graph view (C-506), remembered between starts: a tag, with the tags of the vault offered, keeps the notes with it or one nested in it (in the core: `vault.graph.global({ tag })`); notes without links can be hidden (in the UI, from the edges, so a note whose links all lead out of the tag counts as one); the notes that links miss can be shown, fainter, and clicking one makes it, as a link does.
 - Size and color (C-507), set beside the filters: a note grows with the square root of its links, up to 4 times; notes can be colored by their folder at the vault root or by the first part of their first tag (the core gives each node the tags of its note). Only the three largest groups get a color (`--cb-group-*`, from the validated categorical palette of the data viz guide): notes of every group stand side by side, and no more than three hues stay apart for every kind of color vision then. The rest are gray, as "Other". A group keeps its color while it stays among the three largest, so a filter does not repaint the others; the legend lists the groups with their counts, and pointing at one highlights its notes, so a group is told by more than its color. The current note is drawn in the ink of the text, apart from every group.
 - The local graph (C-504) is a view of the right panel, beside the outline and the backlinks, or the command "Toggle local graph": the notes at most 1, 2 or 3 links from the current note, either way, with the depth remembered between starts. It is asked for again whenever the index takes in a change, as the backlinks are; an answer equal to the one shown is dropped, so an autosave that keeps the links leaves the graph still. Clicking a note opens it in the tab, and the graph moves to it, its layout starting from where the notes it shares with the last one were. Titles always show in it.
 - The graph view is loaded the first time it is shown: sigma.js would add about 450 kB to the start of the app.
-- Renderer choice is an open question (2). The prototype for it (C-502) is in the dev panel, **Graph renderers**, and on a page of its own at `/src/dev/graph-bench/index.html` of the dev server: Canvas 2D, Pixi.js and sigma.js draw the same graph of 10,000 notes, laid out with d3-force in a worker, while the camera pans in a loop and zooms 8 times in and out. Each is timed for 8 s; a run prints frames per second, the frame times and the GPU WebGL draws with.
+- The renderer was picked with a prototype (C-502), removed after the decision: Canvas 2D, Pixi.js and sigma.js drew the same graph of 10,000 notes, laid out with d3-force in a worker, while the camera panned in a loop and zoomed 8 times in and out, each timed for 8 s.
 
-**C-502 first measurements**
+**C-502 measurements**
 
-Measured on 2026-11-17 in headless Chromium in a cloud container: 4 CPU cores, no GPU, WebGL in SwiftShader on the CPU. A graph of 10,000 random notes with 45,098 edges, view 726 by 388 px.
+Measured on 2026-11-17 in the app (`bun tauri dev`, WebKitGTK) on the author's Linux machine: the generated vault of 10,000 notes with 47,299 links, view 531 by 388 px.
 
-| Renderer  | Setup   | Frames per second | Frame p95 |
-| --------- | ------- | ----------------- | --------- |
-| Canvas 2D | 69 ms   | 5.6               | 533 ms    |
-| Pixi.js   | 828 ms  | 1.8               | 983 ms    |
-| sigma.js  | 3153 ms | 0.6               | 2300 ms   |
+| Renderer  | Setup   | Frames per second | Frame p50 | Frame p95 | Worst frame |
+| --------- | ------- | ----------------- | --------- | --------- | ----------- |
+| sigma.js  | 616 ms  | 51.9              | 18 ms     | 24 ms     | 57 ms       |
+| Pixi.js   | 142 ms  | 28.2              | 39 ms     | 51 ms     | 65 ms       |
+| Canvas 2D | 2358 ms | 0.8               | 1731 ms   | 2272 ms   | 2272 ms     |
 
-- These numbers only show the cost on the CPU. Without a GPU, WebGL runs in software and loses most of all. They decide nothing: the decision needs the same run in the app, in WebKitGTK, on a real machine.
-- sigma.js 4 reads its picking layer back every frame (a "GPU stall due to ReadPixels" warning). This is cheap on a GPU and slow in software.
-- The d3-force layout of 10,000 nodes took 21 s for 300 ticks on this machine. The graph view needs a faster layout (C-503): fewer ticks, showing the layout as it settles, or ForceAtlas2.
+- sigma.js is the smoothest, and felt so too. Canvas 2D in WebKitGTK is too slow for a large vault: it stays only where WebGL 2 is missing.
+- WebKit hides the name of the GPU (`WebGL: Apple GPU`). The GPU is real all the same: in headless Chromium without one, WebGL in SwiftShader on the CPU, Pixi.js gave 1.8 frames per second and sigma.js 0.6.
+- `vault.graph.global()` took 751 ms; the d3-force layout, 16.8 s for 300 ticks. The graph view shows the layout as it settles (C-503).
 
 ## 9. Key flows
 
@@ -558,11 +558,12 @@ Behavior of a platform or its WebView that the app cannot change. Each was check
 | ADR-027 | Spell checking in Linux is turned on in the WebKitGTK web context at start, for English and Russian (`tauri/src/lib.rs`) | Accepted                   | WebKitGTK checks no spelling until its context allows it, and Tauri leaves it off. A few lines in `setup`, no command. The editor setting then switches the `spellcheck` attribute; dictionaries come from the system                                                                |
 | ADR-028 | The startup scan lists every note with its size and time in one custom Rust command (`list_notes`)                       | Accepted                   | The `fs` plugin needs one call across the bridge per file for them: 1.5 s for 10,000 notes, past the 1 s budget of a start. The first candidate named in section 7. Behind `FileSystem.listNotes`, with a fake for the tests                                                         |
 | ADR-029 | Writes to the index run in transactions, through a custom Rust command (`sql_batch`) on the pools of the `sql` plugin    | Accepted                   | The plugin has no transactions: each statement is a commit and waits for the disk. A first index of 10,000 notes made about 1,000 commits and waited 9 s of 14 on writes. The plugin shares its pools as Tauri state for this. Behind `SqlDatabase.batch`, with a fake for the tests |
+| ADR-030 | sigma.js 4 draws the graph; Canvas 2D where WebGL 2 is missing                                                           | Accepted                   | Measured in the app, WebKitGTK on the author's Linux machine, 10,000 notes: sigma.js 51.9 frames per second (p95 24 ms), Pixi.js 28.2 (51 ms), Canvas 2D 0.8. Hover states, labels, size and color are built into sigma.js; Pixi.js needs them by hand. Behind `GraphRenderer`       |
 
 ## 13. Open questions
 
 1. **Index engine.** Resolved in M0: SQLite with FTS5 through the `sql` plugin (ADR-009, measurements in section 7). An in-memory index stays possible behind `IndexStore` but is not planned. The SQL lives in the core (ADR-021).
-2. **Graph renderer.** Candidates: sigma.js, Pixi.js with d3-force, custom canvas. The 10k-node prototype is built (C-502, section 8). The decision waits for its run in the app on the author's Linux machine. If WebGL is fast there, sigma.js is the favorite: hover, filters, node size and color, labels and click picking (C-503 to C-507) are built in, where Pixi.js and Canvas 2D need them written by hand.
+2. **Graph renderer.** Resolved in M5: sigma.js (ADR-030, measurements in section 8). Canvas 2D stays only where WebGL 2 is missing.
 3. **State management.** Zustand or plain React context plus a query cache.
 4. **Stable note IDs.** Path-based identity is simple but loses links on external renames. Option: detect renames by content hash.
 5. **Native hot paths.** At what measured numbers is it worth adding a Rust command (see section 7)?

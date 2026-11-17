@@ -46,8 +46,8 @@ import {
 } from "./use-graph-layout";
 
 /**
- * The renderer of the graph. sigma.js until the measurements of C-502 in
- * the app decide; Canvas 2D takes over where WebGL 2 is missing.
+ * The renderer of the graph: sigma.js (ADR-030); Canvas 2D takes over
+ * where WebGL 2 is missing.
  */
 const RENDERERS: readonly GraphRendererFactory[] = [
   sigmaRenderer,
