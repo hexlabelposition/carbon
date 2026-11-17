@@ -303,7 +303,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "tree.copy": "Копировать",
   "tree.copyIntoItself": "Папку нельзя скопировать внутрь неё самой",
   "tree.cut": "Вырезать",
-  "tree.delete": "Удалить",
+  "tree.delete": "Переместить в корзину",
   "tree.deleteForGood": "Удалить навсегда",
   "tree.empty": "Хранилище пусто. Создайте первую заметку.",
   "tree.keep": "Оставить",

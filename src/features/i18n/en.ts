@@ -297,7 +297,7 @@ export const en = {
   "tree.copy": "Copy",
   "tree.copyIntoItself": "A folder cannot be copied into itself",
   "tree.cut": "Cut",
-  "tree.delete": "Delete",
+  "tree.delete": "Move to trash",
   "tree.deleteForGood": "Delete for good",
   "tree.empty": "This vault is empty. Create the first note.",
   "tree.keep": "Keep",
