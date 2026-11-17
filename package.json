@@ -47,7 +47,6 @@
     "d3-force": "3.0.0",
     "fuzzysort": "^4.0.2",
     "graphology": "0.26.0",
-    "pixi.js": "8.22.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sigma": "4.0.4"

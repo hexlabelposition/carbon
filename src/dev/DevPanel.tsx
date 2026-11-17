@@ -1,7 +1,5 @@
-import { useVaultSession } from "../features/vault/vault-session";
 import { ReadBench } from "./bench/ReadBench";
 import { SqlBench } from "./bench/SqlBench";
-import { GraphBench } from "./graph-bench/GraphBench";
 
 const SURFACES = [
   "bg-backdrop",
@@ -15,14 +13,12 @@ const TEXTS = ["text-fg", "text-muted", "text-faint", "text-link"];
 
 /**
  * Development tools, mounted by the shell in dev builds only: the M0
- * measurements, the graph renderers of M5, and a preview of the design
- * tokens and Markdown styles. The preview is the reference for what the
- * editor does not draw yet: wiki links, tags and frontmatter. The dev
- * bubble opens and closes it, and switches the theme to check the preview
- * in both.
+ * measurements, and a preview of the design tokens and Markdown styles. The
+ * preview is the reference for what the editor does not draw yet: wiki
+ * links, tags and frontmatter. The dev bubble opens and closes it, and
+ * switches the theme to check the preview in both.
  */
 function DevPanel() {
-  const { vault } = useVaultSession();
   return (
     <div className="mx-auto flex max-w-180 flex-col gap-10 px-8 py-10">
       <header>
@@ -32,10 +28,6 @@ function DevPanel() {
       <ReadBench />
 
       <SqlBench />
-
-      <GraphBench
-        loadVault={vault === null ? undefined : () => vault.graph.global()}
-      />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-label font-semibold tracking-[0.06em] text-faint uppercase">
