@@ -62,6 +62,10 @@ export const en = {
   "editor.taskDone": "Task done",
   "editor.toggleReading": "Toggle reading mode",
   "editor.toggleSource": "Toggle source mode",
+  "favorites.add": "Add to favorites",
+  "favorites.empty":
+    "No favorites yet. Add notes from the menu of the file tree.",
+  "favorites.remove": "Remove from favorites",
   "find.count": "{current} of {total}",
   "find.find": "Find",
   "find.invalid": "Invalid",
@@ -200,6 +204,7 @@ export const en = {
   "shell.backlinks": "Backlinks",
   "shell.closeVault": "Close vault",
   "shell.drafts": "Drafts",
+  "shell.favorites": "Favorites",
   "shell.files": "Files",
   "shell.graph": "Graph",
   "shell.indexFailed":
@@ -220,6 +225,7 @@ export const en = {
   "shell.rightPanelViews": "Right panel views",
   "shell.searchAll": "Search all notes",
   "shell.showDrafts": "Show drafts",
+  "shell.showFavorites": "Show favorites",
   "shell.showFiles": "Show files",
   "shell.showTags": "Show tags",
   "shell.showTrash": "Show trash",

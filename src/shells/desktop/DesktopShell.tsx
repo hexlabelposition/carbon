@@ -30,6 +30,11 @@ import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
 import { TrashPanel } from "../../features/trash/TrashPanel";
+import { FavoritesPanel } from "../../features/favorites/FavoritesPanel";
+import {
+  useFavoriteCommand,
+  useFavorites,
+} from "../../features/favorites/use-favorites";
 import { useTrash } from "../../features/trash/use-trash";
 import { useTags } from "../../features/tags/use-tags";
 import { OPEN_SEARCH, useSearch } from "../../features/search/use-search";
@@ -211,6 +216,14 @@ export function DesktopShell({
           },
         },
         {
+          id: "shell.favorites",
+          title: t("shell.showFavorites"),
+          run: () => {
+            revealSidebar();
+            showSidebarView("favorites");
+          },
+        },
+        {
           id: "shell.tags",
           title: t("shell.showTags"),
           run: () => {
@@ -366,7 +379,7 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar: files, tags, drafts and trash, one at a time,
+ * The views of the sidebar: files, favorites, tags, drafts and trash, one at a time,
  * each shown by its button of the toolbar or from the palette; there is
  * no row of tabs. They stay mounted: switching keeps the open folders and
  * the open tags. Search is a dialog of its own (`SearchHost`).
@@ -386,7 +399,9 @@ function SidebarContent({
   const t = useT();
   const tags = useTags(vault, view === "tags");
   const trash = useTrash(vault, view === "trash");
-  const { open } = useWorkspace();
+  const favorites = useFavorites(vault);
+  useFavoriteCommand(favorites);
+  const { open, path: activePath } = useWorkspace();
   // For what the file tree starts from elsewhere, such as "New note" from
   // the palette: its name field must be where it can be typed in.
   const showFiles = useCallback(() => {
@@ -406,8 +421,22 @@ function SidebarContent({
       >
         <FileTree
           vault={vault}
+          favorites={favorites}
           onReveal={showFiles}
           showInFileManager={showInFileManager}
+        />
+      </div>
+      <div
+        role="region"
+        aria-label={t("shell.favorites")}
+        className={view === "favorites" ? "min-h-0 flex-1" : "hidden"}
+      >
+        <FavoritesPanel
+          favorites={favorites}
+          activePath={activePath}
+          onOpen={(path, newTab) =>
+            open(path, { target: newTab ? "newTab" : "here" })
+          }
         />
       </div>
       <div
@@ -430,6 +459,7 @@ function SidebarContent({
         <FileTree
           vault={vault}
           scope="drafts"
+          favorites={favorites}
           onReveal={showDrafts}
           showInFileManager={showInFileManager}
         />
@@ -540,6 +570,7 @@ function ToolbarHost({
       open={open}
       items={[
         sidebarItem("files", t("shell.files"), toolbarIcons.files),
+        sidebarItem("favorites", t("shell.favorites"), toolbarIcons.favorites),
         ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),

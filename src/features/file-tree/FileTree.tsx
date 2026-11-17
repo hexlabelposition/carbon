@@ -21,6 +21,7 @@ import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
+import { canBeFavorite, type FavoritesView } from "../favorites/use-favorites";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
@@ -44,10 +45,13 @@ const INDENT = 14;
 export function FileTree({
   vault,
   scope = "vault",
+  favorites,
   onReveal,
   showInFileManager,
 }: {
   vault: Vault;
+  /** Offered in the menu of a note or an image when given. */
+  favorites?: FavoritesView;
   /** The vault, or the drafts (ADR-031), with a tree of their own. */
   scope?: TreeScope;
   /**
@@ -375,6 +379,16 @@ export function FileTree({
             scope === "drafts" ? "drafts.moveToRoot" : "tree.moveToRoot",
           )}
           onMoveAcross={tree.moveAcross}
+          favorite={
+            favorites === undefined ||
+            menuTarget === null ||
+            !canBeFavorite(menuTarget.path)
+              ? undefined
+              : {
+                  on: favorites.has(menuTarget.path),
+                  toggle: () => favorites.toggle(menuTarget.path),
+                }
+          }
           moveAcrossLabel={t(
             scope === "drafts" ? "drafts.moveToVault" : "tree.moveToDrafts",
           )}
@@ -420,6 +434,8 @@ interface TreeMenuProps {
   /** Offered for a row in a folder, not for one at the root already. */
   onMoveToRoot?: () => void;
   moveToRootLabel: string;
+  /** Whether the row is a favorite, and a way to change it; for notes. */
+  favorite?: { on: boolean; toggle: () => void };
   /** Moves a row to the other tree: to the drafts, or out of them. */
   onMoveAcross: () => void;
   moveAcrossLabel: string;
@@ -459,6 +475,7 @@ function TreeMenu({
   canRedo,
   onMoveToRoot,
   moveToRootLabel,
+  favorite,
   onMoveAcross,
   moveAcrossLabel,
   onShowInFileManager,
@@ -516,6 +533,11 @@ function TreeMenu({
           </ContextMenu.Item>
           {(target !== null || onShowInFileManager !== undefined) && (
             <ContextMenu.Separator className={separator} />
+          )}
+          {target !== null && favorite !== undefined && (
+            <ContextMenu.Item className={menuItem} onClick={favorite.toggle}>
+              {t(favorite.on ? "favorites.remove" : "favorites.add")}
+            </ContextMenu.Item>
           )}
           {target !== null && onMoveToRoot !== undefined && (
             <ContextMenu.Item className={menuItem} onClick={onMoveToRoot}>

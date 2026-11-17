@@ -53,6 +53,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.taskDone": "Задача выполнена",
   "editor.toggleReading": "Включить или выключить режим чтения",
   "editor.toggleSource": "Показать или скрыть исходный Markdown",
+  "favorites.add": "Добавить в избранное",
+  "favorites.empty":
+    "В избранном пока ничего нет. Добавьте заметки из меню дерева файлов.",
+  "favorites.remove": "Убрать из избранного",
   "find.count": "{current} из {total}",
   "find.find": "Найти",
   "find.invalid": "Ошибка в выражении",
@@ -199,6 +203,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.backlinks": "Обратные ссылки",
   "shell.closeVault": "Закрыть хранилище",
   "shell.drafts": "Черновики",
+  "shell.favorites": "Избранное",
   "shell.files": "Файлы",
   "shell.graph": "Граф",
   "shell.indexFailed":
@@ -221,6 +226,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.rightPanelViews": "Виды правой панели",
   "shell.searchAll": "Искать во всех заметках",
   "shell.showDrafts": "Показать черновики",
+  "shell.showFavorites": "Показать избранное",
   "shell.showFiles": "Показать файлы",
   "shell.showTags": "Показать теги",
   "shell.showTrash": "Показать корзину",

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
 import { Tooltip } from "../../features/ui/Tooltip";
+import { STAR } from "../../features/favorites/FavoritesPanel";
 
 /** How wide the toolbar is open: as the mark above it (`w-bar`). */
 export const TOOLBAR_WIDTH = "var(--spacing-bar)";
@@ -119,6 +120,7 @@ export const toolbarIcons = {
       <circle cx="4.75" cy="5.25" r="1" />
     </>
   ),
+  favorites: <path d={STAR} />,
   // A page with a pencil across its corner.
   drafts: (
     <>

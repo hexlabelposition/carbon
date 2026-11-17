@@ -1,8 +1,9 @@
-import { DRAFTS_FOLDER, type TrashItem } from "@carbon/core";
+import type { TrashItem } from "@carbon/core";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import { useLanguage, useT, type Translate } from "../i18n/i18n";
+import { useLanguage, useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
-import { nameOf, parentOf } from "../vault/paths";
+import { nameOf } from "../vault/paths";
+import { placeOf } from "../vault/place";
 import type { TrashConfirm, TrashView } from "./use-trash";
 
 /**
@@ -68,7 +69,7 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
                     {labelOf(item)}
                   </p>
                   <p className="truncate text-small text-faint">
-                    {placeOf(item, t)} · {when.format(item.deletedAt)}
+                    {placeOf(item.path, t)} · {when.format(item.deletedAt)}
                   </p>
                 </div>
                 <RowButton
@@ -243,14 +244,4 @@ function Notice({ trash }: { trash: TrashView }) {
 function labelOf(item: TrashItem): string {
   const name = nameOf(item.path);
   return item.kind === "note" ? name.replace(/\.md$/i, "") : name;
-}
-
-/** Where an item was: a folder, the vault root, or the drafts. */
-function placeOf(item: TrashItem, t: Translate): string {
-  const folder = parentOf(item.path);
-  if (folder === DRAFTS_FOLDER) return t("shell.drafts");
-  if (folder.startsWith(`${DRAFTS_FOLDER}/`)) {
-    return `${t("shell.drafts")}/${folder.slice(DRAFTS_FOLDER.length + 1)}`;
-  }
-  return folder === "" ? t("trash.root") : folder;
 }

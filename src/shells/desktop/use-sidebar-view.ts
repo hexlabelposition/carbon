@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 /** What the sidebar shows. Search is a dialog of its own. */
-export type SidebarView = "files" | "tags" | "drafts" | "trash";
+export type SidebarView = "files" | "favorites" | "tags" | "drafts" | "trash";
 
 export interface SidebarViewState {
   view: SidebarView;
