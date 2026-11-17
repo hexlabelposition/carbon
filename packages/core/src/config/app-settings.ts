@@ -24,14 +24,16 @@ const MAX_RECENT_NOTES = 30;
  */
 export class AppSettings {
   private vaults: readonly RecentVault[];
+  private open: string | null;
   /** The last save: saves run one after another, so the newest one wins. */
   private saving: Promise<void> = Promise.resolve();
 
   private constructor(
     private readonly store: SettingsStore,
-    vaults: readonly RecentVault[],
+    { vaults, open }: Saved,
   ) {
     this.vaults = vaults;
+    this.open = open;
   }
 
   /**
@@ -49,6 +51,25 @@ export class AppSettings {
    */
   get recentVaults(): readonly RecentVault[] {
     return this.vaults;
+  }
+
+  /**
+   * The vault that was open when the app was last closed, to open again at
+   * start; `null` if none was, or the user closed it before leaving.
+   */
+  get openVault(): string | null {
+    return this.open;
+  }
+
+  /**
+   * Remembers the vault that is open now: call it when a vault is opened,
+   * and with `null` when the user closes it. Quitting the app leaves it.
+   */
+  async setOpenVault(root: string | null): Promise<void> {
+    const path = root === null ? null : normalizeRoot(root);
+    if (path === this.open) return;
+    this.open = path;
+    await this.save();
   }
 
   /**
@@ -144,7 +165,11 @@ export class AppSettings {
   }
 
   private save(): Promise<void> {
-    const text = `${JSON.stringify({ recentVaults: this.vaults }, null, 2)}\n`;
+    const text = `${JSON.stringify(
+      { openVault: this.open, recentVaults: this.vaults },
+      null,
+      2,
+    )}\n`;
     // A failed save must not block the ones after it.
     this.saving = this.saving
       .catch(() => {})
@@ -153,15 +178,33 @@ export class AppSettings {
   }
 }
 
+/** What the settings file holds. */
+interface Saved {
+  vaults: readonly RecentVault[];
+  open: string | null;
+}
+
 /** Reads what it can from the saved text and skips the rest. */
-function parse(text: string | null): RecentVault[] {
-  if (text === null) return [];
+function parse(text: string | null): Saved {
+  if (text === null) return { vaults: [], open: null };
   let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
-    return [];
+    return { vaults: [], open: null };
   }
+  let open: string | null = null;
+  if (isRecord(data) && typeof data.openVault === "string") {
+    try {
+      open = normalizeRoot(data.openVault);
+    } catch {
+      // Not a path a vault can have: nothing is opened at start.
+    }
+  }
+  return { vaults: parseVaults(data), open };
+}
+
+function parseVaults(data: unknown): RecentVault[] {
   const list: unknown =
     isRecord(data) && Array.isArray(data.recentVaults) ? data.recentVaults : [];
   const vaults: RecentVault[] = [];

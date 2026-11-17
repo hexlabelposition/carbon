@@ -179,6 +179,45 @@ describe("recent notes", () => {
   });
 });
 
+describe("open vault", () => {
+  test("none before anything was saved", async () => {
+    const { settings } = await loadSettings();
+    expect(settings.openVault).toBeNull();
+  });
+
+  test("is remembered across starts, and forgotten when closed", async () => {
+    const { settings, store } = await loadSettings();
+    await settings.setOpenVault("/home/me/notes/");
+    const again = await AppSettings.load(store);
+    expect(again.openVault).toBe("/home/me/notes");
+    await again.setOpenVault(null);
+    expect((await AppSettings.load(store)).openVault).toBeNull();
+  });
+
+  test("a value that is not a path is no vault", async () => {
+    const { settings } = await loadSettings(
+      JSON.stringify({ openVault: 5, recentVaults: [] }),
+    );
+    expect(settings.openVault).toBeNull();
+    const { settings: empty } = await loadSettings(
+      JSON.stringify({ openVault: "/" }),
+    );
+    expect(empty.openVault).toBeNull();
+  });
+
+  test("files saved before it existed still load", async () => {
+    const { settings } = await loadSettings(
+      JSON.stringify({
+        recentVaults: [
+          { path: "/home/me/notes", lastOpenedNote: null, recentNotes: [] },
+        ],
+      }),
+    );
+    expect(settings.openVault).toBeNull();
+    expect(paths(settings)).toEqual(["/home/me/notes"]);
+  });
+});
+
 describe("saving and loading", () => {
   test("what was saved is there after a restart", async () => {
     const { settings, store } = await loadSettings();
@@ -202,7 +241,7 @@ describe("saving and loading", () => {
     const { settings, store } = await loadSettings();
     await settings.addRecentVault("/home/me/notes");
     expect(store.text).toBe(
-      '{\n  "recentVaults": [\n    {\n      "path": "/home/me/notes",\n      "lastOpenedNote": null,\n      "recentNotes": []\n    }\n  ]\n}\n',
+      '{\n  "openVault": null,\n  "recentVaults": [\n    {\n      "path": "/home/me/notes",\n      "lastOpenedNote": null,\n      "recentNotes": []\n    }\n  ]\n}\n',
     );
   });
 
