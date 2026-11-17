@@ -1,0 +1,344 @@
+import type { NotePath, Vault } from "@carbon/core";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "../i18n/i18n";
+import { canvasRenderer } from "./canvas-renderer";
+import {
+  cameraToFit,
+  MIN_NODE_PIXELS,
+  NODE_RADIUS,
+  readGraphColors,
+  type Camera,
+  type GraphRenderer,
+  type GraphRendererFactory,
+} from "./graph-renderer";
+import { NodeGrid } from "./picking";
+import { sigmaRenderer } from "./sigma-renderer";
+import { useGraphData } from "./use-graph-data";
+import { indexGraph, useGraphLayout } from "./use-graph-layout";
+
+/**
+ * The renderer of the graph. sigma.js until the measurements of C-502 in
+ * the app decide; Canvas 2D takes over where WebGL 2 is missing.
+ */
+const RENDERERS: readonly GraphRendererFactory[] = [
+  sigmaRenderer,
+  canvasRenderer,
+];
+
+/** How far out the camera zooms, as a scale of the fitted graph. */
+const MIN_ZOOM = 0.2;
+/**
+ * How far in, in CSS pixels per unit of the layout: a note is then 32
+ * pixels wide, and a small graph is not blown up past that.
+ */
+const MAX_SCALE = 8;
+/** A press that moves less than this, in pixels, is a click, not a drag. */
+const CLICK_SLOP = 4;
+/** How far from a note the pointer still picks it, in pixels. */
+const PICK_PIXELS = 8;
+
+interface GraphViewProps {
+  vault: Vault;
+  /** The note of the active pane, drawn apart from the others. */
+  current: NotePath | null;
+  /** Opens a note: in a new tab with Ctrl or Cmd held. */
+  onOpen(path: NotePath, newTab: boolean): void;
+  onClose(): void;
+}
+
+/**
+ * The graph of the vault (C-503): every note and the links between them,
+ * laid out by a force layout in a worker that settles in view. Drag to
+ * move, wheel to zoom, click a note to open it; Escape closes the graph.
+ */
+export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
+  const t = useT();
+  const data = useGraphData(vault, true);
+  const graph = useMemo(
+    () => (data.status === "ready" ? indexGraph(data.graph) : null),
+    [data],
+  );
+  const { positions, settled } = useGraphLayout(vault.root, graph);
+  const hasPositions = positions !== null;
+
+  const stage = useRef<HTMLDivElement>(null);
+  const renderer = useRef<GraphRenderer | null>(null);
+  const camera = useRef<Camera>({ x: 0, y: 0, scale: 1 });
+  /** The scale that shows the whole graph: zoom limits are relative to it. */
+  const fitScale = useRef(1);
+  /** The user moved the camera: the layout no longer fits it. */
+  const moved = useRef(false);
+  const grid = useRef<NodeGrid | null>(null);
+  const latest = useRef<Float32Array | null>(null);
+  const [hovered, setHovered] = useState<{
+    title: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Before the renderer is made: it starts from these positions.
+  useEffect(() => {
+    latest.current = positions;
+    if (positions === null) return;
+    grid.current = new NodeGrid(positions, NODE_RADIUS * 8);
+    const shown = renderer.current;
+    if (shown === null) return;
+    shown.setPositions(positions);
+    const container = stage.current;
+    // Until the user moves it, the camera follows the layout as it spreads.
+    if (!moved.current && container !== null) {
+      const fitted = cameraToFit(
+        positions,
+        container.clientWidth,
+        container.clientHeight,
+      );
+      camera.current = fitted;
+      fitScale.current = fitted.scale;
+      shown.setCamera(fitted);
+    }
+  }, [positions]);
+
+  // One renderer per graph, made with its first positions.
+  useEffect(() => {
+    const container = stage.current;
+    const first = latest.current;
+    if (container === null || graph === null || first === null) return;
+    const fitted = cameraToFit(
+      first,
+      container.clientWidth,
+      container.clientHeight,
+    );
+    camera.current = fitted;
+    fitScale.current = fitted.scale;
+    moved.current = false;
+    const colors = readGraphColors(document.documentElement);
+    let made: GraphRenderer | null = null;
+    for (const create of RENDERERS) {
+      try {
+        made = create(container, graph, first, fitted, colors);
+        break;
+      } catch (error) {
+        container.replaceChildren();
+        console.warn("A graph renderer could not start", error);
+      }
+    }
+    renderer.current = made;
+    const resize = new ResizeObserver(() => made?.resize());
+    resize.observe(container);
+    // The theme can change while the graph is open.
+    const recolor = () =>
+      made?.setColors(readGraphColors(document.documentElement));
+    const themes = new MutationObserver(recolor);
+    themes.observe(document.documentElement, { attributes: true });
+    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", recolor);
+    return () => {
+      resize.disconnect();
+      themes.disconnect();
+      scheme.removeEventListener("change", recolor);
+      made?.destroy();
+      renderer.current = null;
+      container.replaceChildren();
+    };
+  }, [graph, hasPositions]);
+
+  useEffect(() => {
+    const index = current === null ? undefined : graph?.indexOf.get(current);
+    renderer.current?.setCurrent(index ?? null);
+  }, [current, graph, hasPositions]);
+
+  // Drag to move, wheel to zoom, click to open, hover to see the title.
+  useEffect(() => {
+    const container = stage.current;
+    if (container === null || graph === null) return;
+    let press: {
+      x: number;
+      y: number;
+      camera: Camera;
+      dragged: boolean;
+    } | null = null;
+
+    const point = (event: { clientX: number; clientY: number }) => {
+      const box = container.getBoundingClientRect();
+      return { x: event.clientX - box.left, y: event.clientY - box.top };
+    };
+    /** The note under a point of the view, by index, or `null`. */
+    const pick = (x: number, y: number) => {
+      const { x: cx, y: cy, scale } = camera.current;
+      const worldX = cx + (x - container.clientWidth / 2) / scale;
+      const worldY = cy + (y - container.clientHeight / 2) / scale;
+      const radius =
+        Math.max(NODE_RADIUS, MIN_NODE_PIXELS / scale) + PICK_PIXELS / scale;
+      return grid.current?.nearest(worldX, worldY, radius) ?? null;
+    };
+    const look = (next: Camera) => {
+      camera.current = next;
+      moved.current = true;
+      renderer.current?.setCamera(next);
+    };
+
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      const at = point(event);
+      press = { ...at, camera: camera.current, dragged: false };
+      container.setPointerCapture(event.pointerId);
+    };
+    const move = (event: PointerEvent) => {
+      const at = point(event);
+      if (press === null) {
+        const index = pick(at.x, at.y);
+        container.style.cursor = index === null ? "" : "pointer";
+        setHovered(
+          index === null ? null : { title: graph.titles[index], ...at },
+        );
+        return;
+      }
+      const dx = at.x - press.x;
+      const dy = at.y - press.y;
+      if (!press.dragged && Math.hypot(dx, dy) < CLICK_SLOP) return;
+      press.dragged = true;
+      setHovered(null);
+      container.style.cursor = "grabbing";
+      const { scale } = press.camera;
+      look({
+        ...press.camera,
+        x: press.camera.x - dx / scale,
+        y: press.camera.y - dy / scale,
+      });
+    };
+    const up = (event: PointerEvent) => {
+      if (press === null) return;
+      const clicked = !press.dragged;
+      press = null;
+      container.style.cursor = "";
+      if (!clicked) return;
+      const at = point(event);
+      const index = pick(at.x, at.y);
+      if (index !== null)
+        onOpen(graph.paths[index], event.ctrlKey || event.metaKey);
+    };
+    const leave = () => setHovered(null);
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const at = point(event);
+      // Pixels for a mouse, lines for some, pages rarely.
+      const delta =
+        event.deltaY *
+        (event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? 400 : 1);
+      zoomAt(at.x, at.y, Math.exp(-delta / 400));
+    };
+    const zoomAt = (x: number, y: number, factor: number) => {
+      const old = camera.current;
+      const scale = Math.max(
+        Math.min(fitScale.current * MIN_ZOOM, MAX_SCALE),
+        Math.min(MAX_SCALE, old.scale * factor),
+      );
+      // The point under the pointer stays under it.
+      const offsetX = x - container.clientWidth / 2;
+      const offsetY = y - container.clientHeight / 2;
+      look({
+        x: old.x + offsetX / old.scale - offsetX / scale,
+        y: old.y + offsetY / old.scale - offsetY / scale,
+        scale,
+      });
+    };
+    const key = (event: KeyboardEvent) => {
+      const middleX = container.clientWidth / 2;
+      const middleY = container.clientHeight / 2;
+      const step = 60 / camera.current.scale;
+      const pan = (x: number, y: number) =>
+        look({
+          ...camera.current,
+          x: camera.current.x + x,
+          y: camera.current.y + y,
+        });
+      switch (event.key) {
+        case "+":
+        case "=":
+          zoomAt(middleX, middleY, 1.25);
+          break;
+        case "-":
+          zoomAt(middleX, middleY, 0.8);
+          break;
+        case "ArrowLeft":
+          pan(-step, 0);
+          break;
+        case "ArrowRight":
+          pan(step, 0);
+          break;
+        case "ArrowUp":
+          pan(0, -step);
+          break;
+        case "ArrowDown":
+          pan(0, step);
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    };
+
+    container.addEventListener("pointerdown", down);
+    container.addEventListener("pointermove", move);
+    container.addEventListener("pointerup", up);
+    container.addEventListener("pointerleave", leave);
+    container.addEventListener("wheel", wheel, { passive: false });
+    container.addEventListener("keydown", key);
+    return () => {
+      container.removeEventListener("pointerdown", down);
+      container.removeEventListener("pointermove", move);
+      container.removeEventListener("pointerup", up);
+      container.removeEventListener("pointerleave", leave);
+      container.removeEventListener("wheel", wheel);
+      container.removeEventListener("keydown", key);
+    };
+  }, [graph, onOpen]);
+
+  // Escape closes the graph wherever the focus is inside it.
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    onClose();
+  };
+
+  const empty = data.status === "ready" && data.graph.nodes.length === 0;
+  return (
+    <div
+      className="relative h-full w-full overflow-hidden bg-bg"
+      onKeyDown={onKeyDown}
+    >
+      <div
+        ref={stage}
+        tabIndex={0}
+        role="application"
+        aria-label={t("graph.label")}
+        aria-busy={!settled}
+        className="absolute inset-0 touch-none outline-none select-none"
+      />
+      {hovered !== null && (
+        <div
+          className="pointer-events-none absolute rounded-md border border-line bg-panel px-2 py-0.5 text-small text-fg shadow-sm"
+          style={{ left: hovered.x + 12, top: hovered.y + 12 }}
+        >
+          {hovered.title}
+        </div>
+      )}
+      <div className="pointer-events-none absolute top-2 left-3 flex flex-col gap-1 text-small text-faint">
+        {data.status === "loading" && <p>{t("graph.loading")}</p>}
+        {data.status === "error" && (
+          <p className="text-danger">
+            {t("graph.failed", { reason: data.message })}
+          </p>
+        )}
+        {empty && <p>{t("graph.empty")}</p>}
+        {data.status === "ready" && data.partial && <p>{t("graph.partial")}</p>}
+        {data.status === "ready" && !empty && (
+          <p>
+            {t("graph.count", { count: data.graph.nodes.length })}
+            {!settled && ` · ${t("graph.settling")}`}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

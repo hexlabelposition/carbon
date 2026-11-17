@@ -134,6 +134,15 @@ export const toolbarIcons = {
       <circle cx="10.75" cy="10.75" r="0.9" fill="currentColor" stroke="none" />
     </>
   ),
+  // Three notes and the links between them.
+  graph: (
+    <>
+      <circle cx="4" cy="4.5" r="2" />
+      <circle cx="12" cy="6" r="2" />
+      <circle cx="6.5" cy="12" r="2" />
+      <path d="M5.95 4.95l4.1.6M10.6 7.45l-2.7 3.1M4.8 6.35l.95 3.8" />
+    </>
+  ),
   commands: (
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" />

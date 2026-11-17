@@ -44,6 +44,10 @@ import {
   useRandomNote,
 } from "../../features/random-note/use-random-note";
 import { useOutline } from "../../features/outline/use-outline";
+import {
+  TOGGLE_GRAPH,
+  useGraphView,
+} from "../../features/graph/use-graph-view";
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
 import { SettingsOpener } from "../../features/settings/Settings";
@@ -101,6 +105,14 @@ const DevPanel = import.meta.env.DEV
 const DevBubble = import.meta.env.DEV
   ? lazy(() => import("../../dev/DevBubble"))
   : null;
+
+// Loaded when the graph is first shown: sigma.js and its WebGL programs
+// would add about 450 kB to the start of the app.
+const GraphView = lazy(() =>
+  import("../../features/graph/GraphView").then((module) => ({
+    default: module.GraphView,
+  })),
+);
 
 /**
  * The desktop layout: the left panel, the main area and the right panel.
@@ -513,6 +525,7 @@ function ToolbarHost({
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
+        ...command(TOGGLE_GRAPH, toolbarIcons.graph),
         ...command(OPEN_PALETTE, toolbarIcons.commands),
       ]}
       footer={[
@@ -569,7 +582,23 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const sourceMode = useSourceMode();
   const readingMode = useReadingMode();
   const outline = useOutline();
-  const { path } = workspace;
+  const graph = useGraphView();
+  const { path, open } = workspace;
+  const { close: closeGraph } = graph;
+  // A note opened from anywhere, the graph or the sidebar, takes the
+  // place of the graph.
+  const [graphFor, setGraphFor] = useState(path);
+  if (graphFor !== path) {
+    setGraphFor(path);
+    if (graph.open) closeGraph();
+  }
+  const openFromGraph = useCallback(
+    (note: string, newTab: boolean) => {
+      open(note, { target: newTab ? "newTab" : "here" });
+      closeGraph();
+    },
+    [open, closeGraph],
+  );
   /** The edge of the right panel is being dragged: it does not glide. */
   const [resizingRight, setResizingRight] = useState(false);
 
@@ -600,8 +629,9 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
     </SlidePanel>
   );
 
-  // No note open: one column, the watermark in place of a note.
-  const panes = path === null ? [] : workspace.panes;
+  // No note open, or the graph shown: one column, the watermark or the
+  // graph in place of the notes.
+  const panes = path === null || graph.open ? [] : workspace.panes;
   const split = panes.length > 1;
   const last = panes.length - 1;
 
@@ -643,17 +673,48 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
     </div>
   );
 
+  // In the place of the watermark, so the sidebar in it keeps its state.
+  const graphColumn = graph.open
+    ? column(
+        0,
+        0,
+        <TabBar
+          tabs={[{ id: 0, label: t("graph.title"), title: t("graph.title") }]}
+          activeId={0}
+          onActivate={() => {}}
+          onClose={closeGraph}
+          leaveRoomStart
+          leaveRoom={!right.open}
+        />,
+        <section
+          aria-label={t("graph.title")}
+          className="min-h-0 min-w-0 flex-1"
+        >
+          <Suspense fallback={null}>
+            <GraphView
+              vault={vault}
+              current={path}
+              onOpen={openFromGraph}
+              onClose={closeGraph}
+            />
+          </Suspense>
+        </section>,
+      )
+    : null;
+
   return (
     <div className="flex min-h-0 flex-1">
-      {path === null
-        ? column(
-            0,
-            0,
-            <DragStrip room={!right.open} roomStart />,
-            <div className="min-w-0 flex-1">
-              <Watermark label={t("shell.noNoteOpen")} />
-            </div>,
-          )
+      {panes.length === 0
+        ? graph.open
+          ? graphColumn
+          : column(
+              0,
+              0,
+              <DragStrip room={!right.open} roomStart />,
+              <div className="min-w-0 flex-1">
+                <Watermark label={t("shell.noNoteOpen")} />
+              </div>,
+            )
         : panes.map((pane, index) => {
             const active = index === workspace.activePane;
             const history = (
