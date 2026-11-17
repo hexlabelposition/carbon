@@ -134,6 +134,11 @@ export interface GraphNode {
    * `path` is where they would find it (`UnresolvedTarget.path`).
    */
   missing: boolean;
+  /**
+   * The tags of the note as the index has them (`NoteMetadata.tags`), in
+   * order; none for a missing note. The graph colors notes by them.
+   */
+  tags: string[];
 }
 
 /** The links from one note to another, as one edge of the graph. */

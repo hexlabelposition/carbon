@@ -542,9 +542,29 @@ export class IndexStore {
             (list) => `SELECT id, path, title FROM notes WHERE id IN (${list})`,
           );
     const pathOf = new Map(notes.map((note) => [note.id, note.path]));
+    type TagRow = { id: number; tag: string };
+    const tagQuery = (where: string) =>
+      `SELECT note_id AS id, tag FROM tags ${where} ORDER BY note_id, rowid`;
+    const tagRows =
+      scope === null
+        ? await this.db.select<TagRow>(tagQuery(""))
+        : await this.selectIn<TagRow>([...scope.notes], (list) =>
+            tagQuery(`WHERE note_id IN (${list})`),
+          );
+    const tagsOf = new Map<number, string[]>();
+    for (const { id, tag } of tagRows) {
+      const list = tagsOf.get(id);
+      if (list === undefined) tagsOf.set(id, [tag]);
+      else list.push(tag);
+    }
     const nodes = new Map<NotePath, GraphNode>();
-    for (const { path, title } of notes) {
-      nodes.set(path, { path, title, missing: false });
+    for (const { id, path, title } of notes) {
+      nodes.set(path, {
+        path,
+        title,
+        missing: false,
+        tags: tagsOf.get(id) ?? [],
+      });
     }
 
     type EdgeRow = { source: number; target: number; count: number };
@@ -577,6 +597,7 @@ export class IndexStore {
             path: edge.path,
             title: titleOf(edge.path),
             missing: true,
+            tags: [],
           });
         }
         edges.push({ source, target: edge.path, count: edge.count });
