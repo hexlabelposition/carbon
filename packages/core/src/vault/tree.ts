@@ -31,14 +31,23 @@ const byName = new Intl.Collator(undefined, {
 });
 
 /**
- * Lists the vault and returns the children of its root. Hidden files and
- * folders (names starting with a dot) are left out.
+ * Lists the vault and returns the children of its root, or of `folder`
+ * inside it, with paths relative to the vault root all the same. Hidden
+ * files and folders (names starting with a dot) are left out. A `folder`
+ * that does not exist has no children.
  */
 export async function scanTree(
   fs: FileSystem,
   root: string,
+  folder = "",
 ): Promise<TreeNode[]> {
-  const top: FolderNode = { kind: "folder", name: "", path: "", children: [] };
+  if (folder !== "" && !(await fs.exists(`${root}/${folder}`))) return [];
+  const top: FolderNode = {
+    kind: "folder",
+    name: "",
+    path: folder,
+    children: [],
+  };
 
   // One level of the tree at a time, the folders of a level in parallel.
   let level = [top];

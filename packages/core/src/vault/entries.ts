@@ -1,21 +1,29 @@
-import type { EntryKind, FileSystem, Trash } from "../platform";
+import type { EntryKind, FileSystem } from "../platform";
 import type { OwnChanges } from "./own-changes";
-import { parentOf, resolveInVault, resolveNewInVault } from "./path";
+import {
+  DRAFTS_FOLDER,
+  isVaultPath,
+  parentOf,
+  resolveInVault,
+  resolveNewInVault,
+} from "./path";
+import type { VaultTrash } from "./trash";
 
 /** What the parts of a vault share: where it is and how to reach the disk. */
 export interface VaultContext {
   /** Absolute path of the vault folder, `/` separated. */
   root: string;
   fs: FileSystem;
-  trash: Trash;
+  /** Where deleted entries go (ADR-031). */
+  trash: VaultTrash;
   /** Every change the vault makes is recorded here (see `OwnChanges`). */
   own: OwnChanges;
 }
 
 export interface DeleteOptions {
   /**
-   * Delete for good instead of moving to the system trash. Nothing brings
-   * the note or folder back after that.
+   * Delete for good instead of moving to the trash of the vault. Nothing
+   * brings the note or folder back after that.
    */
   permanent?: boolean;
 }
@@ -134,9 +142,10 @@ async function copyTree(
 }
 
 /**
- * Deletes a file or folder: to the system trash, or for good if asked. If
- * the trash is not available the call rejects and nothing is deleted;
- * deleting for good is never a silent fallback.
+ * Deletes a file or folder: to the trash of the vault, or for good if
+ * asked. If it cannot go to the trash the call rejects and nothing is
+ * deleted; deleting for good is never a silent fallback. Only what the
+ * vault holds can be deleted (`isVaultPath`), not the drafts folder itself.
  */
 export async function deleteEntry(
   context: VaultContext,
@@ -146,8 +155,11 @@ export async function deleteEntry(
 ): Promise<void> {
   const { root, fs, trash, own } = context;
   const target = resolveInVault(root, path);
+  if (!isVaultPath(path) || path === DRAFTS_FOLDER) {
+    throw new Error(`Not part of the vault: ${JSON.stringify(path)}`);
+  }
   await expectKind(context, path, kind);
   if (options.permanent) await fs.remove(target, { recursive: kind === "dir" });
-  else await trash.moveToTrash(target);
+  else await trash.put(path.replaceAll("\\", "/"), kind);
   own.removed(target);
 }

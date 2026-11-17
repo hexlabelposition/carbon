@@ -14,7 +14,13 @@ import type { NotePath } from "../types";
 import { Folders } from "./folders";
 import { Notes } from "./notes";
 import { OwnChanges } from "./own-changes";
-import { checkVaultName, normalizeRoot } from "./path";
+import {
+  checkVaultName,
+  DRAFTS_FOLDER,
+  isVaultPath,
+  normalizeRoot,
+} from "./path";
+import { VaultTrash } from "./trash";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
 
@@ -78,6 +84,8 @@ export interface VaultEvents {
    * covers everyone else, it tells when to list the vault again.
    */
   tree: undefined;
+  /** The trash got, gave back or dropped something: `trash.list()` differs. */
+  trash: undefined;
 }
 
 export interface VaultOptions {
@@ -104,12 +112,15 @@ export class Vault {
   readonly search: Search;
   readonly tags: Tags;
   readonly graph: Graph;
+  /** Deleted notes, files and folders, until restored or emptied. */
+  readonly trash: VaultTrash;
 
   private readonly platform: Platform;
   private readonly emitter = new Emitter<VaultEvents>();
   private readonly watch: VaultWatch;
   private isWatching = false;
   private cachedTree: Promise<TreeNode[]> | null = null;
+  private cachedDrafts: Promise<TreeNode[]> | null = null;
   private closed = false;
   /** Keeps the index up to date, once it is open. */
   private indexer: Indexer | null = null;
@@ -120,9 +131,10 @@ export class Vault {
   private indexing: Promise<void> = Promise.resolve();
 
   private constructor(root: string, platform: Platform, delayMs: number) {
-    const { fs, watcher, trash } = platform;
+    const { fs, watcher } = platform;
     const forgetTree = () => {
       this.cachedTree = null;
+      this.cachedDrafts = null;
     };
     const own = new OwnChanges(
       fs,
@@ -130,8 +142,19 @@ export class Vault {
         forgetTree();
         this.emitter.emit("tree", undefined);
       },
-      (path) => this.indexer?.touched(path.slice(root.length + 1)),
+      (path) => {
+        const relative = path.slice(root.length + 1);
+        // The trash and the rest of `.carbon` are not indexed.
+        if (isVaultPath(relative)) this.indexer?.touched(relative);
+      },
     );
+    const trash = new VaultTrash({
+      root,
+      fs,
+      own,
+      onChange: () => this.emitter.emit("trash", undefined),
+    });
+    this.trash = trash;
 
     this.root = root;
     this.platform = platform;
@@ -209,6 +232,13 @@ export class Vault {
       options.changeDelayMs ?? DEFAULT_CHANGE_DELAY_MS,
     );
     try {
+      // Where the vault settings, the drafts and the trash live (4.1). The
+      // drafts folder is made too, so notes can be moved into it.
+      await platform.fs.mkdir(`${normalized}/${DRAFTS_FOLDER}`);
+    } catch {
+      // A vault on a read-only drive still opens, to be read.
+    }
+    try {
       await vault.watch.start();
       vault.isWatching = true;
     } catch {
@@ -261,6 +291,18 @@ export class Vault {
     if (!this.isWatching) return scanTree(fs, this.root);
     this.cachedTree ??= scanTree(fs, this.root);
     return this.cachedTree;
+  }
+
+  /**
+   * The drafts (ADR-031): the tree of `DRAFTS_FOLDER`, which `tree()`
+   * leaves out, with paths relative to the vault root. Empty while the
+   * folder does not exist. Cached as `tree()` is.
+   */
+  drafts(): Promise<TreeNode[]> {
+    const { fs } = this.platform;
+    if (!this.isWatching) return scanTree(fs, this.root, DRAFTS_FOLDER);
+    this.cachedDrafts ??= scanTree(fs, this.root, DRAFTS_FOLDER);
+    return this.cachedDrafts;
   }
 
   /**
@@ -348,6 +390,7 @@ export class Vault {
     this.watch.stop();
     this.isWatching = false;
     this.cachedTree = null;
+    this.cachedDrafts = null;
     this.emitter.clear();
     void this.indexer?.close().catch(() => {});
     this.indexer = null;

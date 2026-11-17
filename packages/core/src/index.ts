@@ -4,7 +4,8 @@ export { AppSettings } from "./config/app-settings";
 export type { RecentVault } from "./config/app-settings";
 
 export { Vault } from "./vault/vault";
-export { checkVaultName } from "./vault/path";
+export { checkVaultName, DRAFTS_FOLDER, TRASH_FOLDER } from "./vault/path";
+export type { TrashItem, VaultTrash } from "./vault/trash";
 export type { IndexStatus, VaultEvents, VaultOptions } from "./vault/vault";
 export type { VaultChange } from "./vault/watch";
 export type { DeleteOptions } from "./vault/entries";
@@ -58,7 +59,6 @@ export type {
   SqlValue,
   NoteStat,
   Stat,
-  Trash,
   Watcher,
 } from "./platform";
 

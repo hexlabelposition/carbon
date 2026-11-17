@@ -5,7 +5,6 @@ import type { Platform } from "@carbon/core";
 import { tauriFileSystem } from "./file-system";
 import { tauriSettingsStore } from "./settings-store";
 import { tauriSqlDatabases } from "./sql";
-import { tauriTrash } from "./trash";
 import { tauriWatcher } from "./watcher";
 
 export { pickVaultFolder } from "./dialog";
@@ -19,6 +18,5 @@ export const tauriPlatform: Platform = {
   fs: tauriFileSystem,
   watcher: tauriWatcher,
   sql: tauriSqlDatabases,
-  trash: tauriTrash,
   settings: tauriSettingsStore,
 };

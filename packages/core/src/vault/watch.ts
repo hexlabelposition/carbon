@@ -7,6 +7,7 @@ import type {
 } from "../platform";
 import { mapPool } from "../util/pool";
 import type { OwnChanges } from "./own-changes";
+import { isVaultPath } from "./path";
 
 /** A change made to the vault by something other than the vault itself. */
 export interface VaultChange {
@@ -63,9 +64,9 @@ export class VaultWatch {
     const { root, delayMs, onActivity } = this.options;
     if (this.stopped || !event.path.startsWith(`${root}/`)) return;
     const relative = event.path.slice(root.length + 1);
-    // Hidden files and folders are not part of the vault. This also drops
-    // the temp files of atomic writes.
-    if (relative.split("/").some((s) => s.startsWith("."))) return;
+    // Hidden files and folders are not part of the vault, the drafts aside.
+    // This also drops the temp files of atomic writes and the trash.
+    if (!isVaultPath(relative)) return;
 
     onActivity();
     // The first event tells whether the path existed before the burst.

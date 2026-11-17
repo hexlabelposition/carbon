@@ -1,4 +1,11 @@
-import type { FileSystem, NoteFile, NoteParser, Stat } from "../platform";
+import type {
+  FileSystem,
+  NoteFile,
+  NoteParser,
+  NoteStat,
+  Stat,
+} from "../platform";
+import { DRAFTS_FOLDER } from "../vault/path";
 import type { NotePath } from "../types";
 import { mapPool } from "../util/pool";
 import type { IndexEntry, IndexStore, NoteStamp } from "./index-store";
@@ -69,7 +76,7 @@ export async function scanVault(options: ScanOptions): Promise<ScanResult> {
   const waits: ScanWaits = { list: 0, read: 0, parse: 0, write: 0 };
   const listStart = Date.now();
   const [listed, known] = await Promise.all([
-    fs.listNotes(folder === "" ? root : `${root}/${folder}`),
+    listVaultNotes(fs, root, folder),
     store.stamps(folder),
   ]);
   const stats = new Map<NotePath, Stat>(
@@ -105,6 +112,33 @@ export async function scanVault(options: ScanOptions): Promise<ScanResult> {
     removed: gone.length + updated.removed,
     waits,
   };
+}
+
+/**
+ * The notes of the vault, or of a folder of it, below that folder. The
+ * whole vault takes in the drafts too, which `listNotes` leaves out with
+ * the other hidden folders (ADR-031).
+ */
+async function listVaultNotes(
+  fs: FileSystem,
+  root: string,
+  folder: string,
+): Promise<NoteStat[]> {
+  if (folder !== "") return fs.listNotes(`${root}/${folder}`);
+  const draftsDir = `${root}/${DRAFTS_FOLDER}`;
+  const [notes, drafts] = await Promise.all([
+    fs.listNotes(root),
+    fs
+      .exists(draftsDir)
+      .then((found) => (found ? fs.listNotes(draftsDir) : [])),
+  ]);
+  return [
+    ...notes,
+    ...drafts.map((note) => ({
+      ...note,
+      path: `${DRAFTS_FOLDER}/${note.path}`,
+    })),
+  ];
 }
 
 /**
