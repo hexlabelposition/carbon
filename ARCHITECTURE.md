@@ -128,7 +128,7 @@ my-vault/
     diagram.png
   .carbon/
     config.json             # vault settings that should travel with the vault
-    favorites.json          # the favorites, in the order they were added
+    bookmarks.json          # the bookmarks, in the order they were added
     drafts/                 # drafts: notes kept out of the file tree (ADR-031)
     trash/                  # deleted entries, one folder each (ADR-031)
       1763372100123/
@@ -227,7 +227,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 - Ignores its own writes so a save does not trigger a reload.
 - Checks a content hash before writing, so an external change is never silently overwritten.
 - Deleting moves an entry to the trash of the vault, `.carbon/trash` (ADR-031): a folder per entry, named by the time, with the entry as it was and `.item.json`, which says where it was. Restoring puts it back there, under a free name if the place is taken, with the folders above it if they are gone. With the setting "Deleted files go to: system trash", deleting moves to the trash of the operating system instead (`system`). Taking an item out of the vault trash, or emptying it, moves it to the system trash or deletes it for good, as the user picks each time; deleting for good, there or with `permanent`, cannot be taken back.
-- Favorites are a list of paths in `.carbon/favorites.json`, so they travel with the vault. Moves and deletions made through the vault keep it right; an entry another program moved away is left out of `favorites.list()` until it is back.
+- Bookmarks are a list of paths in `.carbon/bookmarks.json`, so they travel with the vault. They were called favorites at first, in `.carbon/favorites.json`, which is read when there is no bookmarks file and deleted once one is written. Moves and deletions made through the vault keep it right; an entry another program moved away is left out of `bookmarks.list()` until it is back.
 - Drafts live in `.carbon/drafts` (ADR-031): `vault.drafts()` lists them as `vault.tree()` lists the rest. A note moves between the drafts and the vault by an ordinary rename, which rewrites its links.
 
 ### parser
@@ -275,7 +275,7 @@ const vault = await Vault.open(path, platform)
 
 vault.tree()
 vault.drafts()                  // the tree of .carbon/drafts, which tree() leaves out
-vault.favorites.list() / has(path) / add(path) / remove(path)
+vault.bookmarks.list() / has(path) / add(path) / remove(path)
 vault.trash.list() / restore(id) / remove(id, { system }) / empty({ system })
 vault.notes.read(path)
 vault.notes.write(path, content, baseHash)
@@ -297,7 +297,7 @@ vault.on('rewritten', ...)      // the vault rewrote a note itself (links, a ren
 vault.indexStatus               // scanning, ready or failed, for listeners that come late
 vault.on('tree', ...)           // the app itself added, moved or deleted something
 vault.on('conflict', ...)       // open note changed on disk while it has unsaved edits
-vault.on('favorites', ...)      // a favorite was added, taken off, moved or deleted
+vault.on('bookmarks', ...)      // a bookmark was added, taken off, moved or deleted
 vault.on('trash', ...)          // the trash got, gave back or dropped something
 ```
 
@@ -428,7 +428,7 @@ Desktop and phone layouts differ too much to stretch one layout over both. Carbo
 
 - Only the desktop shell exists for now. A mobile shell is an idea, not a plan.
 - A shell decides which features it mounts. A reduced mobile feature set needs no conditions scattered through the code.
-- Favorites (C-620) are a view of the sidebar with a button of their own: notes and images, added from the menu of the file tree or by the command "Add to favorites" for the open note, opened with a click, taken off with the star of the row.
+- Bookmarks (C-620) are a view of the sidebar with a button of their own: notes and images, added from the menu of the file tree or by the command "Add to bookmarks" for the open note, opened with a click, taken off with the bookmark of the row.
 - Searching all notes is a dialog over the blurred window, as the quick switcher (C-619): Ctrl+Shift+F, the toolbar or the palette open it, the arrow keys and Enter open a hit at its first match, and the last query stays for the next time. While it is shut it does not search.
 - The drafts and the trash (ADR-031) show in the sidebar of the desktop shell, from their toolbar buttons or the palette, as the files and the tags: the sidebar has no row of tabs, each view is opened by its button. The drafts are the file tree (`FileTree` with `scope="drafts"`), so everything the tree does works there, and its menu moves a note between the drafts and the vault. The trash (`src/features/trash`) lists what was deleted, the latest first, to restore or to take out: to the system trash or for good, asked each time in a dialog over the blurred window, as the other dialogs, for one item or with "Empty trash" for all. Where deleting goes, the vault trash or the system one, is a setting (`deleteToPreference`).
 

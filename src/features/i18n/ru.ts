@@ -7,6 +7,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "backlinks.failed": "Обратные ссылки недоступны: {reason}",
   "backlinks.partial":
     "Идёт индексация: некоторых обратных ссылок может не быть.",
+  "bookmarks.add": "Добавить в закладки",
+  "bookmarks.empty":
+    "Закладок пока нет. Добавьте заметки из меню дерева файлов.",
+  "bookmarks.remove": "Убрать из закладок",
   "browser.startWith": "Запустите его командой",
   "browser.title": "Carbon работает как приложение для компьютера",
   "browser.why":
@@ -53,10 +57,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.taskDone": "Задача выполнена",
   "editor.toggleReading": "Включить или выключить режим чтения",
   "editor.toggleSource": "Показать или скрыть исходный Markdown",
-  "favorites.add": "Добавить в избранное",
-  "favorites.empty":
-    "В избранном пока ничего нет. Добавьте заметки из меню дерева файлов.",
-  "favorites.remove": "Убрать из избранного",
   "find.count": "{current} из {total}",
   "find.find": "Найти",
   "find.invalid": "Ошибка в выражении",
@@ -201,9 +201,9 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.width.wide": "Широкая",
   "settings.zoom": "Масштаб интерфейса",
   "shell.backlinks": "Обратные ссылки",
+  "shell.bookmarks": "Закладки",
   "shell.closeVault": "Закрыть хранилище",
   "shell.drafts": "Черновики",
-  "shell.favorites": "Избранное",
   "shell.files": "Файлы",
   "shell.graph": "Граф",
   "shell.indexFailed":
@@ -225,8 +225,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.rightPanel": "Правая панель",
   "shell.rightPanelViews": "Виды правой панели",
   "shell.searchAll": "Искать во всех заметках",
+  "shell.showBookmarks": "Показать закладки",
   "shell.showDrafts": "Показать черновики",
-  "shell.showFavorites": "Показать избранное",
   "shell.showFiles": "Показать файлы",
   "shell.showTags": "Показать теги",
   "shell.showTrash": "Показать корзину",

@@ -7,7 +7,7 @@ import {
   resolveInVault,
   resolveNewInVault,
 } from "./path";
-import type { Favorites } from "./favorites";
+import type { Bookmarks } from "./bookmarks";
 import type { VaultTrash } from "./trash";
 
 /** What the parts of a vault share: where it is and how to reach the disk. */
@@ -20,7 +20,7 @@ export interface VaultContext {
   /** The trash of the operating system, for `DeleteOptions.system`. */
   systemTrash: Trash;
   /** Kept right as entries move and go. */
-  favorites: Favorites;
+  bookmarks: Bookmarks;
   /** Every change the vault makes is recorded here (see `OwnChanges`). */
   own: OwnChanges;
 }
@@ -99,7 +99,7 @@ export async function moveEntry(
   await fs.rename(source, target);
   own.removed(source);
   await own.wrote(target);
-  await context.favorites.moved(slashed(from), slashed(to));
+  await context.bookmarks.moved(slashed(from), slashed(to));
 }
 
 /** A vault path with `/` separators only. */
@@ -179,5 +179,5 @@ export async function deleteEntry(
   else if (options.system) await systemTrash.moveToTrash(target);
   else await trash.put(slashed(path), kind);
   own.removed(target);
-  await context.favorites.removed(slashed(path));
+  await context.bookmarks.removed(slashed(path));
 }

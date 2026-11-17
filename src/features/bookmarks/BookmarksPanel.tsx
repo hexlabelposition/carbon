@@ -1,41 +1,41 @@
 import { useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { entryLabel, placeOf } from "../vault/place";
-import type { FavoritesView } from "./use-favorites";
+import type { BookmarksView } from "./use-bookmarks";
 
-interface FavoritesPanelProps {
-  favorites: FavoritesView;
+interface BookmarksPanelProps {
+  bookmarks: BookmarksView;
   /** The note open now, marked in the list. */
   activePath: string | null;
-  /** Opens a favorite, in a new tab if `newTab`. */
+  /** Opens a bookmark, in a new tab if `newTab`. */
   onOpen: (path: string, newTab: boolean) => void;
 }
 
 /**
- * The favorites, in the order they were added, each with where it is. A
- * click opens one; Ctrl+click and the middle button in a new tab. The star
- * of a row takes it off the list.
+ * The bookmarks, in the order they were added, each with where it is. A
+ * click opens one; Ctrl+click and the middle button in a new tab. The
+ * bookmark of a row takes it off the list.
  */
-export function FavoritesPanel({
-  favorites,
+export function BookmarksPanel({
+  bookmarks,
   activePath,
   onOpen,
-}: FavoritesPanelProps) {
+}: BookmarksPanelProps) {
   const t = useT();
-  const { paths } = favorites;
+  const { paths } = bookmarks;
   if (paths === null) return null;
   return (
     <div className="flex h-full flex-col">
-      {favorites.error !== null && (
+      {bookmarks.error !== null && (
         <div
           role="alert"
           className="flex shrink-0 items-start gap-2 border-b border-line px-3 py-2 text-small"
         >
-          <p className="min-w-0 flex-1 text-danger">{favorites.error}</p>
+          <p className="min-w-0 flex-1 text-danger">{bookmarks.error}</p>
           <button
             type="button"
             className="shrink-0 rounded-sm px-1 text-muted hover:bg-raise hover:text-fg"
-            onClick={favorites.dismiss}
+            onClick={bookmarks.dismiss}
           >
             {t("common.dismiss")}
           </button>
@@ -43,11 +43,11 @@ export function FavoritesPanel({
       )}
       {paths.length === 0 ? (
         <p className="px-3 py-4 text-center text-faint">
-          {t("favorites.empty")}
+          {t("bookmarks.empty")}
         </p>
       ) : (
         <ul
-          aria-label={t("shell.favorites")}
+          aria-label={t("shell.bookmarks")}
           className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto p-2"
         >
           {paths.map((path) => (
@@ -82,14 +82,14 @@ export function FavoritesPanel({
                   {placeOf(path, t)}
                 </span>
               </button>
-              <Tooltip label={t("favorites.remove")}>
+              <Tooltip label={t("bookmarks.remove")}>
                 <button
                   type="button"
-                  aria-label={t("favorites.remove")}
+                  aria-label={t("bookmarks.remove")}
                   className="flex size-6 shrink-0 items-center justify-center rounded-sm text-muted opacity-0 outline-none group-hover:opacity-100 hover:bg-selected hover:text-fg focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-line-strong"
                   onClick={(event) => {
                     event.stopPropagation();
-                    favorites.remove(path);
+                    bookmarks.remove(path);
                   }}
                 >
                   <svg
@@ -101,7 +101,7 @@ export function FavoritesPanel({
                     strokeWidth="1.25"
                     strokeLinejoin="round"
                   >
-                    <path d={STAR} />
+                    <path d={BOOKMARK} />
                   </svg>
                 </button>
               </Tooltip>
@@ -113,6 +113,6 @@ export function FavoritesPanel({
   );
 }
 
-/** A five-pointed star on 16 by 16, for the toolbar and the rows. */
-export const STAR =
-  "M8 1.75l1.9 3.95 4.35.6-3.15 3.05.75 4.3L8 11.6l-3.85 2.05.75-4.3L1.75 6.3l4.35-.6z";
+/** A bookmark ribbon on 16 by 16, for the toolbar and the rows. */
+export const BOOKMARK =
+  "M4.5 1.75h7a.75.75 0 0 1 .75.75v11.75L8 11.4l-4.25 2.85V2.5a.75.75 0 0 1 .75-.75z";

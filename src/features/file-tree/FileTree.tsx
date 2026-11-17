@@ -23,7 +23,7 @@ import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
 import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
-import { canBeFavorite, type FavoritesView } from "../favorites/use-favorites";
+import { canBookmark, type BookmarksView } from "../bookmarks/use-bookmarks";
 
 /**
  * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
@@ -53,13 +53,13 @@ const INDENT = 14;
 export function FileTree({
   vault,
   scope = "vault",
-  favorites,
+  bookmarks,
   onReveal,
   showInFileManager,
 }: {
   vault: Vault;
   /** Offered in the menu of a note or an image when given. */
-  favorites?: FavoritesView;
+  bookmarks?: BookmarksView;
   /** The vault, or the drafts (ADR-031), with a tree of their own. */
   scope?: TreeScope;
   /**
@@ -394,14 +394,14 @@ export function FileTree({
             scope === "drafts" ? "drafts.moveToRoot" : "tree.moveToRoot",
           )}
           onMoveAcross={tree.moveAcross}
-          favorite={
-            favorites === undefined ||
+          bookmark={
+            bookmarks === undefined ||
             menuTarget === null ||
-            !canBeFavorite(menuTarget.path)
+            !canBookmark(menuTarget.path)
               ? undefined
               : {
-                  on: favorites.has(menuTarget.path),
-                  toggle: () => favorites.toggle(menuTarget.path),
+                  on: bookmarks.has(menuTarget.path),
+                  toggle: () => bookmarks.toggle(menuTarget.path),
                 }
           }
           moveAcrossLabel={t(
@@ -449,8 +449,8 @@ interface TreeMenuProps {
   /** Offered for a row in a folder, not for one at the root already. */
   onMoveToRoot?: () => void;
   moveToRootLabel: string;
-  /** Whether the row is a favorite, and a way to change it; for notes. */
-  favorite?: { on: boolean; toggle: () => void };
+  /** Whether the row is a bookmark, and a way to change it; for notes. */
+  bookmark?: { on: boolean; toggle: () => void };
   /** Moves a row to the other tree: to the drafts, or out of them. */
   onMoveAcross: () => void;
   moveAcrossLabel: string;
@@ -493,7 +493,7 @@ function TreeMenu({
   canRedo,
   onMoveToRoot,
   moveToRootLabel,
-  favorite,
+  bookmark,
   onMoveAcross,
   moveAcrossLabel,
   onShowInFileManager,
@@ -552,9 +552,9 @@ function TreeMenu({
           {(target !== null || onShowInFileManager !== undefined) && (
             <ContextMenu.Separator className={separator} />
           )}
-          {target !== null && favorite !== undefined && (
-            <ContextMenu.Item className={menuItem} onClick={favorite.toggle}>
-              {t(favorite.on ? "favorites.remove" : "favorites.add")}
+          {target !== null && bookmark !== undefined && (
+            <ContextMenu.Item className={menuItem} onClick={bookmark.toggle}>
+              {t(bookmark.on ? "bookmarks.remove" : "bookmarks.add")}
             </ContextMenu.Item>
           )}
           {target !== null && onMoveToRoot !== undefined && (

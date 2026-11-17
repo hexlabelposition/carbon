@@ -30,11 +30,11 @@ import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
 import { TrashPanel } from "../../features/trash/TrashPanel";
-import { FavoritesPanel } from "../../features/favorites/FavoritesPanel";
+import { BookmarksPanel } from "../../features/bookmarks/BookmarksPanel";
 import {
-  useFavoriteCommand,
-  useFavorites,
-} from "../../features/favorites/use-favorites";
+  useBookmarkCommand,
+  useBookmarks,
+} from "../../features/bookmarks/use-bookmarks";
 import { useTrash } from "../../features/trash/use-trash";
 import { useTags } from "../../features/tags/use-tags";
 import { OPEN_SEARCH, useSearch } from "../../features/search/use-search";
@@ -216,11 +216,11 @@ export function DesktopShell({
           },
         },
         {
-          id: "shell.favorites",
-          title: t("shell.showFavorites"),
+          id: "shell.bookmarks",
+          title: t("shell.showBookmarks"),
           run: () => {
             revealSidebar();
-            showSidebarView("favorites");
+            showSidebarView("bookmarks");
           },
         },
         {
@@ -381,7 +381,7 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar: files, favorites, tags, drafts and trash, one at a time,
+ * The views of the sidebar: files, bookmarks, tags, drafts and trash, one at a time,
  * each shown by its button of the toolbar or from the palette; there is
  * no row of tabs. They stay mounted: switching keeps the open folders and
  * the open tags. Search is a dialog of its own (`SearchHost`).
@@ -401,8 +401,8 @@ function SidebarContent({
   const t = useT();
   const tags = useTags(vault, view === "tags");
   const trash = useTrash(vault, view === "trash");
-  const favorites = useFavorites(vault);
-  useFavoriteCommand(favorites);
+  const bookmarks = useBookmarks(vault);
+  useBookmarkCommand(bookmarks);
   const { open, path: activePath } = useWorkspace();
   // For what the file tree starts from elsewhere, such as "New note" from
   // the palette: its name field must be where it can be typed in.
@@ -423,18 +423,18 @@ function SidebarContent({
       >
         <FileTree
           vault={vault}
-          favorites={favorites}
+          bookmarks={bookmarks}
           onReveal={showFiles}
           showInFileManager={showInFileManager}
         />
       </div>
       <div
         role="region"
-        aria-label={t("shell.favorites")}
-        className={view === "favorites" ? "min-h-0 flex-1" : "hidden"}
+        aria-label={t("shell.bookmarks")}
+        className={view === "bookmarks" ? "min-h-0 flex-1" : "hidden"}
       >
-        <FavoritesPanel
-          favorites={favorites}
+        <BookmarksPanel
+          bookmarks={bookmarks}
           activePath={activePath}
           onOpen={(path, newTab) =>
             open(path, { target: newTab ? "newTab" : "here" })
@@ -461,7 +461,7 @@ function SidebarContent({
         <FileTree
           vault={vault}
           scope="drafts"
-          favorites={favorites}
+          bookmarks={bookmarks}
           onReveal={showDrafts}
           showInFileManager={showInFileManager}
         />
@@ -572,7 +572,7 @@ function ToolbarHost({
       open={open}
       items={[
         sidebarItem("files", t("shell.files"), toolbarIcons.files),
-        sidebarItem("favorites", t("shell.favorites"), toolbarIcons.favorites),
+        sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
         ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),

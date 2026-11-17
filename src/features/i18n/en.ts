@@ -17,6 +17,10 @@ export const en = {
   "backlinks.emptySnippet": "(empty)",
   "backlinks.failed": "Backlinks are not available: {reason}",
   "backlinks.partial": "Indexing: some backlinks may be missing.",
+  "bookmarks.add": "Add to bookmarks",
+  "bookmarks.empty":
+    "No bookmarks yet. Add notes from the menu of the file tree.",
+  "bookmarks.remove": "Remove from bookmarks",
   "browser.startWith": "Start it with",
   "browser.title": "Carbon runs as a desktop app",
   "browser.why":
@@ -62,10 +66,6 @@ export const en = {
   "editor.taskDone": "Task done",
   "editor.toggleReading": "Toggle reading mode",
   "editor.toggleSource": "Toggle source mode",
-  "favorites.add": "Add to favorites",
-  "favorites.empty":
-    "No favorites yet. Add notes from the menu of the file tree.",
-  "favorites.remove": "Remove from favorites",
   "find.count": "{current} of {total}",
   "find.find": "Find",
   "find.invalid": "Invalid",
@@ -202,9 +202,9 @@ export const en = {
   "settings.width.wide": "Wide",
   "settings.zoom": "Interface zoom",
   "shell.backlinks": "Backlinks",
+  "shell.bookmarks": "Bookmarks",
   "shell.closeVault": "Close vault",
   "shell.drafts": "Drafts",
-  "shell.favorites": "Favorites",
   "shell.files": "Files",
   "shell.graph": "Graph",
   "shell.indexFailed":
@@ -224,8 +224,8 @@ export const en = {
   "shell.rightPanel": "Right panel",
   "shell.rightPanelViews": "Right panel views",
   "shell.searchAll": "Search all notes",
+  "shell.showBookmarks": "Show bookmarks",
   "shell.showDrafts": "Show drafts",
-  "shell.showFavorites": "Show favorites",
   "shell.showFiles": "Show files",
   "shell.showTags": "Show tags",
   "shell.showTrash": "Show trash",

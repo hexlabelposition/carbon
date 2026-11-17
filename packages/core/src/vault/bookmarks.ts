@@ -1,10 +1,15 @@
 import type { FileSystem } from "../platform";
 import { CARBON_FOLDER } from "./path";
 
-/** Where the favorites of a vault are kept, relative to its root. */
-export const FAVORITES_FILE = `${CARBON_FOLDER}/favorites.json`;
+/** Where the bookmarks of a vault are kept, relative to its root. */
+export const BOOKMARKS_FILE = `${CARBON_FOLDER}/bookmarks.json`;
+/**
+ * Where they were kept while they were called favorites (C-620): read when
+ * there is no bookmarks file yet, and deleted once that is written.
+ */
+const OLD_FILE = `${CARBON_FOLDER}/favorites.json`;
 
-export interface FavoritesOptions {
+export interface BookmarksOptions {
   root: string;
   fs: FileSystem;
   /** After the list changed. */
@@ -12,21 +17,21 @@ export interface FavoritesOptions {
 }
 
 /**
- * The notes and files the user marked as favorites, in the order they
- * were added, kept in `.carbon/favorites.json` so they travel with the
+ * The notes and files the user marked as bookmarks, in the order they
+ * were added, kept in `.carbon/bookmarks.json` so they travel with the
  * vault. Moves and deletions made through the vault keep the list right;
  * an entry that another program moved away is left out of `list()` until
  * it is back.
  */
-export class Favorites {
+export class Bookmarks {
   /** The list as on disk; read once, then kept here. */
   private paths: Promise<string[]> | null = null;
   /** Writes one after another, so a later list never loses to an earlier. */
   private writing: Promise<void> = Promise.resolve();
 
-  constructor(private readonly options: FavoritesOptions) {}
+  constructor(private readonly options: BookmarksOptions) {}
 
-  /** The favorites that exist now, in the order they were added. */
+  /** The bookmarks that exist now, in the order they were added. */
   async list(): Promise<string[]> {
     const { root, fs } = this.options;
     const paths = await this.load();
@@ -36,12 +41,12 @@ export class Favorites {
     return paths.filter((_, i) => found[i]);
   }
 
-  /** Whether `path` is a favorite, whether it exists now or not. */
+  /** Whether `path` is a bookmark, whether it exists now or not. */
   async has(path: string): Promise<boolean> {
     return (await this.load()).includes(path);
   }
 
-  /** Adds `path` at the end. Does nothing if it is a favorite already. */
+  /** Adds `path` at the end. Does nothing if it is a bookmark already. */
   async add(path: string): Promise<void> {
     const paths = await this.load();
     if (paths.includes(path)) return;
@@ -80,9 +85,10 @@ export class Favorites {
   private async read(): Promise<string[]> {
     const { root, fs } = this.options;
     try {
-      const data: unknown = JSON.parse(
-        await fs.readText(`${root}/${FAVORITES_FILE}`),
-      );
+      const file = (await fs.exists(`${root}/${BOOKMARKS_FILE}`))
+        ? BOOKMARKS_FILE
+        : OLD_FILE;
+      const data: unknown = JSON.parse(await fs.readText(`${root}/${file}`));
       const items =
         typeof data === "object" && data !== null
           ? (data as Record<string, unknown>).items
@@ -109,7 +115,11 @@ export class Favorites {
     const text = `${JSON.stringify({ items: paths }, null, 2)}\n`;
     const write = this.writing.then(async () => {
       await fs.mkdir(`${root}/${CARBON_FOLDER}`);
-      await fs.writeTextAtomic(`${root}/${FAVORITES_FILE}`, text);
+      await fs.writeTextAtomic(`${root}/${BOOKMARKS_FILE}`, text);
+      // Its list is in the new file now.
+      if (await fs.exists(`${root}/${OLD_FILE}`)) {
+        await fs.remove(`${root}/${OLD_FILE}`).catch(() => {});
+      }
     });
     // A failed write must not stop the ones after it.
     this.writing = write.catch(() => {});
