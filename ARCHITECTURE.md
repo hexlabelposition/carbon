@@ -439,7 +439,21 @@ Three rules that keep a second shell cheap:
 ### Graph
 
 - The core returns nodes and edges. Rendering happens on canvas or WebGL, not in the DOM.
-- Renderer choice is an open question.
+- Renderer choice is an open question (2). The prototype for it (C-502) is in the dev panel, **Graph renderers**, and on a page of its own at `/src/dev/graph-bench/index.html` of the dev server: Canvas 2D, Pixi.js and sigma.js draw the same graph of 10,000 notes, laid out with d3-force in a worker, while the camera pans in a loop and zooms 8 times in and out. Each is timed for 8 s; a run prints frames per second, the frame times and the GPU WebGL draws with.
+
+**C-502 first measurements**
+
+Measured on 2026-11-17 in headless Chromium in a cloud container: 4 CPU cores, no GPU, WebGL in SwiftShader on the CPU. A graph of 10,000 random notes with 45,098 edges, view 726 by 388 px.
+
+| Renderer  | Setup   | Frames per second | Frame p95 |
+| --------- | ------- | ----------------- | --------- |
+| Canvas 2D | 69 ms   | 5.6               | 533 ms    |
+| Pixi.js   | 828 ms  | 1.8               | 983 ms    |
+| sigma.js  | 3153 ms | 0.6               | 2300 ms   |
+
+- These numbers only show the cost on the CPU. Without a GPU, WebGL runs in software and loses most of all. They decide nothing: the decision needs the same run in the app, in WebKitGTK, on a real machine.
+- sigma.js 4 reads its picking layer back every frame (a "GPU stall due to ReadPixels" warning). This is cheap on a GPU and slow in software.
+- The d3-force layout of 10,000 nodes took 21 s for 300 ticks on this machine. The graph view needs a faster layout (C-503): fewer ticks, showing the layout as it settles, or ForceAtlas2.
 
 ## 9. Key flows
 
@@ -539,7 +553,7 @@ Behavior of a platform or its WebView that the app cannot change. Each was check
 ## 13. Open questions
 
 1. **Index engine.** Resolved in M0: SQLite with FTS5 through the `sql` plugin (ADR-009, measurements in section 7). An in-memory index stays possible behind `IndexStore` but is not planned. The SQL lives in the core (ADR-021).
-2. **Graph renderer.** Candidates: sigma.js, Pixi.js with d3-force, custom canvas. Decide with a 10k-node prototype.
+2. **Graph renderer.** Candidates: sigma.js, Pixi.js with d3-force, custom canvas. The 10k-node prototype is built (C-502, section 8). The decision waits for its run in the app on the author's Linux machine. If WebGL is fast there, sigma.js is the favorite: hover, filters, node size and color, labels and click picking (C-503 to C-507) are built in, where Pixi.js and Canvas 2D need them written by hand.
 3. **State management.** Zustand or plain React context plus a query cache.
 4. **Stable note IDs.** Path-based identity is simple but loses links on external renames. Option: detect renames by content hash.
 5. **Native hot paths.** At what measured numbers is it worth adding a Rust command (see section 7)?
