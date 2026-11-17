@@ -106,11 +106,16 @@ const DevBubble = import.meta.env.DEV
   ? lazy(() => import("../../dev/DevBubble"))
   : null;
 
-// Loaded when the graph is first shown: sigma.js and its WebGL programs
+// Loaded when a graph is first shown: sigma.js and its WebGL programs
 // would add about 450 kB to the start of the app.
 const GraphView = lazy(() =>
   import("../../features/graph/GraphView").then((module) => ({
     default: module.GraphView,
+  })),
+);
+const LocalGraphView = lazy(() =>
+  import("../../features/graph/GraphView").then((module) => ({
+    default: module.LocalGraphView,
   })),
 );
 
@@ -193,6 +198,11 @@ export function DesktopShell({
           id: "shell.backlinks",
           title: t("shell.toggleBacklinks"),
           run: () => toggleRightView("backlinks"),
+        },
+        {
+          id: "shell.localGraph",
+          title: t("shell.toggleLocalGraph"),
+          run: () => toggleRightView("graph"),
         },
         {
           id: "shell.files",
@@ -869,6 +879,8 @@ function RightPanelForNote(props: RightPanelProps & { path: string }) {
     >
       {view === "outline" ? (
         outline
+      ) : view === "graph" ? (
+        <LocalGraphHost vault={vault} path={path} />
       ) : (
         <BacklinksView vault={vault} path={path} backlinks={backlinks} />
       )}
@@ -929,11 +941,18 @@ function RightPanelFrame({
                 </>
               ),
             },
+            { view: "graph", label: t("shell.graph") },
           ]}
           current={view}
           onShow={onShow}
         />
-        <div role="tabpanel" className="min-h-0 flex-1 overflow-auto">
+        <div
+          role="tabpanel"
+          // The graph fills the panel and moves within it: no scrolling.
+          className={`min-h-0 flex-1 ${
+            view === "graph" ? "overflow-hidden" : "overflow-auto"
+          }`}
+        >
           {children}
         </div>
       </div>
@@ -966,6 +985,24 @@ function BacklinksView({
         onOpen={(note, at) => open(note, { at })}
       />
     </>
+  );
+}
+
+/**
+ * The graph around the note (C-504). A click opens a note in the tab, and
+ * the graph then follows it; with Ctrl or Cmd, in a new tab.
+ */
+function LocalGraphHost({ vault, path }: { vault: Vault; path: string }) {
+  const { open } = useWorkspace();
+  const onOpen = useCallback(
+    (note: string, newTab: boolean) =>
+      open(note, { target: newTab ? "newTab" : "here" }),
+    [open],
+  );
+  return (
+    <Suspense fallback={null}>
+      <LocalGraphView vault={vault} path={path} onOpen={onOpen} />
+    </Suspense>
   );
 }
 

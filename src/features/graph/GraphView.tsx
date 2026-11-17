@@ -1,9 +1,10 @@
 import type { NotePath, Vault } from "@carbon/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import { canvasRenderer } from "./canvas-renderer";
 import {
   cameraToFit,
+  LABEL_NODE_PIXELS,
   MIN_NODE_PIXELS,
   NODE_RADIUS,
   readGraphColors,
@@ -13,7 +14,11 @@ import {
 } from "./graph-renderer";
 import { NodeGrid } from "./picking";
 import { sigmaRenderer } from "./sigma-renderer";
-import { useGraphData } from "./use-graph-data";
+import {
+  useGraphData,
+  useLocalGraphData,
+  type GraphDataState,
+} from "./use-graph-data";
 import { indexGraph, useGraphLayout } from "./use-graph-layout";
 
 /**
@@ -37,28 +42,54 @@ const CLICK_SLOP = 4;
 /** How far from a note the pointer still picks it, in pixels. */
 const PICK_PIXELS = 8;
 
-interface GraphViewProps {
-  vault: Vault;
+interface GraphCanvasProps {
+  data: GraphDataState;
+  /** Under which the layout is kept: a graph opened again starts there. */
+  layoutKey: string;
   /** The note of the active pane, drawn apart from the others. */
   current: NotePath | null;
   /** Opens a note: in a new tab with Ctrl or Cmd held. */
   onOpen(path: NotePath, newTab: boolean): void;
-  onClose(): void;
+  /** Escape was pressed in it. */
+  onClose?(): void;
+  /** Titles show once a note is this wide on screen, in CSS pixels. */
+  labelPixels?: number;
+  /**
+   * How much of the shorter side of the view the graph takes up when it
+   * is fitted: less leaves titles at its edge room.
+   */
+  fill?: number;
+  /** For screen readers: what it is and how to use it. */
+  label: string;
+  /** What it says when the graph has no notes. */
+  emptyText: string;
+  /** Controls drawn over it, such as the depth of a local graph. */
+  children?: ReactNode;
 }
 
 /**
- * The graph of the vault (C-503): every note and the links between them,
- * laid out by a force layout in a worker that settles in view. Drag to
- * move, wheel to zoom, click a note to open it; Escape closes the graph.
+ * Draws a graph of notes (C-503, C-504), laid out by a force layout in a
+ * worker that settles in view. Drag to move, wheel to zoom, click a note
+ * to open it.
  */
-export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
+function GraphCanvas({
+  data,
+  layoutKey,
+  current,
+  onOpen,
+  onClose,
+  labelPixels = LABEL_NODE_PIXELS,
+  fill = 0.9,
+  label,
+  emptyText,
+  children,
+}: GraphCanvasProps) {
   const t = useT();
-  const data = useGraphData(vault, true);
   const graph = useMemo(
     () => (data.status === "ready" ? indexGraph(data.graph) : null),
     [data],
   );
-  const { positions, settled } = useGraphLayout(vault.root, graph);
+  const { positions, settled } = useGraphLayout(layoutKey, graph);
   const hasPositions = positions !== null;
 
   const stage = useRef<HTMLDivElement>(null);
@@ -91,12 +122,13 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
         positions,
         container.clientWidth,
         container.clientHeight,
+        fill,
       );
       camera.current = fitted;
       fitScale.current = fitted.scale;
       shown.setCamera(fitted);
     }
-  }, [positions]);
+  }, [positions, fill]);
 
   // One renderer per graph, made with its first positions.
   useEffect(() => {
@@ -107,6 +139,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
       first,
       container.clientWidth,
       container.clientHeight,
+      fill,
     );
     camera.current = fitted;
     fitScale.current = fitted.scale;
@@ -115,7 +148,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
     let made: GraphRenderer | null = null;
     for (const create of RENDERERS) {
       try {
-        made = create(container, graph, first, fitted, colors);
+        made = create(container, graph, first, fitted, colors, labelPixels);
         break;
       } catch (error) {
         container.replaceChildren();
@@ -140,7 +173,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
       renderer.current = null;
       container.replaceChildren();
     };
-  }, [graph, hasPositions]);
+  }, [graph, hasPositions, labelPixels, fill]);
 
   useEffect(() => {
     const index = current === null ? undefined : graph?.indexOf.get(current);
@@ -296,7 +329,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
 
   // Escape closes the graph wherever the focus is inside it.
   const onKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "Escape") return;
+    if (event.key !== "Escape" || onClose === undefined) return;
     event.preventDefault();
     onClose();
   };
@@ -304,14 +337,15 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
   const empty = data.status === "ready" && data.graph.nodes.length === 0;
   return (
     <div
-      className="relative h-full w-full overflow-hidden bg-bg"
+      // On the background of what holds it: the note area or a panel.
+      className="relative h-full w-full overflow-hidden"
       onKeyDown={onKeyDown}
     >
       <div
         ref={stage}
         tabIndex={0}
         role="application"
-        aria-label={t("graph.label")}
+        aria-label={label}
         aria-busy={!settled}
         className="absolute inset-0 touch-none outline-none select-none"
       />
@@ -330,7 +364,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
             {t("graph.failed", { reason: data.message })}
           </p>
         )}
-        {empty && <p>{t("graph.empty")}</p>}
+        {empty && <p>{emptyText}</p>}
         {data.status === "ready" && data.partial && <p>{t("graph.partial")}</p>}
         {data.status === "ready" && !empty && (
           <p>
@@ -339,6 +373,113 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
           </p>
         )}
       </div>
+      {children}
     </div>
   );
+}
+
+interface GraphViewProps {
+  vault: Vault;
+  /** The note of the active pane, drawn apart from the others. */
+  current: NotePath | null;
+  /** Opens a note: in a new tab with Ctrl or Cmd held. */
+  onOpen(path: NotePath, newTab: boolean): void;
+  onClose(): void;
+}
+
+/**
+ * The graph of the vault (C-503): every note and the links between them.
+ * Escape closes it.
+ */
+export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
+  const t = useT();
+  const data = useGraphData(vault, true);
+  return (
+    <GraphCanvas
+      data={data}
+      layoutKey={vault.root}
+      current={current}
+      onOpen={onOpen}
+      onClose={onClose}
+      label={t("graph.label")}
+      emptyText={t("graph.empty")}
+    />
+  );
+}
+
+/** The depths a local graph can have, in links from its note. */
+const DEPTHS = [1, 2, 3] as const;
+const DEPTH_KEY = "carbon.graph.localDepth";
+
+interface LocalGraphViewProps {
+  vault: Vault;
+  /** The note the graph is around. */
+  path: NotePath;
+  onOpen(path: NotePath, newTab: boolean): void;
+}
+
+/**
+ * The graph around one note (C-504): the notes at most a few links from
+ * it, whichever way the links go, and the links between them. It follows
+ * the note as it changes and as another note is opened. The depth is
+ * remembered between app starts.
+ */
+export function LocalGraphView({ vault, path, onOpen }: LocalGraphViewProps) {
+  const t = useT();
+  const [depth, setDepth] = useState(loadDepth);
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEPTH_KEY, String(depth));
+    } catch {
+      // Without storage it works, it only forgets the depth.
+    }
+  }, [depth]);
+  const data = useLocalGraphData(vault, path, depth);
+  return (
+    <GraphCanvas
+      data={data}
+      // Apart from the graph of the vault, whose layout is far wider.
+      layoutKey={`${vault.root}#local`}
+      current={path}
+      onOpen={onOpen}
+      // A local graph has few notes: their titles always show.
+      labelPixels={0}
+      fill={0.7}
+      label={t("graph.localLabel")}
+      emptyText={t("graph.notIndexed")}
+    >
+      <div
+        role="radiogroup"
+        aria-label={t("graph.depth")}
+        className="absolute right-2 bottom-2 flex items-center gap-0.5 rounded-md border border-line bg-panel p-0.5 text-small"
+      >
+        <span className="px-1 text-faint">{t("graph.depth")}</span>
+        {DEPTHS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={depth === value}
+            className={`h-5 min-w-5 rounded px-1 outline-none focus-visible:ring-1 focus-visible:ring-line-strong ${
+              depth === value
+                ? "bg-selected text-fg"
+                : "text-muted hover:bg-raise hover:text-fg"
+            }`}
+            onClick={() => setDepth(value)}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+    </GraphCanvas>
+  );
+}
+
+function loadDepth(): number {
+  try {
+    const saved = Number(localStorage.getItem(DEPTH_KEY));
+    return DEPTHS.find((depth) => depth === saved) ?? 1;
+  } catch {
+    return 1;
+  }
 }

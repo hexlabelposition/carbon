@@ -10,7 +10,7 @@ export const RIGHT_PANEL_SHORTCUT = keys("Mod+Alt+B");
 export const TOOLBAR_SHORTCUT = keys("Mod+`");
 
 /** What the right panel shows. */
-export type RightPanelView = "outline" | "backlinks";
+export type RightPanelView = "outline" | "backlinks" | "graph";
 
 export interface RightPanel {
   open: boolean;
@@ -27,8 +27,8 @@ export interface RightPanel {
 const VIEW_KEY = "carbon.desktop.rightPanel.view";
 
 /**
- * The panel at the right of the note, which shows its outline or the notes
- * that link to it, one at a time, as the left panel shows files or search.
+ * The panel at the right of the note, which shows its outline, the notes
+ * that link to it or the graph around it, one at a time, as the left panel shows files or search.
  * Whether it is open, what it shows and how wide it is are remembered
  * between app starts.
  */
@@ -88,7 +88,9 @@ function loadFlag(key: string): boolean {
 function loadView(fallback: RightPanelView): RightPanelView {
   try {
     const saved = localStorage.getItem(VIEW_KEY);
-    return saved === "outline" || saved === "backlinks" ? saved : fallback;
+    return saved === "outline" || saved === "backlinks" || saved === "graph"
+      ? saved
+      : fallback;
   } catch {
     return fallback;
   }

@@ -1,5 +1,4 @@
 import {
-  LABEL_NODE_PIXELS,
   MIN_NODE_PIXELS,
   NODE_RADIUS,
   type GraphRendererFactory,
@@ -19,6 +18,7 @@ export const canvasRenderer: GraphRendererFactory = (
   initialPositions,
   initialCamera,
   initialColors,
+  labelPixels,
 ) => {
   const canvas = document.createElement("canvas");
   canvas.className = "absolute inset-0 h-full w-full";
@@ -115,8 +115,7 @@ export const canvasRenderer: GraphRendererFactory = (
       ctx.fill();
     }
 
-    if (radius * scale < LABEL_NODE_PIXELS || visible.length > MAX_LABELS)
-      return;
+    if (radius * scale < labelPixels || visible.length > MAX_LABELS) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.font = `12px ${getComputedStyle(container).fontFamily}`;
     ctx.textAlign = "center";
