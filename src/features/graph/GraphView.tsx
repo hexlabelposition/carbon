@@ -1,5 +1,12 @@
 import type { NotePath, Vault } from "@carbon/core";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useT } from "../i18n/i18n";
 import { canvasRenderer } from "./canvas-renderer";
 import {
@@ -12,6 +19,7 @@ import {
   type GraphRenderer,
   type GraphRendererFactory,
 } from "./graph-renderer";
+import { GraphFilterBar } from "./GraphFilterBar";
 import { NodeGrid } from "./picking";
 import { sigmaRenderer } from "./sigma-renderer";
 import {
@@ -19,6 +27,7 @@ import {
   useLocalGraphData,
   type GraphDataState,
 } from "./use-graph-data";
+import { useGraphFilters } from "./use-graph-filters";
 import {
   indexGraph,
   useGraphLayout,
@@ -413,17 +422,41 @@ interface GraphViewProps {
  */
 export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
   const t = useT();
-  const data = useGraphData(vault, true);
+  const { filters, change } = useGraphFilters();
+  const data = useGraphData(vault, true, filters);
+  const filtered =
+    filters.tag.trim() !== "" || !filters.orphans || filters.missing;
+  // A note that links miss is made when it is clicked, as by a link.
+  const open = useCallback(
+    (path: NotePath, newTab: boolean) => {
+      const node =
+        data.status === "ready"
+          ? data.graph.nodes.find((n) => n.path === path)
+          : undefined;
+      if (node?.missing !== true) {
+        onOpen(path, newTab);
+        return;
+      }
+      vault.notes.create(path).then(
+        () => onOpen(path, newTab),
+        // Made meanwhile, by another program or a link: open it all the same.
+        () => onOpen(path, newTab),
+      );
+    },
+    [data, vault, onOpen],
+  );
   return (
     <GraphCanvas
       data={data}
       layoutKey={vault.root}
       current={current}
-      onOpen={onOpen}
+      onOpen={open}
       onClose={onClose}
       label={t("graph.label")}
-      emptyText={t("graph.empty")}
-    />
+      emptyText={t(filtered ? "graph.noMatch" : "graph.empty")}
+    >
+      <GraphFilterBar vault={vault} filters={filters} onChange={change} />
+    </GraphCanvas>
   );
 }
 

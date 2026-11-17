@@ -110,14 +110,22 @@ export const canvasRenderer: GraphRendererFactory = (
     ctx.stroke();
 
     const visible: number[] = [];
+    const missing: number[] = [];
     ctx.beginPath();
     for (let i = 0; i < titles.length; i++) {
       if (!inView(i)) continue;
       visible.push(i);
-      if (i !== current) dot(i, radius);
+      if (graph.missing[i] === 1) missing.push(i);
+      else if (i !== current) dot(i, radius);
     }
     ctx.fillStyle = colors.node;
     ctx.fill();
+    if (missing.length > 0) {
+      ctx.beginPath();
+      for (const i of missing) dot(i, radius);
+      ctx.fillStyle = colors.missing;
+      ctx.fill();
+    }
     if (current !== null) {
       ctx.beginPath();
       dot(current, radius * 1.5);
@@ -132,10 +140,14 @@ export const canvasRenderer: GraphRendererFactory = (
       for (const edge of lit.edges) edgePath(edge * 2, edge * 2 + 1);
       ctx.strokeStyle = colors.current;
       ctx.stroke();
-      ctx.beginPath();
-      for (const i of lit.nodes) if (i !== current) dot(i, radius);
-      ctx.fillStyle = colors.node;
-      ctx.fill();
+      for (const absent of [0, 1]) {
+        ctx.beginPath();
+        for (const i of lit.nodes) {
+          if (i !== current && graph.missing[i] === absent) dot(i, radius);
+        }
+        ctx.fillStyle = absent === 1 ? colors.missing : colors.node;
+        ctx.fill();
+      }
       if (current !== null && lit.nodes.has(current)) {
         ctx.beginPath();
         dot(current, radius * 1.5);
