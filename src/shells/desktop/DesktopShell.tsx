@@ -366,9 +366,10 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar, files and tags, and the drafts and the trash,
- * with tabs to switch. They stay mounted: switching keeps the open folders
- * and the open tags. Search is a dialog of its own (`SearchHost`).
+ * The views of the sidebar: files, tags, drafts and trash, one at a time,
+ * each shown by its button of the toolbar or from the palette; there is
+ * no row of tabs. They stay mounted: switching keeps the open folders and
+ * the open tags. Search is a dialog of its own (`SearchHost`).
  */
 function SidebarContent({
   vault,
@@ -396,28 +397,10 @@ function SidebarContent({
     reveal();
     show("drafts");
   }, [reveal, show]);
-  // Drafts and trash have no tab of their own, the row would not fit them:
-  // the toolbar shows them, and their tab is there while they are shown.
-  const extraView =
-    view === "drafts"
-      ? [{ view, label: t("shell.drafts") }]
-      : view === "trash"
-        ? [{ view, label: t("shell.trash") }]
-        : [];
   return (
     <div className="flex h-full flex-col">
-      <ViewTabs
-        label={t("shell.sidebarViews")}
-        views={[
-          { view: "files", label: t("shell.files") },
-          { view: "tags", label: t("shell.tags") },
-          ...extraView,
-        ]}
-        current={view}
-        onShow={show}
-      />
       <div
-        role="tabpanel"
+        role="region"
         aria-label={t("shell.files")}
         className={view === "files" ? "min-h-0 flex-1" : "hidden"}
       >
@@ -428,7 +411,7 @@ function SidebarContent({
         />
       </div>
       <div
-        role="tabpanel"
+        role="region"
         aria-label={t("shell.tags")}
         className={view === "tags" ? "min-h-0 flex-1" : "hidden"}
       >
@@ -440,7 +423,7 @@ function SidebarContent({
         />
       </div>
       <div
-        role="tabpanel"
+        role="region"
         aria-label={t("shell.drafts")}
         className={view === "drafts" ? "min-h-0 flex-1" : "hidden"}
       >
@@ -452,7 +435,7 @@ function SidebarContent({
         />
       </div>
       <div
-        role="tabpanel"
+        role="region"
         aria-label={t("shell.trash")}
         className={view === "trash" ? "min-h-0 flex-1" : "hidden"}
       >

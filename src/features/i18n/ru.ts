@@ -223,7 +223,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.showDrafts": "Показать черновики",
   "shell.showFiles": "Показать файлы",
   "shell.showTags": "Показать теги",
-  "shell.sidebarViews": "Виды левой панели",
   "shell.showTrash": "Показать корзину",
   "shell.tags": "Теги",
   "shell.trash": "Корзина",

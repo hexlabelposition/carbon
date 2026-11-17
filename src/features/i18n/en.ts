@@ -222,7 +222,6 @@ export const en = {
   "shell.showDrafts": "Show drafts",
   "shell.showFiles": "Show files",
   "shell.showTags": "Show tags",
-  "shell.sidebarViews": "Sidebar views",
   "shell.showTrash": "Show trash",
   "shell.tags": "Tags",
   "shell.trash": "Trash",
