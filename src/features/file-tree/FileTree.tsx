@@ -20,6 +20,7 @@ import { useVirtualRows } from "./use-virtual-rows";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
+import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { canBeFavorite, type FavoritesView } from "../favorites/use-favorites";
 
@@ -448,9 +449,12 @@ const menuItem =
 
 const separator = "mx-1 my-1 h-px bg-line";
 
-/** The keys of a menu item, at its right. */
+/**
+ * The keys of a menu item, at its right: each in a box, as in the command
+ * palette and the tooltips.
+ */
 function MenuKeys({ text }: { text: string }) {
-  return <span className="text-small text-faint">{text}</span>;
+  return <Shortcut text={text} />;
 }
 
 /**
