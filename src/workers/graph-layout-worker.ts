@@ -20,21 +20,17 @@ const MAX_TICKS = 300;
 const FRAME_MS = 100;
 
 self.onmessage = (event: MessageEvent<LayoutRequest>) => {
-  const { count, edges, start } = event.data;
+  const { count, edges, start, warm } = event.data;
   const nodes: SimulationNodeDatum[] = Array.from({ length: count }, (_, i) => {
     const x = start?.[i * 2] ?? NaN;
     const y = start?.[i * 2 + 1] ?? NaN;
-    // A node without a place gets one from d3: on a spiral from the middle.
+    // Without a place, d3 gives it one: on a spiral from the middle.
     return Number.isNaN(x) || Number.isNaN(y) ? {} : { x, y };
   });
   const links = [];
   for (let i = 0; i < edges.length; i += 2) {
     links.push({ source: edges[i], target: edges[i + 1] });
   }
-  // Mostly kept: only the new nodes have to find their place.
-  const kept =
-    start === null ? 0 : nodes.filter((n) => n.x !== undefined).length;
-  const warm = count > 0 && kept / count > 0.9;
   const simulation = forceSimulation(nodes)
     // Barnes-Hut with a coarse theta: the repulsion of far nodes is
     // summed up, which the eye does not miss.
