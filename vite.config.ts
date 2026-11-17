@@ -10,6 +10,9 @@ export default defineConfig(() => ({
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
+  // The bundle ships inside the app and loads from disk, not the network, so
+  // the 500 kB web default only adds noise. The main chunk is ~1.1 MB.
+  build: { chunkSizeWarningLimit: 1500 },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
