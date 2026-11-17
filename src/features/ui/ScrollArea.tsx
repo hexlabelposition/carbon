@@ -15,6 +15,11 @@ interface ScrollAreaProps extends Omit<ComponentProps<"div">, "children"> {
    * handle at the edge of a panel.
    */
   scrollbarClassName?: string;
+  /**
+   * Classes of the wrapper of the content, as `flex flex-1 flex-col` for
+   * content that fills the height, as a note does.
+   */
+  contentClassName?: string;
   children: ReactNode;
 }
 
@@ -38,6 +43,7 @@ export function ScrollArea({
   className = "",
   rootClassName = "",
   scrollbarClassName = "",
+  contentClassName = "",
   children,
   ...viewport
 }: ScrollAreaProps) {
@@ -54,7 +60,9 @@ export function ScrollArea({
             the scrollbar as it was. Not wider than the area, as Base UI
             makes it by default: long names are cut short, never scrolled
             to the side. */}
-        <Base.Content style={{ minWidth: 0 }}>{children}</Base.Content>
+        <Base.Content className={contentClassName} style={{ minWidth: 0 }}>
+          {children}
+        </Base.Content>
       </Base.Viewport>
       <Base.Scrollbar
         orientation="vertical"

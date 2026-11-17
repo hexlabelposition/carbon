@@ -9,13 +9,13 @@ import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
 import { ImageViewer } from "./ImageViewer";
 import { useNoteImages } from "./use-note-images";
-import { useSmoothWheel } from "./use-smooth-wheel";
 import { useWheelTextSize } from "./use-wheel-text-size";
 import { useNoteLinks } from "./use-note-links";
 import { useNoteTags } from "./use-note-tags";
 import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 import { Tooltip } from "../ui/Tooltip";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -57,7 +57,6 @@ export function NoteEditor({
   const tags = useNoteTags(vault, path);
   const title = useNoteTitle(vault, path);
   const { reveal } = useWorkspace();
-  const smoothWheel = useSmoothWheel();
   const wheelTextSize = useWheelTextSize();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
@@ -121,11 +120,14 @@ export function NoteEditor({
         <EditorAlert message={links.error} onDismiss={links.dismissError} />
       )}
       {/* One scroll for the name and the text: the name scrolls away.
-          It glides: the editor scrolls by setting `scrollTop` here, for
-          Page Up and Page Down and for jumps to a heading or a match, and
-          so does the mouse wheel. */}
-      <div
-        ref={smoothWheel}
+          It glides when the editor scrolls it, by setting `scrollTop` here,
+          for Page Up and Page Down and for jumps to a heading or a match.
+          The wheel is the system's, as in every other list. */}
+      <ScrollArea
+        rootClassName="flex-1"
+        // The name and the editor fill the height: a click below the text
+        // still puts the cursor in it.
+        contentClassName="flex min-h-full flex-1 flex-col"
         // To read, the scroll takes the focus on a click, so Page Up and
         // Page Down, the arrows and Space scroll it: the text cannot. The
         // editor keeps a click from focusing it, so it is focused here.
@@ -133,7 +135,7 @@ export function NoteEditor({
         onMouseDown={(event) => {
           if (readingMode) event.currentTarget.focus({ preventScroll: true });
         }}
-        className="flex min-h-0 flex-1 flex-col overflow-auto scroll-smooth outline-none"
+        className="flex flex-1 flex-col scroll-smooth"
       >
         <NoteTitleField title={title} readOnly={readingMode} />
         <MarkdownEditor
@@ -151,7 +153,7 @@ export function NoteEditor({
           tags={tags}
           reveal={reveal?.path === path ? reveal : null}
         />
-      </div>
+      </ScrollArea>
       {images.shown !== null && (
         <ImageViewer image={images.shown} onClose={images.closeShown} />
       )}
