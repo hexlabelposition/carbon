@@ -1,4 +1,5 @@
 import type { NoteGraph, NotePath, Vault } from "@carbon/core";
+import type { GraphDisplay } from "./node-style";
 import { useEffect, useState } from "react";
 
 export type GraphDataState =
@@ -62,8 +63,11 @@ export function useGraphData(
   return state;
 }
 
-/** What the graph of the vault shows (C-506). */
-export interface GraphFilters {
+/**
+ * What the graph of the vault shows (C-506), and how it draws its notes
+ * (C-507).
+ */
+export interface GraphFilters extends GraphDisplay {
   /** Only the notes with this tag or one nested in it; blank for all. */
   tag: string;
   /** Also the notes without links. */
@@ -76,6 +80,8 @@ export const DEFAULT_FILTERS: GraphFilters = {
   tag: "",
   orphans: true,
   missing: false,
+  sizeByLinks: true,
+  colorBy: "none",
 };
 
 /** The graph less the notes with no link to or from another one in it. */

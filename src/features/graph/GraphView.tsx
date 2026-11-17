@@ -18,7 +18,18 @@ import {
   type Camera,
   type GraphRenderer,
   type GraphRendererFactory,
+  type NodeStyle,
 } from "./graph-renderer";
+import {
+  groupNotes,
+  GraphLegend,
+  MAX_NODE_SIZE,
+  PLAIN,
+  sizeFor,
+  type ColorBy,
+  type GraphDisplay,
+  type Groups,
+} from "./node-style";
 import { GraphFilterBar } from "./GraphFilterBar";
 import { NodeGrid } from "./picking";
 import { sigmaRenderer } from "./sigma-renderer";
@@ -76,6 +87,8 @@ interface GraphCanvasProps {
   label: string;
   /** What it says when the graph has no notes. */
   emptyText: string;
+  /** How notes are sized and colored (C-507); all alike by default. */
+  display?: GraphDisplay;
   /** Controls drawn over it, such as the depth of a local graph. */
   children?: ReactNode;
 }
@@ -95,6 +108,7 @@ function GraphCanvas({
   fill = 0.9,
   label,
   emptyText,
+  display = PLAIN,
   children,
 }: GraphCanvasProps) {
   const t = useT();
@@ -125,6 +139,41 @@ function GraphCanvas({
     () => (graph === null ? null : linksOf(graph)),
     [graph],
   );
+
+  // The groups that get a color keep it while they stay among the
+  // largest, as filters come and go: a color follows its group.
+  const [slots, setSlots] = useState<{
+    graph: IndexedGraph | null;
+    colorBy: ColorBy;
+    groups: Groups | null;
+  }>({ graph: null, colorBy: "none", groups: null });
+  if (slots.graph !== graph || slots.colorBy !== display.colorBy) {
+    const kept = slots.colorBy === display.colorBy ? slots.groups : null;
+    setSlots({
+      graph,
+      colorBy: display.colorBy,
+      groups:
+        graph === null || display.colorBy === "none"
+          ? null
+          : groupNotes(graph, display.colorBy, kept),
+    });
+  }
+  const groups = slots.graph === graph ? slots.groups : null;
+  const style = useMemo<NodeStyle | null>(() => {
+    if (graph === null || links === null) return null;
+    if (!display.sizeByLinks && groups === null) return null;
+    const count = graph.titles.length;
+    return {
+      sizes: display.sizeByLinks
+        ? Float32Array.from(links, (own) => sizeFor(own.length))
+        : new Float32Array(count).fill(1),
+      groups: groups?.of ?? new Int8Array(count).fill(-1),
+    };
+  }, [graph, links, groups, display.sizeByLinks]);
+  /** The style, for the pointer to pick big notes by their edge. */
+  const styleRef = useRef(style);
+  /** The group under the pointer in the legend, by slot. */
+  const [legendHover, setLegendHover] = useState<number | null>(null);
 
   // Before the renderer is made: it starts from these positions.
   useEffect(() => {
@@ -199,9 +248,29 @@ function GraphCanvas({
     renderer.current?.setCurrent(index ?? null);
   }, [current, graph, hasPositions]);
 
-  // The note under the pointer, its neighbors and its links stand out.
+  useEffect(() => {
+    styleRef.current = style;
+    renderer.current?.setStyle(style);
+  }, [style, hasPositions]);
+
+  // The note under the pointer, its neighbors and its links stand out; or
+  // the notes of the group under the pointer in the legend.
   useEffect(() => {
     if (graph === null || links === null) return;
+    if (hovered === null && legendHover !== null && groups !== null) {
+      const nodes = new Set<number>();
+      groups.of.forEach((slot, i) => {
+        if (slot === legendHover) nodes.add(i);
+      });
+      const edges: number[] = [];
+      for (let edge = 0; edge < graph.edges.length / 2; edge++) {
+        const a = graph.edges[edge * 2];
+        const b = graph.edges[edge * 2 + 1];
+        if (nodes.has(a) && nodes.has(b)) edges.push(edge);
+      }
+      renderer.current?.setHighlight({ node: null, nodes, edges });
+      return;
+    }
     if (hovered === null) {
       renderer.current?.setHighlight(null);
       return;
@@ -213,7 +282,7 @@ function GraphCanvas({
       nodes.add(graph.edges[edge * 2 + 1]);
     }
     renderer.current?.setHighlight({ node: hovered, nodes, edges });
-  }, [graph, links, hovered, hasPositions]);
+  }, [graph, links, hovered, legendHover, groups, hasPositions]);
 
   // Drag to move, wheel to zoom, click to open, hover to highlight.
   useEffect(() => {
@@ -235,9 +304,15 @@ function GraphCanvas({
       const { x: cx, y: cy, scale } = camera.current;
       const worldX = cx + (x - container.clientWidth / 2) / scale;
       const worldY = cy + (y - container.clientHeight / 2) / scale;
-      const radius =
-        Math.max(NODE_RADIUS, MIN_NODE_PIXELS / scale) + PICK_PIXELS / scale;
-      return grid.current?.nearest(worldX, worldY, radius) ?? null;
+      const sizes = styleRef.current?.sizes;
+      const smallest = MIN_NODE_PIXELS / scale;
+      const radiusOf = (i: number) =>
+        Math.max(NODE_RADIUS * (sizes?.[i] ?? 1), smallest);
+      const pad = PICK_PIXELS / scale;
+      const reach = Math.max(NODE_RADIUS * MAX_NODE_SIZE, smallest) + pad;
+      return (
+        grid.current?.nearest(worldX, worldY, reach, pad, radiusOf) ?? null
+      );
     };
     const look = (next: Camera) => {
       camera.current = next;
@@ -402,6 +477,14 @@ function GraphCanvas({
           </p>
         )}
       </div>
+      {groups !== null && groups.legend.length > 0 && (
+        <GraphLegend
+          groups={groups}
+          onHover={setLegendHover}
+          other={t("graph.otherGroup")}
+          label={t("graph.legend")}
+        />
+      )}
       {children}
     </div>
   );
@@ -454,6 +537,7 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
       onClose={onClose}
       label={t("graph.label")}
       emptyText={t(filtered ? "graph.noMatch" : "graph.empty")}
+      display={filters}
     >
       <GraphFilterBar vault={vault} filters={filters} onChange={change} />
     </GraphCanvas>

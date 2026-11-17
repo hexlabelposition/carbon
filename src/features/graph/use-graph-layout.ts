@@ -9,6 +9,8 @@ import type { RenderedGraph } from "./graph-renderer";
 /** The graph as the renderers take it, with the path of each note. */
 export interface IndexedGraph extends RenderedGraph {
   paths: readonly NotePath[];
+  /** The tags of each note, by index (`GraphNode.tags`). */
+  tags: readonly (readonly string[])[];
   indexOf: ReadonlyMap<NotePath, number>;
 }
 
@@ -44,6 +46,7 @@ export function indexGraph(graph: NoteGraph): IndexedGraph {
     missing: Uint8Array.from(graph.nodes, (node) => (node.missing ? 1 : 0)),
     edges: edges.slice(0, n),
     paths,
+    tags: graph.nodes.map((node) => node.tags),
     indexOf,
   };
 }

@@ -62,6 +62,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "find.replaceAllHint": "Заменить все (Ctrl+Enter)",
   "find.replaceHint": "Заменить (Enter)",
   "find.wholeWord": "Слово целиком",
+  "graph.colorBy": "Цвет",
+  "graph.colorFolder": "По папке",
+  "graph.colorNone": "Нет",
+  "graph.colorTag": "По тегу",
   "graph.count": {
     one: "{count} заметка",
     few: "{count} заметки",
@@ -74,6 +78,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "graph.filters": "Фильтры",
   "graph.label":
     "Граф заметок. Перетаскивайте, чтобы двигать, колёсиком или плюсом и минусом меняйте масштаб, щелчок по заметке открывает её, Escape закрывает граф.",
+  "graph.legend": "Группы заметок",
   "graph.loading": "Граф загружается…",
   "graph.localLabel":
     "Граф вокруг заметки. Перетаскивайте, чтобы двигать, колёсиком или плюсом и минусом меняйте масштаб, щелчок по заметке открывает её.",
@@ -81,8 +86,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "graph.noMatch": "Нет заметок под эти фильтры",
   "graph.notIndexed": "Заметка ещё не проиндексирована.",
   "graph.orphans": "Заметки без связей",
+  "graph.otherGroup": "Остальные",
   "graph.partial": "Индексация: некоторых заметок может не хватать.",
   "graph.settling": "раскладка",
+  "graph.sizeByLinks": "Размер по числу связей",
   "graph.tagFilter": "Фильтр по тегу",
   "graph.title": "Граф",
   "graph.toggle": "Показать или скрыть граф",
