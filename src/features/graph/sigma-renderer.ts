@@ -13,6 +13,7 @@ interface NodeAttributes {
   y: number;
   label: string;
   current: boolean;
+  missing: boolean;
 }
 
 /**
@@ -49,6 +50,7 @@ export const sigmaRenderer: GraphRendererFactory = (
       y: -positions[i * 2 + 1],
       label: title,
       current: false,
+      missing: graph.missing[i] === 1,
     });
   });
   const { edges } = graph;
@@ -68,7 +70,11 @@ export const sigmaRenderer: GraphRendererFactory = (
     styles: {
       nodes: {
         color: (attributes) =>
-          attributes.current ? colors.current : colors.node,
+          attributes.current
+            ? colors.current
+            : attributes.missing
+              ? colors.missing
+              : colors.node,
         size: (attributes) =>
           attributes.current ? NODE_RADIUS * 1.5 : NODE_RADIUS,
         opacity: (_attributes, state, graphState) => faded(state, graphState),

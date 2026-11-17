@@ -11,6 +11,8 @@ export interface Camera {
 /** The colors of the graph, from the theme (`readGraphColors`). */
 export interface GraphColors {
   node: string;
+  /** A note that does not exist. */
+  missing: string;
   edge: string;
   /** The note shown in the active pane. */
   current: string;
@@ -34,6 +36,11 @@ export const FADED = 0.15;
 /** What a renderer draws: notes by index, links as pairs of indexes. */
 export interface RenderedGraph {
   titles: readonly string[];
+  /**
+   * 1 for a note that links point to but that does not exist, by index:
+   * drawn fainter, as an unresolved link is in a note.
+   */
+  missing: Uint8Array;
   /** `[source0, target0, source1, target1, ...]`. */
   edges: Uint32Array;
 }
@@ -84,6 +91,7 @@ export function readGraphColors(element: Element): GraphColors {
   const token = (name: string) => style.getPropertyValue(name).trim();
   return {
     node: token("--cb-faint"),
+    missing: token("--cb-line-strong"),
     edge: token("--cb-line-strong"),
     current: token("--cb-link"),
     label: token("--cb-muted"),

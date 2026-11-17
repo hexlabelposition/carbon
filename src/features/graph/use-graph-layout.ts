@@ -41,6 +41,7 @@ export function indexGraph(graph: NoteGraph): IndexedGraph {
   }
   return {
     titles: graph.nodes.map((node) => node.title),
+    missing: Uint8Array.from(graph.nodes, (node) => (node.missing ? 1 : 0)),
     edges: edges.slice(0, n),
     paths,
     indexOf,

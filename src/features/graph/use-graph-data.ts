@@ -12,11 +12,19 @@ export type GraphDataState =
   | { status: "error"; message: string };
 
 /**
- * The graph of the whole vault (`vault.graph.global`) while `enabled`.
- * Asked for again when the startup scan is done; later changes are left
- * for the graph to follow live (C-508).
+ * The graph of the whole vault (`vault.graph.global`) while `enabled`,
+ * with the notes the filters keep (C-506): those with `tag` if it is not
+ * blank, the notes that links miss with `missing`, notes without links
+ * only with `orphans`. Asked for again when the startup scan is done and
+ * when the filters change; later changes are left for the graph to
+ * follow live (C-508).
  */
-export function useGraphData(vault: Vault, enabled: boolean): GraphDataState {
+export function useGraphData(
+  vault: Vault,
+  enabled: boolean,
+  filters: GraphFilters = DEFAULT_FILTERS,
+): GraphDataState {
+  const { tag, missing, orphans } = filters;
   const [state, setState] = useState<GraphDataState>({ status: "loading" });
 
   useEffect(() => {
@@ -27,10 +35,11 @@ export function useGraphData(vault: Vault, enabled: boolean): GraphDataState {
       // Only the latest answer counts: an older one may come in later.
       const request = ++asked;
       const fresh = () => current && request === asked;
-      vault.graph.global().then(
-        (graph) => {
+      vault.graph.global({ tag, missing }).then(
+        (found) => {
           if (!fresh()) return;
           const partial = vault.indexStatus.state === "scanning";
+          const graph = orphans ? found : withoutOrphans(found);
           setState({ status: "ready", graph, partial });
         },
         (reason: unknown) => {
@@ -48,9 +57,38 @@ export function useGraphData(vault: Vault, enabled: boolean): GraphDataState {
       current = false;
       stop();
     };
-  }, [vault, enabled]);
+  }, [vault, enabled, tag, missing, orphans]);
 
   return state;
+}
+
+/** What the graph of the vault shows (C-506). */
+export interface GraphFilters {
+  /** Only the notes with this tag or one nested in it; blank for all. */
+  tag: string;
+  /** Also the notes without links. */
+  orphans: boolean;
+  /** Also the notes that links point to but that do not exist. */
+  missing: boolean;
+}
+
+export const DEFAULT_FILTERS: GraphFilters = {
+  tag: "",
+  orphans: true,
+  missing: false,
+};
+
+/** The graph less the notes with no link to or from another one in it. */
+export function withoutOrphans(graph: NoteGraph): NoteGraph {
+  const linked = new Set<NotePath>();
+  for (const edge of graph.edges) {
+    linked.add(edge.source);
+    linked.add(edge.target);
+  }
+  return {
+    nodes: graph.nodes.filter((node) => linked.has(node.path)),
+    edges: graph.edges,
+  };
 }
 
 /**
