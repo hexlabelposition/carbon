@@ -18,6 +18,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { scrollParentOf } from "./glide";
+import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
 import { keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
@@ -82,6 +83,11 @@ interface MarkdownEditorProps {
   /** Suggests tags while one is typed; without it, none are. */
   tags?: TagHost;
   /**
+   * Told how long the note is and what is selected: at once, then as the
+   * selection changes, and a moment after the text changes.
+   */
+  onStats?: (stats: NoteStats) => void;
+  /**
    * A place to go to: the cursor moves to offset `at` and the editor
    * scrolls it into view. A new `id` goes there again.
    */
@@ -92,6 +98,9 @@ interface MarkdownEditorProps {
    */
   active?: boolean;
 }
+
+/** How long typing must stop before the whole note is counted again. */
+const STATS_DELAY_MS = 200;
 
 /** Everything live preview adds; source mode leaves it out. */
 const livePreviewExtensions: Extension = [
@@ -118,6 +127,7 @@ export function MarkdownEditor({
   tags,
   reveal = null,
   active = false,
+  onStats,
 }: MarkdownEditorProps) {
   const t = useT();
   const host = useRef<HTMLDivElement>(null);
@@ -141,6 +151,7 @@ export function MarkdownEditor({
     outline,
     links,
     tags,
+    onStats,
   });
   useEffect(() => {
     latest.current = {
@@ -153,6 +164,7 @@ export function MarkdownEditor({
       outline,
       links,
       tags,
+      onStats,
     };
   }, [
     text,
@@ -164,11 +176,24 @@ export function MarkdownEditor({
     outline,
     links,
     tags,
+    onStats,
   ]);
 
   // Before the first paint, so a note never shows as an empty area first.
   useLayoutEffect(() => {
     if (host.current === null) return;
+    // The whole text is counted a moment after typing stops, not on every
+    // key: a long note would slow typing down. A selection is counted at
+    // once, it is short.
+    let counted = noteTextStats(latest.current.text);
+    let counting: ReturnType<typeof setTimeout> | undefined;
+    const report = (state: EditorState) => {
+      const { from, to, empty } = state.selection.main;
+      latest.current.onStats?.({
+        text: counted,
+        selection: empty ? null : textStats(state.sliceDoc(from, to)),
+      });
+    };
     const view = new EditorView({
       parent: host.current,
       state: EditorState.create({
@@ -265,12 +290,22 @@ export function MarkdownEditor({
             if (update.docChanged && !fromDisk) {
               latest.current.onChange?.(update.state.doc.toString());
             }
+            if (update.docChanged) {
+              clearTimeout(counting);
+              counting = setTimeout(() => {
+                counted = noteTextStats(view.state.doc.toString());
+                report(view.state);
+              }, STATS_DELAY_MS);
+            }
+            if (update.selectionSet) report(update.state);
           }),
         ],
       }),
     });
     editor.current = view;
+    report(view.state);
     return () => {
+      clearTimeout(counting);
       editor.current = null;
       view.destroy();
     };

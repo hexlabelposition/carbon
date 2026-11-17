@@ -163,6 +163,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-619** (P2) Search all notes in a dialog, opened by Ctrl+Shift+F or the toolbar, instead of a sidebar view; the last query stays
 - [x] **C-620** (P2) Bookmarks (first called favorites): notes and images kept in `.carbon/bookmarks.json`, a sidebar view with a toolbar button, "Add to bookmarks" in the file tree menu and the palette
 - [x] **C-621** (P1) Open the vault left open at the last start; the start screen if the user closed it or it is gone
+- [x] **C-622** (P2) A bar below the note with its words, characters and reading time, and those of the selection
 
 ---
 

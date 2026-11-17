@@ -446,6 +446,7 @@ Three rules that keep a second shell cheap:
 
 ### Editor
 
+- A thin bar below a note (C-622) tells its words, characters and reading time, or those of the selection, with the characters without spaces and the lines in its tooltip (`note-stats.ts`). Words are letters and digits of any script, so Markdown marks and the frontmatter count for nothing. The whole note is counted 200 ms after typing stops; a selection at once.
 - CodeMirror 6 with the Markdown language package and Carbon's Lezer extensions.
 - **Live preview** is built with CodeMirror decorations: syntax marks are hidden and formatting is shown when the cursor is outside the element, raw Markdown is shown when the cursor is inside it.
 - The frontmatter shows as a compact block of keys and values, from `readFrontmatter` in the core, and as its YAML while the cursor is in it. YAML that does not parse stays as text. In the block, properties are added, renamed, removed and given values without writing YAML: each change goes through `editFrontmatter` in the core, which keeps comments and the order of keys.

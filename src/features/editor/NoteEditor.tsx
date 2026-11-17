@@ -16,6 +16,8 @@ import { useNoteTitle } from "./use-note-title";
 import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
+import { NoteStatsBar } from "./NoteStatsBar";
+import type { NoteStats } from "./note-stats";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -60,6 +62,8 @@ export function NoteEditor({
   const wheelTextSize = useWheelTextSize();
   /** The user closed the conflict question without answering it. */
   const [postponed, setPostponed] = useState(false);
+  /** For the bar below the note: once the editor has counted. */
+  const [stats, setStats] = useState<NoteStats | null>(null);
 
   if (note.status === "loading") return null;
   if (note.status === "error") {
@@ -153,8 +157,10 @@ export function NoteEditor({
           links={links.host}
           tags={tags}
           reveal={reveal?.path === path ? reveal : null}
+          onStats={setStats}
         />
       </ScrollArea>
+      {stats !== null && <NoteStatsBar stats={stats} />}
       {images.shown !== null && (
         <ImageViewer image={images.shown} onClose={images.closeShown} />
       )}
