@@ -132,7 +132,7 @@ Done when: the graph of a 10k-note vault opens and stays smooth while panning an
 - [x] **C-501** (P0) Core: `graph.global` (nodes, edges) and `graph.local` (around a note, depth N)
 - [ ] **C-502** (P0) Prototype renderers with a 10k-node vault and pick one (open question 2)
 - [x] **C-503** (P0) Graph view: force layout in a Web Worker, pan, zoom, click to open a note
-- [ ] **C-504** (P0) Local graph panel for the current note
+- [x] **C-504** (P0) Local graph panel for the current note
 - [ ] **C-505** (P1) Hover highlights a node and its neighbors
 - [ ] **C-506** (P1) Filters: by tag, hide orphans, show unresolved links
 - [ ] **C-507** (P2) Node size by number of links, color by tag or folder
