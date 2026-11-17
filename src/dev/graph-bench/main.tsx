@@ -1,5 +1,5 @@
 // The graph bench on its own page, for a plain browser: the dev server
-// serves it at /src/dev/graph-bench/index.html. Remove with C-503.
+// serves it at /src/dev/graph-bench/index.html. Remove once C-502 is decided.
 import { createRoot } from "react-dom/client";
 import "../../styles/index.css";
 import { GraphBench } from "./GraphBench";

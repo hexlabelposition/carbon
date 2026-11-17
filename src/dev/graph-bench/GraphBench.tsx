@@ -31,7 +31,7 @@ const RUN_MS = 8000;
  * Temporary M5 measurement (C-502): the candidate graph renderers draw
  * the same laid out graph of 10,000 notes while the camera pans and
  * zooms, and each is timed. Afterwards the graph can be explored with
- * any of them: drag to pan, wheel to zoom. Remove with C-503.
+ * any of them: drag to pan, wheel to zoom. Remove once C-502 is decided.
  */
 export function GraphBench({
   loadVault,
