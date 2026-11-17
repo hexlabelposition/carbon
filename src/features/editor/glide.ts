@@ -8,8 +8,10 @@ const running = new WeakMap<HTMLElement, () => void>();
 
 /**
  * Scrolls the note so the line at `pos` stands `margin` pixels below the
- * top of the view, gliding there, then lands exactly with the editor's own
- * `scrollIntoView`.
+ * top of the view, gliding there. The last frame puts it exactly there,
+ * from the line as it is then. Nothing moves if it is there already. Not
+ * the editor's own `scrollIntoView` to land: it goes by the top of the
+ * first letter, not of the line, and moved a tall heading a few pixels.
  *
  * Not CSS `scroll-behavior: smooth`: on a long way the editor measures the
  * lines it passes and sets `scrollTop` to keep its place, and each of
@@ -35,6 +37,15 @@ export function glideTo(view: EditorView, pos: number, margin: number): void {
   }
   running.get(scroller)?.();
 
+  /** How far the line is from where it should stand, in pixels. */
+  const left = () =>
+    view.documentTop +
+    view.lineBlockAt(pos).top -
+    scroller.getBoundingClientRect().top -
+    margin;
+  // There already: a second click on the same heading moves nothing.
+  if (Math.abs(left()) < 1) return;
+
   const start = performance.now();
   let done = 0;
   let frame = 0;
@@ -47,22 +58,14 @@ export function glideTo(view: EditorView, pos: number, margin: number): void {
   const step = (now: number) => {
     const t = Math.min(1, (now - start) / DURATION);
     const eased = 1 - (1 - t) ** 3;
-    // Where the line is now, from the top of the view.
-    const top =
-      view.documentTop +
-      view.lineBlockAt(pos).top -
-      scroller.getBoundingClientRect().top;
-    const left = top - margin;
     // The share of what is left that this frame covers, so that the line
     // arrives when `t` reaches 1 however the goal moved on the way.
     const share = done >= 1 ? 1 : (eased - done) / (1 - done);
     done = eased;
-    scroller.scrollTop += left * share;
+    // Where the line is now: the editor may have measured lines since.
+    scroller.scrollTop += left() * share;
     if (t < 1) frame = requestAnimationFrame(step);
-    else {
-      stop();
-      land();
-    }
+    else stop();
   };
   running.set(scroller, stop);
   scroller.addEventListener("wheel", stop, { passive: true });
