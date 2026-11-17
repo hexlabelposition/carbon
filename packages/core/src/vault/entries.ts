@@ -1,4 +1,4 @@
-import type { EntryKind, FileSystem } from "../platform";
+import type { EntryKind, FileSystem, Trash } from "../platform";
 import type { OwnChanges } from "./own-changes";
 import {
   DRAFTS_FOLDER,
@@ -16,6 +16,8 @@ export interface VaultContext {
   fs: FileSystem;
   /** Where deleted entries go (ADR-031). */
   trash: VaultTrash;
+  /** The trash of the operating system, for `DeleteOptions.system`. */
+  systemTrash: Trash;
   /** Every change the vault makes is recorded here (see `OwnChanges`). */
   own: OwnChanges;
 }
@@ -26,6 +28,11 @@ export interface DeleteOptions {
    * brings the note or folder back after that.
    */
   permanent?: boolean;
+  /**
+   * Move to the trash of the operating system instead of the one of the
+   * vault. Rejects if it is not available; nothing is deleted then.
+   */
+  system?: boolean;
 }
 
 /** Rejects unless `path` exists and is of the given kind. */
@@ -52,7 +59,7 @@ export async function expectFree(
 
 /** Creates the folder at the absolute path `dir` and any missing parents. */
 export async function makeFolders(
-  { root, fs, own }: VaultContext,
+  { root, fs, own }: Pick<VaultContext, "root" | "fs" | "own">,
   dir: string,
 ): Promise<void> {
   const missing: string[] = [];
@@ -142,8 +149,8 @@ async function copyTree(
 }
 
 /**
- * Deletes a file or folder: to the trash of the vault, or for good if
- * asked. If it cannot go to the trash the call rejects and nothing is
+ * Deletes a file or folder: to the trash of the vault, to the system
+ * trash with `system`, or for good with `permanent`. If it cannot go to the trash the call rejects and nothing is
  * deleted; deleting for good is never a silent fallback. Only what the
  * vault holds can be deleted (`isVaultPath`), not the drafts folder itself.
  */
@@ -153,13 +160,14 @@ export async function deleteEntry(
   kind: EntryKind,
   options: DeleteOptions = {},
 ): Promise<void> {
-  const { root, fs, trash, own } = context;
+  const { root, fs, trash, systemTrash, own } = context;
   const target = resolveInVault(root, path);
   if (!isVaultPath(path) || path === DRAFTS_FOLDER) {
     throw new Error(`Not part of the vault: ${JSON.stringify(path)}`);
   }
   await expectKind(context, path, kind);
   if (options.permanent) await fs.remove(target, { recursive: kind === "dir" });
+  else if (options.system) await systemTrash.moveToTrash(target);
   else await trash.put(path.replaceAll("\\", "/"), kind);
   own.removed(target);
 }

@@ -131,7 +131,7 @@ export class Vault {
   private indexing: Promise<void> = Promise.resolve();
 
   private constructor(root: string, platform: Platform, delayMs: number) {
-    const { fs, watcher } = platform;
+    const { fs, watcher, trash: systemTrash } = platform;
     const forgetTree = () => {
       this.cachedTree = null;
       this.cachedDrafts = null;
@@ -152,6 +152,7 @@ export class Vault {
       root,
       fs,
       own,
+      systemTrash,
       onChange: () => this.emitter.emit("trash", undefined),
     });
     this.trash = trash;
@@ -174,9 +175,10 @@ export class Vault {
       read: (path) => this.notes.read(path),
       write: rewrite,
     });
-    this.notes = new Notes({ root, fs, trash, own }, rewriter);
-    this.folders = new Folders({ root, fs, trash, own }, rewriter);
-    this.attachments = new Attachments({ root, fs, trash, own });
+    const context = { root, fs, trash, systemTrash, own };
+    this.notes = new Notes(context, rewriter);
+    this.folders = new Folders(context, rewriter);
+    this.attachments = new Attachments(context);
     const index = () =>
       this.store ?? Promise.reject(new Error("The index is not open"));
     this.links = new Links({

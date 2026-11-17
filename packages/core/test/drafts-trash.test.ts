@@ -196,6 +196,39 @@ describe("vault.trash", () => {
     expect(await fs.exists(`${ROOT}/.carbon/trash`)).toBe(false);
   });
 
+  test("moves one item, or all, to the system trash", async () => {
+    const { vault, platform } = await setup({ "a.md": "", "b.md": "" });
+    await vault.notes.remove("a.md");
+    await vault.notes.remove("b.md");
+    const [latest] = await vault.trash.list();
+    await vault.trash.remove(latest.id, { system: true });
+    expect(platform.trash.items).toEqual([
+      `${ROOT}/.carbon/trash/${latest.id}/b.md`,
+    ]);
+    await vault.notes.create("c.md");
+    await vault.notes.remove("c.md");
+    await vault.trash.empty({ system: true });
+    // The oldest first, the entries only, not their info files.
+    expect(
+      platform.trash.items.slice(1).map((p) => p.split("/").pop()),
+    ).toEqual(["a.md", "c.md"]);
+    expect(await vault.trash.list()).toEqual([]);
+  });
+
+  test("keeps an item the system trash does not take", async () => {
+    const { vault, platform } = await setup({ "a.md": "" });
+    await vault.notes.remove("a.md");
+    platform.trash.available = false;
+    const [item] = await vault.trash.list();
+    await expect(vault.trash.remove(item.id, { system: true })).rejects.toThrow(
+      "No trash",
+    );
+    await expect(vault.trash.empty({ system: true })).rejects.toThrow(
+      "No trash",
+    );
+    expect(await vault.trash.list()).toHaveLength(1);
+  });
+
   test("tells when it changed", async () => {
     const { vault } = await setup({ "a.md": "" });
     let changes = 0;

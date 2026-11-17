@@ -11,7 +11,7 @@ async function openVault() {
     "/outside/secret.md": "secret",
   });
   const vault = await Vault.open("/vault", platform);
-  return { vault, fs: platform.fs };
+  return { vault, fs: platform.fs, trash: platform.trash };
 }
 
 /** Every path in the tree, folders with a trailing slash. */
@@ -134,6 +134,23 @@ describe("vault.notes.remove", () => {
     expect((await vault.trash.list()).map((i) => i.path)).toEqual([
       "projects/Carbon.md",
     ]);
+  });
+
+  test("moves a note to the system trash when asked", async () => {
+    const { vault, trash } = await openVault();
+    await vault.notes.remove("projects/Carbon.md", { system: true });
+    expect(await paths(vault)).not.toContain("projects/Carbon.md");
+    expect(trash.items).toEqual(["/vault/projects/Carbon.md"]);
+    expect(await vault.trash.list()).toEqual([]);
+  });
+
+  test("rejects and keeps the note when there is no system trash", async () => {
+    const { vault, trash } = await openVault();
+    trash.available = false;
+    await expect(
+      vault.notes.remove("Inbox.md", { system: true }),
+    ).rejects.toThrow("No trash");
+    expect(await vault.notes.read("Inbox.md")).toBe("# Inbox");
   });
 
   test("deletes a note for good when asked, past the trash", async () => {

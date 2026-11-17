@@ -1,4 +1,4 @@
-import type { EntryKind, FileSystem } from "../platform";
+import type { EntryKind, FileSystem, Trash } from "../platform";
 import { makeFolders } from "./entries";
 import type { OwnChanges } from "./own-changes";
 import {
@@ -20,10 +20,21 @@ export interface TrashItem {
   deletedAt: number;
 }
 
+/** How items leave the trash for good. */
+export interface DiscardOptions {
+  /**
+   * To the trash of the operating system instead of deleting them: one
+   * more chance to get them back. Rejects if that trash is not available.
+   */
+  system?: boolean;
+}
+
 export interface VaultTrashOptions {
   root: string;
   fs: FileSystem;
   own: OwnChanges;
+  /** The trash of the operating system, for `DiscardOptions.system`. */
+  systemTrash: Trash;
   /** After the trash got, gave back or dropped something. */
   onChange: () => void;
 }
@@ -102,7 +113,7 @@ export class VaultTrash {
     const { item, source } = await this.read(id);
     const target = await this.freePath(item.path, item.kind === "folder");
     const absolute = resolveNewInVault(root, target);
-    await makeFolders({ root, fs, own, trash: this }, parentOf(absolute));
+    await makeFolders({ root, fs, own }, parentOf(absolute));
     await fs.rename(source, absolute);
     await own.wrote(absolute);
     await fs.remove(`${this.dir}/${id}`, { recursive: true });
@@ -110,19 +121,47 @@ export class VaultTrash {
     return target;
   }
 
-  /** Deletes an item for good. */
-  async remove(id: string): Promise<void> {
+  /**
+   * Takes an item out of the trash: deletes it for good, or moves it to
+   * the system trash with `system`. If that fails, it stays.
+   */
+  async remove(id: string, options: DiscardOptions = {}): Promise<void> {
     if (!isId(id)) throw new Error(`Not in the trash: ${id}`);
-    await this.options.fs.remove(`${this.dir}/${id}`, { recursive: true });
-    this.options.onChange();
+    try {
+      await this.discard(id, options);
+    } finally {
+      this.options.onChange();
+    }
   }
 
-  /** Deletes everything in the trash for good. */
-  async empty(): Promise<void> {
+  /**
+   * Takes everything out of the trash, as `remove` does. With `system`,
+   * the items go one by one; if one cannot, it and the ones after it stay
+   * and the call rejects.
+   */
+  async empty(options: DiscardOptions = {}): Promise<void> {
     const { fs, onChange } = this.options;
     if (!(await fs.exists(this.dir))) return;
-    await fs.remove(this.dir, { recursive: true });
-    onChange();
+    try {
+      if (options.system) {
+        // The oldest first, as they were deleted.
+        for (const item of (await this.list()).reverse()) {
+          await this.discard(item.id, options);
+        }
+      }
+      await fs.remove(this.dir, { recursive: true });
+    } finally {
+      onChange();
+    }
+  }
+
+  /** `remove` without telling: the entry first, then its item folder. */
+  private async discard(id: string, { system }: DiscardOptions) {
+    const { fs, systemTrash } = this.options;
+    // Only the entry goes to the system trash, under its own name; the
+    // info file has no use there.
+    if (system) await systemTrash.moveToTrash((await this.read(id)).source);
+    await fs.remove(`${this.dir}/${id}`, { recursive: true });
   }
 
   /** The item `id` and the absolute path of its entry in the trash. */

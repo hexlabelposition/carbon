@@ -50,8 +50,8 @@ export class Folders {
 
   /**
    * Deletes a folder and everything inside it: moves it to the trash of
-   * the vault, or deletes it for good with `permanent`. Rejects if it
-   * cannot go to the trash.
+   * the vault, to the system trash with `system`, or deletes it for good
+   * with `permanent`. Rejects if it cannot go to the trash.
    */
   async remove(path: string, options?: DeleteOptions): Promise<void> {
     await deleteEntry(this.context, path, "dir", options);

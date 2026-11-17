@@ -112,8 +112,8 @@ export class Notes {
   }
 
   /**
-   * Deletes a note: moves it to the trash of the vault, or deletes it for
-   * good with `permanent`. Rejects if it cannot go to the trash.
+   * Deletes a note: moves it to the trash of the vault, to the system
+   * trash with `system`, or deletes it for good with `permanent`. Rejects if it cannot go to the trash.
    */
   async remove(path: NotePath, options?: DeleteOptions): Promise<void> {
     await deleteEntry(this.context, path, "file", options);

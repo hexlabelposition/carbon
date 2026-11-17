@@ -1,3 +1,17 @@
+/// Moves a file or folder to the system trash. No official Tauri plugin does
+/// this (ARCHITECTURE.md, ADR-019).
+#[tauri::command]
+async fn move_to_trash(path: String) -> Result<(), String> {
+    // The core uses `/` on every platform, the Windows shell wants `\`.
+    #[cfg(windows)]
+    let path = path.replace('/', "\\");
+    // Moving to the trash can take long, for a big folder or a slow drive.
+    tauri::async_runtime::spawn_blocking(move || trash::delete(&path))
+        .await
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())
+}
+
 /// Copies a file the user dropped on the app into the vault. The `fs` plugin
 /// cannot do it: the file lies outside the folders the app may read. The
 /// target must be a new file inside a folder the user opened, so the command
@@ -182,6 +196,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            move_to_trash,
             import_file,
             list_notes,
             sql_batch
