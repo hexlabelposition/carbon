@@ -1,9 +1,9 @@
 import { DRAFTS_FOLDER, type TrashItem } from "@carbon/core";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useLanguage, useT, type Translate } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { nameOf, parentOf } from "../vault/paths";
-import type { TrashView } from "./use-trash";
+import type { TrashConfirm, TrashView } from "./use-trash";
 
 /**
  * The trash of the vault: what was deleted, the latest first, each with
@@ -35,6 +35,9 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
   return (
     <div className="flex h-full flex-col">
       <Notice trash={trash} />
+      {trash.confirm !== null && (
+        <ConfirmDialog trash={trash} confirm={trash.confirm} />
+      )}
       {list.items.length === 0 ? (
         <p className="px-3 py-4 text-center text-faint">{t("trash.empty")}</p>
       ) : (
@@ -129,47 +132,93 @@ function RowButton({
   );
 }
 
-/** The question before deleting for good, or what went wrong. */
+/**
+ * What to do with an item, or with everything, that leaves the trash: to
+ * the system trash, which has the focus, or deleted for good. Laid out
+ * over a blurred window, as the other dialogs; Escape or a click outside
+ * keeps it all.
+ */
+function ConfirmDialog({
+  trash,
+  confirm,
+}: {
+  trash: TrashView;
+  confirm: TrashConfirm;
+}) {
+  const t = useT();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const toSystem = useRef<HTMLButtonElement>(null);
+
+  // A modal `<dialog>` keeps the focus inside and closes on Escape.
+  useEffect(() => {
+    const element = dialog.current;
+    if (element === null || element.open) return;
+    element.showModal();
+    // After `showModal`, which gives the focus to the first button: the
+    // safe answer takes it, so a stray Enter deletes nothing for good.
+    toSystem.current?.focus();
+    return () => element.close();
+  }, []);
+
+  const button = "h-8 rounded-md px-3 outline-none focus-visible:ring-2";
+  return (
+    <dialog
+      ref={dialog}
+      aria-labelledby="trash-confirm-title"
+      aria-describedby="trash-confirm-text"
+      // In the middle of the window, as the settings: a question, not a
+      // list that grows down as in the palette.
+      className="m-auto w-full max-w-[440px] rounded-lg border border-line bg-bg p-4 text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
+      onCancel={(event) => {
+        event.preventDefault();
+        trash.cancel();
+      }}
+      // A click on the backdrop lands on the dialog itself.
+      onClick={(event) => {
+        if (event.target === event.currentTarget) trash.cancel();
+      }}
+    >
+      <h2 id="trash-confirm-title" className="font-medium">
+        {confirm.kind === "all"
+          ? t("trash.emptyAll")
+          : t("trash.discardTitle", { name: labelOf(confirm.item) })}
+      </h2>
+      <p id="trash-confirm-text" className="mt-1.5 text-muted">
+        {t(
+          confirm.kind === "all" ? "trash.confirmEmpty" : "trash.confirmDelete",
+        )}
+      </p>
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className={`${button} border border-line-strong hover:bg-raise focus-visible:ring-line-strong`}
+          onClick={trash.cancel}
+        >
+          {t("trash.cancel")}
+        </button>
+        <button
+          ref={toSystem}
+          type="button"
+          className={`${button} bg-raise hover:bg-selected focus-visible:ring-line-strong`}
+          onClick={() => trash.confirmed(true)}
+        >
+          {t("trash.toSystem")}
+        </button>
+        <button
+          type="button"
+          className={`${button} bg-danger text-on-danger focus-visible:ring-line-strong`}
+          onClick={() => trash.confirmed(false)}
+        >
+          {t("trash.deleteForGood")}
+        </button>
+      </div>
+    </dialog>
+  );
+}
+
+/** What went wrong with the last action, until dismissed. */
 function Notice({ trash }: { trash: TrashView }) {
   const t = useT();
-  const { confirm } = trash;
-  if (confirm !== null) {
-    return (
-      <div
-        role="alert"
-        className="flex shrink-0 flex-col gap-1.5 border-b border-line px-3 py-2 text-small"
-      >
-        <p>
-          {confirm.kind === "all"
-            ? t("trash.confirmEmpty")
-            : t("trash.confirmDelete", { name: labelOf(confirm.item) })}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="h-6 rounded-sm bg-raise px-2 hover:bg-selected"
-            onClick={() => trash.confirmed(true)}
-          >
-            {t("trash.toSystem")}
-          </button>
-          <button
-            type="button"
-            className="h-6 rounded-sm bg-danger px-2 text-on-danger"
-            onClick={() => trash.confirmed(false)}
-          >
-            {t("trash.deleteForGood")}
-          </button>
-          <button
-            type="button"
-            className="h-6 rounded-sm border border-line-strong px-2"
-            onClick={trash.cancel}
-          >
-            {t("trash.cancel")}
-          </button>
-        </div>
-      </div>
-    );
-  }
   if (trash.error !== null) {
     return (
       <div

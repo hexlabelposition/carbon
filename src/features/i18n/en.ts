@@ -278,15 +278,16 @@ export const en = {
   "theme.system": "Theme: Follow system",
   "trash.cancel": "Cancel",
   "trash.confirmDelete":
-    "Take “{name}” out of the trash? The system trash can still give it back; deleting for good cannot be undone.",
+    "From the system trash it can still be got back. Deleting for good cannot be undone.",
   "trash.confirmEmpty":
-    "Empty the trash? The system trash can still give everything back; deleting for good cannot be undone.",
+    "Everything in the trash leaves it. From the system trash it can still be got back; deleting for good cannot be undone.",
   "trash.count": {
     one: "{count} item",
     other: "{count} items",
   },
   "trash.deleteForGood": "Delete for good",
   "trash.discard": "Take out of the trash",
+  "trash.discardTitle": "Take “{name}” out of the trash",
   "trash.empty": "The trash is empty.",
   "trash.emptyAll": "Empty trash",
   "trash.failed": "The trash is not available: {reason}",

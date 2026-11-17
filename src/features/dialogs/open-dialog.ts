@@ -1,7 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /** The dialogs that stand over the window, one at a time. */
-export type DialogId = "palette" | "switcher" | "newNote" | "settings";
+export type DialogId =
+  "palette" | "switcher" | "newNote" | "settings" | "trashConfirm";
 
 // Which dialog is open: anything may open one.
 const listeners = new Set<() => void>();

@@ -1,5 +1,6 @@
 import type { TrashItem, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
+import { useDialog } from "../dialogs/open-dialog";
 
 export type TrashListState =
   | { status: "loading" }
@@ -19,7 +20,10 @@ export interface TrashView {
    */
   askRemove(item: TrashItem): void;
   askEmpty(): void;
-  /** What is waiting for a yes, or `null`. */
+  /**
+   * What is waiting for an answer, or `null`: asked in a dialog, which
+   * closes when another opens.
+   */
   confirm: TrashConfirm | null;
   /**
    * Takes what `confirm` names out of the trash: to the system trash with
@@ -38,7 +42,14 @@ export interface TrashView {
  */
 export function useTrash(vault: Vault, enabled: boolean): TrashView {
   const [list, setList] = useState<TrashListState>({ status: "loading" });
-  const [confirm, setConfirm] = useState<TrashConfirm | null>(null);
+  const [asked, setAsked] = useState<TrashConfirm | null>(null);
+  const [dialogOpen, setDialogOpen] = useDialog("trashConfirm");
+  // Another dialog may have closed this one: then nothing is asked.
+  const confirm = dialogOpen ? asked : null;
+  const ask = (next: TrashConfirm) => {
+    setAsked(next);
+    setDialogOpen(true);
+  };
   const [error, setError] = useState<string | null>(null);
   /** Raised to ask for the list again. */
   const [version, setVersion] = useState(0);
@@ -70,12 +81,12 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
   return {
     list,
     restore: (item) => run(() => vault.trash.restore(item.id)),
-    askRemove: (item) => setConfirm({ kind: "item", item }),
-    askEmpty: () => setConfirm({ kind: "all" }),
+    askRemove: (item) => ask({ kind: "item", item }),
+    askEmpty: () => ask({ kind: "all" }),
     confirm,
     confirmed(system) {
       const current = confirm;
-      setConfirm(null);
+      setDialogOpen(false);
       if (current === null) return;
       run(() =>
         current.kind === "all"
@@ -83,7 +94,7 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
           : vault.trash.remove(current.item.id, { system }),
       );
     },
-    cancel: () => setConfirm(null),
+    cancel: () => setDialogOpen(false),
     error,
     dismiss: () => setError(null),
   };
