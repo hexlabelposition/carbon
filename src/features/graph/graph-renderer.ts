@@ -13,6 +13,8 @@ export interface GraphColors {
   node: string;
   /** A note that does not exist. */
   missing: string;
+  /** The groups of notes, by folder or tag (`NodeStyle.groups`). */
+  groups: readonly string[];
   edge: string;
   /** The note shown in the active pane. */
   current: string;
@@ -20,14 +22,25 @@ export interface GraphColors {
   background: string;
 }
 
-/** A note under the pointer, its neighbors and the links between them. */
+/**
+ * A note under the pointer, its neighbors and its links; or the notes of
+ * a group, picked in the legend, and the links between them.
+ */
 export interface Highlight {
-  /** The note, by index. */
-  node: number;
+  /** The note under the pointer, by index; `null` for a group of notes. */
+  node: number | null;
   /** It and the notes it links to or is linked from, by index. */
   nodes: ReadonlySet<number>;
   /** Its links, by their index in `RenderedGraph.edges` / 2. */
   edges: readonly number[];
+}
+
+/** How each note is drawn besides its place (C-507). */
+export interface NodeStyle {
+  /** How many times `NODE_RADIUS` each note is, by index. */
+  sizes: Float32Array;
+  /** The group of each note, an index into `GraphColors.groups`; -1 none. */
+  groups: Int8Array;
 }
 
 /** How visible what a highlight leaves out still is, 0 to 1. */
@@ -56,9 +69,12 @@ export interface GraphRenderer {
   setCamera(camera: Camera): void;
   /** The note drawn as the current one, by index, or `null`. */
   setCurrent(index: number | null): void;
+  /** How big each note is and which group colors it; `null`: all alike. */
+  setStyle(style: NodeStyle | null): void;
   /**
    * Draws the notes and links of `highlight` out, the rest faded; all
-   * alike for `null`. Their titles show whatever the zoom.
+   * alike for `null`. For a note under the pointer, the titles of it and
+   * its neighbors show whatever the zoom; a group may be too many.
    */
   setHighlight(highlight: Highlight | null): void;
   setColors(colors: GraphColors): void;
@@ -92,8 +108,11 @@ export function readGraphColors(element: Element): GraphColors {
   return {
     node: token("--cb-faint"),
     missing: token("--cb-line-strong"),
+    groups: [1, 2, 3].map((n) => token(`--cb-group-${n}`)),
     edge: token("--cb-line-strong"),
-    current: token("--cb-link"),
+    // Not the accent: a group color may be close to it. The ink of the
+    // text is apart from every group and from the gray of the rest.
+    current: token("--cb-fg"),
     label: token("--cb-muted"),
     background: token("--cb-bg"),
   };

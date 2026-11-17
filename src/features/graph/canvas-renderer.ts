@@ -4,6 +4,7 @@ import {
   NODE_RADIUS,
   type GraphRendererFactory,
   type Highlight,
+  type NodeStyle,
 } from "./graph-renderer";
 
 /** Titles drawn at most in one frame: past that, text costs too much. */
@@ -34,6 +35,7 @@ export const canvasRenderer: GraphRendererFactory = (
   let colors = initialColors;
   let current: number | null = null;
   let highlight: Highlight | null = null;
+  let style: NodeStyle | null = null;
   let width = 0;
   let height = 0;
   let ratio = 1;
@@ -94,11 +96,35 @@ export const canvasRenderer: GraphRendererFactory = (
       ctx.moveTo(ax, ay);
       ctx.lineTo(bx, by);
     };
+    const sizeOf = (i: number) => radius * (style?.sizes[i] ?? 1);
     const dot = (i: number, size: number) => {
       const x = positions[i * 2];
       const y = positions[i * 2 + 1];
       ctx.moveTo(x + size, y);
       ctx.arc(x, y, size, 0, Math.PI * 2);
+    };
+    /** The color a note is drawn in, unless it is the current one. */
+    const colorOf = (i: number) => {
+      if (graph.missing[i] === 1) return colors.missing;
+      const group = style?.groups[i] ?? -1;
+      return group < 0 ? colors.node : (colors.groups[group] ?? colors.node);
+    };
+    /** Fills the notes, one path for each color. */
+    const fillNodes = (notes: Iterable<number>) => {
+      const byColor = new Map<string, number[]>();
+      for (const i of notes) {
+        if (i === current) continue;
+        const color = colorOf(i);
+        const list = byColor.get(color);
+        if (list === undefined) byColor.set(color, [i]);
+        else list.push(i);
+      }
+      for (const [color, list] of byColor) {
+        ctx.beginPath();
+        for (const i of list) dot(i, sizeOf(i));
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
     };
 
     // Everything, faded while something is highlighted.
@@ -110,25 +136,11 @@ export const canvasRenderer: GraphRendererFactory = (
     ctx.stroke();
 
     const visible: number[] = [];
-    const missing: number[] = [];
-    ctx.beginPath();
-    for (let i = 0; i < titles.length; i++) {
-      if (!inView(i)) continue;
-      visible.push(i);
-      if (graph.missing[i] === 1) missing.push(i);
-      else if (i !== current) dot(i, radius);
-    }
-    ctx.fillStyle = colors.node;
-    ctx.fill();
-    if (missing.length > 0) {
-      ctx.beginPath();
-      for (const i of missing) dot(i, radius);
-      ctx.fillStyle = colors.missing;
-      ctx.fill();
-    }
+    for (let i = 0; i < titles.length; i++) if (inView(i)) visible.push(i);
+    fillNodes(visible);
     if (current !== null) {
       ctx.beginPath();
-      dot(current, radius * 1.5);
+      dot(current, sizeOf(current) * 1.5);
       ctx.fillStyle = colors.current;
       ctx.fill();
     }
@@ -140,17 +152,10 @@ export const canvasRenderer: GraphRendererFactory = (
       for (const edge of lit.edges) edgePath(edge * 2, edge * 2 + 1);
       ctx.strokeStyle = colors.current;
       ctx.stroke();
-      for (const absent of [0, 1]) {
-        ctx.beginPath();
-        for (const i of lit.nodes) {
-          if (i !== current && graph.missing[i] === absent) dot(i, radius);
-        }
-        ctx.fillStyle = absent === 1 ? colors.missing : colors.node;
-        ctx.fill();
-      }
+      fillNodes(lit.nodes);
       if (current !== null && lit.nodes.has(current)) {
         ctx.beginPath();
-        dot(current, radius * 1.5);
+        dot(current, sizeOf(current) * 1.5);
         ctx.fillStyle = colors.current;
         ctx.fill();
       }
@@ -158,7 +163,8 @@ export const canvasRenderer: GraphRendererFactory = (
 
     const zoomedIn =
       radius * scale >= labelPixels && visible.length <= MAX_LABELS;
-    if (!zoomedIn && lit === null) return;
+    const litTitles = lit !== null && lit.node !== null;
+    if (!zoomedIn && !litTitles) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.font = `12px ${getComputedStyle(container).fontFamily}`;
     ctx.textAlign = "center";
@@ -166,7 +172,7 @@ export const canvasRenderer: GraphRendererFactory = (
     ctx.fillStyle = colors.label;
     const label = (i: number) => {
       const x = positions[i * 2] * scale + offsetX;
-      const y = (positions[i * 2 + 1] + radius) * scale + offsetY + 3;
+      const y = (positions[i * 2 + 1] + sizeOf(i)) * scale + offsetY + 3;
       ctx.fillText(titles[i], x, y);
     };
     if (zoomedIn) {
@@ -174,8 +180,11 @@ export const canvasRenderer: GraphRendererFactory = (
       for (const i of visible) if (lit === null || !lit.nodes.has(i)) label(i);
       ctx.globalAlpha = 1;
     }
-    // The titles of a highlight show at any zoom.
-    if (lit !== null) for (const i of lit.nodes) if (inView(i)) label(i);
+    // The titles of a note and its neighbors show at any zoom; those of a
+    // group only as the zoom allows.
+    if (lit !== null && (litTitles || zoomedIn)) {
+      for (const i of lit.nodes) if (inView(i)) label(i);
+    }
   };
 
   const schedule = () => {
@@ -199,6 +208,10 @@ export const canvasRenderer: GraphRendererFactory = (
     },
     setHighlight(next) {
       highlight = next;
+      schedule();
+    },
+    setStyle(next) {
+      style = next;
       schedule();
     },
     setColors(next) {

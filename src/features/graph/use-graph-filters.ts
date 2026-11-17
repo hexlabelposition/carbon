@@ -4,8 +4,8 @@ import { DEFAULT_FILTERS, type GraphFilters } from "./use-graph-data";
 const KEY = "carbon.graph.filters";
 
 /**
- * The filters of the graph of the vault (C-506), remembered between app
- * starts. `change` takes the filters to change; the rest stay.
+ * The filters of the graph of the vault (C-506) and how it draws its
+ * notes (C-507), remembered between app starts. `change` takes the filters to change; the rest stay.
  */
 export function useGraphFilters(): {
   filters: GraphFilters;
@@ -31,9 +31,18 @@ function load(): GraphFilters {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(KEY) ?? "null");
     if (typeof saved !== "object" || saved === null) return DEFAULT_FILTERS;
-    const { tag, orphans, missing } = saved as Partial<GraphFilters>;
+    const { tag, orphans, missing, sizeByLinks, colorBy } =
+      saved as Partial<GraphFilters>;
     return {
       tag: typeof tag === "string" ? tag : DEFAULT_FILTERS.tag,
+      sizeByLinks:
+        typeof sizeByLinks === "boolean"
+          ? sizeByLinks
+          : DEFAULT_FILTERS.sizeByLinks,
+      colorBy:
+        colorBy === "none" || colorBy === "folder" || colorBy === "tag"
+          ? colorBy
+          : DEFAULT_FILTERS.colorBy,
       orphans: typeof orphans === "boolean" ? orphans : DEFAULT_FILTERS.orphans,
       missing: typeof missing === "boolean" ? missing : DEFAULT_FILTERS.missing,
     };

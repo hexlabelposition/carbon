@@ -68,6 +68,15 @@
   --cb-logo-wave-upper: #c4c9cf;
   --cb-logo-wave-lower: #8a9198;
   --cb-logo-wave-bottom: #50565c;
+
+  /*
+   * Groups of notes in the graph, by folder or tag: three hues apart for
+   * every kind of color vision, checked against bg in both themes. Notes
+   * of every group can stand side by side, so no more than three.
+   */
+  --cb-group-1: #2a78d6;
+  --cb-group-2: #eb6834;
+  --cb-group-3: #1baf7a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,6 +110,9 @@
     --cb-logo-wave-upper: #babfc5;
     --cb-logo-wave-lower: #7a8189;
     --cb-logo-wave-bottom: #43484e;
+    --cb-group-1: #3987e5;
+    --cb-group-2: #d95926;
+    --cb-group-3: #199e70;
   }
 }
 
@@ -134,4 +146,7 @@
   --cb-logo-wave-upper: #babfc5;
   --cb-logo-wave-lower: #7a8189;
   --cb-logo-wave-bottom: #43484e;
+  --cb-group-1: #3987e5;
+  --cb-group-2: #d95926;
+  --cb-group-3: #199e70;
 }

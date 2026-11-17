@@ -14,6 +14,10 @@ interface NodeAttributes {
   label: string;
   current: boolean;
   missing: boolean;
+  /** Times `NODE_RADIUS`. */
+  size: number;
+  /** Index into `colors.groups`; -1 none. */
+  group: number;
 }
 
 /**
@@ -51,6 +55,8 @@ export const sigmaRenderer: GraphRendererFactory = (
       label: title,
       current: false,
       missing: graph.missing[i] === 1,
+      size: 1,
+      group: -1,
     });
   });
   const { edges } = graph;
@@ -74,15 +80,20 @@ export const sigmaRenderer: GraphRendererFactory = (
             ? colors.current
             : attributes.missing
               ? colors.missing
-              : colors.node,
+              : attributes.group < 0
+                ? colors.node
+                : (colors.groups[attributes.group] ?? colors.node),
         size: (attributes) =>
-          attributes.current ? NODE_RADIUS * 1.5 : NODE_RADIUS,
+          NODE_RADIUS * attributes.size * (attributes.current ? 1.5 : 1),
         opacity: (_attributes, state, graphState) => faded(state, graphState),
         // Stated with the rest: a node style of its own replaces sigma's.
         label: { attribute: "label" },
-        // The titles of a highlight show at any zoom.
+        // The titles of a note and its neighbors show at any zoom; those
+        // of a group only as the zoom allows.
         labelVisibility: (_attributes, state) =>
-          state.isHighlighted ? "visible" : "auto",
+          state.isHighlighted && highlight !== null && highlight.node !== null
+            ? "visible"
+            : "auto",
         labelColor: () => colors.label,
         labelSize: 12,
       },
@@ -146,6 +157,14 @@ export const sigmaRenderer: GraphRendererFactory = (
       if (current !== null) model.setNodeAttribute(current, "current", false);
       current = next;
       if (current !== null) model.setNodeAttribute(current, "current", true);
+    },
+    setStyle(style) {
+      model.updateEachNodeAttributes((node, attributes) => {
+        const i = Number(node);
+        attributes.size = style?.sizes[i] ?? 1;
+        attributes.group = style?.groups[i] ?? -1;
+        return attributes;
+      });
     },
     setHighlight(next) {
       if (highlight !== null) {
