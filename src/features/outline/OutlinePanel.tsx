@@ -43,6 +43,11 @@ export function OutlinePanel({
                   index === current ? "bg-selected text-fg" : "text-muted"
                 }`}
                 style={{ paddingLeft: `${6 + (heading.level - top) * 14}px` }}
+                // A click leaves the focus in the note: taken away and given
+                // back, the "#" of the line hid and showed again, the text
+                // moved under the cursor, and WebKitGTK left a second one
+                // where it was. The keyboard still reaches the buttons.
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onReveal(index)}
               >
                 {heading.text || t("outline.emptyHeading")}

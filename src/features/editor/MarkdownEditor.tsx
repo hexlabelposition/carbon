@@ -355,11 +355,13 @@ export function MarkdownEditor({
     if (view === null || reveal === null) return;
     // The offset may come from an older version of the text.
     const at = Math.min(reveal.at, view.state.doc.length);
+    // Focused first, as for a heading of the outline (`revealHeading`):
+    // the cursor is placed by the text with the Markdown under it shown.
+    view.focus();
     view.dispatch({
       selection: { anchor: at },
       effects: EditorView.scrollIntoView(at, { y: "center" }),
     });
-    view.focus();
   }, [reveal]);
 
   // A new revision: show `text` in place of what the editor holds.

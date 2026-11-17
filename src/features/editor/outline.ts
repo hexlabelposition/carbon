@@ -105,8 +105,12 @@ export function revealHeading(view: EditorView, index: number): void {
   const heading = headingsIn(view.state)[index];
   if (heading === undefined) return;
   const line = view.state.doc.lineAt(heading.from);
-  view.dispatch({ selection: { anchor: line.to } });
+  // Focused first: live preview shows the Markdown of the line under the
+  // cursor only while the editor has the focus, and the cursor is placed
+  // by the text as it is then. Placed before, it stayed where the text
+  // was before the "#" came, inside the heading.
   view.focus();
+  view.dispatch({ selection: { anchor: line.to } });
   // Gliding, as the jump to a heading far away is easier to follow so.
   glideTo(view, line.from, 24);
 }
