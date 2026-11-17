@@ -18,6 +18,19 @@ export interface GraphColors {
   background: string;
 }
 
+/** A note under the pointer, its neighbors and the links between them. */
+export interface Highlight {
+  /** The note, by index. */
+  node: number;
+  /** It and the notes it links to or is linked from, by index. */
+  nodes: ReadonlySet<number>;
+  /** Its links, by their index in `RenderedGraph.edges` / 2. */
+  edges: readonly number[];
+}
+
+/** How visible what a highlight leaves out still is, 0 to 1. */
+export const FADED = 0.15;
+
 /** What a renderer draws: notes by index, links as pairs of indexes. */
 export interface RenderedGraph {
   titles: readonly string[];
@@ -36,6 +49,11 @@ export interface GraphRenderer {
   setCamera(camera: Camera): void;
   /** The note drawn as the current one, by index, or `null`. */
   setCurrent(index: number | null): void;
+  /**
+   * Draws the notes and links of `highlight` out, the rest faded; all
+   * alike for `null`. Their titles show whatever the zoom.
+   */
+  setHighlight(highlight: Highlight | null): void;
   setColors(colors: GraphColors): void;
   /** The container changed size. */
   resize(): void;

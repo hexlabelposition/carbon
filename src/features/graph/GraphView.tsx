@@ -19,7 +19,11 @@ import {
   useLocalGraphData,
   type GraphDataState,
 } from "./use-graph-data";
-import { indexGraph, useGraphLayout } from "./use-graph-layout";
+import {
+  indexGraph,
+  useGraphLayout,
+  type IndexedGraph,
+} from "./use-graph-layout";
 
 /**
  * The renderer of the graph. sigma.js until the measurements of C-502 in
@@ -101,11 +105,17 @@ function GraphCanvas({
   const moved = useRef(false);
   const grid = useRef<NodeGrid | null>(null);
   const latest = useRef<Float32Array | null>(null);
-  const [hovered, setHovered] = useState<{
-    title: string;
-    x: number;
-    y: number;
+  /** The note under the pointer, by index, with the graph it is of. */
+  const [hover, setHover] = useState<{
+    graph: IndexedGraph;
+    node: number;
   } | null>(null);
+  const hovered = hover !== null && hover.graph === graph ? hover.node : null;
+  /** The links of each note, by their index in `graph.edges` / 2. */
+  const links = useMemo(
+    () => (graph === null ? null : linksOf(graph)),
+    [graph],
+  );
 
   // Before the renderer is made: it starts from these positions.
   useEffect(() => {
@@ -180,7 +190,23 @@ function GraphCanvas({
     renderer.current?.setCurrent(index ?? null);
   }, [current, graph, hasPositions]);
 
-  // Drag to move, wheel to zoom, click to open, hover to see the title.
+  // The note under the pointer, its neighbors and its links stand out.
+  useEffect(() => {
+    if (graph === null || links === null) return;
+    if (hovered === null) {
+      renderer.current?.setHighlight(null);
+      return;
+    }
+    const edges = links[hovered];
+    const nodes = new Set([hovered]);
+    for (const edge of edges) {
+      nodes.add(graph.edges[edge * 2]);
+      nodes.add(graph.edges[edge * 2 + 1]);
+    }
+    renderer.current?.setHighlight({ node: hovered, nodes, edges });
+  }, [graph, links, hovered, hasPositions]);
+
+  // Drag to move, wheel to zoom, click to open, hover to highlight.
   useEffect(() => {
     const container = stage.current;
     if (container === null || graph === null) return;
@@ -221,16 +247,14 @@ function GraphCanvas({
       if (press === null) {
         const index = pick(at.x, at.y);
         container.style.cursor = index === null ? "" : "pointer";
-        setHovered(
-          index === null ? null : { title: graph.titles[index], ...at },
-        );
+        setHover(index === null ? null : { graph, node: index });
         return;
       }
       const dx = at.x - press.x;
       const dy = at.y - press.y;
       if (!press.dragged && Math.hypot(dx, dy) < CLICK_SLOP) return;
       press.dragged = true;
-      setHovered(null);
+      setHover(null);
       container.style.cursor = "grabbing";
       const { scale } = press.camera;
       look({
@@ -250,7 +274,7 @@ function GraphCanvas({
       if (index !== null)
         onOpen(graph.paths[index], event.ctrlKey || event.metaKey);
     };
-    const leave = () => setHovered(null);
+    const leave = () => setHover(null);
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
       const at = point(event);
@@ -349,14 +373,10 @@ function GraphCanvas({
         aria-busy={!settled}
         className="absolute inset-0 touch-none outline-none select-none"
       />
-      {hovered !== null && (
-        <div
-          className="pointer-events-none absolute rounded-md border border-line bg-panel px-2 py-0.5 text-small text-fg shadow-sm"
-          style={{ left: hovered.x + 12, top: hovered.y + 12 }}
-        >
-          {hovered.title}
-        </div>
-      )}
+      {/* The renderer shows the title by the note; this says it aloud. */}
+      <div className="sr-only" aria-live="polite" data-hovered>
+        {hovered !== null && graph !== null ? graph.titles[hovered] : ""}
+      </div>
       <div className="pointer-events-none absolute top-2 left-3 flex flex-col gap-1 text-small text-faint">
         {data.status === "loading" && <p>{t("graph.loading")}</p>}
         {data.status === "error" && (
@@ -482,4 +502,14 @@ function loadDepth(): number {
   } catch {
     return 1;
   }
+}
+
+/** The links of each note of `graph`, by their index in its edges / 2. */
+function linksOf(graph: IndexedGraph): number[][] {
+  const links: number[][] = graph.titles.map(() => []);
+  for (let edge = 0; edge < graph.edges.length / 2; edge++) {
+    links[graph.edges[edge * 2]].push(edge);
+    links[graph.edges[edge * 2 + 1]].push(edge);
+  }
+  return links;
 }

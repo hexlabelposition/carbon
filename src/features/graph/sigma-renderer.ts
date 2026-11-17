@@ -1,9 +1,11 @@
 import Graph from "graphology";
 import Sigma from "sigma";
 import {
+  FADED,
   NODE_RADIUS,
   type Camera,
   type GraphRendererFactory,
+  type Highlight,
 } from "./graph-renderer";
 
 interface NodeAttributes {
@@ -50,9 +52,17 @@ export const sigmaRenderer: GraphRendererFactory = (
     });
   });
   const { edges } = graph;
+  /** The keys graphology gave the links, by their index. */
+  const edgeKeys: string[] = [];
   for (let i = 0; i < edges.length; i += 2) {
-    model.addEdge(edges[i], edges[i + 1]);
+    edgeKeys.push(model.addEdge(edges[i], edges[i + 1]));
   }
+  let highlight: Highlight | null = null;
+  /** Faded while something is highlighted and it is not part of it. */
+  const faded = (
+    state: { isHighlighted: boolean },
+    graphState: { hasHighlighted: boolean },
+  ) => (graphState.hasHighlighted && !state.isHighlighted ? FADED : 1);
 
   const sigma = new Sigma(model, layer, {
     styles: {
@@ -61,14 +71,23 @@ export const sigmaRenderer: GraphRendererFactory = (
           attributes.current ? colors.current : colors.node,
         size: (attributes) =>
           attributes.current ? NODE_RADIUS * 1.5 : NODE_RADIUS,
+        opacity: (_attributes, state, graphState) => faded(state, graphState),
         // Stated with the rest: a node style of its own replaces sigma's.
         label: { attribute: "label" },
+        // The titles of a highlight show at any zoom.
+        labelVisibility: (_attributes, state) =>
+          state.isHighlighted ? "visible" : "auto",
         labelColor: () => colors.label,
         labelSize: 12,
       },
       // Thinner than `minEdgeThickness`: drawn one pixel wide at any zoom,
       // as in the other renderers.
-      edges: { color: () => colors.edge, size: 0.001 },
+      edges: {
+        color: (_attributes, state) =>
+          state.isHighlighted ? colors.current : colors.edge,
+        opacity: (_attributes, state, graphState) => faded(state, graphState),
+        size: 0.001,
+      },
     },
     settings: {
       renderLabels: true,
@@ -121,6 +140,28 @@ export const sigmaRenderer: GraphRendererFactory = (
       if (current !== null) model.setNodeAttribute(current, "current", false);
       current = next;
       if (current !== null) model.setNodeAttribute(current, "current", true);
+    },
+    setHighlight(next) {
+      if (highlight !== null) {
+        sigma.setNodesState([...highlight.nodes].map(String), {
+          isHighlighted: false,
+        });
+        sigma.setEdgesState(
+          highlight.edges.map((edge) => edgeKeys[edge]),
+          { isHighlighted: false },
+        );
+      }
+      highlight = next;
+      if (highlight !== null) {
+        sigma.setNodesState([...highlight.nodes].map(String), {
+          isHighlighted: true,
+        });
+        sigma.setEdgesState(
+          highlight.edges.map((edge) => edgeKeys[edge]),
+          { isHighlighted: true },
+        );
+      }
+      sigma.setGraphState({ hasHighlighted: highlight !== null });
     },
     setColors(next) {
       colors = next;
