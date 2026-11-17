@@ -135,7 +135,7 @@ Done when: the graph of a 10k-note vault opens and stays smooth while panning an
 - [x] **C-504** (P0) Local graph panel for the current note
 - [x] **C-505** (P1) Hover highlights a node and its neighbors
 - [x] **C-506** (P1) Filters: by tag, hide orphans, show unresolved links
-- [ ] **C-507** (P2) Node size by number of links, color by tag or folder
+- [x] **C-507** (P2) Node size by number of links, color by tag or folder
 - [ ] **C-508** (P2) Graph updates live when notes change
 
 ## M6. Polish and release 0.1
