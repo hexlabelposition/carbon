@@ -29,7 +29,9 @@ export function OutlinePanel({
 
   return (
     <nav aria-label={t("shell.outline")}>
-      <ul className="py-1">
+      {/* As the file tree: room around the rows, rows of the same height
+          that touch, rounded, shifted in by the same step per level. */}
+      <ul className="flex flex-col p-2">
         {headings.map((heading, index) => (
           // Headings can repeat; their order is what tells them apart.
           <li key={index}>
@@ -37,10 +39,10 @@ export function OutlinePanel({
               <button
                 type="button"
                 aria-current={index === current ? "location" : undefined}
-                className={`block w-full truncate py-0.5 pr-3 text-left hover:bg-raise hover:text-fg ${
+                className={`block h-[26px] w-full truncate rounded-md pr-2 text-left leading-[26px] outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
                   index === current ? "bg-selected text-fg" : "text-muted"
                 }`}
-                style={{ paddingLeft: `${12 + (heading.level - top) * 12}px` }}
+                style={{ paddingLeft: `${6 + (heading.level - top) * 14}px` }}
                 onClick={() => onReveal(index)}
               >
                 {heading.text || t("outline.emptyHeading")}
