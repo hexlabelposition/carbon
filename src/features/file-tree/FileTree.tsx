@@ -33,8 +33,8 @@ const TREE_SCROLLBAR_ROOM = "group-data-has-overflow-y/scroll:pr-4.5";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
-/** Room between two rows, in pixels. */
-const ROW_GAP = 3;
+/** Room between two rows, in pixels: none, the rows touch. */
+const ROW_GAP = 0;
 /** From the top of a row to the top of the next one. */
 const ROW_STEP = ROW_HEIGHT + ROW_GAP;
 /** Room around the rows, in pixels: Tailwind's `px-2` at the sides. */
