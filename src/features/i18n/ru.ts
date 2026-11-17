@@ -219,7 +219,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.resizeRightPanel": "Изменить ширину правой панели",
   "shell.rightPanel": "Правая панель",
   "shell.rightPanelViews": "Виды правой панели",
-  "shell.search": "Поиск",
   "shell.searchAll": "Искать во всех заметках",
   "shell.showDrafts": "Показать черновики",
   "shell.showFiles": "Показать файлы",

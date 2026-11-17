@@ -11,11 +11,7 @@ import {
 import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
 import { CommandPalette } from "../../features/commands/CommandPalette";
 import { Shortcut } from "../../features/commands/Shortcut";
-import {
-  keys,
-  useCommandList,
-  useCommands,
-} from "../../features/commands/commands";
+import { useCommandList, useCommands } from "../../features/commands/commands";
 import {
   OPEN_PALETTE,
   useCommandPalette,
@@ -31,12 +27,12 @@ import { useReadingMode } from "../../features/editor/use-reading-mode";
 import { useSourceMode } from "../../features/editor/use-source-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
-import { SearchPanel } from "../../features/search/SearchPanel";
+import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
 import { TrashPanel } from "../../features/trash/TrashPanel";
 import { useTrash } from "../../features/trash/use-trash";
 import { useTags } from "../../features/tags/use-tags";
-import { useSearch } from "../../features/search/use-search";
+import { OPEN_SEARCH, useSearch } from "../../features/search/use-search";
 import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
 import { NEW_NOTE, useNewNote } from "../../features/new-note/use-new-note";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
@@ -159,7 +155,7 @@ export function DesktopShell({
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
-  const sidebarView = useSidebarView(vault !== null && !showDev, revealSidebar);
+  const sidebarView = useSidebarView();
   const { show: showSidebarView } = sidebarView;
   const { toggleView: toggleRightView } = rightPanel;
   usePanelShortcuts(
@@ -236,15 +232,6 @@ export function DesktopShell({
           run: () => {
             revealSidebar();
             showSidebarView("trash");
-          },
-        },
-        {
-          id: "shell.search",
-          title: t("shell.searchAll"),
-          shortcut: keys("Mod+Shift+F"),
-          run: () => {
-            revealSidebar();
-            showSidebarView("search");
           },
         },
         { id: "shell.closeVault", title: t("shell.closeVault"), run: close },
@@ -353,6 +340,7 @@ export function DesktopShell({
               />
             </main>
             <QuickSwitcherHost vault={vault} />
+            <SearchHost vault={vault} />
             <NewNoteHost vault={vault} />
           </WorkspaceProvider>
         )}
@@ -378,13 +366,13 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar, files, search and tags, with tabs to switch.
- * They stay mounted: switching keeps the open folders, the search and the
- * open tags.
+ * The views of the sidebar, files and tags, and the drafts and the trash,
+ * with tabs to switch. They stay mounted: switching keeps the open folders
+ * and the open tags. Search is a dialog of its own (`SearchHost`).
  */
 function SidebarContent({
   vault,
-  view: { view, show, searchRequest },
+  view: { view, show },
   reveal,
   showInFileManager,
 }: {
@@ -395,7 +383,6 @@ function SidebarContent({
   showInFileManager?: (path: string) => Promise<void>;
 }) {
   const t = useT();
-  const search = useSearch(vault);
   const tags = useTags(vault, view === "tags");
   const trash = useTrash(vault, view === "trash");
   const { open } = useWorkspace();
@@ -423,7 +410,6 @@ function SidebarContent({
         label={t("shell.sidebarViews")}
         views={[
           { view: "files", label: t("shell.files") },
-          { view: "search", label: t("shell.search") },
           { view: "tags", label: t("shell.tags") },
           ...extraView,
         ]}
@@ -440,13 +426,6 @@ function SidebarContent({
           onReveal={showFiles}
           showInFileManager={showInFileManager}
         />
-      </div>
-      <div
-        role="tabpanel"
-        aria-label={t("shell.search")}
-        className={view === "search" ? "min-h-0 flex-1" : "hidden"}
-      >
-        <SearchPanel search={search} focusRequest={searchRequest} />
       </div>
       <div
         role="tabpanel"
@@ -516,8 +495,9 @@ const SHOW_TIMING =
   !import.meta.env.DEV && import.meta.env.VITE_CARBON_TIMING === "1";
 
 /**
- * The toolbar at the left edge: files and search, which show in the sidebar
- * and hide it when it shows them already, and a few commands; at the foot
+ * The toolbar at the left edge: files, tags and drafts, which show in the
+ * sidebar and hide it when it shows them already, and a few commands, the
+ * search dialog first; at the foot
  * the settings and closing the vault.
  */
 function ToolbarHost({
@@ -577,12 +557,7 @@ function ToolbarHost({
       open={open}
       items={[
         sidebarItem("files", t("shell.files"), toolbarIcons.files),
-        sidebarItem(
-          "search",
-          t("shell.searchAll"),
-          toolbarIcons.search,
-          keys("Mod+Shift+F"),
-        ),
+        ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
         ...command("switcher.open", toolbarIcons.note),
@@ -609,6 +584,15 @@ function CommandPaletteHost() {
 function NewNoteHost({ vault }: { vault: Vault }) {
   const newNote = useNewNote(vault);
   return newNote.isOpen ? <NewNoteDialog newNote={newNote} /> : null;
+}
+
+/**
+ * The search dialog, shown while it is open (Ctrl+Shift+F). The hook stays
+ * mounted, for its shortcut and command and to keep the last query.
+ */
+function SearchHost({ vault }: { vault: Vault }) {
+  const search = useSearch(vault);
+  return search.isOpen ? <SearchDialog search={search} /> : null;
 }
 
 /** The quick switcher, shown while it is open (Ctrl+O). */

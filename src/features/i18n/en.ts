@@ -218,7 +218,6 @@ export const en = {
   "shell.resizeRightPanel": "Resize right panel",
   "shell.rightPanel": "Right panel",
   "shell.rightPanelViews": "Right panel views",
-  "shell.search": "Search",
   "shell.searchAll": "Search all notes",
   "shell.showDrafts": "Show drafts",
   "shell.showFiles": "Show files",
