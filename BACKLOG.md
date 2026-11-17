@@ -134,7 +134,7 @@ Done when: the graph of a 10k-note vault opens and stays smooth while panning an
 - [x] **C-503** (P0) Graph view: force layout in a Web Worker, pan, zoom, click to open a note
 - [x] **C-504** (P0) Local graph panel for the current note
 - [x] **C-505** (P1) Hover highlights a node and its neighbors
-- [ ] **C-506** (P1) Filters: by tag, hide orphans, show unresolved links
+- [x] **C-506** (P1) Filters: by tag, hide orphans, show unresolved links
 - [ ] **C-507** (P2) Node size by number of links, color by tag or folder
 - [ ] **C-508** (P2) Graph updates live when notes change
 
