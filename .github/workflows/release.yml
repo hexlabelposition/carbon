@@ -35,12 +35,19 @@ jobs:
         id: create
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # One call that answers with the id: a draft just made is not in
+        # the list of releases yet, and has no tag of its own to find it by.
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --prerelease \
-            --title "Carbon $GITHUB_REF_NAME" \
-            --notes-file .github/release-notes.md
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq "map(select(.tag_name == \"$GITHUB_REF_NAME\" and .draft)) | first | .id")
+          id=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" \
+            -f tag_name="$GITHUB_REF_NAME" \
+            -f name="Carbon $GITHUB_REF_NAME" \
+            -F body=@.github/release-notes.md \
+            -F draft=true -F prerelease=true \
+            --jq .id)
+          if [ -z "$id" ]; then
+            echo "The draft release was not made"
+            exit 1
+          fi
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
   linux:
