@@ -29,6 +29,7 @@
   --color-on-solid: var(--cb-on-solid);
   --color-danger: var(--cb-danger);
   --color-on-danger: var(--cb-on-danger);
+  --color-dev: var(--cb-dev);
 
   --shadow-dialog: var(--cb-shadow-dialog);
 }

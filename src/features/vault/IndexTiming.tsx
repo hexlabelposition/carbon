@@ -6,7 +6,7 @@ import { Tooltip } from "../ui/Tooltip";
 /**
  * How long the startup scan took, where it waited, and how long after the
  * page began to load the vault was ready: for measuring the budgets
- * (C-602). The dev bubble shows it, and the sidebar of a build made with
+ * (C-602). The dev tools show it, and the sidebar of a build made with
  * `VITE_CARBON_TIMING=1`. Not translated, as the dev tools.
  */
 export function IndexTiming({ status }: { status: IndexStatus }) {

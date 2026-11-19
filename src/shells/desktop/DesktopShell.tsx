@@ -110,8 +110,8 @@ import { Tooltip } from "../../features/ui/Tooltip";
 const DevPanel = import.meta.env.DEV
   ? lazy(() => import("../../dev/DevPanel"))
   : null;
-const DevBubble = import.meta.env.DEV
-  ? lazy(() => import("../../dev/DevBubble"))
+const DevButton = import.meta.env.DEV
+  ? lazy(() => import("../../dev/DevButton"))
   : null;
 
 // Loaded when a graph is first shown: sigma.js and its WebGL programs
@@ -287,6 +287,17 @@ export function DesktopShell({
       <AppMark />
       <WindowControls
         frame={frame}
+        dev={
+          DevButton !== null ? (
+            <Suspense fallback={null}>
+              <DevButton
+                vault={vault}
+                panelOpen={devOpen}
+                onTogglePanel={() => setDevOpen((open) => !open)}
+              />
+            </Suspense>
+          ) : undefined
+        }
         panelsInert={dialogOpen}
         panels={
           vault !== null && !showDev ? (
@@ -386,15 +397,6 @@ export function DesktopShell({
           <CommandPaletteHost />
           <SettingsOpener />
         </>
-      )}
-      {DevBubble !== null && (
-        <Suspense fallback={null}>
-          <DevBubble
-            vault={vault}
-            panelOpen={devOpen}
-            onTogglePanel={() => setDevOpen((open) => !open)}
-          />
-        </Suspense>
       )}
     </div>
   );
@@ -524,7 +526,7 @@ function VaultStatus({ vault }: { vault: Vault }) {
 /**
  * Whether the sidebar shows how long the startup scan took: in a build
  * made with `VITE_CARBON_TIMING=1`, to measure a release build against
- * the budgets (C-602). A dev build shows it in the dev bubble instead.
+ * the budgets (C-602). A dev build shows it in the dev tools instead.
  */
 const SHOW_TIMING =
   !import.meta.env.DEV && import.meta.env.VITE_CARBON_TIMING === "1";

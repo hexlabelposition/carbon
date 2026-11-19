@@ -50,6 +50,8 @@ interface AppDialogProps {
   backdrop?: string;
   /** Whether a click outside closes it, as Escape does. */
   closeOnOutsidePress?: boolean;
+  /** Whether it stays in the page, hidden, while closed. */
+  keepMounted?: boolean;
   /** What takes the focus when it opens: its first control by default. */
   initialFocus?: RefObject<HTMLElement | null>;
   "aria-label"?: string;
@@ -73,6 +75,7 @@ export function AppDialog({
   className,
   backdrop = BLURRED,
   closeOnOutsidePress = true,
+  keepMounted = false,
   initialFocus,
   popupProps,
   children,
@@ -111,9 +114,9 @@ export function AppDialog({
         onClose();
       }}
     >
-      <Dialog.Portal>
+      <Dialog.Portal keepMounted={keepMounted}>
         <Dialog.Backdrop
-          className={`fixed inset-x-0 top-bar bottom-0 z-50 ${backdrop}`}
+          className={`fixed inset-x-0 top-bar bottom-0 z-50 data-closed:hidden ${backdrop}`}
         />
         <Dialog.Popup
           {...popupProps}
@@ -125,7 +128,7 @@ export function AppDialog({
             openDialogId() === null &&
             !(before?.matches(NO_FOCUS_BACK) ?? false)
           }
-          className={`z-50 text-ui text-fg outline-none ${className}`}
+          className={`z-50 text-ui text-fg outline-none data-closed:hidden ${className}`}
         >
           {children}
         </Dialog.Popup>

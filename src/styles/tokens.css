@@ -49,6 +49,9 @@
   --cb-danger: #c42b1c;
   --cb-on-danger: #ffffff;
 
+  /* The dev tools, in dev builds only */
+  --cb-dev: #e07b16;
+
   --cb-shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.18);
   /* The edge of the window, so it does not run into what is behind it */
   --cb-window-edge: rgb(0 0 0 / 0.2);
@@ -113,6 +116,7 @@
     --cb-group-1: #3987e5;
     --cb-group-2: #d95926;
     --cb-group-3: #199e70;
+    --cb-dev: #ffb86a;
   }
 }
 
@@ -149,4 +153,5 @@
   --cb-group-1: #3987e5;
   --cb-group-2: #d95926;
   --cb-group-3: #199e70;
+  --cb-dev: #ffb86a;
 }

@@ -207,10 +207,13 @@ export function controlsRoomFraction(): number {
  */
 export function WindowControls({
   frame,
+  dev,
   panels,
   panelsInert = false,
 }: {
   frame: WindowFrame;
+  /** The dev tools, in a group of their own before the panels: dev builds. */
+  dev?: ReactNode;
   panels?: ReactNode;
   /** The panel buttons wait, as while a dialog is open. */
   panelsInert?: boolean;
@@ -250,6 +253,21 @@ export function WindowControls({
       data-window-controls
       className="fixed top-0 right-0 z-40 flex h-bar border-b border-line bg-panel"
     >
+      {dev !== undefined && (
+        // Set off by a line before it; the panels after it have their own,
+        // and without them it takes theirs.
+        <div
+          className={`flex border-l border-l-line px-1.5 ${
+            panels !== undefined
+              ? ""
+              : `border-r transition-colors duration-200 ease-out motion-reduce:transition-none ${
+                  fullscreen ? "border-r-transparent" : "border-r-line"
+                }`
+          }`}
+        >
+          {dev}
+        </div>
+      )}
       {panels !== undefined && (
         // Set off by a line at each side: from the tabs or the right panel
         // before it, and from the buttons of the window after it. Over the
