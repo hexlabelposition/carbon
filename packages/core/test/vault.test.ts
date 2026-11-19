@@ -21,7 +21,7 @@ describe("Vault.open", () => {
 
   test("rejects a root that does not exist", async () => {
     const open = Vault.open("/missing", createMemoryPlatform(files));
-    await expect(open).rejects.toThrow("ENOENT");
+    await expect(open).rejects.toThrow("No vault folder at /missing");
   });
 });
 

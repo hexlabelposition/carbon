@@ -39,6 +39,8 @@ export interface VaultError {
   message: string;
   /** The folder that could not be opened, if the attempt got that far. */
   root: string | null;
+  /** The folder is not there: moved or deleted since it was last open. */
+  missing: boolean;
 }
 
 export const VaultSessionContext = createContext<VaultSession | null>(null);

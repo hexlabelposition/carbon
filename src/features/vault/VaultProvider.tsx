@@ -1,4 +1,9 @@
-import { checkVaultName, Vault, type Platform } from "@carbon/core";
+import {
+  checkVaultName,
+  Vault,
+  VaultError as CoreError,
+  type Platform,
+} from "@carbon/core";
 import {
   useCallback,
   useEffect,
@@ -74,7 +79,9 @@ export function VaultProvider({
         return true;
       } catch (reason) {
         const message = errorText(reason);
-        setError({ message, root });
+        const missing =
+          reason instanceof CoreError && reason.code === "vaultMissing";
+        setError({ message, root, missing });
         return false;
       } finally {
         setOpening(false);

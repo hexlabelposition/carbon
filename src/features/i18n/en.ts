@@ -82,6 +82,7 @@ export const en = {
   "error.notInTrash": "Not in the trash any more: {subject}",
   "error.noteNotIndexed": "The note is not indexed yet: {subject}",
   "error.outsideVault": "Not part of the vault: {subject}",
+  "error.vaultMissing": "No vault folder here any more: {subject}",
   "error.writeConflict": "Changed on disk since it was read: {subject}",
   "find.count": "{current} of {total}",
   "find.find": "Find",
@@ -272,6 +273,10 @@ export const en = {
     "If the folder was moved or deleted, remove it from the list below. If it is still there, open it again with “Open vault”.",
   "start.createVault": "Create vault",
   "start.intro": "A vault is a folder of Markdown notes. Open one to start.",
+  "start.missing": "The vault “{name}” is not there any more",
+  "start.missingForget": "Remove from the list",
+  "start.missingHint":
+    "Its folder was moved or deleted. If it was moved, open it from its new place with “Open vault”.",
   "start.newVaultHint":
     "Next you choose where to put it. Carbon creates a folder with this name there.",
   "start.newVaultName": "Name of the new vault",

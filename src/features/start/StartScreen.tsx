@@ -82,22 +82,31 @@ export function StartScreen() {
         </div>
       )}
 
-      {start.error !== null && (
-        <div role="alert" className="flex flex-col items-start gap-1">
-          <p className="text-danger">
-            {start.error.root === null
-              ? start.error.message
-              : t("start.couldNotOpen", {
-                  root: start.error.root,
-                  reason: start.error.message,
-                })}
-          </p>
-          {start.error.root !== null && (
-            <p className="text-small text-faint">
-              {t("start.couldNotOpenHint")}
+      {start.error?.missing === true && start.error.root !== null ? (
+        <MissingVault
+          root={start.error.root}
+          onForget={() => {
+            if (start.error?.root != null) start.forgetRecent(start.error.root);
+          }}
+        />
+      ) : (
+        start.error !== null && (
+          <div role="alert" className="flex flex-col items-start gap-1">
+            <p className="text-danger">
+              {start.error.root === null
+                ? start.error.message
+                : t("start.couldNotOpen", {
+                    root: start.error.root,
+                    reason: start.error.message,
+                  })}
             </p>
-          )}
-        </div>
+            {start.error.root !== null && (
+              <p className="text-small text-faint">
+                {t("start.couldNotOpenHint")}
+              </p>
+            )}
+          </div>
+        )
       )}
 
       {start.recentVaults.length > 0 && (
@@ -152,4 +161,36 @@ export function StartScreen() {
 /** The folder name of a vault: the last part of its path. */
 function nameOf(root: string): string {
   return root.slice(root.lastIndexOf("/") + 1);
+}
+
+/**
+ * The vault left open or picked from the list is not there any more: its
+ * folder was moved or deleted while the app was closed. Says so in words,
+ * and offers to take it off the list.
+ */
+function MissingVault({
+  root,
+  onForget,
+}: {
+  root: string;
+  onForget: () => void;
+}) {
+  const t = useT();
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-start gap-2 rounded-md border border-line bg-panel px-3 py-2.5"
+    >
+      <div className="flex flex-col gap-0.5">
+        <p className="font-medium">
+          {t("start.missing", { name: nameOf(root) })}
+        </p>
+        <p className="text-small break-all text-faint">{root}</p>
+      </div>
+      <p className="text-small text-muted">{t("start.missingHint")}</p>
+      <button type="button" className={secondary} onClick={onForget}>
+        {t("start.missingForget")}
+      </button>
+    </div>
+  );
 }

@@ -73,6 +73,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "error.notInTrash": "Этого больше нет в корзине: {subject}",
   "error.noteNotIndexed": "Заметка ещё не проиндексирована: {subject}",
   "error.outsideVault": "Это не часть хранилища: {subject}",
+  "error.vaultMissing": "Папки хранилища здесь больше нет: {subject}",
   "error.writeConflict": "Файл изменился на диске после чтения: {subject}",
   "find.count": "{current} из {total}",
   "find.find": "Найти",
@@ -275,6 +276,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "start.createVault": "Создать хранилище",
   "start.intro":
     "Хранилище — это папка с заметками в Markdown. Откройте его, чтобы начать.",
+  "start.missing": "Хранилища «{name}» больше нет на месте",
+  "start.missingForget": "Убрать из списка",
+  "start.missingHint":
+    "Его папку переместили или удалили. Если переместили, откройте её на новом месте через «Открыть хранилище».",
   "start.newVaultHint":
     "Затем выберите, где его разместить: Carbon создаст там папку с этим названием.",
   "start.newVaultName": "Название нового хранилища",

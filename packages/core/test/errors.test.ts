@@ -63,6 +63,14 @@ describe("VaultError", () => {
     });
   });
 
+  test("tells a vault folder that is gone", async () => {
+    const platform = createMemoryPlatform({ "/vault/Inbox.md": "# Inbox" });
+    expect(await failure(() => Vault.open("/gone", platform))).toEqual({
+      code: "vaultMissing",
+      subject: "/gone",
+    });
+  });
+
   test("keeps the English message for logs", async () => {
     const vault = await openVault();
     await expect(vault.notes.create("Inbox.md")).rejects.toThrow(

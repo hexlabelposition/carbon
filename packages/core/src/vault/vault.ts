@@ -240,6 +240,15 @@ export class Vault {
     options: VaultOptions = {},
   ): Promise<Vault> {
     const normalized = normalizeRoot(root);
+    // Moved or deleted since it was last open: a clear error, not the one
+    // of the file system.
+    if (!(await platform.fs.exists(normalized))) {
+      throw new VaultError(
+        "vaultMissing",
+        normalized,
+        `No vault folder at ${normalized}`,
+      );
+    }
     const stat = await platform.fs.stat(normalized);
     if (stat.kind !== "dir") {
       throw new VaultError(

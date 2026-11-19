@@ -1,6 +1,7 @@
 /** What went wrong, for the interface to tell in its own language. */
 export type VaultErrorCode =
   | "invalidVaultRoot"
+  | "vaultMissing"
   | "invalidVaultName"
   | "invalidPath"
   | "hiddenName"
