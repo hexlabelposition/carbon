@@ -66,6 +66,7 @@ import { HistoryButtons } from "../../features/workspace/HistoryButtons";
 import { panelWidth, Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
+import { useTabFocusGuard } from "./use-tab-focus-guard";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
@@ -157,6 +158,7 @@ export function DesktopShell({
   const { toggle: toggleToolbar } = toolbar;
   useFileDropGuard();
   useContextMenuGuard();
+  useTabFocusGuard();
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;

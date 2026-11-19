@@ -266,8 +266,8 @@ export function MarkdownEditor({
           }),
           findReplace,
           editorTheme,
-          // Tab indents, as a notes editor should. Escape, then Tab, moves
-          // the focus out of the editor instead.
+          // Tab indents, as a notes editor should. It never moves the focus
+          // out: the app turns that off (useTabFocusGuard).
           keymap.of([
             {
               key: "Mod-s",
