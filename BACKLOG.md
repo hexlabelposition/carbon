@@ -151,7 +151,6 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [ ] **C-607** (P1) Auto-update
 - [ ] **C-608** (P1) Windows release: installer, code signing, test pass on a real Windows machine. The NSIS installer is built on a draft release; signing and the test pass (CONTRIBUTING.md) are open
 - [x] **C-609** (P1) End-to-end tests for the main flows (ADR-033): open the test vault, open a note, create one and save typing, quick switcher, search, a change on disk, settings. Linux
-- [ ] **C-610** (P1) Landing page and short user guide
 - [x] **C-611** (P2) Configurable keyboard shortcuts: the base ones, in the settings; keys two actions share are marked red. History, tabs, zoom and find in the note keep their keys
 - [ ] **C-612** (P2) AUR package
 - [x] **C-613** (P1) Interface in English and Russian, with a language setting (ADR-025)
@@ -192,6 +191,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - Vault encryption
 - Moving hot paths (file scan, indexing) to native code
 - Paid optional services as an income model
+- Landing page and short user guide (was C-610 in M6)
 
 ## Open decisions
 
