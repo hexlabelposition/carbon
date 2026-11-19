@@ -168,6 +168,9 @@ export function Settings() {
           {t("settings.title")}
         </Dialog.Title>
         <GroupTabs current={group} onShow={setGroup} />
+        <p className="mt-auto px-2.5 pb-1 text-small text-faint">
+          {t("settings.version", { version: __CARBON_VERSION__ })}
+        </p>
       </nav>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">

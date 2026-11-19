@@ -192,6 +192,7 @@ export const en = {
   "settings.theme.light": "Light",
   "settings.theme.system": "System",
   "settings.title": "Settings",
+  "settings.version": "Carbon {version}",
   "settings.wheelSize":
     "{key} + wheel changes the text size, a press of it resets it",
   "settings.width": "Content width",

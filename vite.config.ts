@@ -2,11 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import process from "node:process";
+import { readFileSync } from "node:fs";
 
 const host = process.env.TAURI_DEV_HOST;
 
+/** The version of the app, from package.json alone. */
+const { version } = JSON.parse(
+  readFileSync(new URL("package.json", import.meta.url), "utf8"),
+) as { version: string };
+
 export default defineConfig(() => ({
   plugins: [react(), tailwindcss()],
+  // The version of the app, from package.json alone: tauri.conf.json
+  // reads it from there too, so a release changes it in one place.
+  define: { __CARBON_VERSION__: JSON.stringify(version) },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,

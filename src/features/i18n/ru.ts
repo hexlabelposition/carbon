@@ -191,6 +191,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.theme.light": "Светлая",
   "settings.theme.system": "Системная",
   "settings.title": "Настройки",
+  "settings.version": "Carbon {version}",
   "settings.wheelSize":
     "{key} + колёсико меняет размер текста, нажатие сбрасывает",
   "settings.width": "Ширина содержимого",
