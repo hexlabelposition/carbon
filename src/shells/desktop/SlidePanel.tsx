@@ -42,6 +42,18 @@ export function SlidePanel({
   keepMounted = true,
   children,
 }: SlidePanelProps) {
+  // No gliding until the layout has settled: on mount the width can still
+  // change, as when the buttons in the top right corner are measured
+  // anew (`--cb-controls-room`) once a vault opens, and a panel open at
+  // the last start would slide half way out by itself.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setSettled(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // Whether the content is there: while open, and while sliding shut.
   const [shown, setShown] = useState(open);
   if (open && !shown) setShown(true);
@@ -57,7 +69,7 @@ export function SlidePanel({
       className={`flex h-full shrink-0 overflow-hidden ${
         side === "left" ? "justify-end" : "justify-start"
       } ${
-        animate
+        animate && settled
           ? "transition-[width] duration-200 ease-out motion-reduce:transition-none"
           : ""
       }`}
