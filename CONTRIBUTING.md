@@ -81,9 +81,28 @@ Formatting is Prettier with its default settings, so there is nothing to decide.
 
 1. Raise the version in `package.json` (`tauri/tauri.conf.json` and the interface read it from there) and in `tauri/Cargo.toml`, and commit it.
 2. Tag the commit `v` and the version, such as `v0.1.0`, and push the tag.
-3. The release workflow checks the tag against the version, builds the deb and the AppImage on Ubuntu 22.04 and attaches them to a draft release on GitHub. Try them, then publish the release.
+3. The release workflow checks the tag against the version and makes a draft release on GitHub, with the text of `.github/release-notes.md`. It builds the deb and the AppImage on Ubuntu 22.04 and the Windows installer (NSIS, for the current user) on Windows, and attaches them to the draft.
+4. Try the packages, on Windows with the list below, then publish the release.
 
-To build the packages on your machine: `bun tauri build`. They land in `tauri/target/release/bundle/deb` and `tauri/target/release/bundle/appimage`.
+To build the packages on your machine: `bun tauri build`. On Linux they land in `tauri/target/release/bundle/deb` and `tauri/target/release/bundle/appimage`; on Windows the installer lands in `tauri/target/release/bundle/nsis`.
+
+The Windows installer is not signed yet (C-608), so SmartScreen warns before it runs. Signing switches on by itself once the secret `WINDOWS_SIGN_COMMAND` holds the command of a signing service, with `%1` for the file.
+
+### Trying a release on Windows
+
+On a real Windows 10 or 11, with the installer from the draft:
+
+- [ ] The installer runs without administrator rights, in the language of the system, and puts Carbon in the Start menu.
+- [ ] Carbon starts; the window has its own title bar, rounded corners, and minimize, maximize and close work; dragging the top row moves it.
+- [ ] Create a vault, open one, reopen it from the recent list; the last open vault opens at the next start.
+- [ ] Notes: create, type, rename, move by drag, delete to the vault trash and to the system trash (Recycle Bin), restore.
+- [ ] A note changed in Notepad while open is reloaded; a note with unsaved edits asks.
+- [ ] Paste and drop an image from Explorer; it lands in the vault and shows.
+- [ ] Links: follow, create a missing note, rename a note and see its links rewritten; backlinks and the graph show.
+- [ ] Search, the quick switcher and the palette; Cyrillic names and text.
+- [ ] Shortcuts with Ctrl; changing one in the settings; zoom with Ctrl+wheel and Ctrl+= / Ctrl+-.
+- [ ] Settings: theme, language, fonts; "Open the log folder" opens `%LOCALAPPDATA%\io.github.hexlabelposition.carbon\logs`, with `carbon.log` in it.
+- [ ] Uninstall from "Apps"; the notes in the vault stay.
 
 ## License
 

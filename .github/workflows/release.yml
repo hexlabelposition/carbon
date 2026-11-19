@@ -1,7 +1,8 @@
 name: Release
 
-# Builds the Linux packages for a version tag, such as v0.1.0, and puts
-# them on a draft GitHub release, to check and publish by hand (C-604).
+# Builds the packages for a version tag, such as v0.1.0, and puts them on
+# a draft GitHub release, to check and publish by hand: the deb and the
+# AppImage for Linux (C-604), the installer for Windows (C-608).
 on:
   push:
     tags: ["v*"]
@@ -11,11 +12,13 @@ permissions:
   contents: write
 
 jobs:
-  linux:
-    name: Linux packages
-    # The oldest Ubuntu the runners have: an AppImage runs where the glibc
-    # is as old as the one it was built with, or newer.
-    runs-on: ubuntu-22.04
+  # One draft for every package: two builds that each made their own would
+  # make two releases, as a draft cannot be found by its tag.
+  draft:
+    name: Draft release
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.create.outputs.id }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -28,6 +31,27 @@ jobs:
             echo "The tag $GITHUB_REF_NAME is not v$version, the version in package.json"
             exit 1
           fi
+      - name: Create the draft release
+        id: create
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --prerelease \
+            --title "Carbon $GITHUB_REF_NAME" \
+            --notes-file .github/release-notes.md
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+            --jq "map(select(.tag_name == \"$GITHUB_REF_NAME\" and .draft)) | first | .id")
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: Linux packages
+    needs: draft
+    # The oldest Ubuntu the runners have: an AppImage runs where the glibc
+    # is as old as the one it was built with, or newer.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
       - name: Install Tauri system dependencies
         run: |
           sudo apt-get update
@@ -45,15 +69,57 @@ jobs:
           bun-version-file: package.json
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      # The deb and the AppImage of tauri.conf.json, on a draft release.
-      - name: Build the packages and attach them to a draft release
+      # The deb and the AppImage of tauri.conf.json.
+      - name: Build the packages and attach them to the draft
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: Carbon ${{ github.ref_name }}
-          releaseBody: See the assets below to download Carbon for Linux.
-          releaseDraft: true
-          prerelease: true
+          releaseId: ${{ needs.draft.outputs.id }}
+
+  windows:
+    name: Windows installer
+    needs: draft
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri -> target
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # Not signed yet (C-608). Once a signing service is set up, its
+      # command goes in the secret WINDOWS_SIGN_COMMAND, with %1 for the
+      # file, and every executable of the installer is signed with it.
+      - name: Choose how to sign
+        id: sign
+        shell: bash
+        env:
+          SIGN_COMMAND: ${{ secrets.WINDOWS_SIGN_COMMAND }}
+        run: |
+          if [ -n "$SIGN_COMMAND" ]; then
+            config=$(jq -cn --arg cmd "$SIGN_COMMAND" '{bundle: {windows: {signCommand: $cmd}}}')
+            echo "args=--config '$config'" >> "$GITHUB_OUTPUT"
+          else
+            echo "No WINDOWS_SIGN_COMMAND: the installer is not signed"
+            echo "args=" >> "$GITHUB_OUTPUT"
+          fi
+      # The NSIS installer of tauri.conf.json: for the current user, no
+      # administrator rights, in English or Russian by the system.
+      - name: Build the installer and attach it to the draft
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: bun tauri
+          releaseId: ${{ needs.draft.outputs.id }}
+          args: ${{ steps.sign.outputs.args }}

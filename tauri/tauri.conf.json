@@ -34,7 +34,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage"],
+    "targets": ["deb", "appimage", "nsis"],
     "category": "Productivity",
     "shortDescription": "Fast, local-first notes with links",
     "longDescription": "Carbon keeps notes as plain Markdown files in a folder of your own and links them with [[wiki links]]: live preview, backlinks, tags, full-text search and a quick switcher, fast on vaults of ten thousand notes.",
@@ -56,6 +56,14 @@
       },
       "appimage": {
         "bundleMediaFramework": false
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "Russian"],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "Carbon"
       }
     }
   }
