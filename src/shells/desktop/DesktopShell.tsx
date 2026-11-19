@@ -1078,11 +1078,19 @@ function Watermark({ label }: { label: string }) {
   const commands = WATERMARK_COMMANDS.flatMap(
     (id) => all.find((command) => command.id === id) ?? [],
   );
+  // The commands are registered by effects, so the first frame has none:
+  // shown then, the mark would stand alone in the middle and jump up as
+  // they come in a moment later.
+  const ready = commands.length > 0;
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
+    <div
+      className={`flex h-full flex-col items-center justify-center gap-8 px-8 ${
+        ready ? "" : "invisible"
+      }`}
+    >
       <CarbonMark shadow className="h-auto w-[min(15rem,50%)] text-line" />
       <span className="sr-only">{label}</span>
-      {commands.length > 0 && (
+      {ready && (
         <ul className="flex w-full max-w-72 flex-col gap-1.5">
           {commands.map((command) => (
             <li key={command.id}>
