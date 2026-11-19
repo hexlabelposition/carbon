@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
 import { Tooltip } from "../../features/ui/Tooltip";
@@ -28,6 +28,8 @@ interface ToolbarProps {
   items: readonly ToolbarItem[];
   /** The buttons at the foot, such as the settings. */
   footer: readonly ToolbarItem[];
+  /** What stands below them, at the very foot. */
+  footerEnd?: ReactNode;
 }
 
 /**
@@ -36,7 +38,7 @@ interface ToolbarProps {
  * right under the mark in the corner. Layout only: what the buttons do
  * comes from outside.
  */
-export function Toolbar({ open, items, footer }: ToolbarProps) {
+export function Toolbar({ open, items, footer, footerEnd }: ToolbarProps) {
   const t = useT();
   return (
     <SlidePanel open={open} width={TOOLBAR_WIDTH}>
@@ -46,18 +48,25 @@ export function Toolbar({ open, items, footer }: ToolbarProps) {
       >
         <ToolbarGroup items={items} />
         <div data-tauri-drag-region className="min-h-0 flex-1" />
-        <ToolbarGroup items={footer} />
+        <ToolbarGroup items={footer}>{footerEnd}</ToolbarGroup>
       </nav>
     </SlidePanel>
   );
 }
 
-function ToolbarGroup({ items }: { items: readonly ToolbarItem[] }) {
+function ToolbarGroup({
+  items,
+  children,
+}: {
+  items: readonly ToolbarItem[];
+  children?: ReactNode;
+}) {
   return (
     <div className="flex shrink-0 flex-col py-1.5">
       {items.map((item) => (
         <ToolbarButton key={item.id} item={item} />
       ))}
+      {children}
     </div>
   );
 }
@@ -69,37 +78,62 @@ function ToolbarButton({
 }) {
   return (
     <Tooltip label={label} shortcut={shortcut} side="right">
-      <button
-        type="button"
-        aria-label={label}
+      <ToolbarIconButton
+        label={label}
+        pressed={pressed}
+        icon={icon}
         aria-pressed={pressed}
-        // The whole width of the strip takes the click; only a rounded square
-        // around the icon lights up, as on the panel buttons.
-        className={`group flex h-10 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
-          pressed === true ? "text-fg" : "text-muted"
-        }`}
         onClick={run}
-      >
-        <span
-          className={`flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
-            pressed === true ? "bg-selected" : ""
-          }`}
-        >
-          <svg
-            viewBox="0 0 16 16"
-            aria-hidden="true"
-            className="size-4.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {icon}
-          </svg>
-        </span>
-      </button>
+      />
     </Tooltip>
+  );
+}
+
+/**
+ * The look of a toolbar button, for one that does more than run a
+ * command, such as opening a menu: it takes the props of a `<button>`.
+ */
+export function ToolbarIconButton({
+  label,
+  pressed,
+  icon,
+  ...props
+}: {
+  label: string;
+  /** Lit, as while what it shows is shown. */
+  pressed?: boolean;
+  icon: ReactNode;
+} & Omit<ComponentProps<"button">, "children">) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      {...props}
+      // The whole width of the strip takes the click; only a rounded square
+      // around the icon lights up, as on the panel buttons.
+      className={`group flex h-10 w-full shrink-0 items-center justify-center outline-none hover:text-fg ${
+        pressed === true ? "text-fg" : "text-muted"
+      }`}
+    >
+      <span
+        className={`flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong ${
+          pressed === true ? "bg-selected" : ""
+        }`}
+      >
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          className="size-4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {icon}
+        </svg>
+      </span>
+    </button>
   );
 }
 
@@ -171,7 +205,18 @@ export const toolbarIcons = {
       <circle cx="10.25" cy="11.5" r="1.75" />
     </>
   ),
+  // A safe: its door, the dial on it and its feet.
+  vault: (
+    <>
+      <rect x="2" y="2" width="12" height="10.5" rx="1.5" />
+      <circle cx="8" cy="7.25" r="2.25" />
+      <path d="M8 5v.75M4.5 12.5v1.5M11.5 12.5v1.5" />
+    </>
+  ),
   closeVault: (
     <path d="M6.5 2.5h-3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3M10.5 5l3 3-3 3M13.5 8H6" />
+  ),
+  openVault: (
+    <path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13a1.5 1.5 0 0 1 1.5 1.5v5.5A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5z" />
   ),
 } satisfies Record<string, ReactNode>;

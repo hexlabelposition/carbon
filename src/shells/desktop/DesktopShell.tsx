@@ -68,6 +68,7 @@ import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useTabFocusGuard } from "./use-tab-focus-guard";
 import { useReadyToShow } from "./use-ready-to-show";
+import { VaultMenu } from "./VaultMenu";
 import { useAnyDialogOpen } from "../../features/dialogs/AppDialog";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
@@ -530,7 +531,7 @@ const SHOW_TIMING =
  * The toolbar at the left edge: files, tags and drafts, which show in the
  * sidebar and hide it when it shows them already, and a few commands, the
  * search dialog first; at the foot
- * the settings and closing the vault.
+ * the settings and the menu of the vault.
  */
 function ToolbarHost({
   open,
@@ -601,8 +602,8 @@ function ToolbarHost({
       footer={[
         sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
         ...command("settings.open", toolbarIcons.settings),
-        ...command("shell.closeVault", toolbarIcons.closeVault),
       ]}
+      footerEnd={<VaultMenu />}
     />
   );
 }

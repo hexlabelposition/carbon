@@ -217,6 +217,7 @@ export const en = {
   "shell.leftPanel": "Sidebar",
   "shell.noNoteOpen": "No note is open.",
   "shell.notWatching": "Changes made by other programs are not noticed",
+  "shell.openAnotherVault": "Open another vault…",
   "shell.outline": "Outline",
   "shell.pane": "Pane {number}",
   "shell.resizeLeftPanel": "Resize sidebar",
@@ -238,6 +239,7 @@ export const en = {
   "shell.toggleRightPanel": "Toggle right panel",
   "shell.toggleToolbar": "Toggle toolbar",
   "shell.toolbar": "Toolbar",
+  "shell.vault": "Vault",
   "start.chooseAndCreate": "Choose location and create",
   "start.couldNotOpen": "Could not open {root}: {reason}",
   "start.couldNotOpenHint":

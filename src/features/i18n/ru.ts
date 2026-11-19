@@ -218,6 +218,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.leftPanel": "Левая панель",
   "shell.noNoteOpen": "Ни одна заметка не открыта.",
   "shell.notWatching": "Изменения из других программ не отслеживаются",
+  "shell.openAnotherVault": "Открыть другое хранилище…",
   "shell.outline": "Оглавление",
   "shell.pane": "Панель {number}",
   "shell.resizeLeftPanel": "Изменить ширину левой панели",
@@ -239,6 +240,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.toggleRightPanel": "Показать или скрыть правую панель",
   "shell.toggleToolbar": "Показать или скрыть панель инструментов",
   "shell.toolbar": "Панель инструментов",
+  "shell.vault": "Хранилище",
   "start.chooseAndCreate": "Выбрать место и создать",
   "start.couldNotOpen": "Не удалось открыть {root}: {reason}",
   "start.couldNotOpenHint":
