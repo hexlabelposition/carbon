@@ -1,6 +1,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import {
   useEffect,
+  useState,
   useSyncExternalStore,
   type ComponentProps,
   type ReactNode,
@@ -28,6 +29,12 @@ const subscribe = (listener: () => void) => {
 export function useAnyDialogOpen(): boolean {
   return useSyncExternalStore(subscribe, () => openCount > 0);
 }
+
+/**
+ * What the focus is not given back to: closed by Escape, base-ui would
+ * draw its focus ring on it (`focusVisible`), as if reached by keys.
+ */
+const NO_FOCUS_BACK = "button, a[href], [role='button']";
 
 /** The backdrop most dialogs have: the window, dimmed and blurred. */
 const BLURRED = "bg-backdrop/40 backdrop-blur-xs";
@@ -71,6 +78,17 @@ export function AppDialog({
   children,
   ...aria
 }: AppDialogProps) {
+  // Where the focus was before it opened, read as it opens: the popup
+  // takes the focus in an effect, after this render.
+  const [before, setBefore] = useState(() =>
+    open ? document.activeElement : null,
+  );
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setBefore(document.activeElement);
+  }
+
   useEffect(() => {
     if (!open) return;
     changeCount(1);
@@ -102,8 +120,11 @@ export function AppDialog({
           {...aria}
           initialFocus={initialFocus}
           // Closed for another dialog: the focus is that one's to keep,
-          // not given back to where it was before.
-          finalFocus={() => openDialogId() === null}
+          // not given back to where it was before. Nor to a button.
+          finalFocus={() =>
+            openDialogId() === null &&
+            !(before?.matches(NO_FOCUS_BACK) ?? false)
+          }
           className={`z-50 text-ui text-fg outline-none ${className}`}
         >
           {children}
