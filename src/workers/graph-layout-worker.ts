@@ -18,9 +18,9 @@ import { sizeFor } from "../features/graph/node-size";
  * Free room around a note, in units of the layout, past its own radius:
  * notes never come closer than twice this, whatever their size.
  */
-const ROOM = 12;
+const ROOM = 18;
 /** How long a link is between the edges of its two notes. */
-const LINK_LENGTH = 45;
+const LINK_LENGTH = 60;
 
 /**
  * Ticks at most: about 4 s for 10,000 nodes on a desktop machine. A
@@ -52,9 +52,15 @@ self.onmessage = (event: MessageEvent<LayoutRequest>) => {
     typeof end === "number" ? end : (end.index ?? 0);
   const simulation = forceSimulation(nodes)
     // Barnes-Hut with a coarse theta: the repulsion of far nodes is
-    // summed up, which the eye does not miss.
-    .force("charge", forceManyBody().strength(-90).theta(0.9).distanceMax(800))
+    // summed up, which the eye does not miss. Strong, so that groups
+    // stand apart and links do not cross over each other's notes.
+    .force(
+      "charge",
+      forceManyBody().strength(-320).theta(0.9).distanceMax(1200),
+    )
     // From edge to edge: two hubs linked stand as far apart as two dots.
+    // d3's own strength, by how many links each end has: links strong
+    // enough to keep their length, so lengths come out even.
     .force(
       "link",
       forceLink<
@@ -63,14 +69,10 @@ self.onmessage = (event: MessageEvent<LayoutRequest>) => {
           source: number | SimulationNodeDatum;
           target: number | SimulationNodeDatum;
         }
-      >(links)
-        .distance(
-          (link) =>
-            LINK_LENGTH +
-            radius[index(link.source)] +
-            radius[index(link.target)],
-        )
-        .strength(0.1),
+      >(links).distance(
+        (link) =>
+          LINK_LENGTH + radius[index(link.source)] + radius[index(link.target)],
+      ),
     )
     // No two notes closer than their radii and the room around them.
     .force(
