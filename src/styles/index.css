@@ -68,6 +68,24 @@
 }
 
 @layer base {
+  /*
+   * An app, not a page: a press and a drag select no text of the interface,
+   * labels, buttons and menus. Text is selected where it is worked with:
+   * the fields and the note, in reading mode too, where it is not editable.
+   */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"],
+  .cm-editor {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   html {
     /* The font of the interface, as the settings set it (fonts.ts). */
     font-family: var(--cb-ui-font);
