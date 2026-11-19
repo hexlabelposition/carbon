@@ -22,7 +22,8 @@
     "icons": "tauri icon tauri/app-icon.svg --output tauri/icons && rm -rf tauri/icons/android tauri/icons/ios",
     "tauri": "tauri",
     "test": "bun test",
-    "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && bun run --filter '*' typecheck"
+    "e2e": "bun scripts/e2e.ts",
+    "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && tsc -p e2e && bun run --filter '*' typecheck"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -56,6 +57,7 @@
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/cli": "^2",
+    "@types/bun": "^1.4.4",
     "@types/d3-force": "3.0.10",
     "@types/node": "^26.6.6",
     "@types/react": "^19.1.8",

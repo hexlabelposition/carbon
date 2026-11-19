@@ -187,6 +187,24 @@ pub fn run() {
         // This keeps the grant, so a recent vault opens after a restart.
         // It must come after the `fs` plugin.
         .plugin(tauri_plugin_persisted_scope::init())
+        // The test vault of the dev build is made in the app cache, not
+        // picked in a dialog: the commands that check the scope of the `fs`
+        // plugin (`list_notes`, `import_file`) must take it as opened too.
+        .setup(|app| {
+            #[cfg(debug_assertions)]
+            {
+                use tauri::Manager;
+                use tauri_plugin_fs::FsExt;
+                if let Ok(cache) = app.path().app_cache_dir() {
+                    let _ = app
+                        .fs_scope()
+                        .allow_directory(cache.join("test-vault"), true);
+                }
+            }
+            #[cfg(not(debug_assertions))]
+            let _ = app;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             move_to_trash,
             import_file,

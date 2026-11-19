@@ -150,7 +150,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-606** (P0) Error handling pass: clear messages, local log file (ADR-032)
 - [ ] **C-607** (P1) Auto-update
 - [ ] **C-608** (P1) Windows release: installer, code signing, test pass on a real Windows machine
-- [ ] **C-609** (P1) End-to-end tests for the main flows
+- [x] **C-609** (P1) End-to-end tests for the main flows (ADR-033): open the test vault, open a note, create one and save typing, quick switcher, search, a change on disk, settings. Linux
 - [ ] **C-610** (P1) Landing page and short user guide
 - [x] **C-611** (P2) Configurable keyboard shortcuts: the base ones, in the settings; keys two actions share are marked red. History, tabs, zoom and find in the note keep their keys
 - [ ] **C-612** (P2) AUR package

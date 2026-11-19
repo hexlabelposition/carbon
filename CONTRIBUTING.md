@@ -28,8 +28,11 @@ bun tauri dev
 | `bun gen:vault <dir>` | Generate a test vault with 10,000 notes           |
 | `bun run bench <dir>` | Measure the core against the budgets on a vault   |
 | `bun run icons`       | Make every app icon from `tauri/app-icon.svg`     |
+| `bun run e2e`         | Run the end-to-end tests in the real app (Linux)  |
 
 CI runs the type check, lint, format check and tests, and builds the app on Linux and Windows. Run the first four locally before pushing.
+
+The end-to-end tests of the main flows (`e2e/`) run the real app on Linux: `bun run e2e`. They need `tauri-driver` (`cargo install tauri-driver --locked`) and WebKitWebDriver (the `webkit2gtk-driver` package, or `webkit2gtk` on Arch). The script starts the dev server if none runs, builds the debug app, and gives it a profile of its own in a temporary folder, so your vaults and settings are not touched. A window opens for a few seconds. When a test fails, the profile is kept with a screenshot of each failure and the log of the app.
 
 To try a change by hand, use **Open test vault** in the dev tools, the orange bug in the top row of the dev build. It opens a copy of `fixtures/test-vault`, made afresh each time, with a note for each area: formatting, links, images, tags, a long note, Cyrillic names. Anything may be changed in it. A case the vault lacks goes into `fixtures/test-vault`.
 

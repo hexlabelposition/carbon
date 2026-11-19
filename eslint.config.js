@@ -47,7 +47,7 @@ export default defineConfig([
 
   // Scripts and config files run in Bun or Node.
   {
-    files: ["scripts/**", "*.config.{js,ts}"],
+    files: ["scripts/**", "e2e/**", "*.config.{js,ts}"],
     languageOptions: { globals: globals.node },
   },
 
