@@ -9,6 +9,7 @@ import {
 } from "./path";
 import type { Bookmarks } from "./bookmarks";
 import type { VaultTrash } from "./trash";
+import { VaultError } from "../errors";
 
 /** What the parts of a vault share: where it is and how to reach the disk. */
 export interface VaultContext {
@@ -46,7 +47,11 @@ export async function expectKind(
 ): Promise<void> {
   const stat = await fs.stat(resolveInVault(root, path));
   if (stat.kind !== kind) {
-    throw new Error(`Not a ${kind === "dir" ? "folder" : "file"}: ${path}`);
+    throw new VaultError(
+      kind === "dir" ? "notAFolder" : "notAFile",
+      path,
+      `Not a ${kind === "dir" ? "folder" : "file"}: ${path}`,
+    );
   }
 }
 
@@ -56,7 +61,7 @@ export async function expectFree(
   path: string,
 ): Promise<void> {
   if (await fs.exists(resolveNewInVault(root, path))) {
-    throw new Error(`Already exists: ${path}`);
+    throw new VaultError("alreadyExists", path, `Already exists: ${path}`);
   }
 }
 
@@ -90,7 +95,11 @@ export async function moveEntry(
   await expectKind(context, from, kind);
   if (source === target) return;
   if (kind === "dir" && target.startsWith(`${source}/`)) {
-    throw new Error(`Cannot move a folder into itself: ${from}`);
+    throw new VaultError(
+      "moveIntoItself",
+      from,
+      `Cannot move a folder into itself: ${from}`,
+    );
   }
   // On a case-insensitive file system "note.md" and "Note.md" are the same
   // file, so a change of case alone must not count as a taken target.
@@ -126,7 +135,11 @@ export async function copyEntry(
     kind === "dir" &&
     (target === source || target.startsWith(`${source}/`))
   ) {
-    throw new Error(`Cannot copy a folder into itself: ${from}`);
+    throw new VaultError(
+      "copyIntoItself",
+      from,
+      `Cannot copy a folder into itself: ${from}`,
+    );
   }
   await expectFree(context, to);
   await copyTree(context, source, target, kind);
@@ -172,7 +185,11 @@ export async function deleteEntry(
   const { root, fs, trash, systemTrash, own } = context;
   const target = resolveInVault(root, path);
   if (!isVaultPath(path) || path === DRAFTS_FOLDER) {
-    throw new Error(`Not part of the vault: ${JSON.stringify(path)}`);
+    throw new VaultError(
+      "outsideVault",
+      path,
+      `Not part of the vault: ${JSON.stringify(path)}`,
+    );
   }
   await expectKind(context, path, kind);
   if (options.permanent) await fs.remove(target, { recursive: kind === "dir" });

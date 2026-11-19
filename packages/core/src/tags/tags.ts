@@ -4,6 +4,7 @@ import { isTagLabel } from "../parser/hashtag";
 import { contentHash } from "../util/hash";
 import { renameTagIn } from "./rename";
 import type { NotePath, TagCount } from "../types";
+import { VaultError } from "../errors";
 
 /** What `Tags` needs from the vault. */
 export interface TagsContext {
@@ -122,7 +123,8 @@ export class Tags {
   async rename(from: string, to: string): Promise<TagRename> {
     const old = from.replace(/^#/, "");
     const name = to.trim().replace(/^#/, "");
-    if (!isTagLabel(name)) throw new Error(`Not a tag: ${to}`);
+    if (!isTagLabel(name))
+      throw new VaultError("notATag", to, `Not a tag: ${to}`);
     const result: TagRename = { updated: [], failed: [] };
     if (old === name) return result;
 

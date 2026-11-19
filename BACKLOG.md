@@ -155,7 +155,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-611** (P2) Configurable keyboard shortcuts: the base ones, in the settings; keys two actions share are marked red. History, tabs, zoom and find in the note keep their keys
 - [ ] **C-612** (P2) AUR package
 - [x] **C-613** (P1) Interface in English and Russian, with a language setting (ADR-025)
-- [ ] **C-614** (P2) Errors from the core as codes, so the interface can show them in its language
+- [x] **C-614** (P2) Errors from the core as codes, so the interface can show them in its language
 - [x] **C-615** (P1) Make `.carbon/` when a vault opens
 - [x] **C-616** (P1) Drafts: notes in `.carbon/drafts`, indexed but out of the file tree, with a panel and a toolbar button (ADR-031)
 - [x] **C-617** (P1) Trash inside the vault, `.carbon/trash`: restore, delete for good, empty, with a panel and a toolbar button (ADR-031)

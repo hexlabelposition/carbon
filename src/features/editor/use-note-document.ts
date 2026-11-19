@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isWithin } from "../vault/paths";
 import { useWorkspace } from "../workspace/workspace";
+import { errorText } from "../i18n/error-text";
 
 export type NoteDocument =
   | { status: "loading" }
@@ -179,8 +180,7 @@ export function useNoteDocument(
           if (!stale) start(text);
         },
         (reason: unknown) => {
-          const message =
-            reason instanceof Error ? reason.message : String(reason);
+          const message = errorText(reason);
           if (!stale) setLoaded({ path, value: { status: "error", message } });
         },
       );

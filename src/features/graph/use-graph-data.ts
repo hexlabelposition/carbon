@@ -1,6 +1,7 @@
 import type { NoteGraph, NotePath, Vault } from "@carbon/core";
 import type { GraphDisplay } from "./node-style";
 import { useEffect, useState } from "react";
+import { errorText } from "../i18n/error-text";
 
 /** How long the graph waits after the last change it hears of, ms. */
 const LIVE_DELAY_MS = 300;
@@ -58,7 +59,7 @@ export function useGraphData(
           if (!fresh()) return;
           setState({
             status: "error",
-            message: reason instanceof Error ? reason.message : String(reason),
+            message: errorText(reason),
           });
         },
       );
@@ -162,8 +163,7 @@ export function useLocalGraphData(
             for: key,
             state: {
               status: "error",
-              message:
-                reason instanceof Error ? reason.message : String(reason),
+              message: errorText(reason),
             },
           });
         },

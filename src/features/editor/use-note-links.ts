@@ -10,6 +10,7 @@ import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { asFragment, type LinkHost } from "./link-completion";
 import { previewText } from "./link-preview";
+import { errorText } from "../i18n/error-text";
 
 export interface NoteLinks {
   host: LinkHost;
@@ -95,8 +96,7 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
             open(followed.path, options);
           },
           (reason: unknown) => {
-            const message =
-              reason instanceof Error ? reason.message : String(reason);
+            const message = errorText(reason);
             setError(t("links.openFailed", { reason: message }));
           },
         );

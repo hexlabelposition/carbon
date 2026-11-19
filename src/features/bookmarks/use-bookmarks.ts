@@ -4,6 +4,7 @@ import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { imageTypeOf } from "../image/image-file";
 import { useWorkspace } from "../workspace/workspace";
+import { errorText } from "../i18n/error-text";
 
 export interface BookmarksView {
   /** The bookmarks that exist, in the order they were added; `null` at first. */
@@ -117,5 +118,5 @@ export function useBookmarkCommand(bookmarks: BookmarksView): void {
 }
 
 function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  return errorText(reason);
 }

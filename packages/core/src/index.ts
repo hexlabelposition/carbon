@@ -4,6 +4,8 @@ export { AppSettings } from "./config/app-settings";
 export type { RecentVault } from "./config/app-settings";
 
 export { Vault } from "./vault/vault";
+export { VaultError } from "./errors";
+export type { VaultErrorCode } from "./errors";
 export { checkVaultName, DRAFTS_FOLDER, TRASH_FOLDER } from "./vault/path";
 export type { DiscardOptions, TrashItem, VaultTrash } from "./vault/trash";
 export type { Bookmarks } from "./vault/bookmarks";

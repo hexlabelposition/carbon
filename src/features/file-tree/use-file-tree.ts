@@ -5,6 +5,7 @@ import { deleteToPreference } from "../trash/delete-to";
 import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
+import { errorText } from "../i18n/error-text";
 
 /**
  * What a tree shows: the vault without its hidden folders, or the drafts
@@ -642,7 +643,7 @@ function withMd(name: string): string {
 }
 
 function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  return errorText(reason);
 }
 
 /** How a tree entry is shown: a note without its `.md`. */

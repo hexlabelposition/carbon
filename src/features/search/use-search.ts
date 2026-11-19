@@ -5,6 +5,7 @@ import { useDialog } from "../dialogs/open-dialog";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
+import { errorText } from "../i18n/error-text";
 
 /** The command that opens the search dialog, offered in the toolbar. */
 export const OPEN_SEARCH = "search.open";
@@ -124,8 +125,7 @@ export function useSearch(vault: Vault): Search {
         },
         (reason: unknown) => {
           if (!current || request !== asked) return;
-          const message =
-            reason instanceof Error ? reason.message : String(reason);
+          const message = errorText(reason);
           setResults({ status: "error", message });
         },
       );

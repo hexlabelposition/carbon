@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { handOver } from "./use-note-document";
+import { errorText } from "../i18n/error-text";
 
 export interface NoteTitle {
   /** The file name of the note, without `.md`. */
@@ -46,7 +47,7 @@ export function useNoteTitle(vault: Vault, path: NotePath): NoteTitle {
         onDisk = await vault.notes.read(path);
         await vault.notes.rename(path, to);
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : String(reason));
+        setError(errorText(reason));
         return false;
       }
       // The editor of the new path starts from this text: no blink.

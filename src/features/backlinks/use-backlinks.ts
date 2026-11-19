@@ -1,5 +1,6 @@
 import type { Backlink, NotePath, Vault } from "@carbon/core";
 import { useEffect, useState } from "react";
+import { errorText } from "../i18n/error-text";
 
 export type BacklinksState =
   | { status: "loading" }
@@ -39,8 +40,7 @@ export function useBacklinks(vault: Vault, path: NotePath): BacklinksState {
         },
         (reason: unknown) => {
           if (!current || request !== asked) return;
-          const message =
-            reason instanceof Error ? reason.message : String(reason);
+          const message = errorText(reason);
           setState({ status: "error", message });
         },
       );

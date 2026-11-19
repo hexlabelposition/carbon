@@ -11,14 +11,15 @@ import {
   type VaultContext,
 } from "./entries";
 import { parentOf, resolveInVault, resolveNewInVault } from "./path";
+import { VaultError } from "../errors";
 
 /**
  * A write was rejected because the note on disk is not the version the
  * caller started from: it was changed, deleted or created by someone else.
  */
-export class WriteConflictError extends Error {
+export class WriteConflictError extends VaultError {
   constructor(readonly path: NotePath) {
-    super(`Changed on disk since it was read: ${path}`);
+    super("writeConflict", path, `Changed on disk since it was read: ${path}`);
     this.name = "WriteConflictError";
   }
 }

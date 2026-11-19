@@ -1,4 +1,5 @@
 import type { NotePath } from "../types";
+import { VaultError } from "../errors";
 
 /** The folder of Carbon inside a vault: hidden, so it is not a note folder. */
 export const CARBON_FOLDER = ".carbon";
@@ -31,7 +32,11 @@ export function normalizeRoot(root: string): string {
   const normalized = root.replaceAll("\\", "/").replace(/\/+$/, "");
   // "/" and "C:/" lose their only slash above; an empty root is never valid.
   if (normalized === "" || /^[A-Za-z]:$/.test(normalized)) {
-    throw new Error(`Invalid vault root: ${JSON.stringify(root)}`);
+    throw new VaultError(
+      "invalidVaultRoot",
+      root,
+      `Invalid vault root: ${JSON.stringify(root)}`,
+    );
   }
   return normalized;
 }
@@ -48,7 +53,11 @@ export function checkVaultName(name: string): void {
     name.endsWith(".") ||
     /[\\/:*?"<>|]/.test(name);
   if (invalid) {
-    throw new Error(`Invalid vault name: ${JSON.stringify(name)}`);
+    throw new VaultError(
+      "invalidVaultName",
+      name,
+      `Invalid vault name: ${JSON.stringify(name)}`,
+    );
   }
 }
 
@@ -63,7 +72,11 @@ export function resolveInVault(root: string, path: NotePath): string {
     /^[A-Za-z]:/.test(path) ||
     segments.some((s) => s === "" || s === "." || s === "..");
   if (invalid) {
-    throw new Error(`Invalid vault path: ${JSON.stringify(path)}`);
+    throw new VaultError(
+      "invalidPath",
+      path,
+      `Invalid vault path: ${JSON.stringify(path)}`,
+    );
   }
   return `${root}/${segments.join("/")}`;
 }
@@ -76,7 +89,11 @@ export function resolveInVault(root: string, path: NotePath): string {
 export function resolveNewInVault(root: string, path: NotePath): string {
   const absolute = resolveInVault(root, path);
   if (!isVaultPath(path) || path.replaceAll("\\", "/") === DRAFTS_FOLDER) {
-    throw new Error(`Hidden names are not allowed: ${JSON.stringify(path)}`);
+    throw new VaultError(
+      "hiddenName",
+      path,
+      `Hidden names are not allowed: ${JSON.stringify(path)}`,
+    );
   }
   return absolute;
 }

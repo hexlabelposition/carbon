@@ -102,6 +102,7 @@ import {
 } from "./WindowControls";
 import { Tooltip } from "../../features/ui/Tooltip";
 import { useShortcutLabel } from "../../features/shortcuts/shortcuts";
+import { errorText } from "../../features/i18n/error-text";
 
 // Dev builds only: in a release build the condition is false at build time
 // and neither is bundled.
@@ -901,10 +902,7 @@ function IndexState({ vault }: { vault: Vault }) {
   const status = useIndexStatus(vault);
   if (status.state === "ready") return null;
   if (status.state === "failed") {
-    const reason =
-      status.error instanceof Error
-        ? status.error.message
-        : String(status.error);
+    const reason = errorText(status.error, t);
     return (
       <Tooltip label={reason}>
         <p className="text-danger">{t("shell.indexFailed")}</p>

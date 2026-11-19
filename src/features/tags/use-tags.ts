@@ -8,6 +8,7 @@ import {
 } from "@carbon/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/i18n";
+import { errorText } from "../i18n/error-text";
 
 export type TagTreeState =
   | { status: "loading" }
@@ -274,5 +275,5 @@ function renamedTree(
 }
 
 function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  return errorText(reason);
 }

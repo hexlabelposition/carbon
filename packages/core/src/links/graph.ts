@@ -1,5 +1,6 @@
 import type { IndexStore } from "../index/index-store";
 import type { NoteGraph, NotePath } from "../types";
+import { VaultError } from "../errors";
 
 /** What `Graph` needs from the vault. */
 export interface GraphContext {
@@ -62,7 +63,11 @@ export class Graph {
     options: GraphOptions = {},
   ): Promise<NoteGraph> {
     if (!Number.isInteger(depth) || depth < 0) {
-      throw new Error(`Not a depth of a local graph: ${depth}`);
+      throw new VaultError(
+        "badGraphDepth",
+        String(depth),
+        `Not a depth of a local graph: ${depth}`,
+      );
     }
     return (await this.context.index()).localGraph(
       path,

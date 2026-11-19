@@ -4,6 +4,7 @@ import { useT } from "../i18n/i18n";
 import { imageTypeOf } from "./image-file";
 import { FittedImage } from "./FittedImage";
 import { Tooltip } from "../ui/Tooltip";
+import { errorText } from "../i18n/error-text";
 
 type Loaded =
   | { status: "loading" }
@@ -39,8 +40,7 @@ export function ImageView({
       },
       (reason: unknown) => {
         if (!current) return;
-        const message =
-          reason instanceof Error ? reason.message : String(reason);
+        const message = errorText(reason);
         setImage({ status: "error", message });
       },
     );

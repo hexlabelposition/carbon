@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n/i18n";
 import { imageEndingOf, imageTypeOf } from "../image/image-file";
 import type { ImageHost, ShownImage } from "./live-preview-image";
+import { errorText } from "../i18n/error-text";
 
 export interface NoteImages {
   host: ImageHost;
@@ -43,8 +44,7 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
         setError(null);
         return link;
       } catch (reason) {
-        const message =
-          reason instanceof Error ? reason.message : String(reason);
+        const message = errorText(reason);
         setError(t("images.saveFailed", { reason: message }));
         throw reason;
       }

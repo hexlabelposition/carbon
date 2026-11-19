@@ -1,5 +1,6 @@
 import type { Mention, NotePath, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
+import { errorText } from "../i18n/error-text";
 
 export type MentionsState =
   | { status: "off" }
@@ -87,5 +88,5 @@ export function useUnlinkedMentions(
 }
 
 function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  return errorText(reason);
 }

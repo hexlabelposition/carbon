@@ -24,6 +24,7 @@ import { Bookmarks } from "./bookmarks";
 import { VaultTrash } from "./trash";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
+import { VaultError } from "../errors";
 
 /** Where the index of an open vault is; see `Vault.indexStatus`. */
 export type IndexStatus =
@@ -172,7 +173,8 @@ export class Vault {
     this.platform = platform;
     const caughtUp = async () => {
       await this.indexed();
-      if (this.store === null) throw new Error("The index is not open");
+      if (this.store === null)
+        throw new VaultError("indexNotOpen", "", "The index is not open");
       return this.store;
     };
     /** `Notes.write` for a note the vault changes on its own. */
@@ -191,7 +193,10 @@ export class Vault {
     this.folders = new Folders(context, rewriter);
     this.attachments = new Attachments(context);
     const index = () =>
-      this.store ?? Promise.reject(new Error("The index is not open"));
+      this.store ??
+      Promise.reject(
+        new VaultError("indexNotOpen", "", "The index is not open"),
+      );
     this.links = new Links({
       index,
       caughtUp,
@@ -237,7 +242,11 @@ export class Vault {
     const normalized = normalizeRoot(root);
     const stat = await platform.fs.stat(normalized);
     if (stat.kind !== "dir") {
-      throw new Error(`Vault root is not a folder: ${normalized}`);
+      throw new VaultError(
+        "notAFolder",
+        normalized,
+        `Vault root is not a folder: ${normalized}`,
+      );
     }
     const vault = new Vault(
       normalized,
@@ -279,7 +288,7 @@ export class Vault {
     const folder = parent.replaceAll("\\", "/").replace(/\/+$/, "");
     const root = normalizeRoot(`${folder}/${name}`);
     if (await platform.fs.exists(root)) {
-      throw new Error(`Already exists: ${root}`);
+      throw new VaultError("alreadyExists", root, `Already exists: ${root}`);
     }
     await platform.fs.mkdir(root);
     return Vault.open(root, platform, options);

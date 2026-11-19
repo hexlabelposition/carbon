@@ -6,6 +6,7 @@ import { useWorkspace } from "../workspace/workspace";
 import { useDialog } from "../dialogs/open-dialog";
 import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 import { newNotePath } from "./new-note-path";
+import { errorText } from "../i18n/error-text";
 
 export interface NewNote {
   isOpen: boolean;
@@ -93,8 +94,7 @@ export function useNewNote(vault: Vault): NewNote {
             open(path, { target: newTab ? "newTab" : "here" });
             close();
           },
-          (reason: unknown) =>
-            setError(reason instanceof Error ? reason.message : String(reason)),
+          (reason: unknown) => setError(errorText(reason)),
         )
         .finally(() => setBusy(false));
     },

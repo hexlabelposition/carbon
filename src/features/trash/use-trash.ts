@@ -1,6 +1,7 @@
 import type { TrashItem, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useDialog } from "../dialogs/open-dialog";
+import { errorText } from "../i18n/error-text";
 
 export type TrashListState =
   | { status: "loading" }
@@ -101,5 +102,5 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
 }
 
 function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  return errorText(reason);
 }

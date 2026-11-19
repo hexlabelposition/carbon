@@ -31,6 +31,7 @@ import type {
 } from "../types";
 import { contentHash } from "../util/hash";
 import { normalizeRoot } from "../vault/path";
+import { VaultError } from "../errors";
 
 /** What the file of a note looked like when it was indexed. */
 export interface NoteStamp {
@@ -853,7 +854,12 @@ export class IndexStore {
     );
     const idOf = (path: NotePath) => {
       const id = ids.get(path);
-      if (id === undefined) throw new Error(`Note not indexed: ${path}`);
+      if (id === undefined)
+        throw new VaultError(
+          "noteNotIndexed",
+          path,
+          `Note not indexed: ${path}`,
+        );
       return id;
     };
 

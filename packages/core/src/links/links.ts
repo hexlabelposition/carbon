@@ -15,6 +15,7 @@ import { contentHash } from "../util/hash";
 import { mapPool } from "../util/pool";
 import { findMentions, mentionQuery } from "./mentions";
 import { linkPath, linksToFile } from "./resolve";
+import { VaultError } from "../errors";
 
 /** What `Links` needs from the vault. */
 export interface LinksContext {
@@ -127,7 +128,11 @@ export class Links {
     const title = titleOf(target);
     const same = (a: string) => fold(a).text.replace(/\s+/g, " ");
     if (same(written) !== same(title)) {
-      throw new Error(`The mention of ${title} is not there any more`);
+      throw new VaultError(
+        "mentionGone",
+        title,
+        `The mention of ${title} is not there any more`,
+      );
     }
     const byTitle = await this.resolve(source, { kind: "wiki", target: title });
     const name = byTitle === target ? title : target.replace(/\.md$/i, "");

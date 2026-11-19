@@ -7,6 +7,7 @@ import { useWorkspace } from "../workspace/workspace";
 import { useDialog } from "../dialogs/open-dialog";
 import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 import { newNotePath } from "../new-note/new-note-path";
+import { errorText } from "../i18n/error-text";
 
 export interface QuickSwitcher {
   isOpen: boolean;
@@ -145,8 +146,7 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
           open(newNote, { target: newTab ? "newTab" : "here" });
           close();
         },
-        (reason: unknown) =>
-          setError(reason instanceof Error ? reason.message : String(reason)),
+        (reason: unknown) => setError(errorText(reason)),
       );
     },
     [vault, newNote, open, close],

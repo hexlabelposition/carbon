@@ -8,6 +8,7 @@ import {
   resolveNewInVault,
   TRASH_FOLDER,
 } from "./path";
+import { VaultError } from "../errors";
 
 /** A deleted note, file or folder that the trash keeps. */
 export interface TrashItem {
@@ -126,7 +127,8 @@ export class VaultTrash {
    * the system trash with `system`. If that fails, it stays.
    */
   async remove(id: string, options: DiscardOptions = {}): Promise<void> {
-    if (!isId(id)) throw new Error(`Not in the trash: ${id}`);
+    if (!isId(id))
+      throw new VaultError("notInTrash", id, `Not in the trash: ${id}`);
     try {
       await this.discard(id, options);
     } finally {
@@ -167,10 +169,12 @@ export class VaultTrash {
   /** The item `id` and the absolute path of its entry in the trash. */
   private async read(id: string): Promise<Found> {
     const { fs } = this.options;
-    if (!isId(id)) throw new Error(`Not in the trash: ${id}`);
+    if (!isId(id))
+      throw new VaultError("notInTrash", id, `Not in the trash: ${id}`);
     const folder = `${this.dir}/${id}`;
     const entry = (await fs.list(folder)).find((e) => !e.name.startsWith("."));
-    if (entry === undefined) throw new Error(`Not in the trash: ${id}`);
+    if (entry === undefined)
+      throw new VaultError("notInTrash", id, `Not in the trash: ${id}`);
     const fallback: TrashItem = {
       id,
       path: entry.name,

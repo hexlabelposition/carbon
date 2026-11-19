@@ -15,6 +15,7 @@ import {
   type VaultSession,
 } from "./vault-session";
 import { timing } from "./timing";
+import { errorText } from "../i18n/error-text";
 
 interface VaultProviderProps {
   platform: Platform;
@@ -72,8 +73,7 @@ export function VaultProvider({
         void setOpenVault(remember ? opened.root : null);
         return true;
       } catch (reason) {
-        const message =
-          reason instanceof Error ? reason.message : String(reason);
+        const message = errorText(reason);
         setError({ message, root });
         return false;
       } finally {
