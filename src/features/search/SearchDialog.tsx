@@ -4,6 +4,7 @@ import { useT } from "../i18n/i18n";
 import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
 import { Highlighted } from "./Highlighted";
 import type { Search } from "./use-search";
+import { AppDialog } from "../dialogs/AppDialog";
 
 /** How a match looks in a hit. */
 const MATCH = "rounded-xs bg-highlight text-fg";
@@ -18,20 +19,11 @@ const MATCH = "rounded-xs bg-highlight text-fg";
  */
 export function SearchDialog({ search }: { search: Search }) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, results, selected, select, open, openCount } =
     search;
   const hits = results.status === "ready" ? results.hits : [];
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    return () => element.close();
-  }, []);
 
   // Each time it is opened, the last query is selected: typing replaces
   // it, the arrow keys go back to its hits.
@@ -58,18 +50,11 @@ export function SearchDialog({ search }: { search: Search }) {
   }
 
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-label={t("shell.searchAll")}
-      className="mx-auto mt-[15vh] w-full max-w-[640px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
-      onCancel={(event) => {
-        event.preventDefault();
-        search.close();
-      }}
-      // A click on the backdrop lands on the dialog itself.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) search.close();
-      }}
+      onClose={search.close}
+      initialFocus={field}
+      className="fixed inset-x-0 top-[15vh] mx-auto w-full max-w-[min(640px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
       <input
         ref={field}
@@ -119,7 +104,7 @@ export function SearchDialog({ search }: { search: Search }) {
       >
         {t("search.syntax")}
       </p>
-    </dialog>
+    </AppDialog>
   );
 }
 

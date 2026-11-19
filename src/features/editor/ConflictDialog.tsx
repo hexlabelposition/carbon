@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { useT } from "../i18n/i18n";
+import { AppDialog } from "../dialogs/AppDialog";
 
 interface ConflictDialogProps {
   /** The note, as the user knows it. */
@@ -27,29 +27,19 @@ export function ConflictDialog({
   onLater,
 }: ConflictDialogProps) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape. It
-  // puts the focus on its first button, "Decide later": the one answer
+  // The focus goes to the first button, "Decide later": the one answer
   // that loses nothing if Enter is pressed by accident.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    return () => element.close();
-  }, []);
 
   const deleted = deletedOnDisk === true;
 
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-labelledby="conflict-title"
-      className="m-auto w-full max-w-[520px] rounded-lg border border-line bg-bg p-5 text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/70"
-      onCancel={(event) => {
-        event.preventDefault();
-        onLater();
-      }}
+      onClose={onLater}
+      // A question to answer: a click beside it is no answer.
+      closeOnOutsidePress={false}
+      backdrop="bg-backdrop/70"
+      className="fixed inset-0 m-auto h-fit w-full max-w-[min(520px,calc(100vw-32px))] rounded-lg border border-line bg-bg p-5 shadow-dialog"
     >
       <h2 id="conflict-title" className="text-h3 font-semibold">
         {t(deleted ? "conflict.deletedTitle" : "conflict.changedTitle", {
@@ -77,6 +67,6 @@ export function ConflictDialog({
       <p className="mt-3 text-small text-faint">
         {t(deleted ? "conflict.deletedHint" : "conflict.changedHint")}
       </p>
-    </dialog>
+    </AppDialog>
   );
 }

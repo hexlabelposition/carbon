@@ -4,6 +4,7 @@ import { Highlighted } from "../search/Highlighted";
 import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
 import { Shortcut } from "./Shortcut";
 import type { CommandPalette as Palette } from "./use-command-palette";
+import { AppDialog } from "../dialogs/AppDialog";
 
 /**
  * The command palette dialog. The arrow keys choose a command, Enter runs
@@ -11,17 +12,8 @@ import type { CommandPalette as Palette } from "./use-command-palette";
  */
 export function CommandPalette({ palette }: { palette: Palette }) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, items, selected, select, run } = palette;
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    return () => element.close();
-  }, []);
 
   useEffect(() => {
     list.current
@@ -40,18 +32,10 @@ export function CommandPalette({ palette }: { palette: Palette }) {
   }
 
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-label={t("palette.label")}
-      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
-      onCancel={(event) => {
-        event.preventDefault();
-        palette.close();
-      }}
-      // A click on the backdrop lands on the dialog itself.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) palette.close();
-      }}
+      onClose={palette.close}
+      className="fixed inset-x-0 top-[15vh] mx-auto w-full max-w-[min(560px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
       <input
         autoFocus
@@ -108,6 +92,6 @@ export function CommandPalette({ palette }: { palette: Palette }) {
           </ul>
         </ScrollArea>
       )}
-    </dialog>
+    </AppDialog>
   );
 }

@@ -4,6 +4,7 @@ import { Shortcut } from "../commands/Shortcut";
 import { Highlighted } from "../search/Highlighted";
 import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
 import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
+import { AppDialog } from "../dialogs/AppDialog";
 
 /**
  * The quick switcher dialog. The arrow keys choose a row, Enter opens it,
@@ -12,18 +13,9 @@ import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
  */
 export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const { query, setQuery, hits, newNote, selected, select, error } = switcher;
   const rows = hits.length + (newNote === null ? 0 : 1);
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    return () => element.close();
-  }, []);
 
   useEffect(() => {
     list.current
@@ -54,18 +46,10 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
     }`;
 
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-label={t("switcher.label")}
-      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
-      onCancel={(event) => {
-        event.preventDefault();
-        switcher.close();
-      }}
-      // A click on the backdrop lands on the dialog itself.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) switcher.close();
-      }}
+      onClose={switcher.close}
+      className="fixed inset-x-0 top-[15vh] mx-auto w-full max-w-[min(560px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
       <input
         autoFocus
@@ -155,7 +139,7 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
           </ul>
         </ScrollArea>
       )}
-    </dialog>
+    </AppDialog>
   );
 }
 

@@ -26,7 +26,8 @@ import {
   START_MODES,
   startModePreference,
 } from "./editor-options";
-import { openDialog, openDialogId, useDialog } from "../dialogs/open-dialog";
+import { AppDialog } from "../dialogs/AppDialog";
+import { openDialog, useDialog } from "../dialogs/open-dialog";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
 import {
@@ -154,84 +155,62 @@ export function Settings() {
   );
 
   return (
-    <Dialog.Root
+    <AppDialog
       open={open}
-      onOpenChange={(next, details) => {
-        // The window buttons stay out of the backdrop: pressing one
-        // minimizes or closes the window, it does not close the settings.
-        if (
-          details.reason === "outside-press" &&
-          details.event.target instanceof Element &&
-          details.event.target.closest("[data-window-controls]") !== null
-        ) {
-          return;
-        }
-        setOpen(next);
-      }}
+      onClose={() => setOpen(false)}
+      // Centered by its margins, not moved back by half its size: a move of
+      // half an odd size lands between pixels, and the text in it is drawn
+      // blurred.
+      className="fixed inset-0 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
-      <Dialog.Portal>
-        {/* Below the top row: the tabs and the window buttons stay sharp,
-            and the buttons can still be pressed. */}
-        <Dialog.Backdrop className="fixed inset-x-0 top-bar bottom-0 z-50 bg-backdrop/40 backdrop-blur-xs" />
-        {/* Centered by its margins, not moved back by half its size: a
-            move of half an odd size lands between pixels, and the text in
-            it is drawn blurred. */}
-        <Dialog.Popup
-          // Closed for another dialog: the focus is that one's to keep,
-          // not given back to where it was before the settings.
-          finalFocus={() => openDialogId() === null}
-          className="fixed inset-0 z-50 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog outline-none"
-        >
-          {/* The groups at the left, one shown at a time at the right. */}
-          <nav className="flex w-44 shrink-0 flex-col gap-3 border-r border-line bg-panel p-2">
-            <Dialog.Title className="px-2.5 pt-2.5 text-h3 font-semibold">
-              {t("settings.title")}
-            </Dialog.Title>
-            <GroupTabs current={group} onShow={setGroup} />
-          </nav>
-          <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
-              <h3 className="text-h3 font-semibold">
-                {t(
-                  GROUPS.find((g) => g.group === group)?.label ??
-                    "settings.general",
-                )}
-              </h3>
-              <Tooltip label={t("common.close")} shortcut="Esc">
-                <Dialog.Close
-                  aria-label={t("common.close")}
-                  className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-                >
-                  <svg
-                    viewBox="0 0 10 10"
-                    width="10"
-                    height="10"
-                    aria-hidden="true"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                  >
-                    <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-                  </svg>
-                </Dialog.Close>
-              </Tooltip>
-            </header>
-            <div
-              role="tabpanel"
-              id="settings-panel"
-              aria-labelledby={`settings-tab-${group}`}
-              className="min-h-0 flex-1 overflow-auto px-5 pb-5"
+      {/* The groups at the left, one shown at a time at the right. */}
+      <nav className="flex w-44 shrink-0 flex-col gap-3 border-r border-line bg-panel p-2">
+        <Dialog.Title className="px-2.5 pt-2.5 text-h3 font-semibold">
+          {t("settings.title")}
+        </Dialog.Title>
+        <GroupTabs current={group} onShow={setGroup} />
+      </nav>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
+          <h3 className="text-h3 font-semibold">
+            {t(
+              GROUPS.find((g) => g.group === group)?.label ??
+                "settings.general",
+            )}
+          </h3>
+          <Tooltip label={t("common.close")} shortcut="Esc">
+            <Dialog.Close
+              aria-label={t("common.close")}
+              className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
             >
-              {group === "general" && <GeneralSettings />}
-              {group === "appearance" && <AppearanceSettings />}
-              {group === "fonts" && <FontSettings />}
-              {group === "notes" && <NoteSettings />}
-              {group === "editor" && <EditorSettings />}
-            </div>
-          </div>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+              <svg
+                viewBox="0 0 10 10"
+                width="10"
+                height="10"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              >
+                <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+              </svg>
+            </Dialog.Close>
+          </Tooltip>
+        </header>
+        <div
+          role="tabpanel"
+          id="settings-panel"
+          aria-labelledby={`settings-tab-${group}`}
+          className="min-h-0 flex-1 overflow-auto px-5 pb-5"
+        >
+          {group === "general" && <GeneralSettings />}
+          {group === "appearance" && <AppearanceSettings />}
+          {group === "fonts" && <FontSettings />}
+          {group === "notes" && <NoteSettings />}
+          {group === "editor" && <EditorSettings />}
+        </div>
+      </div>
+    </AppDialog>
   );
 }
 

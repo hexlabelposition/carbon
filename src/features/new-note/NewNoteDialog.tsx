@@ -1,6 +1,7 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import type { KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
 import type { NewNote } from "./use-new-note";
+import { AppDialog } from "../dialogs/AppDialog";
 
 /**
  * The "New note" dialog, laid out as the quick switcher: a field for the
@@ -9,16 +10,7 @@ import type { NewNote } from "./use-new-note";
  */
 export function NewNoteDialog({ newNote }: { newNote: NewNote }) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
   const { name, setName, path, busy, error } = newNote;
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    return () => element.close();
-  }, []);
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter") return;
@@ -27,18 +19,10 @@ export function NewNoteDialog({ newNote }: { newNote: NewNote }) {
   }
 
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-label={t("tree.newNote")}
-      className="mx-auto mt-[15vh] w-full max-w-[560px] overflow-hidden rounded-lg border border-line bg-bg text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
-      onCancel={(event) => {
-        event.preventDefault();
-        newNote.close();
-      }}
-      // A click on the backdrop lands on the dialog itself.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) newNote.close();
-      }}
+      onClose={newNote.close}
+      className="fixed inset-x-0 top-[15vh] mx-auto w-full max-w-[min(560px,calc(100vw-32px))] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
       <input
         autoFocus
@@ -74,6 +58,6 @@ export function NewNoteDialog({ newNote }: { newNote: NewNote }) {
           </>
         )}
       </p>
-    </dialog>
+    </AppDialog>
   );
 }

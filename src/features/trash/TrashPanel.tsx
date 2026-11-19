@@ -1,10 +1,11 @@
 import type { TrashItem } from "@carbon/core";
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import { useLanguage, useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { nameOf } from "../vault/paths";
 import { placeOf } from "../vault/place";
 import type { TrashConfirm, TrashView } from "./use-trash";
+import { AppDialog } from "../dialogs/AppDialog";
 
 /**
  * The trash of the vault: what was deleted, the latest first, each with
@@ -147,37 +148,20 @@ function ConfirmDialog({
   confirm: TrashConfirm;
 }) {
   const t = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
+  // The safe answer takes the focus, so a stray Enter deletes nothing for
+  // good.
   const toSystem = useRef<HTMLButtonElement>(null);
-
-  // A modal `<dialog>` keeps the focus inside and closes on Escape.
-  useEffect(() => {
-    const element = dialog.current;
-    if (element === null || element.open) return;
-    element.showModal();
-    // After `showModal`, which gives the focus to the first button: the
-    // safe answer takes it, so a stray Enter deletes nothing for good.
-    toSystem.current?.focus();
-    return () => element.close();
-  }, []);
 
   const button = "h-8 rounded-md px-3 outline-none focus-visible:ring-2";
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
       aria-labelledby="trash-confirm-title"
       aria-describedby="trash-confirm-text"
+      onClose={trash.cancel}
+      initialFocus={toSystem}
       // In the middle of the window, as the settings: a question, not a
       // list that grows down as in the palette.
-      className="m-auto w-full max-w-[440px] rounded-lg border border-line bg-bg p-4 text-ui text-fg shadow-dialog backdrop:top-bar backdrop:bg-backdrop/40 backdrop:backdrop-blur-xs"
-      onCancel={(event) => {
-        event.preventDefault();
-        trash.cancel();
-      }}
-      // A click on the backdrop lands on the dialog itself.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) trash.cancel();
-      }}
+      className="fixed inset-0 m-auto h-fit w-full max-w-[min(440px,calc(100vw-32px))] rounded-lg border border-line bg-bg p-4 shadow-dialog"
     >
       <h2 id="trash-confirm-title" className="font-medium">
         {confirm.kind === "all"
@@ -213,7 +197,7 @@ function ConfirmDialog({
           {t("trash.deleteForGood")}
         </button>
       </div>
-    </dialog>
+    </AppDialog>
   );
 }
 
