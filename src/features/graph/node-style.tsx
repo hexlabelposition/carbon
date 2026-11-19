@@ -19,16 +19,7 @@ export const PLAIN: GraphDisplay = { sizeByLinks: false, colorBy: "none" };
  * as notes of no group.
  */
 export const GROUP_SLOTS = 3;
-/** The largest a note gets, in times `NODE_RADIUS`. */
-export const MAX_NODE_SIZE = 4;
-
-/**
- * How big a note with `links` links is, in times `NODE_RADIUS`: by the
- * square root, so a hub stands out without hiding its neighbors.
- */
-export function sizeFor(links: number): number {
-  return Math.min(MAX_NODE_SIZE, 1 + 0.5 * Math.sqrt(links));
-}
+export { MAX_NODE_SIZE, sizeFor } from "./node-size";
 
 /** A group in the legend. */
 export interface LegendGroup {

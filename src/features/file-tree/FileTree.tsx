@@ -30,7 +30,7 @@ import { log } from "../log/log";
  * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
  * with the margin that keeps the bar off the resize handle.
  */
-const TREE_SCROLLBAR_ROOM = "group-data-has-overflow-y/scroll:pr-4.5";
+const TREE_SCROLLBAR_ROOM = "group-data-scrolls/scroll:pr-4.5";
 
 /** Every row has this height, in pixels: the list is windowed by it. */
 const ROW_HEIGHT = 26;
