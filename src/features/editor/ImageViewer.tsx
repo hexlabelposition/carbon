@@ -40,8 +40,8 @@ export function ImageViewer({
         >
           <svg
             viewBox="0 0 10 10"
-            width="10"
-            height="10"
+            width="12"
+            height="12"
             aria-hidden="true"
             fill="none"
             stroke="currentColor"

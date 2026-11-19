@@ -95,7 +95,7 @@ export function BookmarksPanel({
                   <svg
                     viewBox="0 0 16 16"
                     aria-hidden="true"
-                    className="size-3.5"
+                    className="size-5"
                     fill="currentColor"
                     stroke="currentColor"
                     strokeWidth="1.25"

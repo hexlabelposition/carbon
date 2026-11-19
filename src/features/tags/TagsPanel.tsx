@@ -253,7 +253,7 @@ function TagNotes({
             className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-raise hover:text-fg"
             onClick={() => tags.select(null)}
           >
-            <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3">
+            <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5">
               <path
                 d="M4 4l8 8M12 4l-8 8"
                 fill="none"
@@ -305,7 +305,7 @@ function Chevron({ open }: { open: boolean }) {
     <svg
       viewBox="0 0 16 16"
       aria-hidden="true"
-      className={`size-3 text-faint ${open ? "rotate-90" : ""}`}
+      className={`size-3.5 text-faint ${open ? "rotate-90" : ""}`}
     >
       <path
         d="M6 4l4 4-4 4"

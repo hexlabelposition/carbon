@@ -14,7 +14,7 @@ function ItemIcon({ children }: { children: ReactNode }) {
     <svg
       viewBox="0 0 16 16"
       aria-hidden="true"
-      className="size-4 shrink-0 text-muted"
+      className="size-4.5 shrink-0 text-muted"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.25"

@@ -84,11 +84,7 @@ export function TabBar({
                 className="mr-1 flex size-6 shrink-0 items-center justify-center rounded-sm text-faint hover:bg-line-strong/50 hover:text-fg"
                 onClick={() => onClose(tab.id)}
               >
-                <svg
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                  className="size-3.5"
-                >
+                <svg viewBox="0 0 16 16" aria-hidden="true" className="size-5">
                   <path
                     d="M4 4l8 8M12 4l-8 8"
                     fill="none"

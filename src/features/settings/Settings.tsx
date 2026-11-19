@@ -185,8 +185,8 @@ export function Settings() {
             >
               <svg
                 viewBox="0 0 10 10"
-                width="10"
-                height="10"
+                width="12"
+                height="12"
                 aria-hidden="true"
                 fill="none"
                 stroke="currentColor"
@@ -528,7 +528,7 @@ function ResetButton({
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className="size-3.5"
+          className="size-5"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -592,8 +592,8 @@ function SettingSelect<T extends string | number>({
         <Select.Icon className="text-faint">
           <svg
             viewBox="0 0 10 10"
-            width="10"
-            height="10"
+            width="12"
+            height="12"
             aria-hidden="true"
             fill="none"
             stroke="currentColor"
@@ -612,13 +612,13 @@ function SettingSelect<T extends string | number>({
                 <Select.Item
                   key={item.value}
                   value={item.value}
-                  className="grid cursor-default grid-cols-[12px_1fr] items-center gap-2 rounded-sm py-1 pr-3 pl-2 outline-none select-none data-highlighted:bg-raise"
+                  className="grid cursor-default grid-cols-[14px_1fr] items-center gap-2 rounded-sm py-1 pr-3 pl-2 outline-none select-none data-highlighted:bg-raise"
                 >
                   <Select.ItemIndicator className="col-start-1">
                     <svg
                       viewBox="0 0 12 12"
-                      width="12"
-                      height="12"
+                      width="14"
+                      height="14"
                       aria-hidden="true"
                       fill="none"
                       stroke="currentColor"

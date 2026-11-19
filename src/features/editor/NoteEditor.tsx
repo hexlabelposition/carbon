@@ -234,7 +234,7 @@ function ModeButton({
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className="size-4.5"
+          className="size-5"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.25"
@@ -279,7 +279,7 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
               key="saved"
               viewBox="0 0 16 16"
               aria-hidden="true"
-              className="size-4.5"
+              className="size-5"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.25"

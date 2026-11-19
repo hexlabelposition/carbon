@@ -658,7 +658,7 @@ function Chevron({ hidden, open }: { hidden?: boolean; open?: boolean }) {
     <svg
       viewBox="0 0 16 16"
       aria-hidden="true"
-      className={`size-3 shrink-0 text-faint ${hidden ? "invisible" : ""} ${
+      className={`size-3.5 shrink-0 text-faint ${hidden ? "invisible" : ""} ${
         open ? "rotate-90" : ""
       }`}
     >
