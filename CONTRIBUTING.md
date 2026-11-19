@@ -76,7 +76,7 @@ Formatting is Prettier with its default settings, so there is nothing to decide.
 
 ## Releases
 
-1. Raise the version, the same in `tauri/tauri.conf.json`, `tauri/Cargo.toml` and `package.json`, and commit it.
+1. Raise the version in `package.json` (`tauri/tauri.conf.json` and the interface read it from there) and in `tauri/Cargo.toml`, and commit it.
 2. Tag the commit `v` and the version, such as `v0.1.0`, and push the tag.
 3. The release workflow checks the tag against the version, builds the deb and the AppImage on Ubuntu 22.04 and attaches them to a draft release on GitHub. Try them, then publish the release.
 

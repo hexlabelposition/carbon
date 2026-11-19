@@ -19,13 +19,13 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      # The packages are named by the version in tauri.conf.json, not by
-      # the tag: the two must agree.
+      # The packages are named by the version in package.json, which
+      # tauri.conf.json reads, not by the tag: the two must agree.
       - name: Check the tag against the version
         run: |
-          version=$(jq -r .version tauri/tauri.conf.json)
+          version=$(jq -r .version package.json)
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "The tag $GITHUB_REF_NAME is not v$version, the version in tauri/tauri.conf.json"
+            echo "The tag $GITHUB_REF_NAME is not v$version, the version in package.json"
             exit 1
           fi
       - name: Install Tauri system dependencies
