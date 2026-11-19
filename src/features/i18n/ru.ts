@@ -181,7 +181,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.pixels": "{count} px",
   "settings.resetNoteSize": "Сбросить размер текста заметки",
   "settings.resetTo": "Сбросить до {value}",
-  "settings.spellcheck": "Проверять орфографию",
   "settings.startMode": "Режим при запуске",
   "settings.startMode.live": "Живой просмотр",
   "settings.startMode.reading": "Чтение",

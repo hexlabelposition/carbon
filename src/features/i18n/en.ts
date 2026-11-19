@@ -182,7 +182,6 @@ export const en = {
   "settings.pixels": "{count} px",
   "settings.resetNoteSize": "Reset the note text size",
   "settings.resetTo": "Reset to {value}",
-  "settings.spellcheck": "Check spelling",
   "settings.startMode": "Mode at start",
   "settings.startMode.live": "Live preview",
   "settings.startMode.reading": "Reading",

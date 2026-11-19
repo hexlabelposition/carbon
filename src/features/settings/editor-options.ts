@@ -32,14 +32,6 @@ export const indentPreference = preference<Indent>(
   oneOf(INDENTS.map((indent) => indent.value)),
 );
 
-/** Whether the WebView marks words it takes for misspelt in a note. */
-export const spellcheckPreference = preference<boolean>(
-  "carbon.editor.spellcheck",
-  false,
-  (stored) =>
-    stored === "true" ? true : stored === "false" ? false : undefined,
-);
-
 /**
  * The mode notes are in when the app starts: the one they were in when
  * it was closed, or always the same one. The modes are one switch for

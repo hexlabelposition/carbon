@@ -52,8 +52,7 @@
     ],
     "linux": {
       "deb": {
-        "section": "text",
-        "recommends": ["hunspell-en-us", "hunspell-ru"]
+        "section": "text"
       },
       "appimage": {
         "bundleMediaFramework": false

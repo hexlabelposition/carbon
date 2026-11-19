@@ -22,7 +22,6 @@ import { DELETE_TO, deleteToPreference } from "../trash/delete-to";
 import {
   INDENTS,
   indentPreference,
-  spellcheckPreference,
   START_MODES,
   startModePreference,
 } from "./editor-options";
@@ -136,7 +135,7 @@ export function Settings() {
   /** The group shown: the last one, while the app runs. */
   const [group, setGroup] = useState<SettingsGroup>("general");
 
-  // The language of the page: hyphenation and spelling follow it.
+  // The language of the page: hyphenation follows it.
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -393,12 +392,11 @@ function NoteSettings() {
   );
 }
 
-/** How the editor behaves: the mode to start in, Tab, spell checking. */
+/** How the editor behaves: the mode to start in, Tab. */
 function EditorSettings() {
   const t = useT();
   const startMode = startModePreference.use();
   const indent = indentPreference.use();
-  const spellcheck = spellcheckPreference.use();
   return (
     <Rows>
       <Row label={t("settings.startMode")}>
@@ -421,13 +419,6 @@ function EditorSettings() {
             label: t(label),
           }))}
           onChange={indentPreference.set}
-        />
-      </Row>
-      <Row label={t("settings.spellcheck")}>
-        <SettingSwitch
-          label={t("settings.spellcheck")}
-          checked={spellcheck}
-          onChange={spellcheckPreference.set}
         />
       </Row>
     </Rows>

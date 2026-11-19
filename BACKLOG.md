@@ -185,7 +185,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - Export to PDF and HTML
 - Import from other apps (Notion, Evernote)
 - Vim mode
-- Spell check
+- Spell check. Tried once and taken out (ADR-027): in Linux, WebKitGTK checks spelling only once its web context is turned on from Rust (`webkit2gtk`), for the chosen languages, with the system's hunspell dictionaries (the deb package can recommend `hunspell-en-us`, `hunspell-ru`); the editor then switches the `spellcheck` attribute of CodeMirror by a setting
 - Canvas (free-form board)
 - Multiple windows and split panes
 - Browser mode: Carbon in a web browser, mainly to open vaults kept on a server; a vault in the browser's own storage when needed. Needs a web platform in place of the Tauri one (the in-memory fakes of the core tests show the shape). Also lets the interface be checked in another engine and end-to-end tests run in a browser (C-609)
