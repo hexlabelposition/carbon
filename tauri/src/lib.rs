@@ -159,7 +159,26 @@ async fn sql_batch(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
+
     tauri::Builder::default()
+        // The log file of the app, in its log folder (C-606): what went
+        // wrong, for the user to send and the developer to read. Two files
+        // of 1 MB at most, the older one renamed with its date.
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("carbon".into()),
+                    }),
+                    Target::new(TargetKind::Stdout),
+                ])
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .max_file_size(1_000_000)
+                .rotation_strategy(RotationStrategy::KeepSome(2))
+                .timezone_strategy(TimezoneStrategy::UseLocal)
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sql::Builder::default().build())

@@ -147,7 +147,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-603** (P0) App icon and branding in the app and installers
 - [x] **C-604** (P0) Packaging for Linux: AppImage, deb
 - [ ] **C-605** (P0) Use Carbon for my own notes for two weeks, fix what hurts
-- [ ] **C-606** (P0) Error handling pass: clear messages, local log file
+- [x] **C-606** (P0) Error handling pass: clear messages, local log file (ADR-032)
 - [ ] **C-607** (P1) Auto-update
 - [ ] **C-608** (P1) Windows release: installer, code signing, test pass on a real Windows machine
 - [ ] **C-609** (P1) End-to-end tests for the main flows

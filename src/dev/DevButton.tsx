@@ -14,6 +14,7 @@ import { timing } from "../features/vault/timing";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";
 import { Tooltip } from "../features/ui/Tooltip";
+import { log } from "../features/log/log";
 
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: an orange
@@ -255,7 +256,7 @@ function Startup({ status }: { status: IndexStatus | null }) {
   function copy() {
     navigator.clipboard.writeText(startupText(rows)).then(
       () => setCopied(true),
-      (reason: unknown) => console.error("Could not copy the timings", reason),
+      (reason: unknown) => log.error("Could not copy the timings", reason),
     );
   }
 

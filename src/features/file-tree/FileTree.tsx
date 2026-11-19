@@ -24,6 +24,7 @@ import { keys, useCommands } from "../commands/commands";
 import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { canBookmark, type BookmarksView } from "../bookmarks/use-bookmarks";
+import { log } from "../log/log";
 
 /**
  * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
@@ -417,7 +418,7 @@ export function FileTree({
                     menuTarget === null ? tree.root : menuTarget.path,
                   );
                   showInFileManager(path).catch((reason: unknown) =>
-                    console.error("Could not open the file manager", reason),
+                    log.error("Could not open the file manager", reason),
                   );
                 }
           }

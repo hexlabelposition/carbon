@@ -44,6 +44,7 @@ import {
   useGraphLayout,
   type IndexedGraph,
 } from "./use-graph-layout";
+import { log } from "../log/log";
 
 /**
  * The renderer of the graph: sigma.js (ADR-030); Canvas 2D takes over
@@ -236,7 +237,7 @@ function GraphCanvas({
         break;
       } catch (error) {
         container.replaceChildren();
-        console.warn("A graph renderer could not start", error);
+        log.warn("A graph renderer could not start", error);
       }
     }
     renderer.current = made;

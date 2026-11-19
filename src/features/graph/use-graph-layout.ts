@@ -5,6 +5,7 @@ import type {
   LayoutRequest,
 } from "../../workers/graph-layout-messages";
 import type { RenderedGraph } from "./graph-renderer";
+import { log } from "../log/log";
 
 /** The graph as the renderers take it, with the path of each note. */
 export interface IndexedGraph extends RenderedGraph {
@@ -99,7 +100,7 @@ export function useGraphLayout(
       worker.terminate();
     };
     worker.onerror = (event) => {
-      console.error("The graph layout failed", event.message);
+      log.error("The graph layout failed", event.message);
       worker.terminate();
     };
     const request: LayoutRequest = {

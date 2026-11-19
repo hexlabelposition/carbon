@@ -22,6 +22,7 @@ import {
   workspaceReducer,
   type Pane,
 } from "./workspace-state";
+import { log } from "../log/log";
 
 interface WorkspaceProviderProps {
   vault: Vault;
@@ -65,7 +66,8 @@ export function WorkspaceProvider({
         if (cancelled || (node && node.kind !== "folder")) return;
         dispatch({ type: "removed", path: first });
       },
-      () => {},
+      (reason: unknown) =>
+        log.warn("Could not check the note opened last", reason),
     );
     // A note deleted by another program while it is shown is handled by its
     // editor, which knows whether there are unsaved edits to rescue.

@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
+import { log } from "../log/log";
 
 /** The command that opens a random note, offered in the toolbar. */
 export const OPEN_RANDOM_NOTE = "randomNote.open";
@@ -32,7 +33,7 @@ export function useRandomNote(vault: Vault): void {
           title: t("randomNote.open"),
           run: () => {
             openRandom().catch((reason: unknown) =>
-              console.error("Could not open a random note", reason),
+              log.error("Could not open a random note", reason),
             );
           },
         },

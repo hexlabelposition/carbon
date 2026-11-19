@@ -6,6 +6,7 @@ import { TooltipProvider } from "./features/ui/Tooltip";
 import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import {
+  openLogFolder,
   pickVaultFolder,
   setInterfaceZoom,
   showInFileManager,
@@ -30,7 +31,7 @@ function App() {
           <CommandsProvider>
             <InterfaceZoom apply={setInterfaceZoom} />
             <ThemeSwitch />
-            <Settings />
+            <Settings openLogFolder={openLogFolder} />
             <DesktopShell
               frame={tauriWindow}
               showInFileManager={showInFileManager}

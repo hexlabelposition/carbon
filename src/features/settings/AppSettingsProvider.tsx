@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { AppSettingsContext, type AppSettingsState } from "./app-settings";
+import { log } from "../log/log";
 
 interface AppSettingsProviderProps {
   store: SettingsStore;
@@ -29,7 +30,7 @@ export function AppSettingsProvider({
   // without them and saves nothing, so it cannot overwrite what is there.
   const [ready] = useState(() =>
     AppSettings.load(store).catch((reason: unknown) => {
-      console.error("Could not load the app settings", reason);
+      log.error("Could not load the app settings", reason);
       return null;
     }),
   );
@@ -59,7 +60,7 @@ export function AppSettingsProvider({
       try {
         await apply(settings);
       } catch (reason) {
-        console.error("Could not save the app settings", reason);
+        log.error("Could not save the app settings", reason);
       }
       setRecentVaults(settings.recentVaults);
     },

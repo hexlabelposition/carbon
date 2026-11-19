@@ -11,6 +11,7 @@ import { tauriWatcher } from "./watcher";
 export { pickVaultFolder } from "./dialog";
 export { appCacheFolder } from "./paths";
 export { showInFileManager } from "./opener";
+export { openLogFolder, writeLogLine } from "./log";
 export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
 export { tauriWindow } from "./window";

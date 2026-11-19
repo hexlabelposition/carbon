@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from "react";
 import { useT } from "../i18n/i18n";
 import type { ColorBy } from "./node-style";
 import type { GraphFilters } from "./use-graph-data";
+import { log } from "../log/log";
 
 /** How long typing in the tag field pauses before the graph follows, ms. */
 const TAG_DELAY_MS = 300;
@@ -34,7 +35,7 @@ export function GraphFilterBar({
         if (current) setTags(all.map((count) => count.tag));
       },
       // Without the list the field still takes a tag typed in.
-      () => {},
+      (reason: unknown) => log.warn("Could not list the tags", reason),
     );
     return () => {
       current = false;

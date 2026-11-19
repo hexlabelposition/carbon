@@ -68,6 +68,7 @@ import {
   wheelTextSizePreference,
 } from "./note-style";
 import { Tooltip } from "../ui/Tooltip";
+import { log } from "../log/log";
 
 /** Opens the settings dialog; another dialog open closes. */
 export function openSettings(): void {
@@ -142,8 +143,13 @@ const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
  * The settings of the app: applies the note settings and the language
  * and shows the dialog while it is open. Mount it once, inside the
  * commands provider. What opens it is `SettingsOpener`, mounted apart.
+ * `openLogFolder` shows where the log file is (C-606).
  */
-export function Settings() {
+export function Settings({
+  openLogFolder,
+}: {
+  openLogFolder?: () => Promise<void>;
+}) {
   useNoteStyle();
   useFonts();
   const t = useT();
@@ -185,9 +191,24 @@ export function Settings() {
           {t("settings.title")}
         </Dialog.Title>
         <GroupTabs current={group} onShow={setGroup} />
-        <p className="mt-auto px-2.5 pb-1 text-small text-faint">
-          {t("settings.version", { version: __CARBON_VERSION__ })}
-        </p>
+        <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
+          {openLogFolder !== undefined && (
+            <button
+              type="button"
+              className="-mx-1 rounded-sm px-1 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+              onClick={() => {
+                openLogFolder().catch((reason: unknown) =>
+                  log.error("Could not open the log folder", reason),
+                );
+              }}
+            >
+              {t("logs.open")}
+            </button>
+          )}
+          <p className="text-faint">
+            {t("settings.version", { version: __CARBON_VERSION__ })}
+          </p>
+        </div>
       </nav>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">

@@ -11,6 +11,7 @@ import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
 import { Tooltip } from "../../features/ui/Tooltip";
 import { isRecordingShortcut } from "../../features/shortcuts/shortcuts";
+import { log } from "../../features/log/log";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -59,7 +60,8 @@ function useWindowState(frame: WindowFrame): WindowState {
           );
         },
         // Unknown: keep what is known.
-        () => {},
+        (reason: unknown) =>
+          log.warn("Could not read the state of the window", reason),
       );
     };
     check();
@@ -68,7 +70,8 @@ function useWindowState(frame: WindowFrame): WindowState {
         if (current) stop = unlisten;
         else unlisten();
       },
-      () => {},
+      (reason: unknown) =>
+        log.warn("Could not follow the size of the window", reason),
     );
     return () => {
       current = false;
@@ -116,7 +119,7 @@ export function useWindowShape(frame: WindowFrame): void {
       frame
         .setBackground(color)
         .catch((reason: unknown) =>
-          console.error("Could not paint the window background", reason),
+          log.error("Could not paint the window background", reason),
         );
     };
     paint();
@@ -176,7 +179,7 @@ function toggleFullscreen(frame: WindowFrame): void {
   frame
     .toggleFullscreen()
     .catch((reason: unknown) =>
-      console.error("Could not switch full screen", reason),
+      log.error("Could not switch full screen", reason),
     );
 }
 
@@ -243,7 +246,7 @@ export function WindowControls({
 
   const act = (action: () => Promise<void>) => () => {
     action().catch((reason: unknown) =>
-      console.error("The window did not do it", reason),
+      log.error("The window did not do it", reason),
     );
   };
 
