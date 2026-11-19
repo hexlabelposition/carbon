@@ -68,6 +68,7 @@ import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useTabFocusGuard } from "./use-tab-focus-guard";
 import { useReadyToShow } from "./use-ready-to-show";
+import { useAnyDialogOpen } from "../../features/dialogs/AppDialog";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
@@ -166,11 +167,14 @@ export function DesktopShell({
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
+  // While a dialog is open the panels stay as they are: their buttons and
+  // keys wait, the window buttons do not.
+  const dialogOpen = useAnyDialogOpen();
   const sidebarView = useSidebarView();
   const { show: showSidebarView } = sidebarView;
   const { toggleView: toggleRightView } = rightPanel;
   usePanelShortcuts(
-    vault !== null && !showDev,
+    vault !== null && !showDev && !dialogOpen,
     toggleSidebar,
     toggleRightPanel,
     toggleToolbar,
@@ -280,6 +284,7 @@ export function DesktopShell({
       <AppMark />
       <WindowControls
         frame={frame}
+        panelsInert={dialogOpen}
         panels={
           vault !== null && !showDev ? (
             <>

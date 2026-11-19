@@ -208,9 +208,12 @@ export function controlsRoomFraction(): number {
 export function WindowControls({
   frame,
   panels,
+  panelsInert = false,
 }: {
   frame: WindowFrame;
   panels?: ReactNode;
+  /** The panel buttons wait, as while a dialog is open. */
+  panelsInert?: boolean;
 }) {
   const t = useT();
   const { maximized, fullscreen } = useWindowState(frame);
@@ -252,6 +255,7 @@ export function WindowControls({
         // before it, and from the buttons of the window after it. Over the
         // whole screen those fold away, and the line after them fades.
         <div
+          inert={panelsInert}
           className={`flex border-x border-l-line px-1.5 transition-colors duration-200 ease-out motion-reduce:transition-none ${
             fullscreen ? "border-r-transparent" : "border-r-line"
           }`}
