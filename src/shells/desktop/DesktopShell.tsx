@@ -67,6 +67,7 @@ import { panelWidth, Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useTabFocusGuard } from "./use-tab-focus-guard";
+import { useReadyToShow } from "./use-ready-to-show";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
@@ -159,6 +160,9 @@ export function DesktopShell({
   useFileDropGuard();
   useContextMenuGuard();
   useTabFocusGuard();
+  // Nothing shows while the vault left open is opened again: then the
+  // interface fades in whole.
+  const shown = useReadyToShow(!restoring);
   const [devOpen, setDevOpen] = useState(false);
 
   const showDev = devOpen && DevPanel !== null;
@@ -266,7 +270,13 @@ export function DesktopShell({
   );
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg">
+    // The background stays: the window is transparent, it would show the
+    // desktop. What stands on it fades in.
+    <div
+      className={`flex h-dvh flex-col overflow-hidden bg-bg text-ui text-fg *:transition-opacity *:duration-200 *:ease-out motion-reduce:*:transition-none ${
+        shown ? "" : "*:opacity-0"
+      }`}
+    >
       <AppMark />
       <WindowControls
         frame={frame}
