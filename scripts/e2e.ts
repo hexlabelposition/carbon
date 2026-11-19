@@ -53,7 +53,7 @@ function driverPath(): string {
   const cargo = join(homedir(), ".cargo", "bin", "tauri-driver");
   if (existsSync(cargo)) return cargo;
   throw new Error(
-    "tauri-driver is missing: `cargo install tauri-driver --locked`, and WebKitWebDriver (webkit2gtk-driver)",
+    "tauri-driver is missing: `cargo install tauri-driver --locked`, and WebKitWebDriver (webkitgtk-webdriver, or webkit2gtk-driver before Ubuntu 26.04)",
   );
 }
 
