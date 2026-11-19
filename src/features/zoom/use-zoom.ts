@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { preference } from "../settings/preference";
@@ -33,15 +33,28 @@ const reset = () => zoomPreference.set(1);
  * Cmd takes the place of Ctrl. The keys are found by their place too, so
  * any keyboard layout works, and so does the number pad. The palette has
  * the same as commands, and the settings a choice of the levels.
+ * `onFirstApplied` is called once the zoom remembered is applied, or
+ * failed to be: before that the page would be drawn at 100% and then
+ * scaled, a jump the eye catches.
  */
-export function useZoom(apply: (scale: number) => Promise<void>): void {
+export function useZoom(
+  apply: (scale: number) => Promise<void>,
+  onFirstApplied?: () => void,
+): void {
   const t = useT();
   const scale = zoomPreference.use();
+  const first = useRef(onFirstApplied);
 
   useEffect(() => {
-    apply(scale).catch((reason: unknown) =>
-      console.error("Could not zoom the interface", reason),
-    );
+    apply(scale)
+      .catch((reason: unknown) =>
+        console.error("Could not zoom the interface", reason),
+      )
+      .finally(() => {
+        // Once only, and even when zooming failed: the app has to show.
+        first.current?.();
+        first.current = undefined;
+      });
   }, [apply, scale]);
 
   useEffect(() => {

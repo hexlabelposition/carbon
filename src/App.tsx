@@ -19,6 +19,18 @@ import { createWorkerParser } from "./workers/worker-parser";
 const platform = { ...tauriPlatform, parser: createWorkerParser() };
 
 /**
+ * The window starts hidden and shows once the interface has its zoom, so
+ * the first frame is not drawn at 100% and then scaled.
+ */
+function showWindow() {
+  tauriWindow
+    .show()
+    .catch((reason: unknown) =>
+      console.error("Could not show the window", reason),
+    );
+}
+
+/**
  * Wires the platform into the features and picks the shell. There is one
  * shell for now (ARCHITECTURE.md, section 8).
  */
@@ -28,7 +40,10 @@ function App() {
       <AppSettingsProvider store={tauriPlatform.settings}>
         <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
           <CommandsProvider>
-            <InterfaceZoom apply={setInterfaceZoom} />
+            <InterfaceZoom
+              apply={setInterfaceZoom}
+              onFirstApplied={showWindow}
+            />
             <ThemeSwitch />
             <Settings />
             <DesktopShell

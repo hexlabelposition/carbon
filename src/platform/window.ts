@@ -11,6 +11,12 @@ export const tauriWindow = {
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
   close: () => getCurrentWindow().close(),
+  /**
+   * Shows the window, which starts hidden (`visible: false` in
+   * `tauri.conf.json`) so that its first frame is drawn at its size and
+   * zoom.
+   */
+  show: () => getCurrentWindow().show(),
   isMaximized: () => getCurrentWindow().isMaximized(),
   isFullscreen: () => getCurrentWindow().isFullscreen(),
   /** Fills the whole screen, without the panels of the desktop, or back. */
