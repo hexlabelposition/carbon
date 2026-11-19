@@ -59,7 +59,12 @@ export function VaultMenu() {
           collisionPadding={8}
           className="z-50 outline-none"
         >
-          <Menu.Popup className="w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none">
+          <Menu.Popup
+            // Not back to the button: closed by Escape, base-ui would draw
+            // its focus ring on it.
+            finalFocus={false}
+            className="w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+          >
             <div className="flex flex-col gap-0.5 px-2 pt-1.5 pb-2">
               <span className="truncate font-semibold">{name}</span>
               <span className="truncate text-small text-faint">
