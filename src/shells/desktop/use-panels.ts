@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { keys } from "../../features/commands/commands";
 import { shortcutLetter } from "../../features/workspace/shortcut-letter";
-import { useSidePanel } from "./use-side-panel";
 import { usePanelWidth, type PanelWidth } from "./use-sidebar";
 
 /** The keys that show or hide the panels, as the user reads them. */
@@ -29,20 +28,18 @@ const VIEW_KEY = "carbon.desktop.rightPanel.view";
 /**
  * The panel at the right of the note, which shows its outline, the notes
  * that link to it or the graph around it, one at a time, as the left panel shows files or search.
- * Whether it is open, what it shows and how wide it is are remembered
- * between app starts.
+ * It is shut at every app start, opening it is up to the user; what it
+ * shows and how wide it is are remembered between starts.
  */
 export function useRightPanel(): RightPanel {
   // Before, the outline and the backlinks were two parts switched on
-  // apart, and the panel was open while one was: start from that.
+  // apart: the view starts from the one that was on.
   const [before] = useState(() => ({
     outline: loadFlag("carbon.desktop.outline"),
     backlinks: loadFlag("carbon.desktop.backlinks"),
   }));
-  const panel = useSidePanel(
-    "carbon.desktop.rightPanel",
-    before.outline || before.backlinks,
-  );
+  const [open, set] = useState(false);
+  const toggle = useCallback(() => set((value) => !value), []);
   // About 16rem, the width it had before it could be resized, on a
   // window 1280 pixels wide.
   const width = usePanelWidth("carbon.desktop.rightPanel.width", 0.2);
@@ -58,7 +55,6 @@ export function useRightPanel(): RightPanel {
     }
   }, [view]);
 
-  const { open, set, toggle } = panel;
   const show = useCallback(
     (next: RightPanelView) => {
       setView(next);
