@@ -84,9 +84,6 @@ import {
   type ToolbarItem,
 } from "./Toolbar";
 import {
-  LEFT_PANEL_SHORTCUT,
-  RIGHT_PANEL_SHORTCUT,
-  TOOLBAR_SHORTCUT,
   usePanelShortcuts,
   useRightPanel,
   type RightPanel,
@@ -104,6 +101,7 @@ import {
   type WindowFrame,
 } from "./WindowControls";
 import { Tooltip } from "../../features/ui/Tooltip";
+import { useShortcutLabel } from "../../features/shortcuts/shortcuts";
 
 // Dev builds only: in a release build the condition is false at build time
 // and neither is bundled.
@@ -168,6 +166,9 @@ export function DesktopShell({
   // interface fades in whole.
   const shown = useReadyToShow(!restoring);
   const [devOpen, setDevOpen] = useState(false);
+  const leftShortcut = useShortcutLabel("shell.sidebar");
+  const rightShortcut = useShortcutLabel("shell.rightPanel");
+  const toolbarShortcut = useShortcutLabel("shell.toolbar");
 
   const showDev = devOpen && DevPanel !== null;
   // While a dialog is open the panels stay as they are: their buttons and
@@ -190,19 +191,19 @@ export function DesktopShell({
         {
           id: "shell.sidebar",
           title: t("shell.toggleLeftPanel"),
-          shortcut: LEFT_PANEL_SHORTCUT,
+          shortcut: leftShortcut,
           run: toggleSidebar,
         },
         {
           id: "shell.rightPanel",
           title: t("shell.toggleRightPanel"),
-          shortcut: RIGHT_PANEL_SHORTCUT,
+          shortcut: rightShortcut,
           run: toggleRightPanel,
         },
         {
           id: "shell.toolbar",
           title: t("shell.toggleToolbar"),
-          shortcut: TOOLBAR_SHORTCUT,
+          shortcut: toolbarShortcut,
           run: toggleToolbar,
         },
         {
@@ -273,6 +274,9 @@ export function DesktopShell({
       revealSidebar,
       showSidebarView,
       close,
+      leftShortcut,
+      rightShortcut,
+      toolbarShortcut,
     ]),
   );
 
@@ -305,19 +309,19 @@ export function DesktopShell({
               <PanelToggle
                 side="toolbar"
                 open={toolbar.open}
-                shortcut={TOOLBAR_SHORTCUT}
+                shortcut={toolbarShortcut}
                 onToggle={toggleToolbar}
               />
               <PanelToggle
                 side="left"
                 open={!sidebar.collapsed}
-                shortcut={LEFT_PANEL_SHORTCUT}
+                shortcut={leftShortcut}
                 onToggle={toggleSidebar}
               />
               <PanelToggle
                 side="right"
                 open={rightPanel.open}
-                shortcut={RIGHT_PANEL_SHORTCUT}
+                shortcut={rightShortcut}
                 onToggle={toggleRightPanel}
               />
             </>

@@ -152,7 +152,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [ ] **C-608** (P1) Windows release: installer, code signing, test pass on a real Windows machine
 - [ ] **C-609** (P1) End-to-end tests for the main flows
 - [ ] **C-610** (P1) Landing page and short user guide
-- [ ] **C-611** (P2) Configurable keyboard shortcuts
+- [x] **C-611** (P2) Configurable keyboard shortcuts: the base ones, in the settings; keys two actions share are marked red. History, tabs, zoom and find in the note keep their keys
 - [ ] **C-612** (P2) AUR package
 - [x] **C-613** (P1) Interface in English and Russian, with a language setting (ADR-025)
 - [ ] **C-614** (P2) Errors from the core as codes, so the interface can show them in its language

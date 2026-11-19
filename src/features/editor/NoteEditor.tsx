@@ -13,7 +13,7 @@ import { useWheelTextSize } from "./use-wheel-text-size";
 import { useNoteLinks } from "./use-note-links";
 import { useNoteTags } from "./use-note-tags";
 import { useNoteTitle } from "./use-note-title";
-import { SOURCE_MODE_SHORTCUT } from "./use-source-mode";
+import { useShortcutLabel } from "../shortcuts/shortcuts";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
@@ -53,6 +53,7 @@ export function NoteEditor({
   active = false,
 }: NoteEditorProps) {
   const t = useT();
+  const sourceModeShortcut = useShortcutLabel("editor.sourceMode");
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
@@ -102,7 +103,7 @@ export function NoteEditor({
         <ModeButton
           label={t("editor.source")}
           hint={t("editor.sourceHint")}
-          shortcut={SOURCE_MODE_SHORTCUT}
+          shortcut={sourceModeShortcut}
           pressed={sourceMode}
           onToggle={onToggleSourceMode}
         >

@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { keys, useCommands, type Command } from "../commands/commands";
+import { useCommands, type Command } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "./workspace";
-import { shortcutLetter } from "./shortcut-letter";
+import {
+  isRecordingShortcut,
+  matchesShortcut,
+  useShortcutLabel,
+} from "../shortcuts/shortcuts";
 
 /**
  * Keys and mouse buttons that work anywhere in the workspace, and the
  * same actions as commands of the palette:
  *
  * - Alt+Left / Alt+Right, and the back / forward mouse buttons: history
- * - Ctrl+W: close the tab
+ * - Ctrl+W, or the keys the settings give it: close the tab
  * - Ctrl+Tab / Ctrl+Shift+Tab: the next / previous tab
  *
  * On a Mac, Cmd takes the place of Ctrl for closing a tab. The palette
@@ -17,6 +21,7 @@ import { shortcutLetter } from "./shortcut-letter";
  */
 export function useWorkspaceShortcuts(): void {
   const t = useT();
+  const closeTabShortcut = useShortcutLabel("workspace.closeTab");
   const {
     path,
     tabs,
@@ -44,13 +49,13 @@ export function useWorkspaceShortcuts(): void {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (isRecordingShortcut()) return;
       const command = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
-      if (event.altKey && !command && key === "arrowleft") back();
+      if (matchesShortcut(event, "workspace.closeTab")) closeActiveTab();
+      else if (event.altKey && !command && key === "arrowleft") back();
       else if (event.altKey && !command && key === "arrowright") forward();
-      else if (command && !event.altKey && shortcutLetter(event) === "w") {
-        closeActiveTab();
-      } else if (event.ctrlKey && key === "tab") {
+      else if (event.ctrlKey && key === "tab") {
         stepTab(event.shiftKey ? -1 : 1);
       } else return;
       // The editor has uses of its own for some of these keys.
@@ -96,7 +101,7 @@ export function useWorkspaceShortcuts(): void {
         {
           id: "workspace.closeTab",
           title: t("workspace.closeTab"),
-          shortcut: keys("Mod+W"),
+          shortcut: closeTabShortcut,
           run: closeActiveTab,
         },
         {
@@ -121,6 +126,16 @@ export function useWorkspaceShortcuts(): void {
               },
             ]),
       ];
-    }, [t, path, activeTabId, back, forward, closeActiveTab, stepTab, open]),
+    }, [
+      t,
+      path,
+      activeTabId,
+      back,
+      forward,
+      closeActiveTab,
+      stepTab,
+      open,
+      closeTabShortcut,
+    ]),
   );
 }

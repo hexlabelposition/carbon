@@ -1,11 +1,11 @@
 import type { NotePath, TitleHit, Vault } from "@carbon/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { keys, useCommands } from "../commands/commands";
+import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
 import { useDialog } from "../dialogs/open-dialog";
-import { shortcutLetter } from "../workspace/shortcut-letter";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 import { newNotePath } from "../new-note/new-note-path";
 
 export interface QuickSwitcher {
@@ -39,6 +39,7 @@ export interface QuickSwitcher {
 export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   const t = useT();
   const [isOpen, setOpen] = useDialog("switcher");
+  const shortcut = useShortcutLabel("switcher.open");
   const [query, setQueryState] = useState("");
   const [answer, setAnswer] = useState<{
     query: string;
@@ -80,19 +81,17 @@ export function useQuickSwitcher(vault: Vault): QuickSwitcher {
         {
           id: "switcher.open",
           title: t("switcher.open"),
-          shortcut: keys("Mod+O"),
+          shortcut,
           run: show,
         },
       ],
-      [t, show],
+      [t, show, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (shortcutLetter(event) !== "o") return;
+      if (!matchesShortcut(event, "switcher.open")) return;
       show();
       // Not the browser's "open file", nor the editor's use of the key.
       event.preventDefault();

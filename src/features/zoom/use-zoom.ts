@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { preference } from "../settings/preference";
+import { isRecordingShortcut } from "../shortcuts/shortcuts";
 
 /**
  * The zoom levels, three on each side of 1, which is 100%. Past these ends
@@ -47,7 +48,7 @@ export function useZoom(apply: (scale: number) => Promise<void>): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const command = event.ctrlKey || event.metaKey;
-      if (!command || event.altKey) return;
+      if (!command || event.altKey || isRecordingShortcut()) return;
       const { key, code } = event;
       if (
         key === "+" ||

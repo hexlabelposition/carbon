@@ -8,7 +8,8 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
-import { keys, useCommands } from "../commands/commands";
+import { isMac, keys, useCommands } from "../commands/commands";
+import { Shortcut } from "../commands/Shortcut";
 import {
   LANGUAGE_SETTINGS,
   languagePreference,
@@ -27,7 +28,21 @@ import {
 } from "./editor-options";
 import { AppDialog } from "../dialogs/AppDialog";
 import { openDialog, useDialog } from "../dialogs/open-dialog";
-import { shortcutLetter } from "../workspace/shortcut-letter";
+import { bindingOf, canBind } from "../shortcuts/keymap";
+import {
+  SHORTCUTS,
+  isDefault,
+  isReserved,
+  matchesShortcut,
+  resetAllBindings,
+  setBinding,
+  setRecordingShortcut,
+  useAnyChanged,
+  useConflicts,
+  useBinding,
+  useShortcutLabel,
+  type ShortcutId,
+} from "../shortcuts/shortcuts";
 import { ZOOM_LEVELS, zoomPreference } from "../zoom/use-zoom";
 import {
   availableFonts,
@@ -60,12 +75,14 @@ export function openSettings(): void {
 }
 
 /**
- * Offers "Open settings" (Ctrl+, or Cmd+, on a Mac) while it is mounted.
+ * Offers "Open settings" (Ctrl+, or Cmd+, on a Mac by default) while it
+ * is mounted.
  * The shell mounts it only where the settings may open: not on the start
  * screen, where a vault is opened or made.
  */
 export function SettingsOpener() {
   const t = useT();
+  const shortcut = useShortcutLabel("settings.open");
 
   useCommands(
     useMemo(
@@ -73,19 +90,17 @@ export function SettingsOpener() {
         {
           id: "settings.open",
           title: t("settings.open"),
-          shortcut: keys("Mod+,"),
+          shortcut,
           run: openSettings,
         },
       ],
-      [t],
+      [t, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (event.code !== "Comma" && shortcutLetter(event) !== ",") return;
+      if (!matchesShortcut(event, "settings.open")) return;
       event.preventDefault();
       event.stopPropagation();
       openSettings();
@@ -111,7 +126,8 @@ const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
 };
 
 /** The groups of settings, listed at the left of the dialog. */
-type SettingsGroup = "general" | "appearance" | "fonts" | "notes" | "editor";
+type SettingsGroup =
+  "general" | "appearance" | "fonts" | "notes" | "editor" | "shortcuts";
 
 const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
   { group: "general", label: "settings.general" },
@@ -119,6 +135,7 @@ const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
   { group: "fonts", label: "settings.fonts" },
   { group: "notes", label: "settings.notes" },
   { group: "editor", label: "settings.editor" },
+  { group: "shortcuts", label: "settings.shortcuts" },
 ];
 
 /**
@@ -210,6 +227,7 @@ export function Settings() {
           {group === "fonts" && <FontSettings />}
           {group === "notes" && <NoteSettings />}
           {group === "editor" && <EditorSettings />}
+          {group === "shortcuts" && <ShortcutSettings />}
         </div>
       </div>
     </AppDialog>
@@ -482,6 +500,159 @@ function FontSettings() {
 }
 
 /** The settings of a group, one row each. */
+/**
+ * The shortcuts the user can change: a click on the keys of one, then the
+ * keys to give it. Keys another shortcut has too are marked red on both;
+ * keys the app keeps for itself, or without Ctrl, Cmd or Alt, are not
+ * taken.
+ */
+function ShortcutSettings() {
+  const t = useT();
+  const [recording, setRecording] = useState<ShortcutId | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const changed = useAnyChanged();
+  const conflicts = useConflicts();
+
+  // While keys are recorded no shortcut runs, not even Escape of the dialog.
+  useEffect(() => {
+    if (recording === null) return;
+    setRecordingShortcut(true);
+    function onKeyDown(event: KeyboardEvent) {
+      if (recording === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const plain =
+        !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+      if (plain && event.key === "Escape") {
+        setRecording(null);
+        return;
+      }
+      if (plain && (event.key === "Backspace" || event.key === "Delete")) {
+        setBinding(recording, null);
+        setNotice(null);
+        setRecording(null);
+        return;
+      }
+      const binding = bindingOf(event, isMac);
+      // A modifier alone: the rest of the keys are still to come.
+      if (binding === null) return;
+      if (!canBind(binding)) {
+        setNotice(t("settings.shortcuts.needModifier"));
+        return;
+      }
+      if (isReserved(binding)) {
+        setNotice(t("settings.shortcuts.reserved", { keys: keys(binding) }));
+        return;
+      }
+      setBinding(recording, binding);
+      setNotice(null);
+      setRecording(null);
+    }
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      setRecordingShortcut(false);
+    };
+  }, [recording, t]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-small text-faint">{t("settings.shortcuts.hint")}</p>
+      <Rows>
+        {SHORTCUTS.map(({ id, label }) => (
+          <ShortcutRow
+            key={id}
+            id={id}
+            label={t(label)}
+            recording={recording === id}
+            conflict={conflicts.has(id)}
+            onRecord={(on) => {
+              setNotice(null);
+              setRecording(on ? id : null);
+            }}
+          />
+        ))}
+      </Rows>
+      <div className="flex min-h-7 items-center justify-between gap-4">
+        <p
+          role="status"
+          className={`text-small ${
+            notice === null && conflicts.size > 0 ? "text-danger" : "text-muted"
+          }`}
+        >
+          {notice ??
+            (conflicts.size > 0 ? t("settings.shortcuts.conflict") : null)}
+        </p>
+        <button
+          type="button"
+          disabled={!changed}
+          className="h-7 shrink-0 rounded-md border border-line-strong bg-panel px-2.5 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong disabled:text-faint disabled:hover:bg-panel"
+          onClick={() => {
+            resetAllBindings();
+            setNotice(null);
+          }}
+        >
+          {t("settings.shortcuts.resetAll")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** One shortcut: its keys, to click and record anew, and a reset. */
+function ShortcutRow({
+  id,
+  label,
+  recording,
+  conflict,
+  onRecord,
+}: {
+  id: ShortcutId;
+  label: string;
+  recording: boolean;
+  /** Another shortcut has the same keys. */
+  conflict: boolean;
+  onRecord: (on: boolean) => void;
+}) {
+  const t = useT();
+  const binding = useBinding(id);
+  const fallback = SHORTCUTS.find((s) => s.id === id)?.fallback ?? "";
+  return (
+    <Row label={label}>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label={`${label}: ${
+            binding === null ? t("settings.shortcuts.none") : keys(binding)
+          }`}
+          aria-pressed={recording}
+          aria-invalid={conflict && !recording}
+          // No frame of its own: the keys in their boxes are the button,
+          // at the right edge; only a soft ground shows it on a hover.
+          className="flex h-7 items-center justify-end rounded-md px-1.5 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong aria-pressed:bg-raise"
+          onClick={() => onRecord(!recording)}
+          onBlur={() => {
+            if (recording) onRecord(false);
+          }}
+        >
+          {recording ? (
+            <span className="text-muted">{t("settings.shortcuts.record")}</span>
+          ) : binding === null ? (
+            <span className="text-faint">{t("settings.shortcuts.none")}</span>
+          ) : (
+            <Shortcut text={keys(binding)} danger={conflict} />
+          )}
+        </button>
+        <ResetButton
+          label={t("settings.resetTo", { value: keys(fallback) })}
+          disabled={isDefault(id, binding)}
+          onReset={() => setBinding(id, fallback)}
+        />
+      </div>
+    </Row>
+  );
+}
+
 function Rows({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-1">{children}</div>;
 }

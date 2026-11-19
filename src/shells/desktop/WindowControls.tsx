@@ -10,6 +10,7 @@ import { useCommands } from "../../features/commands/commands";
 import { useT } from "../../features/i18n/i18n";
 import { APP_MARK_ROOM } from "./AppMark";
 import { Tooltip } from "../../features/ui/Tooltip";
+import { isRecordingShortcut } from "../../features/shortcuts/shortcuts";
 
 /** The window, as the title bar acts on it. */
 export interface WindowFrame {
@@ -159,6 +160,7 @@ export function useFullscreenShortcut(frame: WindowFrame): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "F11" || event.ctrlKey || event.altKey) return;
+      if (isRecordingShortcut()) return;
       if (event.metaKey || event.shiftKey) return;
       event.preventDefault();
       event.stopPropagation();

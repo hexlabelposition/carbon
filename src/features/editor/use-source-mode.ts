@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { keys, useCommands } from "../commands/commands";
+import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { startModePreference } from "../settings/editor-options";
-import { shortcutLetter } from "../workspace/shortcut-letter";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 
 const STORAGE_KEY = "carbon.editor.sourceMode";
-
-const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent);
-
-/** The keys that switch source mode, as the user reads them. */
-export const SOURCE_MODE_SHORTCUT = isMac ? "Cmd+E" : "Ctrl+E";
 
 export interface SourceMode {
   /** True: notes show their raw Markdown, without live preview. */
@@ -20,12 +15,13 @@ export interface SourceMode {
 /**
  * Whether notes are shown as raw Markdown. One switch for every note, so
  * a tab that is opened looks like the one before it. Remembered between
- * app starts, unless the settings choose the mode to start in. Ctrl+E, or
- * Cmd+E on a Mac, switches it.
+ * app starts, unless the settings choose the mode to start in. Its
+ * shortcut, Ctrl+E (Cmd+E on a Mac) by default, switches it.
  */
 export function useSourceMode(): SourceMode {
   const t = useT();
   const [on, setOn] = useState(load);
+  const shortcut = useShortcutLabel("editor.sourceMode");
 
   useEffect(() => {
     try {
@@ -42,21 +38,17 @@ export function useSourceMode(): SourceMode {
         {
           id: "editor.sourceMode",
           title: t("editor.toggleSource"),
-          shortcut: keys("Mod+E"),
+          shortcut,
           run: toggle,
         },
       ],
-      [t, toggle],
+      [t, toggle, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = isMac
-        ? event.metaKey && !event.ctrlKey
-        : event.ctrlKey && !event.metaKey;
-      if (!command || event.altKey || event.shiftKey) return;
-      if (shortcutLetter(event) !== "e") return;
+      if (!matchesShortcut(event, "editor.sourceMode")) return;
       event.preventDefault();
       event.stopPropagation();
       toggle();

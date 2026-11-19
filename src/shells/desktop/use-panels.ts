@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { keys } from "../../features/commands/commands";
-import { shortcutLetter } from "../../features/workspace/shortcut-letter";
+import { matchesShortcut } from "../../features/shortcuts/shortcuts";
 import { usePanelWidth, type PanelWidth } from "./use-sidebar";
-
-/** The keys that show or hide the panels, as the user reads them. */
-export const LEFT_PANEL_SHORTCUT = keys("Mod+B");
-export const RIGHT_PANEL_SHORTCUT = keys("Mod+Alt+B");
-export const TOOLBAR_SHORTCUT = keys("Mod+`");
 
 /** What the right panel shows. */
 export type RightPanelView = "outline" | "backlinks" | "graph";
@@ -93,9 +87,9 @@ function loadView(fallback: RightPanelView): RightPanelView {
 }
 
 /**
- * Ctrl+B shows or hides the left panel, Ctrl+Alt+B the right one, Ctrl+`
- * the toolbar; on a Mac Cmd takes the place of Ctrl. Only while `enabled`:
- * the panels belong to an open vault.
+ * The shortcuts that show or hide the panels: by default Ctrl+B the left
+ * one, Ctrl+Alt+B the right one, Ctrl+` the toolbar, Cmd in place of Ctrl
+ * on a Mac. Only while `enabled`: the panels belong to an open vault.
  */
 export function usePanelShortcuts(
   enabled: boolean,
@@ -106,20 +100,12 @@ export function usePanelShortcuts(
   useEffect(() => {
     if (!enabled) return;
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey) return;
-      // The key left of 1, by its place: on a Russian layout it types "ё".
-      if (event.code === "Backquote" && !event.altKey) {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleToolbar();
-        return;
-      }
-      if (shortcutLetter(event) !== "b") return;
+      if (matchesShortcut(event, "shell.toolbar")) toggleToolbar();
+      else if (matchesShortcut(event, "shell.sidebar")) toggleLeft();
+      else if (matchesShortcut(event, "shell.rightPanel")) toggleRight();
+      else return;
       event.preventDefault();
       event.stopPropagation();
-      if (event.altKey) toggleRight();
-      else toggleLeft();
     }
     // Capture: the shortcut is taken before the focused element sees it.
     window.addEventListener("keydown", onKeyDown, true);

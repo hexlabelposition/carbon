@@ -21,8 +21,8 @@ interface PanelToggleProps {
   /** The panel at the left or the right, or the toolbar at the left edge. */
   side: "left" | "right" | "toolbar";
   open: boolean;
-  /** The keys that do the same, as the user reads them. */
-  shortcut: string;
+  /** The keys that do the same, as the user reads them, if any. */
+  shortcut?: string;
   onToggle: () => void;
 }
 

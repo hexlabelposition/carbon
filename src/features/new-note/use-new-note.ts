@@ -1,10 +1,10 @@
 import type { NotePath, Vault } from "@carbon/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { keys, useCommands } from "../commands/commands";
+import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { useDialog } from "../dialogs/open-dialog";
-import { shortcutLetter } from "../workspace/shortcut-letter";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 import { newNotePath } from "./new-note-path";
 
 export interface NewNote {
@@ -32,6 +32,7 @@ export function useNewNote(vault: Vault): NewNote {
   const t = useT();
   const { open } = useWorkspace();
   const [isOpen, setOpen] = useDialog("newNote");
+  const shortcut = useShortcutLabel("note.new");
   const [name, setNameState] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,19 +59,17 @@ export function useNewNote(vault: Vault): NewNote {
         {
           id: NEW_NOTE,
           title: t("tree.newNote"),
-          shortcut: keys("Mod+N"),
+          shortcut,
           run: show,
         },
       ],
-      [t, show],
+      [t, show, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (shortcutLetter(event) !== "n") return;
+      if (!matchesShortcut(event, "note.new")) return;
       show();
       // Not the browser's "new window", nor the editor's use of the key.
       event.preventDefault();

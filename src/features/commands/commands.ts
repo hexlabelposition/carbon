@@ -76,7 +76,8 @@ export function useCommandList(): readonly Command[] {
   return useSyncExternalStore(registry.subscribe, registry.list);
 }
 
-const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent);
+/** Whether the app runs on a Mac, where Cmd takes the place of Ctrl. */
+export const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 /**
  * Keys as the user reads them: "Mod" is Ctrl, or Cmd on a Mac, so

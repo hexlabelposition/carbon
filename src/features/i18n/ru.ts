@@ -181,6 +181,16 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.pixels": "{count} px",
   "settings.resetNoteSize": "Сбросить размер текста заметки",
   "settings.resetTo": "Сбросить до {value}",
+  "settings.shortcuts": "Сочетания клавиш",
+  "settings.shortcuts.conflict":
+    "Красным отмечены клавиши, заданные нескольким действиям",
+  "settings.shortcuts.hint":
+    "Нажмите на сочетание действия, затем новые клавиши. Esc отменяет, Backspace оставляет действие без клавиш.",
+  "settings.shortcuts.needModifier": "Добавьте к клавише Ctrl или Alt",
+  "settings.shortcuts.none": "Не задано",
+  "settings.shortcuts.record": "Нажмите клавиши…",
+  "settings.shortcuts.reserved": "{keys} уже занято в приложении",
+  "settings.shortcuts.resetAll": "Сбросить все",
   "settings.startMode": "Режим при запуске",
   "settings.startMode.live": "Живой просмотр",
   "settings.startMode.reading": "Чтение",

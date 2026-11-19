@@ -1,10 +1,10 @@
 import type { SearchHit, Vault } from "@carbon/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { keys, useCommands } from "../commands/commands";
+import { useCommands } from "../commands/commands";
 import { useDialog } from "../dialogs/open-dialog";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
-import { shortcutLetter } from "../workspace/shortcut-letter";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 
 /** The command that opens the search dialog, offered in the toolbar. */
 export const OPEN_SEARCH = "search.open";
@@ -63,6 +63,7 @@ const SEARCH_DELAY_MS = 120;
 export function useSearch(vault: Vault): Search {
   const t = useT();
   const [isOpen, setOpen] = useDialog("search");
+  const shortcut = useShortcutLabel(OPEN_SEARCH);
   const [openCount, setOpenCount] = useState(0);
   const [query, setQueryState] = useState("");
   const [selected, select] = useState(0);
@@ -82,19 +83,17 @@ export function useSearch(vault: Vault): Search {
         {
           id: OPEN_SEARCH,
           title: t("shell.searchAll"),
-          shortcut: keys("Mod+Shift+F"),
+          shortcut,
           run: show,
         },
       ],
-      [t, show],
+      [t, show, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || !event.shiftKey || event.altKey) return;
-      if (shortcutLetter(event) !== "f") return;
+      if (!matchesShortcut(event, "search.open")) return;
       show();
       // The editor has uses of its own for some keys.
       event.preventDefault();

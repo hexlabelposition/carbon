@@ -3,8 +3,8 @@ import fuzzysort from "fuzzysort";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "../i18n/i18n";
 import { useDialog } from "../dialogs/open-dialog";
-import { shortcutLetter } from "../workspace/shortcut-letter";
-import { keys, useCommandList, useCommands, type Command } from "./commands";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
+import { useCommandList, useCommands, type Command } from "./commands";
 
 /** The command that opens the palette, offered elsewhere, not in it. */
 export const OPEN_PALETTE = "palette.open";
@@ -40,6 +40,7 @@ export function useCommandPalette(): CommandPalette {
     [all],
   );
   const [isOpen, setOpen] = useDialog("palette");
+  const shortcut = useShortcutLabel("palette.open");
   const [query, setQueryState] = useState("");
   const [selected, select] = useState(0);
 
@@ -66,19 +67,17 @@ export function useCommandPalette(): CommandPalette {
         {
           id: OPEN_PALETTE,
           title: t("palette.open"),
-          shortcut: keys("Mod+P"),
+          shortcut,
           run: show,
         },
       ],
-      [t, show],
+      [t, show, shortcut],
     ),
   );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const command = event.ctrlKey || event.metaKey;
-      if (!command || event.shiftKey || event.altKey) return;
-      if (shortcutLetter(event) !== "p") return;
+      if (!matchesShortcut(event, "palette.open")) return;
       show();
       // Not the browser's "print", nor the editor's use of the key.
       event.preventDefault();
