@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useT } from "../i18n/i18n";
+import { CameraMotion } from "./camera-motion";
 import { canvasRenderer } from "./canvas-renderer";
 import {
   cameraToFit,
@@ -66,15 +67,17 @@ const MAX_SCALE = 8;
 const CLICK_SLOP = 4;
 /** How far from a note the pointer still picks it, in pixels. */
 const PICK_PIXELS = 8;
+/** The last moments of a drag that set the speed of a fling, in ms. */
+const FLING_MS = 80;
 
 interface GraphCanvasProps {
   data: GraphDataState;
   /** Under which the layout is kept: a graph opened again starts there. */
   layoutKey: string;
   /**
-   * What is shown, such as the filters or the note of a local graph: a
-   * graph of the same view, updated as notes change, keeps the camera
-   * where the user left it; another view is fitted. `layoutKey` if not
+   * What the camera is fitted to, such as the note of a local graph: in
+   * the same view the camera stays where it is as notes change or the
+   * settings filter them; another view is fitted. `layoutKey` if not
    * given.
    */
   viewKey?: string;
@@ -133,8 +136,12 @@ function GraphCanvas({
   const camera = useRef<Camera>({ x: 0, y: 0, scale: 1 });
   /** The scale that shows the whole graph: zoom limits are relative to it. */
   const fitScale = useRef(1);
-  /** The user moved the camera: the layout no longer fits it. */
-  const moved = useRef(false);
+  /**
+   * The camera follows the layout as it spreads: from when a view is
+   * fitted until the layout first settles, or the user moves the camera.
+   * After that, notes that come and go do not move it.
+   */
+  const following = useRef(true);
   /** The view the camera was last fitted or moved in. */
   const viewFor = useRef<string | null>(null);
   const grid = useRef<NodeGrid | null>(null);
@@ -195,8 +202,7 @@ function GraphCanvas({
     if (shown === null) return;
     shown.setPositions(positions);
     const container = stage.current;
-    // Until the user moves it, the camera follows the layout as it spreads.
-    if (!moved.current && container !== null) {
+    if (following.current && container !== null) {
       const fitted = cameraToFit(
         positions,
         container.clientWidth,
@@ -209,14 +215,22 @@ function GraphCanvas({
     }
   }, [positions, fill]);
 
+  // Once the layout has settled, the view is laid out: what comes later,
+  // such as other filters, leaves the camera where it is.
+  const settledRef = useRef(settled);
+  useEffect(() => {
+    settledRef.current = settled;
+    if (settled) following.current = false;
+  }, [settled]);
+
   // One renderer per graph, made with its first positions.
   useEffect(() => {
     const container = stage.current;
     const first = latest.current;
     if (container === null || graph === null || first === null) return;
-    // The same view, updated as notes change: the camera stays where the
-    // user left it. Another view, such as other filters, is fitted.
-    if (viewFor.current !== viewKey || !moved.current) {
+    // The same view, with notes changed or filtered: the camera stays.
+    // Another view, or the first graph of one, is fitted.
+    if (viewFor.current !== viewKey) {
       const fitted = cameraToFit(
         first,
         container.clientWidth,
@@ -225,7 +239,8 @@ function GraphCanvas({
       );
       camera.current = fitted;
       fitScale.current = fitted.scale;
-      moved.current = false;
+      // A layout kept from before is settled already: nothing to follow.
+      following.current = !settledRef.current;
     }
     viewFor.current = viewKey;
     const fitted = camera.current;
@@ -301,7 +316,8 @@ function GraphCanvas({
     renderer.current?.setHighlight({ node: hovered, nodes, edges });
   }, [graph, links, hovered, legendHover, groups, hasPositions]);
 
-  // Drag to move, wheel to zoom, click to open, hover to highlight.
+  // Drag to move, wheel to zoom, click to open, hover to highlight. The
+  // camera eases as it zooms and pans, and glides on after a fling.
   useEffect(() => {
     const container = stage.current;
     if (container === null || graph === null) return;
@@ -310,7 +326,14 @@ function GraphCanvas({
       y: number;
       camera: Camera;
       dragged: boolean;
+      /** Where the pointer was lately, for the speed of a fling. */
+      trail: { x: number; y: number; time: number }[];
     } | null = null;
+    /** Where the pointer is over the view, or `null` outside it. */
+    let pointer: { x: number; y: number } | null = null;
+    /** The note under the pointer as last told to React. */
+    let hoverIndex: number | null = null;
+    let pickFrame = 0;
 
     const point = (event: { clientX: number; clientY: number }) => {
       const box = container.getBoundingClientRect();
@@ -331,34 +354,77 @@ function GraphCanvas({
         grid.current?.nearest(worldX, worldY, reach, pad, radiusOf) ?? null
       );
     };
-    const look = (next: Camera) => {
-      camera.current = next;
-      moved.current = true;
-      renderer.current?.setCamera(next);
+    const setHovered = (index: number | null) => {
+      if (index === hoverIndex) return;
+      hoverIndex = index;
+      container.style.cursor = index === null ? "" : "pointer";
+      setHover(index === null ? null : { graph, node: index });
     };
+    // Once a frame at most: a mouse can report far more often than that.
+    const pickSoon = () => {
+      if (pickFrame !== 0) return;
+      pickFrame = requestAnimationFrame(() => {
+        pickFrame = 0;
+        if (press?.dragged === true) return;
+        setHovered(pointer === null ? null : pick(pointer.x, pointer.y));
+      });
+    };
+
+    const motion = new CameraMotion({
+      get: () => camera.current,
+      apply: (next) => {
+        camera.current = next;
+        following.current = false;
+        renderer.current?.setCamera(next);
+      },
+      view: () => ({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      }),
+      limits: () => ({
+        min: Math.min(fitScale.current * MIN_ZOOM, MAX_SCALE),
+        max: MAX_SCALE,
+      }),
+      // Notes move under a still pointer as the camera moves.
+      onFrame: pickSoon,
+    });
 
     const down = (event: PointerEvent) => {
       if (event.button !== 0) return;
+      motion.stop();
       const at = point(event);
-      press = { ...at, camera: camera.current, dragged: false };
+      press = {
+        ...at,
+        camera: camera.current,
+        dragged: false,
+        trail: [{ ...at, time: event.timeStamp }],
+      };
       container.setPointerCapture(event.pointerId);
     };
     const move = (event: PointerEvent) => {
       const at = point(event);
+      pointer = at;
       if (press === null) {
-        const index = pick(at.x, at.y);
-        container.style.cursor = index === null ? "" : "pointer";
-        setHover(index === null ? null : { graph, node: index });
+        pickSoon();
         return;
+      }
+      press.trail.push({ ...at, time: event.timeStamp });
+      while (
+        press.trail.length > 2 &&
+        event.timeStamp - press.trail[0].time > FLING_MS
+      ) {
+        press.trail.shift();
       }
       const dx = at.x - press.x;
       const dy = at.y - press.y;
       if (!press.dragged && Math.hypot(dx, dy) < CLICK_SLOP) return;
-      press.dragged = true;
-      setHover(null);
-      container.style.cursor = "grabbing";
+      if (!press.dragged) {
+        press.dragged = true;
+        setHovered(null);
+        container.style.cursor = "grabbing";
+      }
       const { scale } = press.camera;
-      look({
+      motion.jumpTo({
         ...press.camera,
         x: press.camera.x - dx / scale,
         y: press.camera.y - dy / scale,
@@ -366,16 +432,30 @@ function GraphCanvas({
     };
     const up = (event: PointerEvent) => {
       if (press === null) return;
-      const clicked = !press.dragged;
+      const { dragged, trail } = press;
       press = null;
       container.style.cursor = "";
-      if (!clicked) return;
+      if (dragged) {
+        // The speed of the last moments of the drag carries it on; a
+        // pointer held still before it was let go does not.
+        const first = trail[0];
+        const last = trail[trail.length - 1];
+        const time = last.time - first.time;
+        if (time > 0 && event.timeStamp - last.time < FLING_MS / 2) {
+          motion.glide((last.x - first.x) / time, (last.y - first.y) / time);
+        }
+        pickSoon();
+        return;
+      }
       const at = point(event);
       const index = pick(at.x, at.y);
       if (index !== null)
         onOpen(graph.paths[index], event.ctrlKey || event.metaKey);
     };
-    const leave = () => setHover(null);
+    const leave = () => {
+      pointer = null;
+      setHovered(null);
+    };
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
       const at = point(event);
@@ -383,52 +463,31 @@ function GraphCanvas({
       const delta =
         event.deltaY *
         (event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? 400 : 1);
-      zoomAt(at.x, at.y, Math.exp(-delta / 400));
-    };
-    const zoomAt = (x: number, y: number, factor: number) => {
-      const old = camera.current;
-      const scale = Math.max(
-        Math.min(fitScale.current * MIN_ZOOM, MAX_SCALE),
-        Math.min(MAX_SCALE, old.scale * factor),
-      );
-      // The point under the pointer stays under it.
-      const offsetX = x - container.clientWidth / 2;
-      const offsetY = y - container.clientHeight / 2;
-      look({
-        x: old.x + offsetX / old.scale - offsetX / scale,
-        y: old.y + offsetY / old.scale - offsetY / scale,
-        scale,
-      });
+      motion.zoomAt(at.x, at.y, Math.exp(-delta / 400));
     };
     const key = (event: KeyboardEvent) => {
       const middleX = container.clientWidth / 2;
       const middleY = container.clientHeight / 2;
-      const step = 60 / camera.current.scale;
-      const pan = (x: number, y: number) =>
-        look({
-          ...camera.current,
-          x: camera.current.x + x,
-          y: camera.current.y + y,
-        });
+      const step = 80 / camera.current.scale;
       switch (event.key) {
         case "+":
         case "=":
-          zoomAt(middleX, middleY, 1.25);
+          motion.zoomAt(middleX, middleY, 1.4);
           break;
         case "-":
-          zoomAt(middleX, middleY, 0.8);
+          motion.zoomAt(middleX, middleY, 1 / 1.4);
           break;
         case "ArrowLeft":
-          pan(-step, 0);
+          motion.panBy(-step, 0);
           break;
         case "ArrowRight":
-          pan(step, 0);
+          motion.panBy(step, 0);
           break;
         case "ArrowUp":
-          pan(0, -step);
+          motion.panBy(0, -step);
           break;
         case "ArrowDown":
-          pan(0, step);
+          motion.panBy(0, step);
           break;
         default:
           return;
@@ -439,13 +498,17 @@ function GraphCanvas({
     container.addEventListener("pointerdown", down);
     container.addEventListener("pointermove", move);
     container.addEventListener("pointerup", up);
+    container.addEventListener("pointercancel", up);
     container.addEventListener("pointerleave", leave);
     container.addEventListener("wheel", wheel, { passive: false });
     container.addEventListener("keydown", key);
     return () => {
+      motion.stop();
+      cancelAnimationFrame(pickFrame);
       container.removeEventListener("pointerdown", down);
       container.removeEventListener("pointermove", move);
       container.removeEventListener("pointerup", up);
+      container.removeEventListener("pointercancel", up);
       container.removeEventListener("pointerleave", leave);
       container.removeEventListener("wheel", wheel);
       container.removeEventListener("keydown", key);
@@ -478,7 +541,8 @@ function GraphCanvas({
       <div className="sr-only" aria-live="polite" data-hovered>
         {hovered !== null && graph !== null ? graph.titles[hovered] : ""}
       </div>
-      <div className="pointer-events-none absolute top-2 left-3 flex flex-col gap-1 text-small text-faint">
+      {/* Its first line level with the middle of the settings button. */}
+      <div className="pointer-events-none absolute top-3 left-4 flex flex-col gap-1 py-1.5 text-small text-faint">
         {data.status === "loading" && <p>{t("graph.loading")}</p>}
         {data.status === "error" && (
           <p className="text-danger">
@@ -549,7 +613,6 @@ export function GraphView({ vault, current, onOpen, onClose }: GraphViewProps) {
     <GraphCanvas
       data={data}
       layoutKey={vault.root}
-      viewKey={`${filters.tag}|${filters.orphans}|${filters.missing}`}
       current={current}
       onOpen={open}
       onClose={onClose}
@@ -595,7 +658,8 @@ export function LocalGraphView({ vault, path, onOpen }: LocalGraphViewProps) {
       data={data}
       // Apart from the graph of the vault, whose layout is far wider.
       layoutKey={`${vault.root}#local`}
-      viewKey={`${depth}:${path}`}
+      // Another depth keeps the camera, as the settings of the graph do.
+      viewKey={path}
       current={path}
       onOpen={onOpen}
       // A local graph has few notes: their titles always show.
@@ -607,7 +671,7 @@ export function LocalGraphView({ vault, path, onOpen }: LocalGraphViewProps) {
       <div
         role="radiogroup"
         aria-label={t("graph.depth")}
-        className="absolute right-2 bottom-2 flex items-center gap-0.5 rounded-md border border-line bg-panel p-0.5 text-small"
+        className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-md border border-line bg-panel p-0.5 text-small"
       >
         <span className="px-1 text-faint">{t("graph.depth")}</span>
         {DEPTHS.map((value) => (

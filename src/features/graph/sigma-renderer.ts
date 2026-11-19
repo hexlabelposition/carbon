@@ -1,12 +1,22 @@
 import Graph from "graphology";
+import type { Attributes } from "graphology-types";
 import Sigma from "sigma";
 import {
+  FADE_MS,
   FADED,
   NODE_RADIUS,
   type Camera,
   type GraphRendererFactory,
   type Highlight,
+  type NodeStyle,
 } from "./graph-renderer";
+import { GraphLabels } from "./graph-labels";
+
+/** What the styles read besides sigma's own state of the graph. */
+interface ExtraGraphState {
+  /** How far the highlight has faded in, 0 to 1. */
+  fade?: number;
+}
 
 interface NodeAttributes {
   x: number;
@@ -65,14 +75,68 @@ export const sigmaRenderer: GraphRendererFactory = (
   for (let i = 0; i < edges.length; i += 2) {
     edgeKeys.push(model.addEdge(edges[i], edges[i + 1]));
   }
+  /** What the pointer highlights now; `null` while nothing is. */
   let highlight: Highlight | null = null;
+  /**
+   * What sigma has marked as highlighted: the last highlight, kept while
+   * it fades out after the pointer left it.
+   */
+  let marked: Highlight | null = null;
+  /** How far the highlight has faded in, 0 to 1. */
+  let fade = 0;
+  let fadeFrame = 0;
+  let fadeLast = 0;
   /** Faded while something is highlighted and it is not part of it. */
   const faded = (
     state: { isHighlighted: boolean },
-    graphState: { hasHighlighted: boolean },
-  ) => (graphState.hasHighlighted && !state.isHighlighted ? FADED : 1);
+    graphState: { hasHighlighted: boolean; fade?: number },
+  ) =>
+    graphState.hasHighlighted && !state.isHighlighted
+      ? 1 - (1 - FADED) * (graphState.fade ?? 0)
+      : 1;
 
-  const sigma = new Sigma(model, layer, {
+  const mark = (next: Highlight | null, on: boolean) => {
+    if (next === null) return;
+    sigma.setNodesState([...next.nodes].map(String), { isHighlighted: on });
+    sigma.setEdgesState(
+      next.edges.map((edge) => edgeKeys[edge]),
+      { isHighlighted: on },
+    );
+  };
+
+  // The highlight fades in and out over a few frames, not at once.
+  const fadeStep = (time: number) => {
+    fadeFrame = 0;
+    const dt = fadeLast === 0 ? 16 : Math.min(time - fadeLast, 50);
+    fadeLast = time;
+    const goal = highlight === null ? 0 : 1;
+    const change = dt / FADE_MS;
+    fade =
+      goal > fade
+        ? Math.min(goal, fade + change)
+        : Math.max(goal, fade - change);
+    if (fade === 0 && highlight === null && marked !== null) {
+      mark(marked, false);
+      marked = null;
+      sigma.setGraphState({ hasHighlighted: false });
+    }
+    // The styles that read the graph state are worked out again.
+    sigma.setGraphState({ fade });
+    if (fade !== goal) fadeFrame = requestAnimationFrame(fadeStep);
+    else fadeLast = 0;
+  };
+  const fadeSoon = () => {
+    if (fadeFrame === 0) fadeFrame = requestAnimationFrame(fadeStep);
+  };
+
+  const sigma = new Sigma<
+    NodeAttributes,
+    Attributes,
+    Attributes,
+    object,
+    object,
+    ExtraGraphState
+  >(model, layer, {
     styles: {
       nodes: {
         color: (attributes) =>
@@ -87,15 +151,8 @@ export const sigmaRenderer: GraphRendererFactory = (
           NODE_RADIUS * attributes.size * (attributes.current ? 1.5 : 1),
         opacity: (_attributes, state, graphState) => faded(state, graphState),
         // Stated with the rest: a node style of its own replaces sigma's.
+        // The titles are drawn by `GraphLabels`, which wraps them.
         label: { attribute: "label" },
-        // The titles of a note and its neighbors show at any zoom; those
-        // of a group only as the zoom allows.
-        labelVisibility: (_attributes, state) =>
-          state.isHighlighted && highlight !== null && highlight.node !== null
-            ? "visible"
-            : "auto",
-        labelColor: () => colors.label,
-        labelSize: 12,
       },
       // Thinner than `minEdgeThickness`: drawn one pixel wide at any zoom,
       // as in the other renderers.
@@ -107,8 +164,7 @@ export const sigmaRenderer: GraphRendererFactory = (
       },
     },
     settings: {
-      renderLabels: true,
-      labelRenderedSizeThreshold: labelPixels,
+      renderLabels: false,
       hideEdgesOnMove: false,
       minEdgeThickness: 1,
       itemSizesReference: "positions",
@@ -139,9 +195,32 @@ export const sigmaRenderer: GraphRendererFactory = (
   };
   let camera = initialCamera;
   setCamera(camera);
+  sigma.setGraphState({ fade });
+
+  let points = positions;
+  let nodeStyle: NodeStyle | null = null;
+  const labels = new GraphLabels(layer);
+  // After each frame of sigma: the titles follow the notes at once.
+  sigma.on("afterRender", () =>
+    labels.draw({
+      titles: graph.titles,
+      positions: points,
+      camera,
+      width: layer.clientWidth,
+      height: layer.clientHeight,
+      style: nodeStyle,
+      current,
+      colors,
+      labelPixels,
+      highlight: marked,
+      fade,
+      faded: FADED,
+    }),
+  );
 
   return {
     setPositions(next) {
+      points = next;
       model.updateEachNodeAttributes((node, attributes) => {
         const i = Number(node);
         attributes.x = next[i * 2];
@@ -159,6 +238,7 @@ export const sigmaRenderer: GraphRendererFactory = (
       if (current !== null) model.setNodeAttribute(current, "current", true);
     },
     setStyle(style) {
+      nodeStyle = style;
       model.updateEachNodeAttributes((node, attributes) => {
         const i = Number(node);
         attributes.size = style?.sizes[i] ?? 1;
@@ -167,26 +247,16 @@ export const sigmaRenderer: GraphRendererFactory = (
       });
     },
     setHighlight(next) {
-      if (highlight !== null) {
-        sigma.setNodesState([...highlight.nodes].map(String), {
-          isHighlighted: false,
-        });
-        sigma.setEdgesState(
-          highlight.edges.map((edge) => edgeKeys[edge]),
-          { isHighlighted: false },
-        );
-      }
       highlight = next;
-      if (highlight !== null) {
-        sigma.setNodesState([...highlight.nodes].map(String), {
-          isHighlighted: true,
-        });
-        sigma.setEdgesState(
-          highlight.edges.map((edge) => edgeKeys[edge]),
-          { isHighlighted: true },
-        );
+      // From one note to the next the fade stays: only what is marked
+      // changes. Off, the last highlight stays marked until it faded out.
+      if (next !== null) {
+        mark(marked, false);
+        marked = next;
+        mark(marked, true);
+        sigma.setGraphState({ hasHighlighted: true });
       }
-      sigma.setGraphState({ hasHighlighted: highlight !== null });
+      fadeSoon();
     },
     setColors(next) {
       colors = next;
@@ -197,6 +267,8 @@ export const sigmaRenderer: GraphRendererFactory = (
       setCamera(camera);
     },
     destroy() {
+      cancelAnimationFrame(fadeFrame);
+      labels.destroy();
       sigma.kill();
       layer.remove();
     },

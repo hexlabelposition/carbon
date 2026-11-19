@@ -150,7 +150,7 @@ export function GraphLegend({
   return (
     <ul
       aria-label={label}
-      className="absolute bottom-2 left-3 flex flex-col gap-0.5 rounded-md border border-line bg-panel px-2 py-1 text-small"
+      className="absolute bottom-3 left-3 flex flex-col gap-0.5 rounded-md border border-line bg-panel px-2 py-1 text-small"
     >
       {groups.legend.map((group) => (
         <li

@@ -1,4 +1,5 @@
 import {
+  FADE_MS,
   FADED,
   MIN_NODE_PIXELS,
   NODE_RADIUS,
@@ -34,7 +35,13 @@ export const canvasRenderer: GraphRendererFactory = (
   let camera = initialCamera;
   let colors = initialColors;
   let current: number | null = null;
+  /** What the pointer highlights now; `null` while nothing is. */
   let highlight: Highlight | null = null;
+  /** What is drawn as highlighted: the last one, kept as it fades out. */
+  let marked: Highlight | null = null;
+  /** How far the highlight has faded in, 0 to 1. */
+  let fade = 0;
+  let fadeLast = 0;
   let style: NodeStyle | null = null;
   let width = 0;
   let height = 0;
@@ -49,8 +56,24 @@ export const canvasRenderer: GraphRendererFactory = (
     canvas.height = Math.round(height * ratio);
   };
 
-  const draw = () => {
+  const draw = (time: number) => {
     frame = 0;
+    // The highlight fades in and out over a few frames, not at once.
+    const goal = highlight === null ? 0 : 1;
+    if (fade !== goal) {
+      const dt = fadeLast === 0 ? 16 : Math.min(time - fadeLast, 50);
+      const change = dt / FADE_MS;
+      fade =
+        goal > fade
+          ? Math.min(goal, fade + change)
+          : Math.max(goal, fade - change);
+      fadeLast = time;
+      if (fade === 0) marked = null;
+      if (fade !== goal) schedule();
+      else fadeLast = 0;
+    }
+    /** How strong what the highlight leaves out is drawn. */
+    const dim = 1 - (1 - FADED) * fade;
     const { edges, titles } = graph;
     const scale = camera.scale;
     const offsetX = width / 2 - camera.x * scale;
@@ -72,7 +95,7 @@ export const canvasRenderer: GraphRendererFactory = (
       ratio * offsetY,
     );
 
-    const lit = highlight;
+    const lit = marked;
     const inView = (i: number) => {
       const x = positions[i * 2];
       const y = positions[i * 2 + 1];
@@ -128,7 +151,7 @@ export const canvasRenderer: GraphRendererFactory = (
     };
 
     // Everything, faded while something is highlighted.
-    ctx.globalAlpha = lit === null ? 1 : FADED;
+    ctx.globalAlpha = lit === null ? 1 : dim;
     ctx.beginPath();
     for (let i = 0; i < edges.length; i += 2) edgePath(i, i + 1);
     ctx.lineWidth = 1 / scale;
@@ -163,7 +186,7 @@ export const canvasRenderer: GraphRendererFactory = (
 
     const zoomedIn =
       radius * scale >= labelPixels && visible.length <= MAX_LABELS;
-    const litTitles = lit !== null && lit.node !== null;
+    const litTitles = highlight !== null && highlight.node !== null;
     if (!zoomedIn && !litTitles) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.font = `12px ${getComputedStyle(container).fontFamily}`;
@@ -176,7 +199,7 @@ export const canvasRenderer: GraphRendererFactory = (
       ctx.fillText(titles[i], x, y);
     };
     if (zoomedIn) {
-      ctx.globalAlpha = lit === null ? 1 : FADED;
+      ctx.globalAlpha = lit === null ? 1 : dim;
       for (const i of visible) if (lit === null || !lit.nodes.has(i)) label(i);
       ctx.globalAlpha = 1;
     }
@@ -208,6 +231,9 @@ export const canvasRenderer: GraphRendererFactory = (
     },
     setHighlight(next) {
       highlight = next;
+      // From one note to the next the fade stays; off, the last highlight
+      // stays drawn until it faded out.
+      if (next !== null) marked = next;
       schedule();
     },
     setStyle(next) {

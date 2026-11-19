@@ -45,6 +45,8 @@ export interface NodeStyle {
 
 /** How visible what a highlight leaves out still is, 0 to 1. */
 export const FADED = 0.15;
+/** How long a highlight takes to fade in or out, in milliseconds. */
+export const FADE_MS = 140;
 
 /** What a renderer draws: notes by index, links as pairs of indexes. */
 export interface RenderedGraph {
