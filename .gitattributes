@@ -1,0 +1,2 @@
+# LF on every OS, so Windows checkouts pass the Prettier check of CI.
+* text=auto eol=lf
