@@ -71,7 +71,9 @@ import { log } from "../log/log";
 import {
   checkAtStartPreference,
   checkForUpdates,
+  showUpdate,
   useCanCheckForUpdates,
+  useCheckState,
 } from "../updates/updates";
 
 /** Opens the settings dialog; another dialog open closes. */
@@ -353,17 +355,62 @@ function GeneralSettings() {
             />
           </Row>
           <Row label={t("updates.title")}>
-            <button
-              type="button"
-              className="h-7 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong"
-              onClick={checkForUpdates}
-            >
-              {t("updates.checkNow")}
-            </button>
+            <UpdateStatus />
           </Row>
         </>
       )}
     </Rows>
+  );
+}
+
+/**
+ * What the last look for a newer version found, beside the button that
+ * looks again. Only an update found opens a dialog, to install it; why a
+ * look failed is in the tooltip and the log.
+ */
+function UpdateStatus() {
+  const t = useT();
+  const state = useCheckState();
+  const button =
+    "h-7 shrink-0 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel";
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      {state.kind === "checking" && (
+        <span className="text-muted">{t("updates.checking")}</span>
+      )}
+      {state.kind === "upToDate" && (
+        <span className="text-muted">{t("updates.latest")}</span>
+      )}
+      {state.kind === "failed" && (
+        <Tooltip label={state.message}>
+          <span
+            tabIndex={0}
+            className="cursor-default text-danger outline-none"
+          >
+            {t("updates.checkFailed")}
+          </span>
+        </Tooltip>
+      )}
+      {state.kind === "available" ? (
+        <>
+          <span className="text-muted">
+            {t("updates.availableShort", { version: state.update.version })}
+          </span>
+          <button type="button" className={button} onClick={showUpdate}>
+            {t("updates.update")}
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className={button}
+          disabled={state.kind === "checking"}
+          onClick={checkForUpdates}
+        >
+          {t("updates.checkNow")}
+        </button>
+      )}
+    </div>
   );
 }
 

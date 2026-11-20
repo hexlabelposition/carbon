@@ -55,9 +55,16 @@ export async function runBeforeUpdate(): Promise<void> {
   await Promise.allSettled([...beforeInstall].map((task) => task()));
 }
 
-// The check asked for by hand, from the settings or the palette: the
-// mounted `Updates` takes it.
-let checkByHand: (() => void) | null = null;
+/** What the last look for a newer version found. */
+export type CheckState =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "upToDate" }
+  | { kind: "available"; update: AvailableUpdate }
+  | { kind: "failed"; message: string };
+
+// Shared by the settings, which show it in a row, and the dialog.
+let checkState: CheckState = { kind: "idle" };
 const listeners = new Set<() => void>();
 
 const subscribe = (listener: () => void) => {
@@ -67,18 +74,51 @@ const subscribe = (listener: () => void) => {
   };
 };
 
-/** Sets what `checkForUpdates` runs; `null` when nothing can. */
-export function setCheckByHand(run: (() => void) | null): void {
-  checkByHand = run;
+function changed() {
   for (const listener of listeners) listener();
 }
 
-/** Looks for a newer version now and shows what was found. */
+export function setCheckState(next: CheckState): void {
+  checkState = next;
+  changed();
+}
+
+export function getCheckState(): CheckState {
+  return checkState;
+}
+
+/** What the last look found, kept up to date in a component. */
+export function useCheckState(): CheckState {
+  return useSyncExternalStore(subscribe, () => checkState);
+}
+
+/** What the mounted `Updates` does when asked from elsewhere. */
+export interface UpdateActions {
+  /** Looks for a newer version; the result goes to `useCheckState`. */
+  check(): void;
+  /** Opens the dialog that installs the update found. */
+  showUpdate(): void;
+}
+
+let actions: UpdateActions | null = null;
+
+/** Sets what the functions below run; `null` when nothing can. */
+export function setUpdateActions(next: UpdateActions | null): void {
+  actions = next;
+  changed();
+}
+
+/** Looks for a newer version now, without a dialog. */
 export function checkForUpdates(): void {
-  checkByHand?.();
+  actions?.check();
+}
+
+/** Opens the dialog that installs the update found. */
+export function showUpdate(): void {
+  actions?.showUpdate();
 }
 
 /** Whether updates can be looked for: not in a dev build. */
 export function useCanCheckForUpdates(): boolean {
-  return useSyncExternalStore(subscribe, () => checkByHand !== null);
+  return useSyncExternalStore(subscribe, () => actions !== null);
 }

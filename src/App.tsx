@@ -34,8 +34,7 @@ function App() {
             <InterfaceZoom apply={setInterfaceZoom} />
             <ThemeSwitch />
             <Settings openLogFolder={openLogFolder} />
-            {/* A dev build is not installed: nothing there to update. */}
-            {!import.meta.env.DEV && <Updates updater={tauriUpdater} />}
+            <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
             <DesktopShell
               frame={tauriWindow}
               showInFileManager={showInFileManager}

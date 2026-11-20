@@ -7,20 +7,21 @@ import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
 import {
   checkAtStartPreference,
+  getCheckState,
   runBeforeUpdate,
-  setCheckByHand,
+  setCheckState,
+  setUpdateActions,
+  useCheckState,
   type AvailableUpdate,
+  type CheckState,
   type Updater,
 } from "./updates";
 
-/** Where the dialog is: what it shows and which buttons it has. */
-type Step =
-  | { kind: "checking" }
-  | { kind: "upToDate" }
-  | { kind: "available"; update: AvailableUpdate }
+/** Installing, once asked: it goes on to the end or fails. */
+type InstallStep =
   | { kind: "installing"; part: number | null }
   | { kind: "restarting" }
-  | { kind: "failed"; message: string; update: AvailableUpdate | null };
+  | { kind: "failed"; message: string; update: AvailableUpdate };
 
 const button =
   "h-7 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong";
@@ -30,32 +31,41 @@ const primary =
 /**
  * Updates of the app (C-607, ADR-034). At start it looks for a newer
  * version, unless turned off in the settings, and if there is one asks
- * whether to install it, once no other dialog is open. "Check for
- * updates", in the palette and the settings, looks at any time and says
- * what it found. Installing writes the unsaved edits first
- * (`useBeforeUpdate`), then starts the app again. Mount it once, inside
- * the commands provider; a dev build leaves it out.
+ * whether to install it, once no other dialog is open. The settings look
+ * at any time and show what was found in their row; "Check for updates"
+ * in the palette shows it in the dialog. Installing writes the unsaved
+ * edits first (`useBeforeUpdate`), then starts the app again. Mount it
+ * once, inside the commands provider. A dev build (`dev`) is not
+ * installed: it looks only when asked and installs nothing.
  */
-export function Updates({ updater }: { updater: Updater }) {
+export function Updates({
+  updater,
+  dev = false,
+}: {
+  updater: Updater;
+  dev?: boolean;
+}) {
   const t = useT();
   const [open, setOpen] = useDialog("update");
-  const [step, setStep] = useState<Step | null>(null);
+  const checkState = useCheckState();
+  const [installStep, setInstallStep] = useState<InstallStep | null>(null);
   // Found at start: shown once no other dialog stands over the window.
   const [foundAtStart, setFoundAtStart] = useState(false);
   const shownAtStart = useRef(false);
   const anyDialogOpen = useAnyDialogOpen();
-  // Installing cannot be stopped: a check meanwhile only shows it.
+  // Installing cannot be stopped: a check meanwhile does nothing.
   const installing = useRef(false);
 
   // Once, at start, as the setting was read. Nobody asked, so a failure,
   // such as no network, is only logged.
   useEffect(() => {
-    if (!checkAtStartPreference.get()) return;
+    if (dev || !checkAtStartPreference.get()) return;
     let cancelled = false;
     updater.check().then(
       (update) => {
-        if (cancelled || update === null || installing.current) return;
-        setStep({ kind: "available", update });
+        if (cancelled || update === null) return;
+        if (getCheckState().kind !== "idle") return;
+        setCheckState({ kind: "available", update });
         setFoundAtStart(true);
       },
       (reason: unknown) => log.warn("Could not check for updates", reason),
@@ -63,7 +73,7 @@ export function Updates({ updater }: { updater: Updater }) {
     return () => {
       cancelled = true;
     };
-  }, [updater]);
+  }, [updater, dev]);
 
   useEffect(() => {
     if (!foundAtStart || anyDialogOpen || shownAtStart.current) return;
@@ -71,25 +81,26 @@ export function Updates({ updater }: { updater: Updater }) {
     openDialog("update");
   }, [foundAtStart, anyDialogOpen]);
 
-  /** Looks now, asked from the palette or the settings, and says so. */
+  /** Looks now; what it finds goes to the shared check state. */
   const check = useCallback(async () => {
-    openDialog("update");
-    if (installing.current) return;
-    setStep({ kind: "checking" });
+    if (installing.current || getCheckState().kind === "checking") return;
+    setCheckState({ kind: "checking" });
     try {
       const update = await updater.check();
-      if (installing.current) return;
-      setStep(
+      setCheckState(
         update === null ? { kind: "upToDate" } : { kind: "available", update },
       );
     } catch (reason) {
-      setStep({ kind: "failed", message: errorText(reason), update: null });
+      setCheckState({ kind: "failed", message: errorText(reason) });
     }
   }, [updater]);
 
   useEffect(() => {
-    setCheckByHand(() => void check());
-    return () => setCheckByHand(null);
+    setUpdateActions({
+      check: () => void check(),
+      showUpdate: () => openDialog("update"),
+    });
+    return () => setUpdateActions(null);
   }, [check]);
 
   useCommands(
@@ -98,7 +109,10 @@ export function Updates({ updater }: { updater: Updater }) {
         {
           id: "updates.check",
           title: t("updates.check"),
-          run: () => void check(),
+          run: () => {
+            openDialog("update");
+            void check();
+          },
         },
       ],
       [t, check],
@@ -107,23 +121,27 @@ export function Updates({ updater }: { updater: Updater }) {
 
   async function install(update: AvailableUpdate) {
     installing.current = true;
-    setStep({ kind: "installing", part: null });
+    setInstallStep({ kind: "installing", part: null });
     try {
       await runBeforeUpdate();
-      await update.install((part) => setStep({ kind: "installing", part }));
-      setStep({ kind: "restarting" });
+      await update.install((part) =>
+        setInstallStep({ kind: "installing", part }),
+      );
+      setInstallStep({ kind: "restarting" });
       await updater.restart();
     } catch (reason) {
       installing.current = false;
-      setStep({ kind: "failed", message: errorText(reason), update });
+      setInstallStep({ kind: "failed", message: errorText(reason), update });
     }
   }
 
-  const busy = step?.kind === "installing" || step?.kind === "restarting";
+  const busy =
+    installStep?.kind === "installing" || installStep?.kind === "restarting";
+  const hasContent = installStep !== null || checkState.kind !== "idle";
 
   return (
     <AppDialog
-      open={open && step !== null}
+      open={open && hasContent}
       // Installing goes on to the end: there is nothing to close then.
       onClose={() => {
         if (!busy) setOpen(false);
@@ -132,9 +150,16 @@ export function Updates({ updater }: { updater: Updater }) {
       aria-labelledby="update-title"
       className="fixed inset-0 m-auto h-fit w-full max-w-[min(480px,calc(100vw-32px))] rounded-lg border border-line bg-bg p-5 shadow-dialog"
     >
-      {step !== null && (
-        <UpdateStep
-          step={step}
+      {installStep !== null ? (
+        <InstallView
+          step={installStep}
+          onInstall={(update) => void install(update)}
+          onClose={() => setOpen(false)}
+        />
+      ) : (
+        <CheckView
+          state={checkState}
+          dev={dev}
           onInstall={(update) => void install(update)}
           onClose={() => setOpen(false)}
         />
@@ -143,128 +168,96 @@ export function Updates({ updater }: { updater: Updater }) {
   );
 }
 
-function UpdateStep({
-  step,
-  onInstall,
-  onClose,
-}: {
-  step: Step;
-  onInstall: (update: AvailableUpdate) => void;
-  onClose: () => void;
-}) {
-  const t = useT();
-  const title = (text: string) => (
+function Title({ children }: { children: string }) {
+  return (
     <h2 id="update-title" className="text-h3 font-semibold">
-      {text}
+      {children}
     </h2>
   );
-  const closeButton = (
+}
+
+function CloseRow({ onClose }: { onClose: () => void }) {
+  const t = useT();
+  return (
     <div className="mt-5 flex justify-end">
       <button type="button" className={button} onClick={onClose}>
         {t("common.close")}
       </button>
     </div>
   );
+}
 
-  switch (step.kind) {
+/** What a look for a newer version found, or that it is looking. */
+function CheckView({
+  state,
+  dev,
+  onInstall,
+  onClose,
+}: {
+  state: CheckState;
+  dev: boolean;
+  onInstall: (update: AvailableUpdate) => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  switch (state.kind) {
+    case "idle":
+      return null;
     case "checking":
       return (
         <>
-          {title(t("updates.title"))}
+          <Title>{t("updates.title")}</Title>
           <p className="mt-2 text-muted">{t("updates.checking")}</p>
-          {closeButton}
+          <CloseRow onClose={onClose} />
         </>
       );
     case "upToDate":
       return (
         <>
-          {title(t("updates.title"))}
+          <Title>{t("updates.title")}</Title>
           <p className="mt-2 text-muted">
             {t("updates.upToDate", { version: __CARBON_VERSION__ })}
           </p>
-          {closeButton}
+          <CloseRow onClose={onClose} />
         </>
       );
-    case "available":
+    case "failed":
       return (
         <>
-          {title(t("updates.available", { version: step.update.version }))}
+          <Title>{t("updates.title")}</Title>
+          <p className="mt-2 text-danger">
+            {t("updates.failed", { reason: state.message })}
+          </p>
+          <CloseRow onClose={onClose} />
+        </>
+      );
+    case "available": {
+      const { update } = state;
+      return (
+        <>
+          <Title>{t("updates.available", { version: update.version })}</Title>
           <p className="mt-2 text-muted">
             {t("updates.availableText", { current: __CARBON_VERSION__ })}
           </p>
-          {step.update.notes !== "" && (
+          {update.notes !== "" && (
             <>
               <h3 className="mt-4 font-medium">{t("updates.notes")}</h3>
               <p className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap text-muted">
-                {step.update.notes}
+                {update.notes}
               </p>
             </>
           )}
-          <div className="mt-5 flex flex-wrap justify-end gap-2">
-            <button type="button" className={button} onClick={onClose}>
-              {t("updates.later")}
-            </button>
-            <button
-              type="button"
-              className={primary}
-              onClick={() => onInstall(step.update)}
-            >
-              {t("updates.install")}
-            </button>
-          </div>
-        </>
-      );
-    case "installing":
-      return (
-        <>
-          {title(t("updates.title"))}
-          <p className="mt-2 text-muted">
-            {step.part === null
-              ? t("updates.downloading")
-              : t("updates.downloadingPart", {
-                  percent: Math.round(step.part * 100),
-                })}
-          </p>
-          <div
-            role="progressbar"
-            aria-label={t("updates.downloading")}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={
-              step.part === null ? undefined : Math.round(step.part * 100)
-            }
-            className="mt-3 h-1 overflow-hidden rounded-full bg-raise"
-          >
-            <div
-              className="h-full bg-solid transition-[width]"
-              style={{ width: `${(step.part ?? 0) * 100}%` }}
-            />
-          </div>
-        </>
-      );
-    case "restarting":
-      return (
-        <>
-          {title(t("updates.title"))}
-          <p className="mt-2 text-muted">{t("updates.restarting")}</p>
-        </>
-      );
-    case "failed": {
-      const { update } = step;
-      return (
-        <>
-          {title(t("updates.title"))}
-          <p className="mt-2 text-danger">
-            {t(update === null ? "updates.failed" : "updates.installFailed", {
-              reason: step.message,
-            })}
-          </p>
-          {update === null ? (
-            closeButton
+          {dev ? (
+            <>
+              <p className="mt-4 text-small text-faint">
+                {t("updates.devBuild")}
+              </p>
+              <CloseRow onClose={onClose} />
+            </>
           ) : (
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button type="button" className={button} onClick={onClose}>
-                {t("common.close")}
+                {t("updates.later")}
               </button>
               <button
                 type="button"
@@ -275,6 +268,77 @@ function UpdateStep({
               </button>
             </div>
           )}
+        </>
+      );
+    }
+  }
+}
+
+/** Installing: the download, the restart, or why it failed. */
+function InstallView({
+  step,
+  onInstall,
+  onClose,
+}: {
+  step: InstallStep;
+  onInstall: (update: AvailableUpdate) => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  switch (step.kind) {
+    case "installing": {
+      const percent = step.part === null ? null : Math.round(step.part * 100);
+      return (
+        <>
+          <Title>{t("updates.title")}</Title>
+          <p className="mt-2 text-muted">
+            {percent === null
+              ? t("updates.downloading")
+              : t("updates.downloadingPart", { percent })}
+          </p>
+          <div
+            role="progressbar"
+            aria-label={t("updates.downloading")}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent ?? undefined}
+            className="mt-3 h-1 overflow-hidden rounded-full bg-raise"
+          >
+            <div
+              className="h-full bg-solid transition-[width]"
+              style={{ width: `${percent ?? 0}%` }}
+            />
+          </div>
+        </>
+      );
+    }
+    case "restarting":
+      return (
+        <>
+          <Title>{t("updates.title")}</Title>
+          <p className="mt-2 text-muted">{t("updates.restarting")}</p>
+        </>
+      );
+    case "failed": {
+      const { update } = step;
+      return (
+        <>
+          <Title>{t("updates.title")}</Title>
+          <p className="mt-2 text-danger">
+            {t("updates.installFailed", { reason: step.message })}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <button type="button" className={button} onClick={onClose}>
+              {t("common.close")}
+            </button>
+            <button
+              type="button"
+              className={primary}
+              onClick={() => onInstall(update)}
+            >
+              {t("updates.install")}
+            </button>
+          </div>
         </>
       );
     }
