@@ -102,7 +102,7 @@ jobs:
       # The screenshots and the log of the app, kept by a failed run.
       - name: Keep what the failed run left
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-profile
           path: /tmp/carbon-e2e-*
