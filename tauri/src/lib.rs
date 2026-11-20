@@ -183,6 +183,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
+        // Updates from the GitHub releases (C-607, ADR-034); `process`
+        // starts the app again once one is installed.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         // Picking a vault folder grants access to it for one run of the app.
         // This keeps the grant, so a recent vault opens after a restart.
         // It must come after the `fs` plugin.

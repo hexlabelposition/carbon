@@ -44,6 +44,8 @@
       ]
     },
     "sql:default",
-    "sql:allow-execute"
+    "sql:allow-execute",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

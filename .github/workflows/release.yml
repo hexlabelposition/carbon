@@ -2,7 +2,10 @@ name: Release
 
 # Builds the packages for a version tag, such as v0.1.0, and puts them on
 # a draft GitHub release, to check and publish by hand: the deb and the
-# AppImage for Linux (C-604), the installer for Windows (C-608).
+# AppImage for Linux (C-604), the installer for Windows (C-608), and the
+# latest.json the updater reads (C-607, ADR-034). Published as a regular
+# release, not a pre-release: the app looks at releases/latest, which
+# skips pre-releases.
 on:
   push:
     tags: ["v*"]
@@ -42,7 +45,7 @@ jobs:
             -f tag_name="$GITHUB_REF_NAME" \
             -f name="Carbon $GITHUB_REF_NAME" \
             -F body=@.github/release-notes.md \
-            -F draft=true -F prerelease=true \
+            -F draft=true \
             --jq .id)
           if [ -z "$id" ]; then
             echo "The draft release was not made"
@@ -76,18 +79,39 @@ jobs:
           bun-version-file: package.json
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      # With the secret TAURI_SIGNING_PRIVATE_KEY, each package also gets
+      # its signature for the updater, and the draft its latest.json
+      # (ADR-034). Without it, the app cannot update to this release.
+      - name: Choose whether to sign for the updater
+        id: updater
+        shell: bash
+        env:
+          UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$UPDATER_KEY" ]; then
+            echo "args=--config '{\"bundle\":{\"createUpdaterArtifacts\":true}}'" >> "$GITHUB_OUTPUT"
+          else
+            echo "No TAURI_SIGNING_PRIVATE_KEY: no update for the app to install"
+            echo "args=" >> "$GITHUB_OUTPUT"
+          fi
       # The deb and the AppImage of tauri.conf.json.
       - name: Build the packages and attach them to the draft
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: bun tauri
           releaseId: ${{ needs.draft.outputs.id }}
+          tagName: ${{ github.ref_name }}
+          args: ${{ steps.updater.outputs.args }}
 
   windows:
     name: Windows installer
-    needs: draft
+    # After the Linux packages: each adds its entries to the latest.json
+    # of the draft, and two at once could lose the entries of the other.
+    needs: [draft, linux]
     runs-on: windows-latest
     steps:
       - name: Check out the repository
@@ -107,26 +131,36 @@ jobs:
       # Not signed yet (C-608). Once a signing service is set up, its
       # command goes in the secret WINDOWS_SIGN_COMMAND, with %1 for the
       # file, and every executable of the installer is signed with it.
+      # The signatures for the updater, as for Linux (ADR-034).
       - name: Choose how to sign
         id: sign
         shell: bash
         env:
           SIGN_COMMAND: ${{ secrets.WINDOWS_SIGN_COMMAND }}
+          UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
+          config='{"bundle":{}}'
           if [ -n "$SIGN_COMMAND" ]; then
-            config=$(jq -cn --arg cmd "$SIGN_COMMAND" '{bundle: {windows: {signCommand: $cmd}}}')
-            echo "args=--config '$config'" >> "$GITHUB_OUTPUT"
+            config=$(jq -c --arg cmd "$SIGN_COMMAND" '.bundle.windows.signCommand = $cmd' <<< "$config")
           else
             echo "No WINDOWS_SIGN_COMMAND: the installer is not signed"
-            echo "args=" >> "$GITHUB_OUTPUT"
           fi
+          if [ -n "$UPDATER_KEY" ]; then
+            config=$(jq -c '.bundle.createUpdaterArtifacts = true' <<< "$config")
+          else
+            echo "No TAURI_SIGNING_PRIVATE_KEY: no update for the app to install"
+          fi
+          echo "args=--config '$config'" >> "$GITHUB_OUTPUT"
       # The NSIS installer of tauri.conf.json: for the current user, no
       # administrator rights, in English or Russian by the system.
       - name: Build the installer and attach it to the draft
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: bun tauri
           releaseId: ${{ needs.draft.outputs.id }}
+          tagName: ${{ github.ref_name }}
           args: ${{ steps.sign.outputs.args }}

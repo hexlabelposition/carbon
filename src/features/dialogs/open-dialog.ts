@@ -8,6 +8,7 @@ export type DialogId =
   | "settings"
   | "search"
   | "trashConfirm"
+  | "update"
   | "dev";
 
 // Which dialog is open: anything may open one.

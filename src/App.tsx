@@ -5,12 +5,14 @@ import { VaultProvider } from "./features/vault/VaultProvider";
 import { TooltipProvider } from "./features/ui/Tooltip";
 import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
+import { Updates } from "./features/updates/Updates";
 import {
   openLogFolder,
   pickVaultFolder,
   setInterfaceZoom,
   showInFileManager,
   tauriPlatform,
+  tauriUpdater,
   tauriWindow,
 } from "./platform";
 import { DesktopShell } from "./shells/desktop/DesktopShell";
@@ -32,6 +34,8 @@ function App() {
             <InterfaceZoom apply={setInterfaceZoom} />
             <ThemeSwitch />
             <Settings openLogFolder={openLogFolder} />
+            {/* A dev build is not installed: nothing there to update. */}
+            {!import.meta.env.DEV && <Updates updater={tauriUpdater} />}
             <DesktopShell
               frame={tauriWindow}
               showInFileManager={showInFileManager}

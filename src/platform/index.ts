@@ -15,6 +15,7 @@ export { openLogFolder, writeLogLine } from "./log";
 export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
 export { tauriWindow } from "./window";
+export { tauriUpdater } from "./updater";
 
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,

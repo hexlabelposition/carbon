@@ -31,6 +31,8 @@ tauri-plugin-persisted-scope = "2"
 # The version the `sql` plugin uses, for `sql_batch` on its pools (ADR-029).
 sqlx = { version = "0.8", default-features = false, features = ["sqlite"] }
 tauri-plugin-log = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

@@ -23,6 +23,7 @@ import {
   type Pane,
 } from "./workspace-state";
 import { log } from "../log/log";
+import { useBeforeUpdate } from "../updates/updates";
 
 interface WorkspaceProviderProps {
   vault: Vault;
@@ -146,6 +147,9 @@ export function WorkspaceProvider({
     }),
     [vault, moveNotes],
   );
+
+  // An update closes the app: the edits not saved yet are written first.
+  useBeforeUpdate(actions.flush);
 
   const workspace = useMemo<Workspace>(() => {
     const pane = panes[state.activePane];

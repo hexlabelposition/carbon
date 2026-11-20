@@ -68,6 +68,11 @@ import {
 import { Tooltip } from "../ui/Tooltip";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
+import {
+  checkAtStartPreference,
+  checkForUpdates,
+  useCanCheckForUpdates,
+} from "../updates/updates";
 
 /** Opens the settings dialog; another dialog open closes. */
 export function openSettings(): void {
@@ -312,6 +317,8 @@ function GeneralSettings() {
   const t = useT();
   const language = languagePreference.use();
   const deleteTo = deleteToPreference.use();
+  const checkAtStart = checkAtStartPreference.use();
+  const canCheck = useCanCheckForUpdates();
   return (
     <Rows>
       <Row label={t("settings.language")}>
@@ -336,6 +343,26 @@ function GeneralSettings() {
           onChange={deleteToPreference.set}
         />
       </Row>
+      {canCheck && (
+        <>
+          <Row label={t("updates.checkAtStart")}>
+            <SettingSwitch
+              label={t("updates.checkAtStart")}
+              checked={checkAtStart}
+              onChange={checkAtStartPreference.set}
+            />
+          </Row>
+          <Row label={t("updates.title")}>
+            <button
+              type="button"
+              className="h-7 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong"
+              onClick={checkForUpdates}
+            >
+              {t("updates.checkNow")}
+            </button>
+          </Row>
+        </>
+      )}
     </Rows>
   );
 }
