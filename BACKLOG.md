@@ -162,7 +162,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-620** (P2) Bookmarks (first called favorites): notes and images kept in `.carbon/bookmarks.json`, a sidebar view with a toolbar button, "Add to bookmarks" in the file tree menu and the palette
 - [x] **C-621** (P1) Open the vault left open at the last start; the start screen if the user closed it or it is gone
 - [x] **C-622** (P2) A bar below the note with its words, characters and reading time, and those of the selection
-- [ ] **C-623** (P1) The signing key of the updater (ADR-034), before the first release: the key is built into the app, so a release without it can never update itself. Generate the key (`bun tauri signer generate`), put its public half in `plugins.updater.pubkey` of `tauri.conf.json`, the private one and its password in the secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and keep a copy apart: without it installed apps cannot update. Until then releases carry no `latest.json`
+- [x] **C-623** (P1) The signing key of the updater (ADR-034), before the first release: the key is built into the app, so a release without it can never update itself. Generate the key (`bun tauri signer generate`), put its public half in `plugins.updater.pubkey` of `tauri.conf.json`, the private one and its password in the secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and keep a copy apart: without it installed apps cannot update. Until then releases carry no `latest.json`
 
 ---
 
