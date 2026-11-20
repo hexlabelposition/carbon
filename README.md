@@ -2,7 +2,16 @@
 
 Fast, local-first notes with links. A simpler, more human alternative to Obsidian.
 
-> **Status:** planning / pre-alpha. Nothing to install yet. See [BACKLOG.md](BACKLOG.md) for progress.
+> **Status:** 0.1, the first release. Early: expect rough edges. See [BACKLOG.md](BACKLOG.md) for what comes next.
+
+## Install
+
+Download the latest release from [GitHub Releases](https://github.com/hexlabelposition/carbon/releases/latest):
+
+- **Linux:** the `.AppImage` runs as is (make it executable first), the `.deb` installs on Debian and Ubuntu.
+- **Windows:** the `-setup.exe` installs Carbon for your user, without administrator rights. The installer is not signed yet: if Windows says it protected your PC, choose "More info", then "Run anyway".
+
+Carbon checks for a new version at start and installs it when you agree. A setting turns the check off; it is the only time Carbon goes to the network.
 
 ## Why Carbon
 
@@ -21,22 +30,23 @@ Carbon is open to everyone, but it is built to solve its author's own note-takin
 3. **Fast by design.** Performance budgets are defined in [ARCHITECTURE.md](ARCHITECTURE.md) and checked with benchmarks.
 4. **Core is separate from the UI.** All note logic lives in a TypeScript library that knows nothing about React or Tauri.
 
-## Planned features (MVP, v0.1)
+## Features (v0.1)
 
 - Markdown editor with live preview (formatting renders in place while you type)
-- Wiki links `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]` with autocomplete
-- Backlinks panel with context
+- Wiki links `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]` with autocomplete; renaming a note rewrites the links to it
+- Backlinks panel with context, and an outline of the note
 - Full-text search and a quick switcher
 - Tags (`#tag`, nested `#area/topic`) and YAML frontmatter
 - Graph view (global and local)
-- Light and dark themes
+- Bookmarks, drafts and a trash inside the vault
+- Light and dark themes, configurable shortcuts, English and Russian
 
 ### Platforms
 
 | Platform   | Status                                        |
 | ---------- | --------------------------------------------- |
 | Linux      | Primary. Developed and tested here first      |
-| Windows    | Planned for v0.1                              |
+| Windows    | Supported, tested before each release         |
 | Android    | Under consideration, first in line after v0.1 |
 | macOS, iOS | Under consideration                           |
 
@@ -56,7 +66,7 @@ Ideas with no commitment (Android, macOS, iOS, sync, Obsidian vault compatibilit
 | ---------------------------------- | ----------------------------------------------------------------- |
 | Language                           | TypeScript everywhere                                             |
 | Core (notes, index, search, links) | `@carbon/core`, a private workspace package, not published to npm |
-| App shell                          | Tauri 2 with official plugins, no custom Rust code for now        |
+| App shell                          | Tauri 2 with official plugins and a few small commands            |
 | UI                                 | React + Vite + Tailwind CSS                                       |
 | Editor                             | CodeMirror 6                                                      |
 | Storage                            | Markdown files + SQLite index                                     |
@@ -64,7 +74,7 @@ Ideas with no commitment (Android, macOS, iOS, sync, Obsidian vault compatibilit
 
 The reasoning behind each choice is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Repository layout (planned)
+## Repository layout
 
 One repository, one Tauri project for every platform.
 
@@ -77,7 +87,7 @@ carbon/
     features/           # editor, file tree, backlinks, search, tags, graph
     shells/             # layout per form factor (desktop first)
     platform/           # Tauri adapters for the core (file system, database)
-  tauri/                # Tauri: config, plugin registration, one small command
+  tauri/                # Tauri: config, plugin registration, a few small commands
   README.md
   ARCHITECTURE.md
   BACKLOG.md
