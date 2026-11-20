@@ -1,19 +1,25 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import reactHooks from "eslint-plugin-react-hooks";
+import type { Linter } from "eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
 /** Builds a `no-restricted-imports` rule from `[pattern, message]` pairs. */
-const restrictImports = (...patterns) => [
+const restrictImports = (
+  ...patterns: [group: string, message: string][]
+): Linter.RuleEntry => [
   "error",
   {
     patterns: patterns.map(([group, message]) => ({ group: [group], message })),
   },
 ];
 
-const noTauri = ["@tauri-apps/*", "Only src/platform may import Tauri APIs."];
+const noTauri: [string, string] = [
+  "@tauri-apps/*",
+  "Only src/platform may import Tauri APIs.",
+];
 
 export default defineConfig([
   globalIgnores(["dist", "tauri/target", "tauri/gen"]),
