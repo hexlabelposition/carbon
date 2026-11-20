@@ -74,7 +74,7 @@ import {
   showUpdate,
   useCanCheckForUpdates,
   useCheckState,
-} from "../updates/updates";
+} from "../updates/update-state";
 
 /** Opens the settings dialog; another dialog open closes. */
 export function openSettings(): void {

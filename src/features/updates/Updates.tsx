@@ -15,7 +15,7 @@ import {
   type AvailableUpdate,
   type CheckState,
   type Updater,
-} from "./updates";
+} from "./update-state";
 
 /** Installing, once asked: it goes on to the end or fails. */
 type InstallStep =

@@ -23,7 +23,7 @@ import {
   type Pane,
 } from "./workspace-state";
 import { log } from "../log/log";
-import { useBeforeUpdate } from "../updates/updates";
+import { useBeforeUpdate } from "../updates/update-state";
 
 interface WorkspaceProviderProps {
   vault: Vault;
