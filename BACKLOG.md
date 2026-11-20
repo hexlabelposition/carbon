@@ -146,7 +146,6 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-602** (P0) Performance pass against the budgets, fix regressions
 - [x] **C-603** (P0) App icon and branding in the app and installers
 - [x] **C-604** (P0) Packaging for Linux: AppImage, deb
-- [ ] **C-605** (P0) Use Carbon for my own notes for two weeks, fix what hurts
 - [x] **C-606** (P0) Error handling pass: clear messages, local log file (ADR-032)
 - [x] **C-607** (P1) Auto-update: a check at start that a setting turns off, a dialog that installs and restarts, "Check for updates" in the palette and the settings (ADR-034)
 - [ ] **C-608** (P1) Windows release: installer, test pass on a real Windows machine. The NSIS installer is built on a draft release; the test pass is open. Code signing waits until after 0.1 (see the ideas)
