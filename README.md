@@ -107,7 +107,6 @@ bun run format        # format with Prettier
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): how Carbon is built and why
 - [BACKLOG.md](BACKLOG.md): milestones and tasks
-- [CONTRIBUTING.md](CONTRIBUTING.md): setup, code style and commit rules
 
 ## Roadmap in one glance
 

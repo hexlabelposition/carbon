@@ -15,6 +15,6 @@ export function parseFiles(files: readonly NoteFile[]): ParsedFile[] {
 
 /** A `NoteParser` on the calling thread. */
 export const inlineParser: NoteParser = {
-  // A promise that rejects, never a synchronous throw (CONTRIBUTING.md).
+  // A promise that rejects, never a synchronous throw.
   parse: async (files) => parseFiles(files),
 };
