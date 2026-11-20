@@ -149,7 +149,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [ ] **C-605** (P0) Use Carbon for my own notes for two weeks, fix what hurts
 - [x] **C-606** (P0) Error handling pass: clear messages, local log file (ADR-032)
 - [x] **C-607** (P1) Auto-update: a check at start that a setting turns off, a dialog that installs and restarts, "Check for updates" in the palette and the settings (ADR-034)
-- [ ] **C-608** (P1) Windows release: installer, code signing, test pass on a real Windows machine. The NSIS installer is built on a draft release; signing and the test pass are open
+- [ ] **C-608** (P1) Windows release: installer, test pass on a real Windows machine. The NSIS installer is built on a draft release; the test pass is open. Code signing waits until after 0.1 (see the ideas)
 - [x] **C-609** (P1) End-to-end tests for the main flows (ADR-033): open the test vault, open a note, create one and save typing, quick switcher, search, a change on disk, settings. Linux
 - [x] **C-611** (P2) Configurable keyboard shortcuts: the base ones, in the settings; keys two actions share are marked red. History, tabs, zoom and find in the note keep their keys
 - [x] **C-613** (P1) Interface in English and Russian, with a language setting (ADR-025)
@@ -162,7 +162,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - [x] **C-620** (P2) Bookmarks (first called favorites): notes and images kept in `.carbon/bookmarks.json`, a sidebar view with a toolbar button, "Add to bookmarks" in the file tree menu and the palette
 - [x] **C-621** (P1) Open the vault left open at the last start; the start screen if the user closed it or it is gone
 - [x] **C-622** (P2) A bar below the note with its words, characters and reading time, and those of the selection
-- [ ] **C-623** (P1) Signing keys for releases. The updater (ADR-034): generate the key (`bun tauri signer generate`), put its public half in `plugins.updater.pubkey` of `tauri.conf.json`, the private one and its password in the secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and keep a copy apart: without it installed apps cannot update. Until then releases carry no `latest.json`. Windows code signing (C-608): the command of a signing service in the secret `WINDOWS_SIGN_COMMAND`, with `%1` for the file
+- [ ] **C-623** (P1) The signing key of the updater (ADR-034), before the first release: the key is built into the app, so a release without it can never update itself. Generate the key (`bun tauri signer generate`), put its public half in `plugins.updater.pubkey` of `tauri.conf.json`, the private one and its password in the secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and keep a copy apart: without it installed apps cannot update. Until then releases carry no `latest.json`
 
 ---
 
@@ -193,6 +193,7 @@ Done when: a stranger on Linux can download Carbon, create a vault and use it da
 - Paid optional services as an income model
 - Landing page and short user guide (was C-610 in M6)
 - AUR package (was C-612 in M6)
+- Windows code signing (was part of C-608), so SmartScreen stops warning about an unknown publisher once the installer gains reputation. SignPath Foundation signs open source projects for free, from GitHub Actions, as the publisher itself; Azure Artifact Signing is not open to individuals in the EU. The command of the service goes in the secret `WINDOWS_SIGN_COMMAND`, with `%1` for the file; SignPath may need a step of its own in `release.yml` instead
 
 ## Open decisions
 
