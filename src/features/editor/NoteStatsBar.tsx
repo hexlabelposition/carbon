@@ -16,6 +16,9 @@ export function NoteStatsBar({ stats }: { stats: NoteStats }) {
     t("stats.words", { count: shown.words }),
     t("stats.characters", { count: shown.characters }),
   ];
+  if (selection === null && minutes > 0) {
+    parts.push(t("stats.minutes", { count: minutes }));
+  }
   const details = [
     t("stats.noSpaces", { count: shown.charactersNoSpaces }),
     t("stats.lines", { count: shown.lines }),
@@ -26,14 +29,19 @@ export function NoteStatsBar({ stats }: { stats: NoteStats }) {
       className="flex h-7 shrink-0 items-center justify-end gap-2 border-t border-line px-3 text-small text-faint select-none"
     >
       <Tooltip label={details} side="top">
-        <span className="tabular-nums">
-          {selection !== null && (
-            <span className="text-muted">{t("stats.selected")} </span>
-          )}
-          {parts.join(" · ")}
-          {selection === null && minutes > 0 && (
-            <> · {t("stats.minutes", { count: minutes })}</>
-          )}
+        {/* A thin line before each part, the first too, not dots. The
+            selected amount and the note have the same parts, but the time
+            to read is the whole note's, so it is left out while text is
+            selected. */}
+        <span className="flex items-center tabular-nums">
+          {parts.map((part, index) => (
+            <span key={index} className="border-l border-line px-2 last:pr-0">
+              {index === 0 && selection !== null && (
+                <span className="text-muted">{t("stats.selected")} </span>
+              )}
+              {part}
+            </span>
+          ))}
         </span>
       </Tooltip>
     </footer>
