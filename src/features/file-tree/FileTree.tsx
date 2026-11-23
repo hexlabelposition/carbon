@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type DragEvent,
   type KeyboardEvent,
   type MouseEvent,
@@ -14,9 +15,11 @@ import {
   labelOf,
   useFileTree,
   type FileTree as Tree,
+  type TreeRow,
   type TreeScope,
 } from "./use-file-tree";
 import { useVirtualRows } from "./use-virtual-rows";
+import { useTreeMotion } from "./use-tree-motion";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
@@ -107,6 +110,7 @@ export function FileTree({
   );
   const { viewportRef, onScroll, first, end, totalHeight, scrollToIndex } =
     useVirtualRows(tree.rows.length, ROW_STEP, LIST_PADDING);
+  const { motion, done } = useTreeMotion(tree.rows);
   const [dragging, setDragging] = useState<string | null>(null);
   /** The folder a drop would go to; `tree.root` is the root of the tree. */
   const [dropFolder, setDropFolder] = useState<string | null>(null);
@@ -201,6 +205,134 @@ export function FileTree({
     };
   }
 
+  const renderRow = (row: TreeRow) => {
+    const indent = { paddingLeft: row.depth * INDENT + 6 };
+    if (row.kind === "new") {
+      return (
+        <div
+          key="new"
+          className="flex shrink-0 items-center gap-1 pr-2"
+          style={{ ...indent, height: ROW_HEIGHT }}
+        >
+          <Chevron hidden />
+          <NameInput
+            label={t(
+              row.what === "note" ? "tree.newNoteName" : "tree.newFolderName",
+            )}
+            initial=""
+            onCommit={(text) => finishEdit(() => tree.commitEdit(text))}
+            onCancel={() => finishEdit(tree.cancelEdit)}
+          />
+        </div>
+      );
+    }
+
+    const { node } = row;
+    const isFolder = node.kind === "folder";
+    const selected = tree.selected === node.path;
+    const renaming =
+      tree.edit?.kind === "rename" && tree.edit.path === node.path;
+    const inDrop =
+      dropFolder !== null &&
+      dropFolder !== tree.root &&
+      isWithin(node.path, dropFolder);
+    return (
+      <div
+        key={node.path}
+        id={rowId(node.path)}
+        data-path={node.path}
+        role="treeitem"
+        aria-level={row.depth + 1}
+        aria-selected={selected}
+        aria-expanded={isFolder ? tree.isExpanded(node.path) : undefined}
+        draggable={!renaming}
+        className={`flex shrink-0 cursor-default items-center gap-1 rounded-md pr-2 select-none ${
+          tree.activePath === node.path || inDrop
+            ? "bg-selected"
+            : "hover:bg-raise"
+        } ${
+          selected ? "outline-1 -outline-offset-1 outline-line-strong" : ""
+        } ${
+          tree.cut === node.path || dragging === node.path ? "opacity-50" : ""
+        } ${node.kind === "file" ? "text-muted" : ""}`}
+        style={{ ...indent, height: ROW_HEIGHT }}
+        onClick={(event) => tree.activate(node, event.ctrlKey || event.metaKey)}
+        onAuxClick={(event) => {
+          // The middle button opens a note in a new tab.
+          if (event.button === 1 && !isFolder) {
+            tree.activate(node, true);
+          }
+        }}
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", node.path);
+          event.dataTransfer.effectAllowed = "move";
+          setDragging(node.path);
+        }}
+        onDragEnd={endDrag}
+        {...dropZone(isFolder ? node.path : parentOf(node.path))}
+      >
+        <Chevron
+          hidden={!isFolder}
+          open={isFolder && tree.isExpanded(node.path)}
+        />
+        {renaming ? (
+          <NameInput
+            label={t("tree.newName", {
+              name: nameOf(node.path),
+            })}
+            initial={labelOf(node)}
+            onCommit={(text) => finishEdit(() => tree.commitEdit(text))}
+            onCancel={() => finishEdit(tree.cancelEdit)}
+          />
+        ) : (
+          <span className="truncate">{labelOf(node)}</span>
+        )}
+      </div>
+    );
+  };
+
+  /**
+   * The rows in view; while a folder opens or closes, the rows it shows or
+   * hides are drawn in a block that grows from nothing or shrinks to it,
+   * so the rows below it slide. Only for a folder in view.
+   */
+  const renderRows = () => {
+    const rows = tree.rows;
+    const at = motion?.at ?? -1;
+    if (motion === null || at - 1 < first || at - 1 >= end) {
+      return rows.slice(first, end).map(renderRow);
+    }
+    const shown =
+      motion.kind === "open"
+        ? rows.slice(at, Math.min(end, at + motion.rows.length))
+        : motion.rows.slice(0, end - first);
+    const after =
+      motion.kind === "open" ? Math.min(end, at + motion.rows.length) : at;
+    return [
+      ...rows.slice(first, at).map(renderRow),
+      <div
+        key={`motion-${motion.key}`}
+        className={`flex shrink-0 flex-col overflow-hidden ${
+          motion.kind === "open" ? "cb-tree-open" : "cb-tree-close"
+        }`}
+        style={
+          {
+            "--cb-tree-height": `${shown.length * ROW_STEP}px`,
+          } as CSSProperties
+        }
+        // The rows of a closing folder are gone already: only drawn.
+        aria-hidden={motion.kind === "close" ? true : undefined}
+        inert={motion.kind === "close"}
+        onAnimationEnd={(event) => {
+          if (event.target === event.currentTarget) done();
+        }}
+      >
+        {shown.map(renderRow)}
+      </div>,
+      ...rows.slice(after, end).map(renderRow),
+    ];
+  };
+
   const finishEdit = (action: () => void) => {
     action();
     viewportRef.current?.focus();
@@ -264,108 +396,7 @@ export function FileTree({
                     transform: `translateY(${LIST_PADDING + first * ROW_STEP}px)`,
                   }}
                 >
-                  {tree.rows.slice(first, end).map((row) => {
-                    const indent = { paddingLeft: row.depth * INDENT + 6 };
-                    if (row.kind === "new") {
-                      return (
-                        <div
-                          key="new"
-                          className="flex shrink-0 items-center gap-1 pr-2"
-                          style={{ ...indent, height: ROW_HEIGHT }}
-                        >
-                          <Chevron hidden />
-                          <NameInput
-                            label={t(
-                              row.what === "note"
-                                ? "tree.newNoteName"
-                                : "tree.newFolderName",
-                            )}
-                            initial=""
-                            onCommit={(text) =>
-                              finishEdit(() => tree.commitEdit(text))
-                            }
-                            onCancel={() => finishEdit(tree.cancelEdit)}
-                          />
-                        </div>
-                      );
-                    }
-
-                    const { node } = row;
-                    const isFolder = node.kind === "folder";
-                    const selected = tree.selected === node.path;
-                    const renaming =
-                      tree.edit?.kind === "rename" &&
-                      tree.edit.path === node.path;
-                    const inDrop =
-                      dropFolder !== null &&
-                      dropFolder !== tree.root &&
-                      isWithin(node.path, dropFolder);
-                    return (
-                      <div
-                        key={node.path}
-                        id={rowId(node.path)}
-                        data-path={node.path}
-                        role="treeitem"
-                        aria-level={row.depth + 1}
-                        aria-selected={selected}
-                        aria-expanded={
-                          isFolder ? tree.isExpanded(node.path) : undefined
-                        }
-                        draggable={!renaming}
-                        className={`flex shrink-0 cursor-default items-center gap-1 rounded-md pr-2 select-none ${
-                          tree.activePath === node.path || inDrop
-                            ? "bg-selected"
-                            : "hover:bg-raise"
-                        } ${
-                          selected
-                            ? "outline-1 -outline-offset-1 outline-line-strong"
-                            : ""
-                        } ${
-                          tree.cut === node.path || dragging === node.path
-                            ? "opacity-50"
-                            : ""
-                        } ${node.kind === "file" ? "text-muted" : ""}`}
-                        style={{ ...indent, height: ROW_HEIGHT }}
-                        onClick={(event) =>
-                          tree.activate(node, event.ctrlKey || event.metaKey)
-                        }
-                        onAuxClick={(event) => {
-                          // The middle button opens a note in a new tab.
-                          if (event.button === 1 && !isFolder) {
-                            tree.activate(node, true);
-                          }
-                        }}
-                        onDragStart={(event) => {
-                          event.dataTransfer.setData("text/plain", node.path);
-                          event.dataTransfer.effectAllowed = "move";
-                          setDragging(node.path);
-                        }}
-                        onDragEnd={endDrag}
-                        {...dropZone(
-                          isFolder ? node.path : parentOf(node.path),
-                        )}
-                      >
-                        <Chevron
-                          hidden={!isFolder}
-                          open={isFolder && tree.isExpanded(node.path)}
-                        />
-                        {renaming ? (
-                          <NameInput
-                            label={t("tree.newName", {
-                              name: nameOf(node.path),
-                            })}
-                            initial={labelOf(node)}
-                            onCommit={(text) =>
-                              finishEdit(() => tree.commitEdit(text))
-                            }
-                            onCancel={() => finishEdit(tree.cancelEdit)}
-                          />
-                        ) : (
-                          <span className="truncate">{labelOf(node)}</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {renderRows()}
                 </div>
               </div>
             )}
@@ -659,7 +690,7 @@ function Chevron({ hidden, open }: { hidden?: boolean; open?: boolean }) {
     <svg
       viewBox="0 0 16 16"
       aria-hidden="true"
-      className={`size-3.5 shrink-0 text-faint ${hidden ? "invisible" : ""} ${
+      className={`size-3.5 shrink-0 text-faint transition-transform duration-150 motion-reduce:transition-none ${hidden ? "invisible" : ""} ${
         open ? "rotate-90" : ""
       }`}
     >

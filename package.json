@@ -23,7 +23,7 @@
     "tauri": "tauri",
     "test": "bun test",
     "e2e": "bun scripts/e2e.ts",
-    "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && tsc -p e2e && bun run --filter '*' typecheck"
+    "typecheck": "tsc && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.test.json && tsc -p e2e && bun run --filter '*' typecheck"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

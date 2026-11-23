@@ -220,6 +220,38 @@
   animation: cb-save-draw 350ms ease-out 50ms forwards;
 }
 
+/*
+ * A folder of the file tree opening or closing (FileTree): the block of
+ * its rows grows from nothing to their height, or shrinks back.
+ */
+@keyframes cb-tree-open {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--cb-tree-height);
+  }
+}
+
+@keyframes cb-tree-close {
+  from {
+    height: var(--cb-tree-height);
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+.cb-tree-open {
+  animation: cb-tree-open 150ms ease-out;
+}
+
+.cb-tree-close {
+  animation: cb-tree-close 150ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cb-logo-wave,
   .cb-save-dot,

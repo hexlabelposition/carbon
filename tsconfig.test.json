@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /* Tests of the app may use Bun APIs, the app itself may not */
+    "types": ["bun"]
+  },
+  "include": ["src"],
+  "exclude": [],
+  "references": []
+}
