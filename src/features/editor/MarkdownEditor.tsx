@@ -24,6 +24,7 @@ import {
 import { scrollParentOf } from "./glide";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
+import { layoutIndependentKeys } from "./layout-keys";
 import { keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
@@ -265,6 +266,7 @@ export function MarkdownEditor({
             current: (index) => latest.current.outline?.current(index),
           }),
           findReplace,
+          layoutIndependentKeys,
           editorTheme,
           // Tab indents, as a notes editor should. It never moves the focus
           // out: the app turns that off (useTabFocusGuard).

@@ -21,6 +21,7 @@ import {
 } from "@codemirror/view";
 import { t } from "../i18n/i18n";
 import { scrollParentOf } from "./glide";
+import { runAsLatin } from "./layout-keys";
 
 /**
  * Find and replace in the note, with CodeMirror's search and a panel of
@@ -304,7 +305,12 @@ class FindPanel implements Panel {
     panels.set(view, this);
     // Escape, F3 and Ctrl+G work in the panel as in the text.
     this.dom.addEventListener("keydown", (event) => {
-      if (runScopeHandlers(view, event, "search-panel")) event.preventDefault();
+      if (runScopeHandlers(view, event, "search-panel")) {
+        event.preventDefault();
+      } else {
+        // Ctrl+G and the like on any layout, as in the text.
+        runAsLatin(view, event, "search-panel");
+      }
     });
     this.showCount(view.state);
   }
