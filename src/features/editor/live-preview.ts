@@ -91,13 +91,19 @@ export const livePreview = [
       userSelect: "none",
     },
     ".cm-bullet": { color: "var(--cb-faint)" },
-    ".cm-wiki-link": { color: "var(--cb-link)" },
-    // A link to a note that does not exist yet: not by color alone.
-    ".cm-wiki-link.cm-wiki-link-missing": {
-      color: "var(--cb-faint)",
-      textDecoration: "underline dotted",
-      textUnderlineOffset: "3px",
+    // As links are drawn in `styles/markdown.css`: a quiet line below,
+    // dashed for a note that does not exist yet, so not by color alone.
+    ".cm-wiki-link": {
+      color: "var(--cb-link)",
+      borderBottom: "1px solid var(--cb-line-strong)",
     },
+    ".cm-wiki-link.cm-wiki-link-missing": { borderBottomStyle: "dashed" },
+    // The colors reach the text inside too: the highlighting draws a link
+    // in a span of its own, in the link color, inside or around this one.
+    ".cm-wiki-link-missing, .cm-wiki-link-missing *": {
+      color: "var(--cb-faint)",
+    },
+    ".cm-wiki-link:hover, .cm-wiki-link:hover *": { color: "var(--cb-fg)" },
     ".cm-wiki-link-separator": { color: "var(--cb-faint)" },
     // Drawn, not the box of the system: that one sits low and draws its
     // own coarse tick. One drawing for the box and the tick, so the tick
