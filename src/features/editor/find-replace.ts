@@ -93,11 +93,12 @@ export const findReplace = [
       boxSizing: "border-box",
       height: "26px",
       paddingRight: "2px",
-      border: "1px solid var(--cb-line-strong)",
+      border: "1px solid var(--cb-line)",
       borderRadius: "4px",
       backgroundColor: "var(--cb-bg)",
     },
-    ".cb-find-field:focus-within": { borderColor: "var(--cb-fg)" },
+    // Focused in the color of the focus rings of the app.
+    ".cb-find-field:focus-within": { borderColor: "var(--cb-line-strong)" },
     ".cb-find-field[data-invalid=true]": { borderColor: "var(--cb-danger)" },
     ".cb-find input": {
       boxSizing: "border-box",
@@ -105,14 +106,14 @@ export const findReplace = [
       minWidth: "0",
       height: "26px",
       padding: "0 6px",
-      border: "1px solid var(--cb-line-strong)",
+      border: "1px solid var(--cb-line)",
       borderRadius: "4px",
       backgroundColor: "var(--cb-bg)",
       color: "var(--cb-fg)",
       font: "inherit",
       outline: "none",
     },
-    ".cb-find input:focus": { borderColor: "var(--cb-fg)" },
+    ".cb-find input:focus": { borderColor: "var(--cb-line-strong)" },
     ".cb-find-field input, .cb-find-field input:focus": {
       flex: "1",
       height: "24px",
@@ -418,9 +419,10 @@ class FindPanel implements Panel {
       ? countMatches(state, query)
       : { total: 0, current: null };
     for (const button of this.needQuery) button.disabled = total === 0;
+    // Nothing to find yet counts as no matches: the place is never empty.
     this.count.textContent =
       query.search === ""
-        ? ""
+        ? t("find.none")
         : !query.valid
           ? t("find.invalid")
           : total === 0
