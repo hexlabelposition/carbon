@@ -24,8 +24,11 @@ interface ScrollAreaProps extends Omit<ComponentProps<"div">, "children"> {
    */
   scrollbarClassName?: string;
   /**
-   * Classes of the wrapper of the content, as `flex flex-1 flex-col` for
-   * content that fills the height, as a note does.
+   * Classes of the wrapper of the content, as `flex shrink-0 grow
+   * flex-col` for content that fills the height, as a note does. Not
+   * `flex-1`, nor a `min-h-full` alone: the wrapper would be held to the
+   * height of the area, and the scrollbar, which watches its size, would
+   * miss the content growing inside it.
    */
   contentClassName?: string;
   children: ReactNode;

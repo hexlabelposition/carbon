@@ -132,8 +132,10 @@ export function NoteEditor({
       <ScrollArea
         rootClassName="flex-1"
         // The name and the editor fill the height: a click below the text
-        // still puts the cursor in it.
-        contentClassName="flex min-h-full flex-1 flex-col"
+        // still puts the cursor in it. Grown by the text, never held to
+        // the height of the view: the scrollbar watches its size, and
+        // would not see the text grow with a larger text size.
+        contentClassName="flex shrink-0 grow flex-col"
         // To read, the scroll takes the focus on a click, so Page Up and
         // Page Down, the arrows and Space scroll it: the text cannot. The
         // editor keeps a click from focusing it, so it is focused here.
