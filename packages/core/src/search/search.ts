@@ -1,5 +1,5 @@
 import type { IndexStore } from "../index/index-store";
-import type { NotePath, SearchHit } from "../types";
+import type { NoteAlias, NotePath, SearchHit } from "../types";
 import { firstMatch } from "./locate";
 import { fullTextQuery } from "./query";
 import { TitleMatcher, type TitleHit } from "./titles";
@@ -44,8 +44,36 @@ const DEFAULT_TITLE_LIMIT = 50;
  */
 export class Search {
   private readonly matcher = new TitleMatcher();
+  /** The aliases of the notes, as the index had them when last read. */
+  private aliases: readonly NoteAlias[] = [];
+  /** The aliases being read again, if they are. */
+  private loading: Promise<void> | null = null;
 
   constructor(private readonly context: SearchContext) {}
+
+  /**
+   * Reads the aliases of the notes from the index again, for `titles`.
+   * The vault calls it once the index is open and whenever it changes,
+   * so the quick switcher never waits for the index to open, and a query
+   * costs no read of it. Until the first read, titles alone match.
+   */
+  indexChanged(): void {
+    const load: Promise<void> = this.context
+      .index()
+      .then((index) => index.aliases())
+      .then(
+        (aliases) => {
+          // A newer read may have started meanwhile: it has the last word.
+          if (this.loading !== load) return;
+          this.aliases = aliases;
+          this.loading = null;
+        },
+        () => {
+          if (this.loading === load) this.loading = null;
+        },
+      );
+    this.loading = load;
+  }
 
   /**
    * The notes that have every word of `text`, as a word or the start of
@@ -64,17 +92,21 @@ export class Search {
   }
 
   /**
-   * The notes whose titles match `text` fuzzily, the best first: for a
-   * quick switcher (`TitleMatcher`). Works from the vault tree, so it
-   * needs no index and knows a new note at once. While `text` is blank,
-   * the notes of `options.recent` that exist, else nothing.
+   * The notes whose titles or aliases match `text` fuzzily, the best
+   * first: for a quick switcher (`TitleMatcher`). Works from the vault
+   * tree, so it needs no index and knows a new note at once; the aliases
+   * come from the index (`indexChanged`). While `text` is blank, the
+   * notes of `options.recent` that exist, else nothing.
    */
   async titles(text: string, options: TitleOptions = {}): Promise<TitleHit[]> {
     const tree = await this.context.tree();
     const limit = options.limit ?? DEFAULT_TITLE_LIMIT;
-    return text.trim() === ""
-      ? this.matcher.existing(tree, options.recent ?? [], limit)
-      : this.matcher.match(tree, text, limit);
+    if (text.trim() === "") {
+      return this.matcher.existing(tree, options.recent ?? [], limit);
+    }
+    // A read under way is one query of the index that is already open.
+    if (this.loading !== null) await this.loading;
+    return this.matcher.match(tree, text, limit, this.aliases);
   }
 
   /**

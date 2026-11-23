@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Vault, type TreeNode } from "../src/index";
+import { contentHash, Vault, type TreeNode } from "../src/index";
 import { TitleMatcher } from "../src/search/titles";
 import { createMemoryPlatform } from "./fakes";
 
@@ -122,6 +122,44 @@ describe("TitleMatcher", () => {
     ]);
   });
 
+  test("finds a note by an alias, ignoring case", () => {
+    const tree = treeOf("Versioning.md", "Other.md");
+    const aliases = [{ path: "Versioning.md", alias: "SemVer" }];
+    const [hit] = new TitleMatcher().match(tree, "semver", 50, aliases);
+    expect(hit).toMatchObject({
+      path: "Versioning.md",
+      title: "Versioning",
+      alias: "SemVer",
+      matches: [{ start: 0, end: 6 }],
+      score: 1,
+    });
+  });
+
+  test("gives a note once, by its title when that matches as well", () => {
+    const tree = treeOf("Garden.md");
+    const aliases = [
+      { path: "Garden.md", alias: "Garden" },
+      { path: "Garden.md", alias: "Yard" },
+    ];
+    const hits = new TitleMatcher().match(tree, "garden", 50, aliases);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].alias).toBeUndefined();
+  });
+
+  test("ranks a note by its alias among the titles", () => {
+    const tree = treeOf("Semantic notes.md", "Versioning.md");
+    const aliases = [{ path: "Versioning.md", alias: "SemVer" }];
+    const hits = new TitleMatcher().match(tree, "semver", 50, aliases);
+    expect(paths(hits)[0]).toBe("Versioning.md");
+  });
+
+  test("leaves out the aliases of notes not in the tree", () => {
+    const aliases = [{ path: "Gone.md", alias: "SemVer" }];
+    expect(
+      new TitleMatcher().match(treeOf("a.md"), "semver", 50, aliases),
+    ).toEqual([]);
+  });
+
   test("matches 10,000 titles quickly", () => {
     const tree = treeOf(
       ...Array.from({ length: 10_000 }, (_, i) => `f${i % 50}/Note ${i}.md`),
@@ -153,6 +191,32 @@ describe("vault.search.titles", () => {
     ]);
     expect(await vault.search.titles("")).toEqual([]);
     expect(paths(await vault.search.titles("a", { recent }))).toEqual(["a.md"]);
+    vault.close();
+  });
+
+  test("finds a note by an alias from its frontmatter", async () => {
+    const root = "/v";
+    const platform = createMemoryPlatform({
+      [`${root}/Versioning.md`]: "---\naliases: [SemVer]\n---\nText",
+      [`${root}/Other.md`]: "",
+    });
+    const vault = await Vault.open(root, platform);
+    await vault.indexed();
+    const [hit] = await vault.search.titles("semver");
+    expect(hit).toMatchObject({ path: "Versioning.md", alias: "SemVer" });
+
+    // A new alias is found once the index has the change.
+    const updated = new Promise<void>((resolve) =>
+      vault.on("index:updated", () => resolve()),
+    );
+    const note = await vault.notes.read("Other.md");
+    await vault.notes.write(
+      "Other.md",
+      "---\naliases: [Changelog]\n---\n",
+      contentHash(note),
+    );
+    await updated;
+    expect(paths(await vault.search.titles("changelog"))).toEqual(["Other.md"]);
     vault.close();
   });
 

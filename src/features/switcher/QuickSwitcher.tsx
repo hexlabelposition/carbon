@@ -103,12 +103,16 @@ export function QuickSwitcher({ switcher }: { switcher: Switcher }) {
                   activate(index, event.ctrlKey || event.metaKey)
                 }
               >
+                {/* Found by an alias: the alias, then the note it names. */}
                 <span className="min-w-0 flex-1 truncate">
                   <Highlighted
-                    text={hit.title}
+                    text={hit.alias ?? hit.title}
                     ranges={hit.matches}
                     className="bg-transparent font-semibold text-fg"
                   />
+                  {hit.alias !== undefined && (
+                    <span className="text-faint"> → {hit.title}</span>
+                  )}
                 </span>
                 {/* The folder of the note, "/" for the root, in a box. The
                     title is cut short first; the folder only past half the

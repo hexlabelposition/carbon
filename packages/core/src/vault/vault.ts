@@ -386,8 +386,13 @@ export class Vault {
           root,
           store,
           parser: platform.parser ?? inlineParser,
-          onUpdated: () => this.emitter.emit("index:updated", undefined),
+          onUpdated: () => {
+            this.search.indexChanged();
+            this.emitter.emit("index:updated", undefined);
+          },
         });
+        // The aliases the index kept from the last time, before the scan.
+        this.search.indexChanged();
         return this.indexer.scan((progress) => {
           this.status = { state: "scanning", ...progress };
           this.emitter.emit("index:progress", progress);
@@ -405,6 +410,7 @@ export class Vault {
             doneAt,
             waits: scan.waits,
           };
+          this.search.indexChanged();
           this.emitter.emit("index:ready", undefined);
         },
         (error: unknown) => {
