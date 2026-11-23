@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Carbon is a local-first Markdown notes app (an Obsidian alternative) built with Tauri 2, React and a pure TypeScript core. Linux is the primary platform, Windows is supported. `ARCHITECTURE.md` is the detailed design (with ADR-NNN decisions). There is no backlog in the repository: tasks and ideas are planned in the author's own Carbon vault, and what each release brought is in GitHub Releases. Older commits and code comments refer to C-NNN task ids and milestones M0–M6 of the former backlog: look one up with `git show 1b7fb71:BACKLOG.md`.
 
+## Reading ARCHITECTURE.md
+
+ARCHITECTURE.md is large (about 70 KB). Don't read it whole: find the section you need with `grep -n '^##' ARCHITECTURE.md` and read only that range. This file already covers what most tasks need. Sections:
+
+- §1 Goals and constraints (performance budgets)
+- §2 High-level overview, §3 Repository layout
+- §4 Data model: vault on disk, Markdown flavor, index schema, note identity and link resolution
+- §5 Core modules: platform, vault, parser, index, links, search, tags, config
+- §6 Public API and events (`Vault` and its events)
+- §7 Tauri usage (plugins, custom commands, capabilities)
+- §8 UI: structure, shells, threads, editor, graph
+- §9 Key flows: open vault, edit and save, external change, rename
+- §10 Cross-platform, security, privacy, known limitations
+- §11 Testing and quality
+- §12 Decision log (ADR-NNN), §13 Open questions
+
 ## Commands
 
 Bun is the package manager and test runner (Node.js is still needed for tsc, ESLint and Vite).
@@ -49,9 +65,20 @@ This is why the core is fully testable with `bun test`: `packages/core/test/fake
 
 - `features/<name>/`: feature logic (hooks, state) and components, shared across form factors. `shells/desktop/` arranges panels and navigation; it is the only shell. Keep feature logic out of layout components and don't rely on hover as the only way to do something.
 - `workers/`: the parse worker (startup indexing) and the graph layout worker (d3-force; rendering uses sigma/canvas).
-- Editor: CodeMirror 6 with live preview implemented as decorations (`features/editor/live-preview*.ts`); the document on disk is always plain Markdown.
+- Editor: CodeMirror 6 with live preview implemented as decorations (`features/editor/live-preview*.ts`); the document on disk is always plain Markdown. See the editor map below.
 - UI text is translated: add every string to both `features/i18n/en.ts` and `features/i18n/ru.ts`.
 - `src/dev/`: dev-build-only panels (benchmarks, test vault).
+
+### Editor map (`src/features/editor/`)
+
+The biggest feature (about 190 KB). Open only the files the task touches:
+
+- `NoteEditor.tsx`: one open note: title field, editor, stats bar, conflict dialog, image viewer. `use-note-document.ts`: loading, autosave and the `baseHash` conflict flow.
+- `MarkdownEditor.tsx`: the CodeMirror setup: extensions, keymaps, the live preview / source mode switch.
+- Live preview: `live-preview.ts` (inline marks, headings, lists, tasks, wiki links), plus `-frontmatter` (properties block and editor), `-table`, `-image`, `-callout`.
+- Links: `wiki-link.ts` (labels), `link-completion.ts` (`[[` suggestions), `link-follow.ts` (Ctrl+click), `link-preview.ts` (hover), `missing-links.ts` (links to notes that don't exist), `use-note-links.ts`.
+- Tags: `tag-completion.ts`, `use-note-tags.ts`. Images: `use-note-images.ts` (paste, drop), `ImageViewer.tsx`.
+- Other: `find-replace.ts`, `outline.ts`, `note-stats.ts` + `NoteStatsBar.tsx`, `NoteTitleField.tsx` + `use-note-title.ts` (rename), `editor-theme.ts` (text sizes), `layout-keys.ts` (shortcuts on non-Latin layouts), `glide.ts` (smooth scroll), `frontmatter-range.ts`, `use-reading-mode.ts`, `use-source-mode.ts`, `use-wheel-text-size.ts`.
 
 ### Tauri (`tauri/`)
 
