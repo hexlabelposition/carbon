@@ -21,6 +21,7 @@ import {
   defaultCalloutTitle,
   parseCalloutHeader,
 } from "./live-preview-callout";
+import { codeBlockTheme, decorateCodeBlock } from "./live-preview-code";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -29,7 +30,7 @@ import {
  *
  * Covers headings, bold, italic, strikethrough, inline code, wiki links,
  * lists, task checkboxes, quotes, callouts, horizontal rules and code
- * blocks. Hiding is decoration only: the text of the note changes only
+ * blocks (`live-preview-code.ts`). Hiding is decoration only: the text of the note changes only
  * when the user types or ticks a task.
  */
 export const livePreview = [
@@ -83,13 +84,6 @@ export const livePreview = [
       borderRadius: "0 0 6px 6px",
     },
     ".cm-line.cm-code-first.cm-code-last": { borderRadius: "6px" },
-    ".cm-code-language": {
-      float: "right",
-      fontFamily: "var(--font-sans)",
-      fontSize: "11px",
-      color: "var(--cb-faint)",
-      userSelect: "none",
-    },
     ".cm-bullet": { color: "var(--cb-faint)" },
     // As links are drawn in `styles/markdown.css`: a quiet line below,
     // dashed for a note that does not exist yet, so not by color alone.
@@ -194,6 +188,7 @@ export const livePreview = [
       verticalAlign: "middle",
     },
   }),
+  codeBlockTheme,
 ];
 
 /** The dot shown in place of the "-", "*" or "+" of a list item. */
@@ -248,24 +243,6 @@ class TaskWidget extends WidgetType {
   }
 }
 
-/** The name of the language, shown in place of the opening "```ts". */
-class LanguageWidget extends WidgetType {
-  constructor(private readonly language: string) {
-    super();
-  }
-
-  eq(other: LanguageWidget): boolean {
-    return other.language === this.language;
-  }
-
-  toDOM(): HTMLElement {
-    const label = document.createElement("span");
-    label.className = "cm-code-language";
-    label.textContent = this.language;
-    return label;
-  }
-}
-
 /** The " > " shown in place of the "#" between a note and its heading. */
 class SeparatorWidget extends WidgetType {
   toDOM(): HTMLElement {
@@ -297,8 +274,6 @@ const rule = Decoration.replace({ widget: new RuleWidget() });
 const taskDone = Decoration.mark({ class: "cm-task-done" });
 const quoteLine = Decoration.line({ class: "cm-quote" });
 const calloutTitle = Decoration.mark({ class: "cm-callout-title" });
-const language = (name: string) =>
-  Decoration.replace({ widget: new LanguageWidget(name) });
 const task = (checked: boolean) =>
   Decoration.replace({ widget: new TaskWidget(checked) });
 
@@ -430,19 +405,7 @@ function decorate(view: EditorView): DecorationSet {
           return;
         }
         if (name === "FencedCode") {
-          const first = state.doc.lineAt(node.from);
-          const end = state.doc.lineAt(node.to);
-          eachLineInView((line) => {
-            const edge =
-              (line.number === first.number ? " cm-code-first" : "") +
-              (line.number === end.number ? " cm-code-last" : "");
-            ranges.push(
-              Decoration.line({ class: `cm-code${edge}` }).range(line.from),
-            );
-          });
-          if (node.from >= done && !editing(node.from, node.to)) {
-            hideFences(state, node, ranges);
-          }
+          decorateCodeBlock(state, node, ranges, editing, eachLineInView);
           // Go on into the block: its code is highlighted by its language.
           return;
         }
@@ -541,30 +504,5 @@ function hideHeadingMarks(
       while (from > heading.from && isSpace(from - 1)) from--;
     }
     ranges.push(hide.range(from, to));
-  }
-}
-
-/**
- * Hides the fences of a code block: the opening one shows the name of the
- * language instead, the closing one becomes the empty bottom of the box.
- */
-function hideFences(
-  state: EditorState,
-  block: SyntaxNode,
-  ranges: Range<Decoration>[],
-): void {
-  const marks = block.getChildren("CodeMark");
-  const opening = marks[0];
-  if (opening === undefined) return;
-  const info = block.getChild("CodeInfo");
-  const name = info === null ? "" : state.sliceDoc(info.from, info.to);
-  // Up to the end of the line: the fence, the language and what follows.
-  ranges.push(
-    language(name).range(opening.from, state.doc.lineAt(opening.from).to),
-  );
-  // A block that is still being typed has no closing fence yet.
-  const closing = marks[marks.length - 1];
-  if (marks.length > 1 && closing.to === block.to) {
-    ranges.push(hide.range(closing.from, closing.to));
   }
 }
