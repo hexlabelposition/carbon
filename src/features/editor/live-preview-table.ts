@@ -28,6 +28,7 @@ import { noteSize } from "./editor-theme";
  * allows from a state field, not from a view plugin like the rest of the
  * live preview. A field cannot see whether the editor has the focus, so a
  * table stays raw while the cursor is in it even when the focus is not.
+ * In reading mode a table is always drawn and a click leaves it drawn.
  */
 export const tablePreview = [
   StateField.define<DecorationSet>({
@@ -36,6 +37,8 @@ export const tablePreview = [
       const changed =
         transaction.docChanged ||
         transaction.selection !== undefined ||
+        // Reading mode turned on or off.
+        transaction.reconfigured ||
         // Parsing a long note finishes in the background.
         syntaxTree(transaction.startState) !== syntaxTree(transaction.state);
       return changed ? decorate(transaction.state) : decorations;
@@ -109,7 +112,9 @@ const sourceLine = Decoration.line({ class: "cm-table-source" });
 
 function decorate(state: EditorState): DecorationSet {
   const ranges: Range<Decoration>[] = [];
+  // Nothing is edited in reading mode, wherever the cursor was left.
   const editing = (from: number, to: number) =>
+    !state.readOnly &&
     state.selection.ranges.some(
       (range) => range.from <= to && range.to >= from,
     );
@@ -203,7 +208,9 @@ class TableWidget extends WidgetType {
 
     // A click on a cell puts the cursor at that cell in the Markdown,
     // which also turns the table back into text.
+    // In reading mode the click does nothing: text can still be selected.
     table.addEventListener("mousedown", (event) => {
+      if (view.state.readOnly) return;
       const cell = (event.target as Element).closest<HTMLElement>("th, td");
       event.preventDefault();
       // Where the table starts now: the text above it may have changed
