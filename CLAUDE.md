@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Carbon is a local-first Markdown notes app (an Obsidian alternative) built with Tauri 2, React and a pure TypeScript core. Linux is the primary platform, Windows is supported. `ARCHITECTURE.md` is the detailed design (with ADR-NNN decisions); `BACKLOG.md` holds milestones and tasks with C-NNN ids that commits and code comments refer to.
+Carbon is a local-first Markdown notes app (an Obsidian alternative) built with Tauri 2, React and a pure TypeScript core. Linux is the primary platform, Windows is supported. `ARCHITECTURE.md` is the detailed design (with ADR-NNN decisions). There is no backlog in the repository: tasks and ideas are planned in the author's own Carbon vault, and what each release brought is in GitHub Releases. Older commits and code comments refer to C-NNN task ids and milestones M0–M6 of the former backlog: look one up with `git show 1b7fb71:BACKLOG.md`.
 
 ## Commands
 

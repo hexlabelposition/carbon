@@ -2,8 +2,6 @@
 
 Fast, local-first notes with links. A simpler, more human alternative to Obsidian.
 
-> **Status:** 0.1, the first release. Early: expect rough edges. See [BACKLOG.md](BACKLOG.md) for what comes next.
-
 ## Install
 
 Download the latest release from [GitHub Releases](https://github.com/hexlabelposition/carbon/releases/latest):
@@ -30,17 +28,6 @@ Carbon is open to everyone, but it is built to solve its author's own note-takin
 3. **Fast by design.** Performance budgets are defined in [ARCHITECTURE.md](ARCHITECTURE.md) and checked with benchmarks.
 4. **Core is separate from the UI.** All note logic lives in a TypeScript library that knows nothing about React or Tauri.
 
-## Features (v0.1)
-
-- Markdown editor with live preview (formatting renders in place while you type)
-- Wiki links `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]` with autocomplete; renaming a note rewrites the links to it
-- Backlinks panel with context, and an outline of the note
-- Full-text search and a quick switcher
-- Tags (`#tag`, nested `#area/topic`) and YAML frontmatter
-- Graph view (global and local)
-- Bookmarks, drafts and a trash inside the vault
-- Light and dark themes, configurable shortcuts, English and Russian
-
 ### Platforms
 
 | Platform   | Status                                        |
@@ -55,10 +42,6 @@ Carbon is open to everyone, but it is built to solve its author's own note-takin
 - Built-in sync. A vault is a normal folder, so git, Syncthing or any cloud drive works.
 - Plugin system
 - Real-time collaboration
-
-### Under consideration
-
-Ideas with no commitment (Android, macOS, iOS, sync, Obsidian vault compatibility and more) are listed in the [backlog](BACKLOG.md#ideas-under-consideration). Being on that list does not mean a feature will be built.
 
 ## Tech stack
 
@@ -90,7 +73,6 @@ carbon/
   tauri/                # Tauri: config, plugin registration, a few small commands
   README.md
   ARCHITECTURE.md
-  BACKLOG.md
 ```
 
 ## Development
@@ -116,20 +98,7 @@ bun run format        # format with Prettier
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): how Carbon is built and why
-- [BACKLOG.md](BACKLOG.md): milestones and tasks
-
-## Roadmap in one glance
-
-| Milestone            | Outcome                                          |
-| -------------------- | ------------------------------------------------ |
-| M0 Foundation        | Repo, scaffold, CI, core package wired to Tauri  |
-| M1 Vault and editor  | Open a folder, edit notes with live preview      |
-| M2 Links             | Wiki links, backlinks, rename that updates links |
-| M3 Search            | Full-text search, quick switcher                 |
-| M4 Tags and metadata | Tags, frontmatter, aliases                       |
-| M5 Graph             | Global and local graph                           |
-| M6 Release 0.1       | Settings, packaging, performance pass            |
 
 ## License
 
-MIT.
+[MIT](LICENSE)
