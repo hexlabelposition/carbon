@@ -101,6 +101,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "find.replaceAll": "Заменить все",
   "find.replaceAllHint": "Заменить все (Ctrl+Enter)",
   "find.replaceHint": "Заменить (Enter)",
+  "find.toggleReplace": "Показать или скрыть замену (Ctrl+H)",
   "find.wholeWord": "Слово целиком",
   "graph.colorBy": "Цвет",
   "graph.colorFolder": "По папке",

@@ -110,6 +110,7 @@ export const en = {
   "find.replaceAll": "Replace all",
   "find.replaceAllHint": "Replace all (Ctrl+Enter)",
   "find.replaceHint": "Replace (Enter)",
+  "find.toggleReplace": "Toggle replace (Ctrl+H)",
   "find.wholeWord": "Whole word",
   "graph.colorBy": "Color",
   "graph.colorFolder": "By folder",
