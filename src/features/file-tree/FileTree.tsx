@@ -28,6 +28,7 @@ import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { canBookmark, type BookmarksView } from "../bookmarks/use-bookmarks";
 import { log } from "../log/log";
+import { imageTypeOf } from "../image/image-file";
 
 /**
  * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
@@ -409,6 +410,13 @@ export function FileTree({
           finalFocus={() =>
             pendingEdit.current !== null ? false : viewportRef.current
           }
+          onOpenInNewTab={
+            menuTarget !== null &&
+            (menuTarget.kind === "note" ||
+              imageTypeOf(menuTarget.path) !== null)
+              ? () => tree.activate(menuTarget, true)
+              : undefined
+          }
           onNewNote={() => editLater(() => tree.startNew("note"))}
           onNewFolder={() => editLater(() => tree.startNew("folder"))}
           onRename={() => editLater(tree.startRename)}
@@ -463,6 +471,8 @@ interface TreeMenuProps {
   /** The row it was opened on, or `null` for the root. */
   target: TreeNode | null;
   finalFocus: () => HTMLElement | false | null;
+  /** Offered for a row that opens in a tab: a note or an image. */
+  onOpenInNewTab?: () => void;
   onNewNote: () => void;
   onNewFolder: () => void;
   onRename: () => void;
@@ -511,6 +521,7 @@ function MenuKeys({ text }: { text: string }) {
 function TreeMenu({
   target,
   finalFocus,
+  onOpenInNewTab,
   onNewNote,
   onNewFolder,
   onRename,
@@ -538,6 +549,14 @@ function TreeMenu({
           finalFocus={finalFocus}
           className="min-w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
         >
+          {onOpenInNewTab !== undefined && (
+            <>
+              <ContextMenu.Item className={menuItem} onClick={onOpenInNewTab}>
+                {t("tree.openInNewTab")}
+              </ContextMenu.Item>
+              <ContextMenu.Separator className={separator} />
+            </>
+          )}
           <ContextMenu.Item className={menuItem} onClick={onNewNote}>
             {t("tree.newNote")}
           </ContextMenu.Item>

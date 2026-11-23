@@ -22,9 +22,10 @@ export interface Pane {
 }
 
 /**
- * The open notes: one pane, or two side by side. A note is shown by one
- * tab at most, in either pane: two editors of the same note would save
- * over each other.
+ * The open notes: one pane, or two side by side. A note is in one pane at
+ * most: two editors of the same note, side by side, would save over each
+ * other. In its pane it may be in several tabs, opened in a new tab on
+ * purpose: a pane shows one tab at a time, so one editor.
  */
 export interface WorkspaceState {
   /** One or two. Only the last pane left may have no tabs. */
@@ -39,7 +40,7 @@ export interface WorkspaceState {
 export type OpenTarget =
   /** The active tab, as the next step of its history. */
   | "here"
-  /** A new tab after the active one. */
+  /** A new tab after the active one, even if a tab of the pane has it. */
   | "newTab"
   /** The other pane, made if there is only one. */
   | "beside";
@@ -152,11 +153,14 @@ function open(
   path: NotePath,
   target: OpenTarget,
 ): WorkspaceState {
-  // Shown already, in either pane: that tab is the one to show.
+  // Shown already: that tab is the one to show. A new tab asked for in
+  // the pane that has the note is made all the same; in the other pane
+  // it would be a second editor of the note.
   const shownIn = state.panes.findIndex((pane) =>
     pane.tabs.some((tab) => noteOf(tab) === path),
   );
-  if (shownIn !== -1) {
+  const again = target === "newTab" && shownIn === state.activePane;
+  if (shownIn !== -1 && !again) {
     const tab = state.panes[shownIn].tabs.find((t) => noteOf(t) === path);
     return tab === undefined
       ? state
@@ -299,23 +303,22 @@ function rewrite(
     return tabs;
   });
 
-  // Two tabs may now show the same note; the tab the user is looking at
-  // keeps it, else the first one.
+  // Both panes may now have the same note: the pane of the tab the user
+  // is looking at keeps it, else the first one. In one pane, several
+  // tabs may have a note.
   const looking = activeTab(state)?.id;
   const keeper = new Map<NotePath, number>();
-  for (const tabs of rewritten) {
+  rewritten.forEach((tabs, pane) => {
     for (const tab of tabs) {
       const note = noteOf(tab);
-      if (!keeper.has(note) || tab.id === looking) keeper.set(note, tab.id);
+      if (!keeper.has(note) || tab.id === looking) keeper.set(note, pane);
     }
-  }
+  });
 
   let next = state;
   // From the last pane: a pane that goes away does not shift the others.
   for (let i = state.panes.length - 1; i >= 0; i--) {
-    const tabs = rewritten[i].filter(
-      (tab) => keeper.get(noteOf(tab)) === tab.id,
-    );
+    const tabs = rewritten[i].filter((tab) => keeper.get(noteOf(tab)) === i);
     next = withPane(next, i, withTabs(state.panes[i], tabs));
   }
   return next;

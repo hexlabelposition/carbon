@@ -400,6 +400,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "tree.newName": "Новое название для «{name}»",
   "tree.newNote": "Новая заметка",
   "tree.newNoteName": "Название новой заметки",
+  "tree.openInNewTab": "Открыть в новой вкладке",
   "tree.paste": "Вставить",
   "tree.redo": "Повторить",
   "tree.rename": "Переименовать",

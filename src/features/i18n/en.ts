@@ -373,6 +373,7 @@ export const en = {
   "tree.newName": "New name of {name}",
   "tree.newNote": "New note",
   "tree.newNoteName": "Name of the new note",
+  "tree.openInNewTab": "Open in new tab",
   "tree.paste": "Paste",
   "tree.redo": "Redo",
   "tree.rename": "Rename",
