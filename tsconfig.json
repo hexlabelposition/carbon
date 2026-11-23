@@ -1,30 +1,13 @@
 {
-  "compilerOptions": {
-    /* Language and environment */
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "jsx": "react-jsx",
-    "useDefineForClassFields": true,
-
-    /* Modules */
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-
-    /* Emit */
-    "noEmit": true,
-
-    /* Type checking */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true
-  },
-  "include": ["src"],
-  /* Tests run in Bun and are checked with its types: tsconfig.test.json */
-  "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  /*
+   * The projects of the repository, for the editor: it finds the one each
+   * file is in. The app, the scripts and the tests of the app are checked
+   * apart, each with its own types (see the typecheck script).
+   */
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" },
+    { "path": "./tsconfig.test.json" }
+  ]
 }
