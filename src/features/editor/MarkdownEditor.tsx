@@ -16,7 +16,11 @@ import {
 } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { editorTheme, markdownHighlight } from "./editor-theme";
+import {
+  editorTheme,
+  markdownHighlight,
+  sourceHighlight,
+} from "./editor-theme";
 import { scrollParentOf } from "./glide";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
@@ -109,7 +113,7 @@ const livePreviewExtensions: Extension = [
   imagePreview,
   followOnClick,
 ];
-const noPreview: Extension = [];
+const noPreview: Extension = [syntaxHighlighting(sourceHighlight)];
 
 /** A CodeMirror 6 editor for one Markdown text. */
 export function MarkdownEditor({

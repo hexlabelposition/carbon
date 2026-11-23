@@ -13,6 +13,14 @@ import { isMissing, missingChanged } from "./missing-links";
 import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
 import { frontmatterEnd } from "./frontmatter-range";
+import {
+  CALLOUT_COLORS,
+  CalloutHeaderWidget,
+  type CalloutHeader,
+  calloutColor,
+  defaultCalloutTitle,
+  parseCalloutHeader,
+} from "./live-preview-callout";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -20,9 +28,9 @@ import { frontmatterEnd } from "./frontmatter-range";
  * in, which shows its raw Markdown so it can be edited.
  *
  * Covers headings, bold, italic, strikethrough, inline code, wiki links,
- * lists, task checkboxes, quotes, horizontal rules and code blocks. Hiding
- * is decoration only: the text of the note changes only when the user
- * types or ticks a task.
+ * lists, task checkboxes, quotes, callouts, horizontal rules and code
+ * blocks. Hiding is decoration only: the text of the note changes only
+ * when the user types or ticks a task.
  */
 export const livePreview = [
   ViewPlugin.fromClass(
@@ -129,7 +137,50 @@ export const livePreview = [
     ".cm-line.cm-quote": {
       paddingLeft: "16px",
       borderLeft: "2px solid var(--cb-line-strong)",
+      color: "var(--cb-muted)",
     },
+    // A callout is drawn line by line too, as a rounded box tinted with
+    // its color; the color comes from the class of its type.
+    ".cm-line.cm-callout": {
+      padding: "0 16px",
+      backgroundColor:
+        "color-mix(in srgb, var(--cb-callout) var(--cb-callout-tint), transparent)",
+    },
+    ".cm-line.cm-callout-first": {
+      paddingTop: "8px",
+      borderRadius: "8px 8px 0 0",
+    },
+    ".cm-line.cm-callout-last": {
+      paddingBottom: "8px",
+      borderRadius: "0 0 8px 8px",
+    },
+    ".cm-line.cm-callout-first.cm-callout-last": { borderRadius: "8px" },
+    // Some room between the title and the body.
+    ".cm-line.cm-callout-first:not(.cm-callout-last)": {
+      paddingBottom: "6px",
+    },
+    ".cm-callout-title": { color: "var(--cb-callout)", fontWeight: "600" },
+    // The icon of the type, centered on the line: its box is as tall as
+    // the line and sits at its top, the drawing is in the middle of it.
+    ".cm-callout-icon": {
+      display: "inline-flex",
+      alignItems: "center",
+      height: "calc(var(--cb-note-line-height) * 1em)",
+      verticalAlign: "top",
+      marginRight: "0.45em",
+      color: "var(--cb-callout)",
+    },
+    ".cm-callout-icon svg": {
+      display: "block",
+      width: "1.1em",
+      height: "1.1em",
+    },
+    ...Object.fromEntries(
+      CALLOUT_COLORS.map((color) => [
+        `.cm-callout-${color}`,
+        { "--cb-callout": `var(--cb-callout-${color})` },
+      ]),
+    ),
     ".cm-rule": {
       display: "inline-block",
       width: "100%",
@@ -239,6 +290,7 @@ const bullet = Decoration.replace({ widget: new BulletWidget() });
 const rule = Decoration.replace({ widget: new RuleWidget() });
 const taskDone = Decoration.mark({ class: "cm-task-done" });
 const quoteLine = Decoration.line({ class: "cm-quote" });
+const calloutTitle = Decoration.mark({ class: "cm-callout-title" });
 const language = (name: string) =>
   Decoration.replace({ widget: new LanguageWidget(name) });
 const task = (checked: boolean) =>
@@ -293,6 +345,35 @@ function decorate(view: EditorView): DecorationSet {
     }
   }
 
+  /**
+   * The first line of a callout: "[!type]" becomes the icon of the type,
+   * followed by the title, or by the type if there is no title.
+   */
+  function decorateCalloutHeader(
+    line: Line,
+    start: number,
+    header: CalloutHeader,
+  ) {
+    const titleFrom = start + header.titleFrom;
+    const titleTo = titleFrom + header.title.length;
+    if (header.title !== "") {
+      ranges.push(calloutTitle.range(titleFrom, titleTo));
+    }
+    if (editing(line.from, line.to)) return;
+    const markerFrom = start + header.markerFrom;
+    const titled = header.title !== "";
+    const widget = new CalloutHeaderWidget(
+      header.type,
+      titled ? null : defaultCalloutTitle(header.type),
+    );
+    ranges.push(
+      Decoration.replace({ widget }).range(
+        markerFrom,
+        titled ? titleFrom : line.to,
+      ),
+    );
+  }
+
   // The frontmatter is YAML, not Markdown: `frontmatterPreview` draws it.
   const frontmatter = frontmatterEnd(state) ?? -1;
   // Where the previous visible range ended: an element that reaches into
@@ -319,7 +400,27 @@ function decorate(view: EditorView): DecorationSet {
           // Every line of the quote gets the bar on its left. A quote
           // inside a quote adds nothing, the outer one covers its lines.
           if (node.parent?.name === "Blockquote") return;
-          eachLineInView((line) => ranges.push(quoteLine.range(line.from)));
+          const first = state.doc.lineAt(node.from);
+          const header = parseCalloutHeader(
+            state.sliceDoc(node.from, first.to),
+          );
+          if (header === null) {
+            eachLineInView((line) => ranges.push(quoteLine.range(line.from)));
+            return;
+          }
+          const end = state.doc.lineAt(node.to);
+          const box = `cm-callout cm-callout-${calloutColor(header.type)}`;
+          eachLineInView((line) => {
+            const edge =
+              (line.number === first.number ? " cm-callout-first" : "") +
+              (line.number === end.number ? " cm-callout-last" : "");
+            ranges.push(
+              Decoration.line({ class: box + edge }).range(line.from),
+            );
+            if (line.number === first.number) {
+              decorateCalloutHeader(line, node.from, header);
+            }
+          });
           return;
         }
         if (name === "FencedCode") {

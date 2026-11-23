@@ -80,6 +80,19 @@
   --cb-group-1: #2a78d6;
   --cb-group-2: #eb6834;
   --cb-group-3: #1baf7a;
+
+  /*
+   * Callouts: the title in the color, the box in the color mixed into bg
+   * by --cb-callout-tint. Every title passes 4.5:1 on its box.
+   */
+  --cb-callout-tint: 8%;
+  --cb-callout-blue: #1f5fbf;
+  --cb-callout-teal: #0b7285;
+  --cb-callout-green: #1e7b3c;
+  --cb-callout-orange: #a84d07;
+  --cb-callout-red: #c42b1c;
+  --cb-callout-purple: #7b3fc4;
+  --cb-callout-gray: #5c6168;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -117,6 +130,14 @@
     --cb-group-2: #d95926;
     --cb-group-3: #199e70;
     --cb-dev: #ffb86a;
+    --cb-callout-tint: 14%;
+    --cb-callout-blue: #6fa8f5;
+    --cb-callout-teal: #4fc3d4;
+    --cb-callout-green: #5cc581;
+    --cb-callout-orange: #f0a050;
+    --cb-callout-red: #f07a6e;
+    --cb-callout-purple: #b994f2;
+    --cb-callout-gray: #a4a7ac;
   }
 }
 
@@ -154,4 +175,12 @@
   --cb-group-2: #d95926;
   --cb-group-3: #199e70;
   --cb-dev: #ffb86a;
+  --cb-callout-tint: 14%;
+  --cb-callout-blue: #6fa8f5;
+  --cb-callout-teal: #4fc3d4;
+  --cb-callout-green: #5cc581;
+  --cb-callout-orange: #f0a050;
+  --cb-callout-red: #f07a6e;
+  --cb-callout-purple: #b994f2;
+  --cb-callout-gray: #a4a7ac;
 }

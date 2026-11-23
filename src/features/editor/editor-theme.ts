@@ -92,7 +92,6 @@ export const markdownHighlight = HighlightStyle.define([
   { tag: tags.url, color: "var(--cb-faint)" },
   // Inline code and code blocks; their size is set where they are drawn.
   { tag: tags.monospace, fontFamily: "var(--cb-mono-font)" },
-  { tag: tags.quote, color: "var(--cb-muted)" },
   // The marks themselves: #, *, >, -, ``` and the like.
   {
     tag: [
@@ -108,4 +107,13 @@ export const markdownHighlight = HighlightStyle.define([
   { tag: tags.comment, color: "var(--cb-faint)" },
   { tag: tags.keyword, color: "var(--cb-muted)" },
   { tag: [tags.string, tags.special(tags.string)], color: "var(--cb-link)" },
+]);
+
+/**
+ * Source mode only: the text of a quote is quiet. Live preview colors
+ * quotes by their lines instead, so a callout, which is a quote too, keeps
+ * the color of the text.
+ */
+export const sourceHighlight = HighlightStyle.define([
+  { tag: tags.quote, color: "var(--cb-muted)" },
 ]);

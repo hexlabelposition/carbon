@@ -44,6 +44,34 @@ continues here. A very long line goes on and on so that it has to wrap at the ed
 >
 > And a second paragraph in the same quote.
 
+## Callouts
+
+> [!note]
+> A callout with no title shows its type.
+
+> [!tip] A title of its own
+> With **bold** and a [[Links|link]] in the body.
+
+> [!success]+ Done
+> A green one.
+
+> [!warning] Careful
+> An orange one that goes on for long enough to wrap onto a second line of the box.
+>
+> And a second paragraph.
+
+> [!danger] Danger
+> A red one.
+
+> [!example] Example
+> A purple one.
+
+> [!quote] Quote
+> A grey one.
+
+> [!custom-type]
+> A type of one's own is drawn as a note.
+
 ## Code
 
 ```ts
