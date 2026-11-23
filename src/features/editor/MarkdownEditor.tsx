@@ -7,7 +7,6 @@ import {
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { hashtag, wikiLink } from "@carbon/core";
-import { languages } from "@codemirror/language-data";
 import {
   Compartment,
   EditorState,
@@ -28,6 +27,7 @@ import { layoutIndependentKeys } from "./layout-keys";
 import { keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
+import { codeLanguage } from "./code-languages";
 import {
   imageHost,
   imageInput,
@@ -205,12 +205,13 @@ export function MarkdownEditor({
           history(),
           EditorView.lineWrapping,
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
-          // The language of a code block is loaded when one first uses it.
+          // The language of a code block is loaded when one first uses it,
+          // found by its name or by the file the fence names.
           // Wiki links and tags come from the core: one grammar for the
           // editor and the index (ADR-012).
           markdown({
             base: markdownLanguage,
-            codeLanguages: languages,
+            codeLanguages: codeLanguage,
             extensions: [wikiLink, hashtag],
           }),
           syntaxHighlighting(markdownHighlight),
