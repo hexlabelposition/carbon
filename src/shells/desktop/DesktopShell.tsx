@@ -67,6 +67,7 @@ import { panelWidth, Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useTabFocusGuard } from "./use-tab-focus-guard";
+import { useEmojiChooserGuard } from "./use-emoji-chooser-guard";
 import { useClickFocusGuard } from "./use-click-focus-guard";
 import { useReadyToShow } from "./use-ready-to-show";
 import { VaultMenu } from "./VaultMenu";
@@ -162,6 +163,7 @@ export function DesktopShell({
   useFileDropGuard();
   useContextMenuGuard();
   useTabFocusGuard();
+  useEmojiChooserGuard();
   useClickFocusGuard();
   // Nothing shows while the vault left open is opened again: then the
   // interface fades in whole.
