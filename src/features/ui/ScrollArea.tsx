@@ -1,6 +1,7 @@
 import { ScrollArea as Base } from "@base-ui/react/scroll-area";
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -62,6 +63,8 @@ export function ScrollArea({
   const viewportEl = useRef<HTMLDivElement | null>(null);
   const contentEl = useRef<HTMLDivElement | null>(null);
   const scrolls = useScrolls(viewportEl, contentEl);
+  const rootEl = useRef<HTMLDivElement | null>(null);
+  useSettling(rootEl, viewportEl, contentEl);
   const setViewport = useCallback(
     (element: HTMLDivElement | null) => {
       viewportEl.current = element;
@@ -71,6 +74,7 @@ export function ScrollArea({
   );
   return (
     <Base.Root
+      ref={rootEl}
       data-scrolls={scrolls ? "" : undefined}
       className={`group/scroll relative flex min-h-0 flex-col ${rootClassName}`}
     >
@@ -98,7 +102,9 @@ export function ScrollArea({
           scrolls ? "" : "hidden"
         } ${scrollbarClassName}`}
       >
-        <Base.Thumb className="w-full rounded-full bg-line-strong hover:bg-faint" />
+        {/* While the content changes size, the thumb glides to its new
+            size and place (useSettling); a scroll moves it at once. */}
+        <Base.Thumb className="w-full rounded-full bg-line-strong group-data-settling/scroll:transition-[height,transform] group-data-settling/scroll:duration-200 group-data-settling/scroll:ease-out hover:bg-faint motion-reduce:transition-none" />
       </Base.Scrollbar>
     </Base.Root>
   );
@@ -111,6 +117,62 @@ export function ScrollArea({
  * the browser rounds down, while the content it rounds up: a scrollbar
  * then shows with nothing to scroll.
  */
+/** How long the thumb glides after the content last changed size, in ms. */
+const SETTLE_MS = 300;
+
+/**
+ * Marks the area `data-settling` for a moment each time its content grows
+ * or shrinks, as when the text size of a note changes, so the thumb glides
+ * to its new size and place instead of jumping. A note grows in steps: the
+ * lines in view at once, the others when the editor has measured them, a
+ * frame or a few later; the glide takes each new goal on the way. The
+ * wheel, a press of the mouse or of a key ends it, so the thumb follows a
+ * scroll at once.
+ */
+function useSettling(
+  root: { current: HTMLElement | null },
+  viewport: { current: HTMLElement | null },
+  content: { current: HTMLElement | null },
+): void {
+  useEffect(() => {
+    const area = root.current;
+    const scroller = viewport.current;
+    const inner = content.current;
+    if (area === null || scroller === null || inner === null) return;
+    let timer = 0;
+    const end = () => {
+      clearTimeout(timer);
+      delete area.dataset.settling;
+    };
+    let first = true;
+    const observer = new ResizeObserver(() => {
+      // It reports the size it starts with: no change yet.
+      if (first) {
+        first = false;
+        return;
+      }
+      area.dataset.settling = "";
+      clearTimeout(timer);
+      timer = window.setTimeout(end, SETTLE_MS);
+    });
+    observer.observe(inner);
+    // Ctrl and the wheel change the text size: that is no scroll.
+    const onUser = (event: MouseEvent | KeyboardEvent) => {
+      if (!event.ctrlKey && !event.metaKey) end();
+    };
+    scroller.addEventListener("wheel", onUser, { passive: true });
+    scroller.addEventListener("pointerdown", onUser);
+    scroller.addEventListener("keydown", onUser);
+    return () => {
+      observer.disconnect();
+      end();
+      scroller.removeEventListener("wheel", onUser);
+      scroller.removeEventListener("pointerdown", onUser);
+      scroller.removeEventListener("keydown", onUser);
+    };
+  }, [root, viewport, content]);
+}
+
 function useScrolls(
   viewport: { current: HTMLElement | null },
   content: { current: HTMLElement | null },
