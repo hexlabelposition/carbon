@@ -66,6 +66,7 @@ import {
   wheelTextSizePreference,
 } from "./note-style";
 import { Tooltip } from "../ui/Tooltip";
+import { ScrollArea } from "../ui/ScrollArea";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
 import {
@@ -136,14 +137,96 @@ const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = {
 type SettingsGroup =
   "general" | "appearance" | "fonts" | "notes" | "editor" | "shortcuts";
 
-const GROUPS: readonly { group: SettingsGroup; label: MessageKey }[] = [
-  { group: "general", label: "settings.general" },
-  { group: "appearance", label: "settings.appearance" },
-  { group: "fonts", label: "settings.fonts" },
-  { group: "notes", label: "settings.notes" },
-  { group: "editor", label: "settings.editor" },
-  { group: "shortcuts", label: "settings.shortcuts" },
+/**
+ * The groups, in the order of the column, each with its icon: 16 by 16
+ * outlines, drawn as the other icons of the app.
+ */
+const GROUPS: readonly {
+  group: SettingsGroup;
+  label: MessageKey;
+  icon: ReactNode;
+}[] = [
+  {
+    group: "general",
+    label: "settings.general",
+    icon: (
+      <>
+        <path d="M2.5 4.5h7M12.5 4.5h1M2.5 11.5h1M6.5 11.5h7" />
+        <circle cx="11" cy="4.5" r="1.5" />
+        <circle cx="5" cy="11.5" r="1.5" />
+      </>
+    ),
+  },
+  {
+    group: "appearance",
+    label: "settings.appearance",
+    icon: (
+      <>
+        <circle cx="8" cy="8" r="5.5" />
+        <path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" />
+      </>
+    ),
+  },
+  {
+    group: "fonts",
+    label: "settings.fonts",
+    icon: (
+      <>
+        <path d="M1.5 12.5 5 3.5l3.5 9M2.85 9.5h4.3" />
+        <circle cx="12" cy="10.75" r="1.75" />
+        <path d="M13.75 8.75v3.75" />
+      </>
+    ),
+  },
+  {
+    group: "notes",
+    label: "settings.notes",
+    icon: <path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3M6 8.5h4M6 11h4" />,
+  },
+  {
+    group: "editor",
+    label: "settings.editor",
+    icon: <path d="M10.5 2.5l3 3L6 13H3v-3zM9 4l3 3" />,
+  },
+  {
+    group: "shortcuts",
+    label: "settings.shortcuts",
+    icon: (
+      <>
+        <rect x="1.5" y="4" width="13" height="8" rx="1.5" />
+        <path d="M4.25 6.75h.01M6.75 6.75h.01M9.25 6.75h.01M11.75 6.75h.01M5 9.5h6" />
+      </>
+    ),
+  },
 ];
+
+/**
+ * An icon of the settings: a 16 by 16 outline in the color of the text,
+ * drawn at the sizes of the main window: as the icon beside the name of
+ * the vault next to text, as the buttons of a note in a button.
+ */
+function SettingsIcon({
+  children,
+  size = "size-4.5",
+}: {
+  children: ReactNode;
+  size?: "size-4.5" | "size-5";
+}) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className={`${size} shrink-0`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {children}
+    </svg>
+  );
+}
 
 /**
  * The settings of the app: applies the note settings and the language
@@ -189,73 +272,70 @@ export function Settings({
       // Centered by its margins, not moved back by half its size: a move of
       // half an odd size lands between pixels, and the text in it is drawn
       // blurred.
-      className="fixed inset-0 m-auto flex h-[min(440px,calc(100vh-96px))] w-[680px] max-w-[calc(100vw-32px)] overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
+      className="fixed inset-0 m-auto flex h-[min(600px,calc(100vh-96px))] w-[880px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
-      {/* The groups at the left, one shown at a time at the right. */}
-      <nav className="flex w-44 shrink-0 flex-col gap-3 border-r border-line bg-panel p-2">
-        <Dialog.Title className="px-2.5 pt-2.5 text-h3 font-semibold">
+      {/* A header as the one above a note: the name, and a way out. */}
+      <header className="flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel pr-1.5 pl-4">
+        <Dialog.Title className="font-semibold">
           {t("settings.title")}
         </Dialog.Title>
-        <GroupTabs current={group} onShow={setGroup} />
-        <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
-          {openLogFolder !== undefined && (
-            <button
-              type="button"
-              className="-mx-1 rounded-sm px-1 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-              onClick={() => {
-                openLogFolder().catch((reason: unknown) =>
-                  log.error("Could not open the log folder", reason),
-                );
-              }}
-            >
-              {t("logs.open")}
-            </button>
-          )}
-          <p className="text-faint">
-            {t("settings.version", { version: __CARBON_VERSION__ })}
-          </p>
-        </div>
-      </nav>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
-          <h3 className="text-h3 font-semibold">
-            {t(
-              GROUPS.find((g) => g.group === group)?.label ??
-                "settings.general",
-            )}
-          </h3>
-          <Tooltip label={t("common.close")} shortcut="Esc">
-            <Dialog.Close
-              aria-label={t("common.close")}
-              className="flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-            >
-              <svg
-                viewBox="0 0 10 10"
-                width="12"
-                height="12"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1"
+        <Tooltip label={t("common.close")} shortcut="Esc">
+          <Dialog.Close
+            aria-label={t("common.close")}
+            className="ml-auto flex size-8 items-center justify-center rounded-md text-muted outline-none hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+          >
+            <SettingsIcon size="size-5">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </SettingsIcon>
+          </Dialog.Close>
+        </Tooltip>
+      </header>
+      <div className="flex min-h-0 flex-1">
+        {/* The groups at the left, one shown at a time at the right. */}
+        <nav className="flex w-52 shrink-0 flex-col border-r border-line bg-panel p-2">
+          <GroupTabs current={group} onShow={setGroup} />
+          <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
+            {openLogFolder !== undefined && (
+              <button
+                type="button"
+                className="-mx-1 rounded-sm px-1 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+                onClick={() => {
+                  openLogFolder().catch((reason: unknown) =>
+                    log.error("Could not open the log folder", reason),
+                  );
+                }}
               >
-                <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
-              </svg>
-            </Dialog.Close>
-          </Tooltip>
-        </header>
-        <div
+                {t("logs.open")}
+              </button>
+            )}
+            <p className="text-faint">
+              {t("settings.version", { version: __CARBON_VERSION__ })}
+            </p>
+          </div>
+        </nav>
+        <ScrollArea
+          rootClassName="min-w-0 flex-1"
+          className="flex-1"
           role="tabpanel"
           id="settings-panel"
           aria-labelledby={`settings-tab-${group}`}
-          className="min-h-0 flex-1 overflow-auto px-5 pb-5"
         >
-          {group === "general" && <GeneralSettings />}
-          {group === "appearance" && <AppearanceSettings />}
-          {group === "fonts" && <FontSettings />}
-          {group === "notes" && <NoteSettings />}
-          {group === "editor" && <EditorSettings />}
-          {group === "shortcuts" && <ShortcutSettings />}
-        </div>
+          {/* A readable column, as the text of a note. */}
+          <div className="mx-auto flex max-w-[600px] flex-col gap-6 px-8 pt-6 pb-8">
+            <h2 className="text-h2 font-semibold">
+              {t(
+                GROUPS.find((g) => g.group === group)?.label ??
+                  "settings.general",
+              )}
+            </h2>
+            {group === "general" && <GeneralSettings />}
+            {group === "appearance" && <AppearanceSettings />}
+            {group === "fonts" && <FontSettings />}
+            {group === "notes" && <NoteSettings />}
+            {group === "editor" && <EditorSettings />}
+            {group === "shortcuts" && <ShortcutSettings />}
+          </div>
+        </ScrollArea>
       </div>
     </AppDialog>
   );
@@ -291,7 +371,7 @@ function GroupTabs({
       className="flex flex-col gap-0.5"
       onKeyDown={onKeyDown}
     >
-      {GROUPS.map(({ group, label }) => {
+      {GROUPS.map(({ group, label, icon }) => {
         const selected = group === current;
         return (
           <button
@@ -302,11 +382,12 @@ function GroupTabs({
             aria-selected={selected}
             aria-controls="settings-panel"
             tabIndex={selected ? 0 : -1}
-            className={`flex h-7 items-center rounded-md px-2.5 text-left outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
+            className={`flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
               selected ? "bg-selected font-medium text-fg" : "text-muted"
             }`}
             onClick={() => onShow(group)}
           >
+            <SettingsIcon>{icon}</SettingsIcon>
             {t(label)}
           </button>
         );
@@ -322,31 +403,36 @@ function GeneralSettings() {
   const checkAtStart = checkAtStartPreference.use();
   const canCheck = useCanCheckForUpdates();
   return (
-    <Rows>
-      <Row label={t("settings.language")}>
-        <SettingSelect
-          label={t("settings.language")}
-          value={language}
-          items={LANGUAGE_SETTINGS.map((value) => ({
-            value,
-            label: t(LANGUAGE_LABELS[value]),
-          }))}
-          onChange={languagePreference.set}
-        />
-      </Row>
-      <Row label={t("settings.deleteTo")}>
-        <SettingSelect
-          label={t("settings.deleteTo")}
-          value={deleteTo}
-          items={DELETE_TO.map(({ value, label }) => ({
-            value,
-            label: t(label),
-          }))}
-          onChange={deleteToPreference.set}
-        />
-      </Row>
+    <>
+      <Rows>
+        <Row label={t("settings.language")}>
+          <SettingSelect
+            label={t("settings.language")}
+            value={language}
+            items={LANGUAGE_SETTINGS.map((value) => ({
+              value,
+              label: t(LANGUAGE_LABELS[value]),
+            }))}
+            onChange={languagePreference.set}
+          />
+        </Row>
+        <Row label={t("settings.deleteTo")}>
+          <SettingSelect
+            label={t("settings.deleteTo")}
+            value={deleteTo}
+            items={DELETE_TO.map(({ value, label }) => ({
+              value,
+              label: t(label),
+            }))}
+            onChange={deleteToPreference.set}
+          />
+        </Row>
+      </Rows>
       {canCheck && (
-        <>
+        <Rows title={t("updates.title")}>
+          <Row label={t("settings.version", { version: __CARBON_VERSION__ })}>
+            <UpdateStatus />
+          </Row>
           <Row label={t("updates.checkAtStart")}>
             <SettingSwitch
               label={t("updates.checkAtStart")}
@@ -354,12 +440,9 @@ function GeneralSettings() {
               onChange={checkAtStartPreference.set}
             />
           </Row>
-          <Row label={t("updates.title")}>
-            <UpdateStatus />
-          </Row>
-        </>
+        </Rows>
       )}
-    </Rows>
+    </>
   );
 }
 
@@ -453,57 +536,61 @@ function NoteSettings() {
   const wheelSize = wheelTextSizePreference.use();
   const lineHeight = lineHeightPreference.use();
   return (
-    <Rows>
-      <Row label={t("settings.fontSize")}>
-        <div className="flex items-center gap-1.5">
-          <ResetButton
-            label={t("settings.resetTo", {
-              value: t("settings.pixels", { count: NOTE_SIZE_DEFAULT }),
-            })}
-            disabled={size === NOTE_SIZE_DEFAULT}
-            onReset={resetNoteSize}
+    <>
+      <Rows>
+        <Row label={t("settings.fontSize")}>
+          <div className="flex items-center gap-1.5">
+            <ResetButton
+              label={t("settings.resetTo", {
+                value: t("settings.pixels", { count: NOTE_SIZE_DEFAULT }),
+              })}
+              disabled={size === NOTE_SIZE_DEFAULT}
+              onReset={resetNoteSize}
+            />
+            <SettingSelect
+              label={t("settings.fontSize")}
+              value={size}
+              items={NOTE_SIZES.map((pixels) => ({
+                value: pixels,
+                label: t("settings.pixels", { count: pixels }),
+              }))}
+              onChange={noteSizePreference.set}
+            />
+          </div>
+        </Row>
+        <Row label={t("settings.wheelSize", { key: keys("Mod") })}>
+          <SettingSwitch
+            label={t("settings.wheelSize", { key: keys("Mod") })}
+            checked={wheelSize}
+            onChange={wheelTextSizePreference.set}
           />
+        </Row>
+      </Rows>
+      <Rows>
+        <Row label={t("settings.lineHeight")}>
           <SettingSelect
-            label={t("settings.fontSize")}
-            value={size}
-            items={NOTE_SIZES.map((pixels) => ({
-              value: pixels,
-              label: t("settings.pixels", { count: pixels }),
+            label={t("settings.lineHeight")}
+            value={lineHeight}
+            items={LINE_HEIGHTS.map(({ value, label }) => ({
+              value,
+              label: t(label),
             }))}
-            onChange={noteSizePreference.set}
+            onChange={lineHeightPreference.set}
           />
-        </div>
-      </Row>
-      <Row label={t("settings.lineHeight")}>
-        <SettingSelect
-          label={t("settings.lineHeight")}
-          value={lineHeight}
-          items={LINE_HEIGHTS.map(({ value, label }) => ({
-            value,
-            label: t(label),
-          }))}
-          onChange={lineHeightPreference.set}
-        />
-      </Row>
-      <Row label={t("settings.width")}>
-        <SettingSelect
-          label={t("settings.width")}
-          value={width}
-          items={NOTE_WIDTHS.map(({ value, label }) => ({
-            value,
-            label: t(label),
-          }))}
-          onChange={noteWidthPreference.set}
-        />
-      </Row>
-      <Row label={t("settings.wheelSize", { key: keys("Mod") })}>
-        <SettingSwitch
-          label={t("settings.wheelSize", { key: keys("Mod") })}
-          checked={wheelSize}
-          onChange={wheelTextSizePreference.set}
-        />
-      </Row>
-    </Rows>
+        </Row>
+        <Row label={t("settings.width")}>
+          <SettingSelect
+            label={t("settings.width")}
+            value={width}
+            items={NOTE_WIDTHS.map(({ value, label }) => ({
+              value,
+              label: t(label),
+            }))}
+            onChange={noteWidthPreference.set}
+          />
+        </Row>
+      </Rows>
+    </>
   );
 }
 
@@ -651,7 +738,7 @@ function ShortcutSettings() {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-small text-faint">{t("settings.shortcuts.hint")}</p>
+      <p className="text-muted">{t("settings.shortcuts.hint")}</p>
       <Rows>
         {SHORTCUTS.map(({ id, label }) => (
           <ShortcutRow
@@ -747,14 +834,27 @@ function ShortcutRow({
   );
 }
 
-function Rows({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col gap-1">{children}</div>;
+/**
+ * Settings that go together, as a card: one row each, thin lines between
+ * them, and a title above when given.
+ */
+function Rows({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      {title !== undefined && (
+        <h3 className="px-1 text-small font-medium text-muted">{title}</h3>
+      )}
+      <div className="flex flex-col divide-y divide-line rounded-lg border border-line">
+        {children}
+      </div>
+    </section>
+  );
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-9 items-center justify-between gap-4">
-      <span>{label}</span>
+    <div className="flex min-h-12 items-center justify-between gap-4 px-4 py-2">
+      <span className="min-w-0">{label}</span>
       {children}
     </div>
   );
