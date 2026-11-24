@@ -22,6 +22,7 @@ import {
   parseCalloutHeader,
 } from "./live-preview-callout";
 import { codeBlockTheme, decorateCodeBlock } from "./live-preview-code";
+import { holdingChanged, keepsFocus } from "./held-selection";
 
 /**
  * Live preview (ARCHITECTURE.md, section 8): the marks of Markdown are
@@ -48,6 +49,7 @@ export const livePreview = [
           update.viewportChanged ||
           update.selectionSet ||
           update.focusChanged ||
+          holdingChanged(update) ||
           missingChanged(update) ||
           // Parsing a long note finishes in the background.
           syntaxTree(update.startState) !== syntaxTree(update.state);
@@ -320,7 +322,7 @@ function decorate(view: EditorView): DecorationSet {
   const ranges: Range<Decoration>[] = [];
   // Without the focus there is no cursor to edit at: everything is preview.
   const editing = (from: number, to: number) =>
-    view.hasFocus &&
+    keepsFocus(view) &&
     state.selection.ranges.some(
       (range) => range.from <= to && range.to >= from,
     );

@@ -1,49 +1,40 @@
-import { StateEffect, StateField } from "@codemirror/state";
-import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
+import { StateEffect, StateField, type EditorState } from "@codemirror/state";
+import { EditorView, type ViewUpdate } from "@codemirror/view";
 
-/** The ranges to keep showing, or `null` to stop. */
-const hold = StateEffect.define<
-  readonly { from: number; to: number }[] | null
->();
+const setHolding = StateEffect.define<boolean>();
 
-const held = Decoration.mark({ class: "cb-held-selection" });
-const holding: Record<string, string> = { class: "cb-holding-selection" };
-const notHolding: Record<string, string> = {};
+const holdingAttributes: Record<string, string> = {
+  class: "cb-holding-selection",
+};
+const noAttributes: Record<string, string> = {};
 
 /**
- * The selection, shown while the focus is away from the text, as in the
- * context menu (`EditorContextMenu`): the selection of the page, which
- * the editor shows (`editorTheme`), is not drawn without the focus.
- * Marks over the text, as that one; it is hidden meanwhile, so the two
- * are not drawn over each other.
+ * Whether the editor is shown as focused while the focus is away, as in
+ * its context menu (`EditorContextMenu`): live preview keeps the Markdown
+ * under the cursor (`keepsFocus`), and the selection stays in sight.
  */
-const heldSelectionField = StateField.define<DecorationSet>({
-  create: () => Decoration.none,
-  update(marks, transaction) {
-    let next = marks.map(transaction.changes);
+const holdingField = StateField.define<boolean>({
+  create: () => false,
+  update(holding, transaction) {
     for (const effect of transaction.effects) {
-      if (!effect.is(hold)) continue;
-      next =
-        effect.value === null
-          ? Decoration.none
-          : Decoration.set(
-              effect.value.map((r) => held.range(r.from, r.to)),
-              true,
-            );
+      if (effect.is(setHolding)) holding = effect.value;
     }
-    return next;
+    return holding;
   },
-  provide: (field) => [
-    EditorView.decorations.from(field),
+  provide: (field) =>
     EditorView.editorAttributes.compute([field], (state) =>
-      state.field(field).size > 0 ? holding : notHolding,
+      state.field(field) ? holdingAttributes : noAttributes,
     ),
-  ],
 });
 
 export const heldSelection = [
-  heldSelectionField,
+  holdingField,
   EditorView.domEventHandlers({
+    // The text has the focus back: it is focused, no longer held.
+    focus(_event, view) {
+      holdSelection(view, false);
+      return false;
+    },
     // The right button leaves the selection as it is, for the menu to
     // act on: WebKitGTK would move the cursor to the press.
     mousedown(event) {
@@ -52,21 +43,36 @@ export const heldSelection = [
       return true;
     },
   }),
+  // The selection of the page, which the editor shows (`editorTheme`),
+  // is not drawn without the focus: the one drawSelection draws takes its
+  // place meanwhile, as tall as the lines, as that one. The page's is
+  // hidden, so the two are not drawn over each other.
   EditorView.theme({
-    ".cb-held-selection": { backgroundColor: "var(--cb-selection)" },
+    "&.cb-holding-selection .cm-selectionLayer": { display: "block" },
+    "&.cb-holding-selection .cm-selectionLayer .cm-selectionBackground": {
+      background: "var(--cb-selection) !important",
+    },
     "&.cb-holding-selection .cm-content ::selection, &.cb-holding-selection .cm-content .cm-line ::selection, &.cb-holding-selection .cm-content .cm-line::selection":
       { backgroundColor: "transparent !important" },
   }),
 ];
 
-/** Keeps showing the selected text of `view`, or stops. */
+function holding(state: EditorState): boolean {
+  return state.field(holdingField, false) ?? false;
+}
+
+/** Whether the editor counts as focused: it is, or it is held so. */
+export function keepsFocus(view: EditorView): boolean {
+  return view.hasFocus || holding(view.state);
+}
+
+/** Whether `update` started or stopped holding the editor. */
+export function holdingChanged(update: ViewUpdate): boolean {
+  return holding(update.startState) !== holding(update.state);
+}
+
+/** Shows `view` as focused while the focus is away, or stops. */
 export function holdSelection(view: EditorView, on: boolean): void {
-  const ranges = on
-    ? view.state.selection.ranges.filter((r) => !r.empty)
-    : null;
-  const holding = view.state.field(heldSelectionField).size > 0;
-  if (ranges === null && !holding) return;
-  view.dispatch({
-    effects: hold.of(ranges === null || ranges.length === 0 ? null : ranges),
-  });
+  if (holding(view.state) === on) return;
+  view.dispatch({ effects: setHolding.of(on) });
 }

@@ -2,7 +2,7 @@ import { ContextMenu } from "@base-ui/react/context-menu";
 import { redo, redoDepth, undo, undoDepth } from "@codemirror/commands";
 import { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { keys } from "../commands/commands";
 import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
@@ -41,6 +41,8 @@ export function EditorContextMenu({
   const [selected, setSelected] = useState(false);
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
+  /** Whether the text had the focus when the menu was asked for. */
+  const focused = useRef(false);
 
   function onContextMenuCapture(event: MouseEvent<HTMLDivElement>) {
     const editor = view();
@@ -52,6 +54,7 @@ export function EditorContextMenu({
       event.stopPropagation();
       return;
     }
+    focused.current = editor.hasFocus;
     // As in a text field: a press outside the selection moves the cursor
     // there, so "Paste" puts the text where the menu was opened.
     const at = editor.posAtCoords({ x: event.clientX, y: event.clientY });
@@ -124,9 +127,23 @@ export function EditorContextMenu({
   return (
     <ContextMenu.Root
       onOpenChange={(open) => {
-        // The menu takes the focus: the selection stays in sight.
+        // The menu takes the focus: the text stays as it was while it had
+        // it, the selection and the Markdown under the cursor in sight.
+        // Let go when the text has the focus back (`heldSelection`): let
+        // go before, live preview would hide the Markdown for a moment.
         const editor = view();
-        if (editor !== null) holdSelection(editor, open);
+        if (editor === null || !open) return;
+        holdSelection(editor, focused.current && !readOnly);
+      }}
+      onOpenChangeComplete={(open) => {
+        // The focus went elsewhere, as to what was clicked to close it.
+        // In a later task: base-ui gives the focus back after this, in a
+        // microtask, and the text would be let go before it has it.
+        const editor = view();
+        if (editor === null || open) return;
+        setTimeout(() => {
+          if (!editor.hasFocus) holdSelection(editor, false);
+        }, 0);
       }}
     >
       <ContextMenu.Trigger

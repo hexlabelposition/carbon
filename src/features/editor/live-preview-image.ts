@@ -10,6 +10,7 @@ import {
 } from "@codemirror/view";
 import { t } from "../i18n/i18n";
 import { imageTypeOf } from "../image/image-file";
+import { holdingChanged, keepsFocus } from "./held-selection";
 
 /** What the editor needs from outside to show and to take in images. */
 export interface ImageHost {
@@ -73,6 +74,7 @@ export const imagePreview = [
           update.viewportChanged ||
           update.selectionSet ||
           update.focusChanged ||
+          holdingChanged(update) ||
           syntaxTree(update.startState) !== syntaxTree(update.state);
         if (changed) this.decorations = decorate(update.view);
       }
@@ -206,7 +208,7 @@ function decorate(view: EditorView): DecorationSet {
   if (state.facet(imageHost) === null) return Decoration.none;
   const ranges: Range<Decoration>[] = [];
   const editing = (from: number, to: number) =>
-    view.hasFocus &&
+    keepsFocus(view) &&
     state.selection.ranges.some(
       (range) => range.from <= to && range.to >= from,
     );
