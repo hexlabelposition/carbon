@@ -23,6 +23,7 @@ import {
   indentPreference,
   START_MODES,
   startModePreference,
+  focusOnOpenPreference,
 } from "./editor-options";
 import { AppDialog } from "../dialogs/AppDialog";
 import { openDialog, useDialog } from "../dialogs/open-dialog";
@@ -595,11 +596,12 @@ function NoteSettings() {
   );
 }
 
-/** How the editor behaves: the mode to start in, Tab. */
+/** How the editor behaves: the mode to start in, Tab, the focus. */
 function EditorSettings() {
   const t = useT();
   const startMode = startModePreference.use();
   const indent = indentPreference.use();
+  const focusOnOpen = focusOnOpenPreference.use();
   return (
     <Rows>
       <Row label={t("settings.startMode")}>
@@ -622,6 +624,13 @@ function EditorSettings() {
             label: t(label),
           }))}
           onChange={indentPreference.set}
+        />
+      </Row>
+      <Row label={t("settings.focusOnOpen")}>
+        <SettingSwitch
+          label={t("settings.focusOnOpen")}
+          checked={focusOnOpen}
+          onChange={focusOnOpenPreference.set}
         />
       </Row>
     </Rows>

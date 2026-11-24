@@ -1,5 +1,5 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
@@ -18,6 +18,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
 import type { NoteStats } from "./note-stats";
+import { focusOnOpenPreference } from "../settings/editor-options";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -65,6 +66,23 @@ export function NoteEditor({
   const [postponed, setPostponed] = useState(false);
   /** For the bar below the note: once the editor has counted. */
   const [stats, setStats] = useState<NoteStats | null>(null);
+  /**
+   * Whether the note takes the focus once it is shown, read as it opens:
+   * only the note of the active pane, as the settings choose.
+   */
+  const [focusAtOpen] = useState(() => active && focusOnOpenPreference.get());
+  const scroll = useRef<HTMLDivElement>(null);
+  const shown = useRef(false);
+  const ready = note.status === "ready";
+  // To read, the editor cannot take the focus: the scroll takes it, so
+  // the keys scroll the note. To edit, the editor takes it (`autoFocus`).
+  useLayoutEffect(() => {
+    if (!ready || shown.current) return;
+    shown.current = true;
+    if (focusAtOpen && readingMode) {
+      scroll.current?.focus({ preventScroll: true });
+    }
+  }, [ready, focusAtOpen, readingMode]);
 
   if (note.status === "loading") return null;
   if (note.status === "error") {
@@ -130,6 +148,7 @@ export function NoteEditor({
           those would start a CSS glide anew, so the scroll stopped short.
           The outline glides by itself instead (`glideTo`). */}
       <ScrollArea
+        ref={scroll}
         rootClassName="flex-1"
         // The name and the editor fill the height: a click below the text
         // still puts the cursor in it. Grown by the text, never held to
@@ -161,6 +180,7 @@ export function NoteEditor({
           tags={tags}
           reveal={reveal?.path === path ? reveal : null}
           onStats={setStats}
+          autoFocus={focusAtOpen}
         />
       </ScrollArea>
       {stats !== null && <NoteStatsBar stats={stats} />}

@@ -43,3 +43,14 @@ export const startModePreference = preference<StartMode>(
   "remember",
   oneOf(START_MODES.map((mode) => mode.value)),
 );
+
+/**
+ * Whether a note opened in the active pane takes the focus, so it can be
+ * typed in at once: the text, or the scroll in reading mode.
+ */
+export const focusOnOpenPreference = preference<boolean>(
+  "carbon.editor.focusOnOpen",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);

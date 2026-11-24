@@ -190,6 +190,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.deleteTo.system": "В системную корзину",
   "settings.deleteTo.vault": "В корзину хранилища",
   "settings.editor": "Редактор",
+  "settings.focusOnOpen": "Ставить курсор в заметку при открытии",
   "settings.font.inter": "Inter",
   "settings.font.mono": "Моноширинный",
   "settings.font.serif": "С засечками",

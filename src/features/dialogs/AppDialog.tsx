@@ -1,6 +1,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import {
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ComponentProps,
@@ -86,6 +87,7 @@ export function AppDialog({
   const [before, setBefore] = useState(() =>
     open ? document.activeElement : null,
   );
+  const popup = useRef<HTMLDivElement>(null);
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
@@ -121,12 +123,16 @@ export function AppDialog({
         <Dialog.Popup
           {...popupProps}
           {...aria}
+          ref={popup}
           initialFocus={initialFocus}
           // Closed for another dialog: the focus is that one's to keep,
-          // not given back to where it was before. Nor to a button.
+          // not given back to where it was before. Nor to a button, nor
+          // when something outside took it already, as a note that was
+          // opened from the dialog (`focusOnOpenPreference`).
           finalFocus={() =>
             openDialogId() === null &&
-            !(before?.matches(NO_FOCUS_BACK) ?? false)
+            !(before?.matches(NO_FOCUS_BACK) ?? false) &&
+            !focusTakenOutside(popup.current)
           }
           className={`z-50 text-ui text-fg outline-none data-closed:hidden ${className}`}
         >
@@ -134,5 +140,15 @@ export function AppDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+/** Whether an element outside `popup` holds the focus. */
+function focusTakenOutside(popup: HTMLElement | null): boolean {
+  const focused = document.activeElement;
+  return (
+    focused !== null &&
+    focused !== document.body &&
+    !(popup?.contains(focused) ?? false)
   );
 }
