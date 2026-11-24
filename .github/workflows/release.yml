@@ -4,7 +4,8 @@ name: Release
 # a draft GitHub release (the one written by hand for the tag, or a new
 # one), to check and publish by hand: the deb and the AppImage for Linux
 # (C-604), the installer for Windows (C-608), and the latest.json the
-# updater reads (C-607, ADR-034). Published as a regular release, not a
+# updater reads (C-607, ADR-034). Linux and Windows are built at once; the
+# latest.json is written after both, from their signatures. Published as a regular release, not a
 # pre-release: the app looks at releases/latest, which skips pre-releases.
 on:
   push:
@@ -122,12 +123,14 @@ jobs:
           releaseId: ${{ needs.draft.outputs.id }}
           tagName: ${{ github.ref_name }}
           args: ${{ steps.updater.outputs.args }}
+          # Written once for both systems, by the updater job.
+          includeUpdaterJson: false
 
   windows:
     name: Windows installer
-    # After the Linux packages: each adds its entries to the latest.json
-    # of the draft, and two at once could lose the entries of the other.
-    needs: [draft, linux]
+    # At the same time as the Linux packages: neither writes the latest.json,
+    # so neither can lose the entries of the other.
+    needs: draft
     runs-on: windows-latest
     steps:
       - name: Check out the repository
@@ -180,3 +183,69 @@ jobs:
           releaseId: ${{ needs.draft.outputs.id }}
           tagName: ${{ github.ref_name }}
           args: ${{ steps.sign.outputs.args }}
+          includeUpdaterJson: false
+
+  updater:
+    name: Updater manifest
+    # The latest.json the app reads to update (ADR-034), once both systems
+    # are on the draft: one entry for each signed package, under the names
+    # tauri-action gives them. Without the signatures (no
+    # TAURI_SIGNING_PRIVATE_KEY) there is nothing to write.
+    needs: [draft, linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write latest.json from the signatures and attach it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ needs.draft.outputs.id }}
+        run: |
+          assets=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$RELEASE/assets")
+          # The signature of the package whose name ends with $1, as a JSON
+          # entry of the manifest, or nothing if it was not signed.
+          entry() {
+            local sig id name
+            sig=$(jq -r --arg end "$1.sig" '.[] | select(.name | endswith($end)) | .id' <<< "$assets" | head -n 1)
+            [ -z "$sig" ] && return
+            name=$(jq -r --argjson id "$sig" '.[] | select(.id == $id) | .name | rtrimstr(".sig")' <<< "$assets")
+            gh api -H "Accept: application/octet-stream" \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$sig" > signature
+            jq -n --rawfile signature signature \
+              --arg url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$name" \
+              '{signature: $signature, url: $url}'
+          }
+          appimage=$(entry .AppImage)
+          deb=$(entry .deb)
+          nsis=$(entry -setup.exe)
+          if [ -z "$appimage$deb$nsis" ]; then
+            echo "No signatures: no latest.json, the app cannot update to this release"
+            exit 0
+          fi
+          jq -n \
+            --arg version "${GITHUB_REF_NAME#v}" \
+            --arg date "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --argjson appimage "${appimage:-null}" \
+            --argjson deb "${deb:-null}" \
+            --argjson nsis "${nsis:-null}" \
+            '{
+              version: $version,
+              notes: "",
+              pub_date: $date,
+              platforms: ({
+                "linux-x86_64": $appimage,
+                "linux-x86_64-appimage": $appimage,
+                "linux-x86_64-deb": $deb,
+                "windows-x86_64": $nsis,
+                "windows-x86_64-nsis": $nsis
+              } | with_entries(select(.value != null)))
+            }' > latest.json
+          cat latest.json
+          # A run made again replaces the one there.
+          old=$(jq -r '.[] | select(.name == "latest.json") | .id' <<< "$assets")
+          if [ -n "$old" ]; then
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$old"
+          fi
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary @latest.json \
+            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE/assets?name=latest.json"
