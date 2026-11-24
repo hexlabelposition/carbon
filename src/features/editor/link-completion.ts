@@ -12,6 +12,10 @@ import type { OpenTarget } from "../workspace/workspace";
 import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
 import { suggestTags } from "./tag-completion";
+import {
+  suggestCalloutTypes,
+  suggestCodeLanguages,
+} from "./markdown-completion";
 
 /** What the editor needs to suggest notes to link to, and to follow links. */
 export interface LinkHost {
@@ -62,9 +66,16 @@ export const linkHost = Facet.define<LinkHost, LinkHost | null>({
  * on as usual; Escape closes the list.
  */
 export const linkCompletion = [
-  // Tags too: the editor has one list of suggestions for all of them.
+  // Tags, the languages of code blocks and the types of callouts too: the
+  // editor has one list of suggestions for all of them.
   autocompletion({
-    override: [suggestNotes, suggestHeadings, suggestTags],
+    override: [
+      suggestNotes,
+      suggestHeadings,
+      suggestTags,
+      suggestCodeLanguages,
+      suggestCalloutTypes,
+    ],
     icons: false,
   }),
   EditorView.baseTheme({

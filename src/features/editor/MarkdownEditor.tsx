@@ -24,6 +24,7 @@ import { scrollParentOf } from "./glide";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { heldSelection } from "./held-selection";
+import { markdownInput } from "./markdown-input";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
 import { layoutIndependentKeys } from "./layout-keys";
@@ -242,6 +243,7 @@ export function MarkdownEditor({
             open: (image) => latest.current.images?.open(image),
           }),
           linkCompletion,
+          markdownInput,
           followOnModClick,
           linkPreview,
           missingLinks,

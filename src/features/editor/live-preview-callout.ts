@@ -114,6 +114,11 @@ for (const [color, icon, types] of GROUPS) {
   for (const type of types) TYPES[type] = { color, icon };
 }
 
+/** The types a callout can have, in the order of their colors. */
+export const CALLOUT_TYPES: readonly string[] = GROUPS.flatMap(
+  ([, , types]) => types,
+);
+
 /** A type of one's own is drawn as a note. */
 const NOTE = TYPES.note;
 
