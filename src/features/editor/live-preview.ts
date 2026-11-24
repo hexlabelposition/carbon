@@ -58,12 +58,13 @@ export const livePreview = [
   ),
   EditorView.baseTheme({
     ".cm-inline-code": {
-      padding: "1px 5px",
+      padding: "1px 2px",
       border: "1px solid var(--cb-line)",
       borderRadius: "4px",
       backgroundColor: "var(--cb-code)",
       fontSize: noteSize(13),
     },
+    ".cm-unseen, .cm-unseen *": { color: "transparent" },
     // A code block is drawn line by line: every line carries the sides of
     // the box, the first and the last one close it.
     ".cm-line.cm-code": {
@@ -264,6 +265,7 @@ class RuleWidget extends WidgetType {
 
 const hide = Decoration.replace({});
 const inlineCode = Decoration.mark({ class: "cm-inline-code" });
+const unseen = Decoration.mark({ class: "cm-unseen" });
 const wikiLinkText = Decoration.mark({ class: "cm-wiki-link" });
 const missingLinkText = Decoration.mark({
   class: "cm-wiki-link cm-wiki-link-missing",
@@ -435,8 +437,11 @@ function decorate(view: EditorView): DecorationSet {
           }
           return false;
         } else if (name in INLINE_MARKS && !editing(node.from, node.to)) {
-          for (const mark of node.getChildren(INLINE_MARKS[name])) {
-            ranges.push(hide.range(mark.from, mark.to));
+          // The backticks of inline code stay in place, only unseen: the
+          // box keeps its width when the cursor comes in and shows them.
+          const mark = name === "InlineCode" ? unseen : hide;
+          for (const child of node.getChildren(INLINE_MARKS[name])) {
+            ranges.push(mark.range(child.from, child.to));
           }
         }
       },
