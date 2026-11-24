@@ -211,6 +211,7 @@ export const en = {
   "settings.indent.spaces2": "2 spaces",
   "settings.indent.spaces4": "4 spaces",
   "settings.indent.tab": "Tab",
+  "settings.inlineTitle": "Inline title",
   "settings.language": "Language",
   "settings.language.en": "English",
   "settings.language.ru": "Русский",

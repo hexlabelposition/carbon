@@ -19,6 +19,7 @@ import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
 import type { NoteStats } from "./note-stats";
 import { focusOnOpenPreference } from "../settings/editor-options";
+import { inlineTitlePreference } from "../settings/note-style";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -71,6 +72,7 @@ export function NoteEditor({
    * only the note of the active pane, as the settings choose.
    */
   const [focusAtOpen] = useState(() => active && focusOnOpenPreference.get());
+  const inlineTitle = inlineTitlePreference.use();
   const scroll = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
   const ready = note.status === "ready";
@@ -164,7 +166,12 @@ export function NoteEditor({
         }}
         className="flex flex-1 flex-col"
       >
-        <NoteTitleField title={title} readOnly={readingMode} />
+        {inlineTitle ? (
+          <NoteTitleField title={title} readOnly={readingMode} />
+        ) : (
+          // Without the title, the text keeps some room below the bar.
+          <div aria-hidden="true" className="h-8 shrink-0" />
+        )}
         <MarkdownEditor
           text={note.text}
           revision={note.revision}

@@ -66,6 +66,7 @@ import {
   resetNoteSize,
   useNoteStyle,
   wheelTextSizePreference,
+  inlineTitlePreference,
 } from "./note-style";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
@@ -614,8 +615,18 @@ function NoteSettings() {
   const width = noteWidthPreference.use();
   const wheelSize = wheelTextSizePreference.use();
   const lineHeight = lineHeightPreference.use();
+  const inlineTitle = inlineTitlePreference.use();
   return (
     <>
+      <Rows>
+        <Row label={t("settings.inlineTitle")}>
+          <SettingSwitch
+            label={t("settings.inlineTitle")}
+            checked={inlineTitle}
+            onChange={inlineTitlePreference.set}
+          />
+        </Row>
+      </Rows>
       <Rows>
         <Row label={t("settings.fontSize")}>
           <div className="flex items-center gap-1.5">

@@ -210,6 +210,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.indent.spaces2": "2 пробела",
   "settings.indent.spaces4": "4 пробела",
   "settings.indent.tab": "Табуляция",
+  "settings.inlineTitle": "Встроенный заголовок",
   "settings.language": "Язык",
   "settings.language.en": "English",
   "settings.language.ru": "Русский",

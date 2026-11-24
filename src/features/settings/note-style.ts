@@ -81,6 +81,18 @@ export const wheelTextSizePreference = preference<boolean>(
     stored === "true" ? true : stored === "false" ? false : undefined,
 );
 
+/**
+ * Whether the name of the note is shown as a title above its text, where
+ * it can be edited to rename the note. Hidden until turned on: the bar
+ * above the note shows it, and the file tree renames.
+ */
+export const inlineTitlePreference = preference<boolean>(
+  "carbon.note.inlineTitle",
+  false,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
 export const noteWidthPreference = preference<NoteWidth>(
   "carbon.note.width",
   "normal",
