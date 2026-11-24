@@ -85,7 +85,14 @@ export const livePreview = [
       borderRadius: "0 0 6px 6px",
     },
     ".cm-line.cm-code-first.cm-code-last": { borderRadius: "6px" },
-    ".cm-bullet": { color: "var(--cb-faint)" },
+    ".cm-bullet": { position: "relative", color: "transparent" },
+    ".cm-bullet::after": {
+      content: '"•"',
+      position: "absolute",
+      left: "50%",
+      transform: "translateX(-50%)",
+      color: "var(--cb-faint)",
+    },
     // As links are drawn in `styles/markdown.css`: a quiet line below,
     // dashed for a note that does not exist yet, so not by color alone.
     ".cm-wiki-link": {
@@ -194,10 +201,22 @@ export const livePreview = [
 
 /** The dot shown in place of the "-", "*" or "+" of a list item. */
 class BulletWidget extends WidgetType {
+  constructor(private readonly mark: string) {
+    super();
+  }
+
+  eq(other: BulletWidget): boolean {
+    return other.mark === this.mark;
+  }
+
+  /**
+   * The mark itself, unseen, with the dot over it: as wide as the mark, so
+   * the text does not move when the cursor comes in and shows the mark.
+   */
   toDOM(): HTMLElement {
     const bullet = document.createElement("span");
     bullet.className = "cm-bullet";
-    bullet.textContent = "•";
+    bullet.textContent = this.mark;
     return bullet;
   }
 }
@@ -271,7 +290,16 @@ const missingLinkText = Decoration.mark({
   class: "cm-wiki-link cm-wiki-link-missing",
 });
 const headingSeparator = Decoration.replace({ widget: new SeparatorWidget() });
-const bullet = Decoration.replace({ widget: new BulletWidget() });
+const bullets = new Map<string, Decoration>();
+/** The dot in place of `mark`, one decoration for each kind of mark. */
+function bullet(mark: string): Decoration {
+  let decoration = bullets.get(mark);
+  if (decoration === undefined) {
+    decoration = Decoration.replace({ widget: new BulletWidget(mark) });
+    bullets.set(mark, decoration);
+  }
+  return decoration;
+}
 const rule = Decoration.replace({ widget: new RuleWidget() });
 const taskDone = Decoration.mark({ class: "cm-task-done" });
 const quoteLine = Decoration.line({ class: "cm-quote" });
@@ -309,7 +337,8 @@ function decorate(view: EditorView): DecorationSet {
     if (!marker) {
       // The number of an ordered item is kept: it carries meaning.
       if (bulleted && !editing(mark.from, mark.to)) {
-        ranges.push(bullet.range(mark.from, mark.to));
+        const text = state.sliceDoc(mark.from, mark.to);
+        ranges.push(bullet(text).range(mark.from, mark.to));
       }
       return;
     }
