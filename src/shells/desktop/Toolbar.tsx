@@ -25,7 +25,10 @@ interface ToolbarProps {
   items: readonly ToolbarItem[];
   /** The buttons at the foot, such as the settings. */
   footer: readonly ToolbarItem[];
-  /** What stands below them, at the very foot. */
+  /**
+   * What stands below them, at the very foot, parted from them by a line
+   * across the whole toolbar: the vault.
+   */
   footerEnd?: ReactNode;
 }
 
@@ -45,25 +48,23 @@ export function Toolbar({ open, items, footer, footerEnd }: ToolbarProps) {
       >
         <ToolbarGroup items={items} />
         <div data-tauri-drag-region className="min-h-0 flex-1" />
-        <ToolbarGroup items={footer}>{footerEnd}</ToolbarGroup>
+        <ToolbarGroup items={footer} />
+        {footerEnd !== undefined && (
+          <div className="flex shrink-0 flex-col border-t border-line py-1.5">
+            {footerEnd}
+          </div>
+        )}
       </nav>
     </SlidePanel>
   );
 }
 
-function ToolbarGroup({
-  items,
-  children,
-}: {
-  items: readonly ToolbarItem[];
-  children?: ReactNode;
-}) {
+function ToolbarGroup({ items }: { items: readonly ToolbarItem[] }) {
   return (
     <div className="flex shrink-0 flex-col py-1.5">
       {items.map((item) => (
         <ToolbarButton key={item.id} item={item} />
       ))}
-      {children}
     </div>
   );
 }
