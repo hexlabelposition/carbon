@@ -93,9 +93,12 @@ async function openFromTree(path: string): Promise<void> {
 beforeAll(async () => {
   app = await Session.start(DRIVER, APP);
   // The interface in English, whatever the system speaks: the tests find
-  // what they press by its text.
+  // what they press by its text. The inline title on, hidden by default:
+  // the tests read the name of the open note from it (`noteName`).
   await app.execute(
-    "localStorage.setItem('carbon.language', 'en'); location.reload();",
+    "localStorage.setItem('carbon.language', 'en');" +
+      "localStorage.setItem('carbon.note.inlineTitle', 'true');" +
+      "location.reload();",
   );
   await (await app.find('[aria-label="Dev tools"]', 30_000)).click();
   await (await app.button("Open test vault")).click();
