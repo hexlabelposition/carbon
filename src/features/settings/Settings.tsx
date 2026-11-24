@@ -2,6 +2,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -70,6 +71,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
+import { resetPreferences } from "./preference";
 import {
   checkAtStartPreference,
   checkForUpdates,
@@ -444,9 +446,86 @@ function GeneralSettings() {
           </Row>
         </Rows>
       )}
+      <ResetSettings />
     </>
   );
 }
+
+/**
+ * Puts every setting back to its default, after a question in a dialog
+ * over the settings. It is not one of the dialogs that stand over the
+ * window one at a time (`openDialog`): the settings stay open below it.
+ * The question gives the focus to "Cancel", so a stray Enter resets
+ * nothing.
+ */
+function ResetSettings() {
+  const t = useT();
+  const [asking, setAsking] = useState(false);
+  const ask = useRef<HTMLButtonElement>(null);
+  const cancel = useRef<HTMLButtonElement>(null);
+
+  function answer(reset: boolean) {
+    if (reset) resetPreferences();
+    setAsking(false);
+    // The focus is not given back while the settings are open
+    // (`AppDialog`): back to the button here.
+    requestAnimationFrame(() => ask.current?.focus());
+  }
+
+  const button = "h-8 rounded-md px-3 outline-none focus-visible:ring-2";
+  return (
+    <Rows>
+      <Row label={t("settings.reset")}>
+        <button
+          ref={ask}
+          type="button"
+          className={cardButton}
+          onClick={() => setAsking(true)}
+        >
+          {t("settings.resetConfirm")}
+        </button>
+      </Row>
+      <AppDialog
+        open={asking}
+        onClose={() => answer(false)}
+        initialFocus={cancel}
+        aria-labelledby="settings-reset-title"
+        aria-describedby="settings-reset-text"
+        popupProps={{ role: "alertdialog" }}
+        backdrop="bg-backdrop/40"
+        className="fixed inset-0 m-auto h-fit w-full max-w-[min(440px,calc(100vw-32px))] rounded-lg border border-line bg-bg p-4 shadow-dialog"
+      >
+        <h2 id="settings-reset-title" className="font-medium">
+          {t("settings.resetQuestion")}
+        </h2>
+        <p id="settings-reset-text" className="mt-1.5 text-muted">
+          {t("settings.resetText")}
+        </p>
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <button
+            ref={cancel}
+            type="button"
+            className={`${button} border border-line-strong hover:bg-raise focus-visible:ring-line-strong`}
+            onClick={() => answer(false)}
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            type="button"
+            className={`${button} bg-danger text-on-danger focus-visible:ring-line-strong`}
+            onClick={() => answer(true)}
+          >
+            {t("settings.resetConfirm")}
+          </button>
+        </div>
+      </AppDialog>
+    </Rows>
+  );
+}
+
+/** A button in a row of the settings, as "Check now". */
+const cardButton =
+  "h-7 shrink-0 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel";
 
 /**
  * What the last look for a newer version found, beside the button that
@@ -456,8 +535,6 @@ function GeneralSettings() {
 function UpdateStatus() {
   const t = useT();
   const state = useCheckState();
-  const button =
-    "h-7 shrink-0 rounded-md border border-line-strong bg-panel px-3 outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong disabled:opacity-50 disabled:hover:bg-panel";
   return (
     <div className="flex min-w-0 items-center gap-3">
       {state.kind === "checking" && (
@@ -481,14 +558,14 @@ function UpdateStatus() {
           <span className="text-muted">
             {t("updates.availableShort", { version: state.update.version })}
           </span>
-          <button type="button" className={button} onClick={showUpdate}>
+          <button type="button" className={cardButton} onClick={showUpdate}>
             {t("updates.update")}
           </button>
         </>
       ) : (
         <button
           type="button"
-          className={button}
+          className={cardButton}
           disabled={state.kind === "checking"}
           onClick={checkForUpdates}
         >

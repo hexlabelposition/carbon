@@ -215,7 +215,12 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.notes": "Заметки",
   "settings.open": "Открыть настройки",
   "settings.pixels": "{count} px",
+  "settings.reset": "Вернуть все настройки по умолчанию",
+  "settings.resetConfirm": "Сбросить",
   "settings.resetNoteSize": "Сбросить размер текста заметки",
+  "settings.resetQuestion": "Сбросить все настройки?",
+  "settings.resetText":
+    "Язык, тема, шрифты, вид заметок, редактор и горячие клавиши вернутся к значениям по умолчанию. Хранилища и заметки останутся как есть.",
   "settings.resetTo": "Сбросить до {value}",
   "settings.shortcuts": "Сочетания клавиш",
   "settings.shortcuts.conflict":

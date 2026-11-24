@@ -216,7 +216,12 @@ export const en = {
   "settings.notes": "Notes",
   "settings.open": "Open settings",
   "settings.pixels": "{count} px",
+  "settings.reset": "Reset all settings to their defaults",
+  "settings.resetConfirm": "Reset",
   "settings.resetNoteSize": "Reset the note text size",
+  "settings.resetQuestion": "Reset all settings?",
+  "settings.resetText":
+    "The language, theme, fonts, note look, editor and shortcuts go back to their defaults. Vaults and notes stay as they are.",
   "settings.resetTo": "Reset to {value}",
   "settings.shortcuts": "Shortcuts",
   "settings.shortcuts.conflict": "Keys in red are set for more than one action",

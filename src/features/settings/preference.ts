@@ -10,6 +10,16 @@ export interface Preference<T> {
   set(value: T): void;
   /** The value, kept up to date in a component. */
   use(): T;
+  /** Back to the value it has until the user picks another. */
+  reset(): void;
+}
+
+/** Every setting made, so all of them can be reset at once. */
+const all: Preference<unknown>[] = [];
+
+/** Puts every setting of this device back to its default. */
+export function resetPreferences(): void {
+  for (const setting of all) setting.reset();
 }
 
 /**
@@ -41,8 +51,11 @@ export function preference<T>(
     return () => listeners.delete(listener);
   };
   const get = () => value;
+  const changed = () => {
+    for (const listener of listeners) listener();
+  };
 
-  return {
+  const setting: Preference<T> = {
     get,
     set(next) {
       if (Object.is(next, value)) return;
@@ -52,10 +65,23 @@ export function preference<T>(
       } catch {
         // As above: kept for this run only.
       }
-      for (const listener of listeners) listener();
+      changed();
     },
     use: () => useSyncExternalStore(subscribe, get),
+    reset() {
+      // Nothing stored: a later version may give it another default.
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // As above.
+      }
+      if (Object.is(fallback, value)) return;
+      value = fallback;
+      changed();
+    },
   };
+  all.push(setting as Preference<unknown>);
+  return setting;
 }
 
 /** Parses a stored value that must be one of `options`. */
