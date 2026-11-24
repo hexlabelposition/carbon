@@ -174,11 +174,20 @@
   color: var(--cb-faint);
 }
 
-.markdown pre .tok-keyword {
+/* Flags such as "-p" read as keywords, known commands such as "sudo" as
+   bold ones, numbers and literals as strings. */
+.markdown pre .tok-keyword,
+.markdown pre .tok-attribute {
   color: var(--cb-muted);
 }
 
-.markdown pre .tok-string {
+.markdown pre .tok-builtin {
+  color: var(--cb-muted);
+  font-weight: 600;
+}
+
+.markdown pre .tok-string,
+.markdown pre .tok-number {
   color: var(--cb-link);
 }
 
