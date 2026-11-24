@@ -46,10 +46,15 @@ export const editorTheme = EditorView.theme({
     maxWidth: "var(--cb-note-width)",
     margin: "0 auto",
     padding: "12px 32px 40vh",
-    caretColor: "var(--cb-fg)",
   },
   ".cm-line": { padding: "0" },
-  ".cm-content ::selection": { backgroundColor: "var(--cb-selection)" },
+  // The cursor and the selection are drawn by the editor (drawSelection).
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--cb-fg)" },
+  // Over the text, not behind it: code blocks, tables and inline code have
+  // a background of their own that would hide it. The color is see-through.
+  ".cm-selectionLayer": { zIndex: "1 !important", pointerEvents: "none" },
+  ".cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground":
+    { background: "var(--cb-selection) !important" },
 });
 
 /** Markdown highlighting: the text is styled, its marks are made quiet. */

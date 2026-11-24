@@ -13,7 +13,7 @@ import {
   Transaction,
   type Extension,
 } from "@codemirror/state";
-import { EditorView, keymap } from "@codemirror/view";
+import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import {
   editorTheme,
@@ -203,6 +203,10 @@ export function MarkdownEditor({
         doc: latest.current.text,
         extensions: [
           history(),
+          // The cursor and the selection are drawn by the editor: the caret
+          // of WebKitGTK lagged behind a change next to a widget, such as
+          // Tab in a list, and the old one stayed on screen for a while.
+          drawSelection(),
           EditorView.lineWrapping,
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
           // The language of a code block is loaded when one first uses it,
