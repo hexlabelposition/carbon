@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import reactHooks from "eslint-plugin-react-hooks";
+import { reactRefresh } from "eslint-plugin-react-refresh";
 import type { Linter } from "eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
@@ -30,7 +31,9 @@ export default defineConfig([
   // The application: runs in the WebView.
   {
     files: ["src/**/*.{ts,tsx}"],
-    extends: [reactHooks.configs.flat.recommended],
+    // A file of components exports only components, or a change to it
+    // reloads the whole page instead of refreshing it (Fast Refresh).
+    extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite()],
     languageOptions: { globals: globals.browser },
     rules: { "no-restricted-imports": restrictImports(noTauri) },
   },
