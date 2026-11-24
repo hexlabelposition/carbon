@@ -21,10 +21,11 @@ import {
   sourceHighlight,
 } from "./editor-theme";
 import { scrollParentOf } from "./glide";
+import { shortcutLetter } from "../workspace/shortcut-letter";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
 import { layoutIndependentKeys } from "./layout-keys";
-import { keys, useCommands } from "../commands/commands";
+import { isMac, keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
 import { codeLanguage } from "./code-languages";
@@ -391,6 +392,30 @@ export function MarkdownEditor({
     // Out of the editor: the cursor and the Markdown under it go away.
     if (readOnly && view.hasFocus) view.contentDOM.blur();
   }, [readOnly]);
+
+  // The note around the editor holds the focus, as when it was just
+  // opened or is read: the keymap of the editor does not see the keys
+  // there, so find and replace are opened from here.
+  useEffect(() => {
+    if (!active) return;
+    function onKeyDown(event: KeyboardEvent) {
+      const view = editor.current;
+      if (view === null || event.defaultPrevented) return;
+      // Ctrl, or Cmd on a Mac, alone: as the keymap of the editor.
+      const mod = isMac ? event.metaKey : event.ctrlKey;
+      if (!mod || event.altKey || event.shiftKey) return;
+      // Only around the editor: in the text, its keymap does it.
+      const target = event.target;
+      if (!(target instanceof Node) || !target.contains(view.dom)) return;
+      const letter = shortcutLetter(event);
+      if (letter === "f") openSearchPanel(view);
+      else if (letter === "h" && !latest.current.readOnly) openReplace(view);
+      else return;
+      event.preventDefault();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [active]);
 
   // After the editor is made, so a note opened at a place goes there.
   useEffect(() => {
