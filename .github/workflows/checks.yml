@@ -1,12 +1,14 @@
-name: CI
+name: Checks
 
+# The quick checks of every change. The app is compiled in build.yml, and
+# tried in e2e.yml.
 on:
   push:
     branches: [main]
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: checks-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,12 +21,7 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       - name: Check types
         run: bun run typecheck
 
@@ -34,12 +31,7 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       - name: Run ESLint
         run: bun run lint
 
@@ -49,12 +41,7 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       - name: Check formatting
         run: bun run format:check
 
@@ -64,11 +51,6 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       - name: Run tests
         run: bun test

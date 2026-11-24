@@ -79,30 +79,16 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Install Tauri system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
-            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      # The dependencies built by release-cache.yml on main: a tag sees the
-      # caches of main, not those of an earlier tag, so it saves none.
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      # The dependencies built by cache.yml on main: a tag sees the caches
+      # of main, not those of an earlier tag, so it saves none.
+      - uses: ./.github/actions/rust
         with:
-          workspaces: tauri -> target
           shared-key: release
           save-if: false
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       # With the secret TAURI_SIGNING_PRIVATE_KEY, each package also gets
-      # its signature for the updater, and the draft its latest.json
-      # (ADR-034). Without it, the app cannot update to this release.
+      # its signature for the updater, from which the updater job writes
+      # the latest.json (ADR-034). Without it, the app cannot update.
       - name: Choose whether to sign for the updater
         id: updater
         shell: bash
@@ -139,22 +125,13 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      # The dependencies built by release-cache.yml on main: a tag sees the
-      # caches of main, not those of an earlier tag, so it saves none.
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      # The dependencies built by cache.yml on main: a tag sees the caches
+      # of main, not those of an earlier tag, so it saves none.
+      - uses: ./.github/actions/rust
         with:
-          workspaces: tauri -> target
           shared-key: release
           save-if: false
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       # Not signed yet (C-608). Once a signing service is set up, its
       # command goes in the secret WINDOWS_SIGN_COMMAND, with %1 for the
       # file, and every executable of the installer is signed with it.

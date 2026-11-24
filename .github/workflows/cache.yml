@@ -1,12 +1,11 @@
-name: Release cache
+name: Cache
 
 # Builds the app as release.yml does, on main, to keep the Rust dependencies
 # of the release profile in the cache (`shared-key: release`): a tag sees
 # the caches of main, never those of an earlier tag, so without this every
 # release built them from scratch. Weekly, so the cache is not evicted (a
 # cache unused for 7 days is) and follows a new Rust; by hand after an
-# update of the dependencies:
-# `gh workflow run release-cache.yml`.
+# update of the dependencies: `gh workflow run cache.yml`.
 on:
   schedule:
     - cron: "0 3 * * 1"
@@ -32,25 +31,10 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Install Tauri system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
-            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust
         with:
-          workspaces: tauri -> target
           shared-key: release
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       # The release profile, as tauri-action builds it, without packages.
       - name: Build the app
         run: bun tauri build --no-bundle

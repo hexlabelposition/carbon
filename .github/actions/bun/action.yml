@@ -1,0 +1,13 @@
+name: Bun
+description: Sets up Bun, of the version in package.json, and installs the dependencies.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: package.json
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile

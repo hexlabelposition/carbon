@@ -1,7 +1,8 @@
 name: Build
 
-# The slow part of CI, kept apart so that changes that cannot affect the
-# build (documentation) skip it. The quick checks are in ci.yml.
+# Checks that the app compiles on Windows. Linux is compiled by the
+# end-to-end tests (e2e.yml), the packages for a version tag (release.yml).
+# Changes that cannot affect the build (documentation) skip it.
 on:
   push:
     branches: [main]
@@ -26,76 +27,17 @@ env:
   CARGO_PROFILE_DEV_DEBUG: "0"
 
 jobs:
-  # Linux is built by the end-to-end tests below, which compile the app
-  # there anyway; Windows only here.
   windows:
     name: Windows
     runs-on: windows-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust
         with:
-          workspaces: tauri -> target
           # Pull requests read the cache from main but do not write their own.
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      # A debug build without installers: CI checks that the app compiles.
-      # The packages are built for a version tag (release.yml).
+      - uses: ./.github/actions/bun
+      # A debug build without installers.
       - name: Build the app
         run: bun tauri build --debug --no-bundle
-
-  e2e:
-    name: End-to-end tests
-    # The main flows in the real app on Linux (C-609): WebKitGTK under a
-    # virtual display, driven by tauri-driver on top of WebKitWebDriver.
-    # Also the build check of Linux: the app is compiled for the tests.
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-      - name: Install Tauri system dependencies, the WebKit driver and a virtual display
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
-            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb
-          # WebKitWebDriver: webkitgtk-webdriver since Ubuntu 26.04, before
-          # that webkit2gtk-driver.
-          sudo apt-get install -y webkitgtk-webdriver || sudo apt-get install -y webkit2gtk-driver
-          command -v WebKitWebDriver
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tauri -> target
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      # The interface as a release bundles it; the tests load it from Vite.
-      - name: Build the interface
-        run: bun run build
-      - name: Run the end-to-end tests
-        run: xvfb-run --auto-servernum bun run e2e
-      # The screenshots and the log of the app, kept by a failed run.
-      - name: Keep what the failed run left
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-profile
-          path: /tmp/carbon-e2e-*
-          if-no-files-found: ignore

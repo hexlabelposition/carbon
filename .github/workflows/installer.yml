@@ -1,7 +1,7 @@
-name: Windows build
+name: Installer
 
 # A Windows installer of any branch, built on request, to try a change on
-# Windows without a release: `gh workflow run windows-build.yml --ref <branch>`,
+# Windows without a release: `gh workflow run installer.yml --ref <branch>`,
 # then `gh run download` once it is done. Releases are built by release.yml.
 on:
   workflow_dispatch:
@@ -16,19 +16,10 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust
         with:
-          workspaces: tauri -> target
           save-if: false
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun
       # The NSIS installer of tauri.conf.json, not signed.
       - name: Build the installer
         run: bun tauri build
