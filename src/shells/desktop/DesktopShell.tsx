@@ -53,6 +53,10 @@ import {
 } from "../../features/graph/use-graph-view";
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
+import {
+  toggleToolbar,
+  toolbarPreference,
+} from "../../features/settings/toolbar";
 import { SettingsOpener } from "../../features/settings/Settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { timing } from "../../features/vault/timing";
@@ -158,8 +162,8 @@ export function DesktopShell({
   }, [collapsed, toggleSidebar]);
   const rightPanel = useRightPanel();
   const { toggle: toggleRightPanel } = rightPanel;
-  const toolbar = useSidePanel("carbon.desktop.toolbar", true);
-  const { toggle: toggleToolbar } = toolbar;
+  // Shown or hidden here, in the settings and by its shortcut alike.
+  const toolbarOpen = toolbarPreference.use();
   useFileDropGuard();
   useContextMenuGuard();
   useTabFocusGuard();
@@ -272,7 +276,6 @@ export function DesktopShell({
       showDev,
       toggleSidebar,
       toggleRightPanel,
-      toggleToolbar,
       toggleRightView,
       revealSidebar,
       showSidebarView,
@@ -311,7 +314,7 @@ export function DesktopShell({
             <>
               <PanelToggle
                 side="toolbar"
-                open={toolbar.open}
+                open={toolbarOpen}
                 shortcut={toolbarShortcut}
                 onToggle={toggleToolbar}
               />
@@ -363,13 +366,13 @@ export function DesktopShell({
               <NoteArea
                 vault={vault}
                 right={rightPanel}
-                startWidth={`calc(${toolbar.open ? TOOLBAR_WIDTH : "0px"} + ${
+                startWidth={`calc(${toolbarOpen ? TOOLBAR_WIDTH : "0px"} + ${
                   sidebar.collapsed ? "0px" : panelWidth(sidebar.fraction)
                 })`}
                 start={
                   <>
                     <ToolbarHost
-                      open={toolbar.open}
+                      open={toolbarOpen}
                       sidebarOpen={!sidebar.collapsed}
                       sidebarView={sidebarView}
                       revealSidebar={revealSidebar}

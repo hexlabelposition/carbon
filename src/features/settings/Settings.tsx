@@ -74,6 +74,7 @@ import { ScrollArea } from "../ui/ScrollArea";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
 import { resetPreferences } from "./preference";
+import { toolbarPreference } from "./toolbar";
 import {
   checkAtStartPreference,
   checkForUpdates,
@@ -591,6 +592,7 @@ function AppearanceSettings() {
   const t = useT();
   const theme = themePreference.use();
   const zoom = zoomPreference.use();
+  const toolbar = toolbarPreference.use();
   return (
     <Rows>
       <Row label={t("settings.theme")}>
@@ -613,6 +615,13 @@ function AppearanceSettings() {
             label: `${Math.round(level * 100)}%`,
           }))}
           onChange={zoomPreference.set}
+        />
+      </Row>
+      <Row label={t("shell.toolbar")}>
+        <SettingSwitch
+          label={t("shell.toolbar")}
+          checked={toolbar}
+          onChange={toolbarPreference.set}
         />
       </Row>
     </Rows>
