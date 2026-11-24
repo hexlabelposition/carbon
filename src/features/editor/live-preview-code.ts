@@ -102,11 +102,14 @@ class CodeFooterWidget extends WidgetType {
     const footer = document.createElement("span");
     footer.className = "cm-code-footer";
 
-    const counts = document.createElement("span");
-    counts.textContent =
-      t("stats.lines", { count: lines }) +
-      " · " +
-      t("stats.characters", { count: characterCount(code) });
+    const stat = (...content: (string | Node)[]) => {
+      const item = document.createElement("span");
+      item.className = "cm-code-stat";
+      item.append(...content);
+      footer.append(item);
+    };
+    stat(t("stats.lines", { count: lines }));
+    stat(t("stats.characters", { count: characterCount(code) }));
     if (this.diff) {
       const plus = document.createElement("span");
       plus.className = "cm-code-count-added";
@@ -114,9 +117,8 @@ class CodeFooterWidget extends WidgetType {
       const minus = document.createElement("span");
       minus.className = "cm-code-count-removed";
       minus.textContent = `−${removed}`;
-      counts.append(" · ", plus, " ", minus);
+      stat(plus, " ", minus);
     }
-    footer.append(counts);
     return footer;
   }
 }
@@ -259,8 +261,9 @@ export const codeBlockTheme = EditorView.baseTheme({
     borderBottom: "1px solid var(--cb-line)",
     backgroundColor: "var(--cb-panel)",
   },
+  // No padding above and below: the lines between the counts reach the edges.
   ".cm-line.cm-code.cm-code-foot": {
-    padding: "4px 12px",
+    padding: "0 12px",
     borderTop: "1px solid var(--cb-line)",
     backgroundColor: "var(--cb-panel)",
   },
@@ -276,6 +279,20 @@ export const codeBlockTheme = EditorView.baseTheme({
     color: "var(--cb-faint)",
     userSelect: "none",
   },
+  // The counts sit at the right, a full-height line before each one, the
+  // first too.
+  ".cm-code-footer": {
+    alignItems: "stretch",
+    justifyContent: "flex-end",
+    gap: "0",
+    fontSize: noteSize(11),
+  },
+  ".cm-code-stat": {
+    padding: "3px 8px",
+    borderLeft: "1px solid var(--cb-line)",
+    fontVariantNumeric: "tabular-nums",
+  },
+  ".cm-code-stat:last-child": { paddingRight: "0" },
   ".cm-code-badge": {
     flex: "none",
     padding: "0 5px",
