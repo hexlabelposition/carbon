@@ -18,12 +18,13 @@ export interface RightPanel {
 }
 
 const VIEW_KEY = "carbon.desktop.rightPanel.view";
+const OPEN_KEY = "carbon.desktop.rightPanel.open";
 
 /**
  * The panel at the right of the note, which shows its outline, the notes
  * that link to it or the graph around it, one at a time, as the left panel shows files or search.
- * It is shut at every app start, opening it is up to the user; what it
- * shows and how wide it is are remembered between starts.
+ * Whether it is open, what it shows and how wide it is are remembered
+ * between starts.
  */
 export function useRightPanel(): RightPanel {
   // Before, the outline and the backlinks were two parts switched on
@@ -32,7 +33,7 @@ export function useRightPanel(): RightPanel {
     outline: loadFlag("carbon.desktop.outline"),
     backlinks: loadFlag("carbon.desktop.backlinks"),
   }));
-  const [open, set] = useState(false);
+  const [open, set] = useState(() => loadFlag(OPEN_KEY));
   const toggle = useCallback(() => set((value) => !value), []);
   // About 16rem, the width it had before it could be resized, on a
   // window 1280 pixels wide.
@@ -48,6 +49,14 @@ export function useRightPanel(): RightPanel {
       // Without storage the panel works, it only forgets what it showed.
     }
   }, [view]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(OPEN_KEY, String(open));
+    } catch {
+      // As above: it only forgets whether it was open.
+    }
+  }, [open]);
 
   const show = useCallback(
     (next: RightPanelView) => {
