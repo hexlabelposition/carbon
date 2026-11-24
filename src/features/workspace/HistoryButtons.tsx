@@ -11,7 +11,8 @@ interface HistoryButtonsProps {
 
 /**
  * Back and forward through what a pane has shown, at the start of the bar
- * above a note or an image. Alt+Left and Alt+Right do the same.
+ * above a note or an image, parted from its name by a thin line. Alt+Left
+ * and Alt+Right do the same.
  */
 export function HistoryButtons({
   canGoBack,
@@ -21,7 +22,7 @@ export function HistoryButtons({
 }: HistoryButtonsProps) {
   const t = useT();
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
+    <div className="flex shrink-0 items-center gap-0.5 self-stretch">
       <ArrowButton
         label={t("tabs.back")}
         shortcut="Alt+←"
@@ -38,6 +39,9 @@ export function HistoryButtons({
       >
         <path d="M6 4l4 4-4 4" />
       </ArrowButton>
+      {/* Parts the arrows from the name that follows them, the whole
+          height of the bar, in the color of its border below. */}
+      <span aria-hidden="true" className="ml-1.5 w-px self-stretch bg-line" />
     </div>
   );
 }
