@@ -38,8 +38,8 @@ jobs:
       # The draft written by hand for this version, with its notes, gets
       # the packages and keeps its text. A draft is not found by
       # releases/tags/{tag}, but it is in the list of releases, with the
-      # tag it is meant for. Without one, a new draft is made from
-      # release-notes.md.
+      # tag it is meant for. Without one, a new draft is made with no text:
+      # the notes are written by hand before it is published.
       - name: Find or create the draft release
         id: create
         env:
@@ -60,8 +60,7 @@ jobs:
           # the list of releases yet, so it could not be found again.
           id=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" \
             -f tag_name="$GITHUB_REF_NAME" \
-            -f name="Carbon $GITHUB_REF_NAME" \
-            -F body=@.github/release-notes.md \
+            -f name="$GITHUB_REF_NAME" \
             -F draft=true \
             --jq .id)
           if [ -z "$id" ]; then
