@@ -74,15 +74,13 @@ export function NoteEditor({
   const scroll = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
   const ready = note.status === "ready";
-  // To read, the editor cannot take the focus: the scroll takes it, so
-  // the keys scroll the note. To edit, the editor takes it (`autoFocus`).
+  // The scroll takes the focus, not the text: no cursor is put anywhere
+  // until a click, and the keys scroll the note.
   useLayoutEffect(() => {
     if (!ready || shown.current) return;
     shown.current = true;
-    if (focusAtOpen && readingMode) {
-      scroll.current?.focus({ preventScroll: true });
-    }
-  }, [ready, focusAtOpen, readingMode]);
+    if (focusAtOpen) scroll.current?.focus({ preventScroll: true });
+  }, [ready, focusAtOpen]);
 
   if (note.status === "loading") return null;
   if (note.status === "error") {
@@ -158,7 +156,9 @@ export function NoteEditor({
         // To read, the scroll takes the focus on a click, so Page Up and
         // Page Down, the arrows and Space scroll it: the text cannot. The
         // editor keeps a click from focusing it, so it is focused here.
-        tabIndex={readingMode ? -1 : undefined}
+        // To edit, it can be focused too, by a note that opens; a click
+        // on the text still puts the cursor in the editor.
+        tabIndex={-1}
         onMouseDown={(event) => {
           if (readingMode) event.currentTarget.focus({ preventScroll: true });
         }}
@@ -180,7 +180,6 @@ export function NoteEditor({
           tags={tags}
           reveal={reveal?.path === path ? reveal : null}
           onStats={setStats}
-          autoFocus={focusAtOpen}
         />
       </ScrollArea>
       {stats !== null && <NoteStatsBar stats={stats} />}

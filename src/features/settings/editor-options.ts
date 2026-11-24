@@ -45,8 +45,8 @@ export const startModePreference = preference<StartMode>(
 );
 
 /**
- * Whether a note opened in the active pane takes the focus, so it can be
- * typed in at once: the text, or the scroll in reading mode.
+ * Whether a note opened in the active pane takes the focus: its scroll,
+ * not the text, so the keys scroll it and no cursor shows until a click.
  */
 export const focusOnOpenPreference = preference<boolean>(
   "carbon.editor.focusOnOpen",

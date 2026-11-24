@@ -101,11 +101,6 @@ interface MarkdownEditorProps {
    * in note", in the command palette.
    */
   active?: boolean;
-  /**
-   * Takes the focus when it is made, unless it is read only, so the note
-   * can be typed in at once. Read once: a later change does nothing.
-   */
-  autoFocus?: boolean;
 }
 
 /** How long typing must stop before the whole note is counted again. */
@@ -136,7 +131,6 @@ export function MarkdownEditor({
   tags,
   reveal = null,
   active = false,
-  autoFocus = false,
   onStats,
 }: MarkdownEditorProps) {
   const t = useT();
@@ -161,7 +155,6 @@ export function MarkdownEditor({
     links,
     tags,
     onStats,
-    autoFocus,
   });
   useEffect(() => {
     latest.current = {
@@ -175,7 +168,6 @@ export function MarkdownEditor({
       links,
       tags,
       onStats,
-      autoFocus,
     };
   }, [
     text,
@@ -188,7 +180,6 @@ export function MarkdownEditor({
     links,
     tags,
     onStats,
-    autoFocus,
   ]);
 
   // Before the first paint, so a note never shows as an empty area first.
@@ -321,8 +312,6 @@ export function MarkdownEditor({
     });
     editor.current = view;
     report(view.state);
-    // The cursor at the start of the note, where a new editor puts it.
-    if (latest.current.autoFocus && !latest.current.readOnly) view.focus();
     return () => {
       clearTimeout(counting);
       editor.current = null;

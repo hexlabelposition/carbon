@@ -191,7 +191,7 @@ export const en = {
   "settings.deleteTo.system": "System trash",
   "settings.deleteTo.vault": "Vault trash",
   "settings.editor": "Editor",
-  "settings.focusOnOpen": "Put the cursor in a note when it opens",
+  "settings.focusOnOpen": "Focus a note when it opens",
   "settings.font.inter": "Inter",
   "settings.font.mono": "Monospace",
   "settings.font.serif": "Serif",
