@@ -17,7 +17,7 @@ import {
 
 /**
  * Code blocks in live preview (ARCHITECTURE.md, section 8): the opening
- * fence becomes a header with the file, the extension and a copy button,
+ * fence becomes a header with the extension, the file and the language,
  * the lines get numbers and their marks (highlighted, added, removed), the
  * closing fence becomes a footer with line and character counts. What the fence
  * can say is in `code-block.ts`.
@@ -27,22 +27,11 @@ import {
  * lines stay, so the block does not jump.
  */
 
-const COPY_ICON =
-  '<svg viewBox="0 0 16 16" aria-hidden="true">' +
-  '<rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/>' +
-  '<path d="M3.5 10.5h-.5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v.5"/>' +
-  "</svg>";
-const DONE_ICON =
-  '<svg viewBox="0 0 16 16" aria-hidden="true">' +
-  '<path d="M3.5 8.5l3 3 6-7"/>' +
-  "</svg>";
-
-/** Shown in place of the opening fence: the file and a copy button. */
+/** Shown in place of the opening fence: the extension, the file and the language. */
 class CodeHeaderWidget extends WidgetType {
   constructor(
     private readonly kind: CodeKind,
     private readonly file: string,
-    private readonly code: string,
   ) {
     super();
   }
@@ -51,8 +40,7 @@ class CodeHeaderWidget extends WidgetType {
     return (
       other.kind.ext === this.kind.ext &&
       other.kind.name === this.kind.name &&
-      other.file === this.file &&
-      other.code === this.code
+      other.file === this.file
     );
   }
 
@@ -85,34 +73,6 @@ class CodeHeaderWidget extends WidgetType {
     language.textContent = this.kind.name;
     header.append(language);
 
-    const copy = document.createElement("button");
-    copy.type = "button";
-    copy.className = "cm-code-copy";
-    copy.title = t("editor.copyCode");
-    copy.setAttribute("aria-label", t("editor.copyCode"));
-    copy.innerHTML = COPY_ICON;
-    // A press would put the cursor in the block and show its Markdown.
-    copy.addEventListener("mousedown", (event) => event.preventDefault());
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    copy.addEventListener("click", () => {
-      navigator.clipboard.writeText(this.code).then(
-        () => {
-          copy.innerHTML = DONE_ICON;
-          copy.classList.add("cm-code-copied");
-          copy.title = t("editor.codeCopied");
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            copy.innerHTML = COPY_ICON;
-            copy.classList.remove("cm-code-copied");
-            copy.title = t("editor.copyCode");
-          }, 1500);
-        },
-        () => {
-          copy.title = t("editor.copyCodeFailed");
-        },
-      );
-    });
-    header.append(copy);
     return header;
   }
 }
@@ -239,11 +199,7 @@ export function decorateCodeBlock(
           class: `cm-code cm-code-first cm-code-head${edge}`,
         }).range(line.from),
         Decoration.replace({
-          widget: new CodeHeaderWidget(
-            codeKind(info),
-            info.file,
-            summarize().code,
-          ),
+          widget: new CodeHeaderWidget(codeKind(info), info.file),
         }).range(opening.from, line.to),
       );
       return;
@@ -355,37 +311,6 @@ export const codeBlockTheme = EditorView.baseTheme({
     fontWeight: "600",
   },
   ".cm-code-language": { flex: "none" },
-  ".cm-code-copy": {
-    display: "grid",
-    placeItems: "center",
-    flex: "none",
-    width: "26px",
-    height: "26px",
-    padding: "0",
-    border: "1px solid var(--cb-line-strong)",
-    borderRadius: "6px",
-    backgroundColor: "var(--cb-bg)",
-    color: "var(--cb-muted)",
-    cursor: "pointer",
-  },
-  ".cm-code-copy:hover": {
-    backgroundColor: "var(--cb-raise)",
-    color: "var(--cb-fg)",
-  },
-  ".cm-code-copy:focus-visible": {
-    outline: "2px solid var(--cb-link)",
-    outlineOffset: "1px",
-  },
-  ".cm-code-copy.cm-code-copied": { color: "var(--cb-fg)" },
-  ".cm-code-copy svg": {
-    width: "14px",
-    height: "14px",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "1.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  },
   ".cm-code-count-added": { color: "var(--cb-callout-green)" },
   ".cm-code-count-removed": { color: "var(--cb-callout-red)" },
   // Numbers in a gutter of their own, drawn, so they are never copied.

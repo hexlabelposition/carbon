@@ -284,7 +284,7 @@ export interface CodeSummary {
   removed: number;
 }
 
-/** The code of a block to copy and count, from its lines. */
+/** The code of a block to count, from its lines. */
 export function summarizeCode(lines: string[], info: CodeInfo): CodeSummary {
   const kept: string[] = [];
   let added = 0;

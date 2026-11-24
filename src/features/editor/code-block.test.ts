@@ -182,7 +182,7 @@ describe("summarizeCode", () => {
     });
   });
 
-  test("a block with no marks is copied as it is", () => {
+  test("a block with no marks is kept as it is", () => {
     const summary = summarizeCode(["a", "  b"], parseCodeInfo("ts"));
     expect(summary).toEqual({ code: "a\n  b", lines: 2, added: 0, removed: 0 });
   });
