@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  byteCount,
   characterCount,
   codeKind,
   highlightTarget,
@@ -190,8 +189,7 @@ describe("summarizeCode", () => {
 });
 
 describe("counts", () => {
-  test("characters as people count them, bytes as UTF-8 saves them", () => {
+  test("characters as people count them: an emoji is one", () => {
     expect(characterCount("aб😀")).toBe(3);
-    expect(byteCount("aб😀")).toBe(1 + 2 + 4);
   });
 });

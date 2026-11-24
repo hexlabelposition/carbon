@@ -303,8 +303,3 @@ export function summarizeCode(lines: string[], info: CodeInfo): CodeSummary {
 export function characterCount(text: string): number {
   return [...text].length;
 }
-
-/** The size of the text saved as UTF-8, in bytes. */
-export function byteCount(text: string): number {
-  return new TextEncoder().encode(text).length;
-}

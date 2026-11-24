@@ -4,7 +4,6 @@ import type { SyntaxNode } from "@lezer/common";
 import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
 import {
-  byteCount,
   characterCount,
   codeKind,
   parseCodeInfo,
@@ -20,7 +19,7 @@ import {
  * Code blocks in live preview (ARCHITECTURE.md, section 8): the opening
  * fence becomes a header with the file, the extension and a copy button,
  * the lines get numbers and their marks (highlighted, added, removed), the
- * closing fence becomes a footer with the size of the code. What the fence
+ * closing fence becomes a footer with line and character counts. What the fence
  * can say is in `code-block.ts`.
  *
  * While the cursor is in the block, its fences, diff marks and
@@ -157,20 +156,9 @@ class CodeFooterWidget extends WidgetType {
       minus.textContent = `−${removed}`;
       counts.append(" · ", plus, " ", minus);
     }
-
-    const size = document.createElement("span");
-    size.textContent = formatSize(byteCount(code));
-    footer.append(counts, size);
+    footer.append(counts);
     return footer;
   }
-}
-
-/** Bytes up to a kilobyte, then kilobytes with one decimal below ten. */
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return t("editor.codeBytes", { count: bytes });
-  const kilobytes = bytes / 1024;
-  const size = kilobytes < 10 ? Math.round(kilobytes * 10) / 10 : kilobytes;
-  return t("editor.codeKilobytes", { size: Math.round(size * 10) / 10 });
 }
 
 const hide = Decoration.replace({});
@@ -332,7 +320,6 @@ export const codeBlockTheme = EditorView.baseTheme({
     color: "var(--cb-faint)",
     userSelect: "none",
   },
-  ".cm-code-footer": { justifyContent: "space-between" },
   ".cm-code-badge": {
     flex: "none",
     padding: "0 5px",
