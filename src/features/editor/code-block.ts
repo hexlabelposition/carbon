@@ -107,58 +107,6 @@ export function parseCodeInfo(text: string): CodeInfo {
   };
 }
 
-/** The extension of a file, or of a language name, and how it reads. */
-export interface CodeKind {
-  /** As shown on the badge, without the dot: "ts", "yml". */
-  ext: string;
-  /** As people call it: "TypeScript". */
-  name: string;
-}
-
-/** Extensions and the names of their languages. */
-const NAMES: Record<string, string> = {
-  bash: "Bash",
-  c: "C",
-  cjs: "JavaScript",
-  cpp: "C++",
-  cs: "C#",
-  css: "CSS",
-  diff: "Diff",
-  dockerfile: "Dockerfile",
-  go: "Go",
-  graphql: "GraphQL",
-  h: "C",
-  html: "HTML",
-  ini: "INI",
-  java: "Java",
-  js: "JavaScript",
-  json: "JSON",
-  jsx: "JSX",
-  kt: "Kotlin",
-  md: "Markdown",
-  mjs: "JavaScript",
-  mts: "TypeScript",
-  patch: "Diff",
-  php: "PHP",
-  py: "Python",
-  rb: "Ruby",
-  rs: "Rust",
-  scss: "SCSS",
-  sh: "Shell",
-  sql: "SQL",
-  svg: "SVG",
-  swift: "Swift",
-  toml: "TOML",
-  ts: "TypeScript",
-  tsx: "TSX",
-  txt: "Text",
-  vue: "Vue",
-  xml: "XML",
-  yaml: "YAML",
-  yml: "YAML",
-  zsh: "Zsh",
-};
-
 /** Language names as written after the fence, and their extensions. */
 const EXTENSIONS: Record<string, string> = {
   "c#": "cs",
@@ -191,21 +139,15 @@ export function extensionOf(path: string): string {
 }
 
 /**
- * The badge and the name of a block. A diff of a file reads as the
- * language of the file; with neither a language nor a file, as text.
+ * The badge of a block: the language as written, or its short name
+ * ("typescript" reads as "ts"). A diff of a file reads as the extension of
+ * the file; with neither a language nor a file, as text.
  */
-export function codeKind(info: CodeInfo): CodeKind {
+export function codeBadge(info: CodeInfo): string {
   const named =
     info.language === "diff" && info.file !== "" ? "" : info.language;
-  const ext =
-    (Object.hasOwn(NAMES, named) ? named : undefined) ??
-    (Object.hasOwn(EXTENSIONS, named) ? EXTENSIONS[named] : undefined) ??
-    (info.file !== "" ? extensionOf(info.file) : "");
-  const shown = ext || named || "txt";
-  const name =
-    (Object.hasOwn(NAMES, shown) ? NAMES[shown] : undefined) ??
-    (named === "" ? NAMES.txt : named[0].toUpperCase() + named.slice(1));
-  return { ext: shown, name };
+  if (Object.hasOwn(EXTENSIONS, named)) return EXTENSIONS[named];
+  return named || extensionOf(info.file) || "txt";
 }
 
 /**

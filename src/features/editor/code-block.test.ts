@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   characterCount,
-  codeKind,
+  codeBadge,
   highlightTarget,
   parseCodeInfo,
   readCodeLine,
@@ -70,38 +70,36 @@ describe("parseCodeInfo", () => {
   });
 });
 
-describe("codeKind and highlightTarget", () => {
-  test("a known language", () => {
-    expect(codeKind(parseCodeInfo("typescript"))).toEqual({
-      ext: "ts",
-      name: "TypeScript",
-    });
+describe("codeBadge and highlightTarget", () => {
+  test("a language as written, a long name by its short one", () => {
+    expect(codeBadge(parseCodeInfo("bash"))).toBe("bash");
+    expect(codeBadge(parseCodeInfo("typescript"))).toBe("ts");
   });
 
   test("the extension of the file when no language is named", () => {
     const info = parseCodeInfo("docker-compose.yml");
-    expect(codeKind(info)).toEqual({ ext: "yml", name: "YAML" });
+    expect(codeBadge(info)).toBe("yml");
     expect(highlightTarget(info)).toEqual({ file: "docker-compose.yml" });
   });
 
-  test("a diff of a file reads as the language of the file", () => {
+  test("a diff of a file reads as the extension of the file", () => {
     const info = parseCodeInfo("diff cmd/main.go");
-    expect(codeKind(info)).toEqual({ ext: "go", name: "Go" });
+    expect(codeBadge(info)).toBe("go");
     expect(highlightTarget(info)).toEqual({ file: "main.go" });
   });
 
   test("a Dockerfile", () => {
-    expect(codeKind(parseCodeInfo("deploy/Dockerfile")).ext).toBe("dockerfile");
+    expect(codeBadge(parseCodeInfo("deploy/Dockerfile"))).toBe("dockerfile");
   });
 
   test("an unknown language keeps its name, nothing reads as text", () => {
-    expect(codeKind(parseCodeInfo("zig"))).toEqual({ ext: "zig", name: "Zig" });
-    expect(codeKind(parseCodeInfo(""))).toEqual({ ext: "txt", name: "Text" });
+    expect(codeBadge(parseCodeInfo("zig"))).toBe("zig");
+    expect(codeBadge(parseCodeInfo(""))).toBe("txt");
     expect(highlightTarget(parseCodeInfo(""))).toBeNull();
   });
 
   test("names of the object prototype are no languages", () => {
-    expect(codeKind(parseCodeInfo("constructor")).name).toBe("Constructor");
+    expect(codeBadge(parseCodeInfo("constructor"))).toBe("constructor");
   });
 });
 
