@@ -44,9 +44,9 @@ interface AppDialogProps {
 
 /**
  * A dialog over the window. The top row stays out of it: its backdrop
- * starts below, so the window buttons can still be pressed and a press on
- * one does not close the dialog. The buttons of the panels wait meanwhile
- * (`useAnyDialogOpen`). It keeps the focus inside and closes on Escape.
+ * starts below, so the window buttons and those of the panels can still
+ * be pressed, and a press on one does not close the dialog. It keeps the
+ * focus inside and closes on Escape.
  * Inside it, `Dialog.Title` and `Dialog.Close` of base-ui work.
  */
 export function AppDialog({

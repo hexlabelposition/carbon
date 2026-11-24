@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// How many dialogs are open now: the panels of the window wait for none.
+// How many dialogs are open now: an update found at start waits for none.
 const listeners = new Set<() => void>();
 let openCount = 0;
 

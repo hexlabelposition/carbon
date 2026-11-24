@@ -75,7 +75,6 @@ import { useEmojiChooserGuard } from "./use-emoji-chooser-guard";
 import { useClickFocusGuard } from "./use-click-focus-guard";
 import { useReadyToShow } from "./use-ready-to-show";
 import { VaultMenu } from "./VaultMenu";
-import { useAnyDialogOpen } from "../../features/dialogs/dialog-count";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
@@ -173,14 +172,13 @@ export function DesktopShell({
   const toolbarShortcut = useShortcutLabel("shell.toolbar");
 
   const showDev = devOpen && DevPanel !== null;
-  // While a dialog is open the panels stay as they are: their buttons and
-  // keys wait, the window buttons do not.
-  const dialogOpen = useAnyDialogOpen();
   const sidebarView = useSidebarView();
   const { show: showSidebarView } = sidebarView;
   const { toggleView: toggleRightView } = rightPanel;
   usePanelShortcuts(
-    vault !== null && !showDev && !dialogOpen,
+    // A dialog open too: the panels show or hide below it, as the window
+    // buttons work (`AppDialog` leaves the top row out).
+    vault !== null && !showDev,
     toggleSidebar,
     toggleRightPanel,
     toggleToolbar,
@@ -303,7 +301,6 @@ export function DesktopShell({
             </Suspense>
           ) : undefined
         }
-        panelsInert={dialogOpen}
         panels={
           vault !== null && !showDev ? (
             <>
