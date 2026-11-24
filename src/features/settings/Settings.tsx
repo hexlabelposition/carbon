@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type Ref,
 } from "react";
 import { isMac, keys, useCommands } from "../commands/commands";
 import { Shortcut } from "../commands/Shortcut";
@@ -250,6 +251,8 @@ export function Settings({
   const [open, setOpen] = useDialog("settings");
   /** The group shown: the last one, while the app runs. */
   const [group, setGroup] = useState<SettingsGroup>("general");
+  /** The tab of the group shown, which takes the focus as it opens. */
+  const groupTab = useRef<HTMLButtonElement>(null);
 
   // The language of the page: hyphenation follows it.
   useEffect(() => {
@@ -273,6 +276,9 @@ export function Settings({
     <AppDialog
       open={open}
       onClose={() => setOpen(false)}
+      // The group shown, not the first control: that is the close button,
+      // whose tooltip would open. The arrows then go through the groups.
+      initialFocus={groupTab}
       // Centered by its margins, not moved back by half its size: a move of
       // half an odd size lands between pixels, and the text in it is drawn
       // blurred.
@@ -298,7 +304,7 @@ export function Settings({
         {/* The groups at the left, one shown at a time at the right. */}
         {/* As wide as the longest name of a group, in any language. */}
         <nav className="flex w-max min-w-52 shrink-0 flex-col border-r border-line bg-panel p-2">
-          <GroupTabs current={group} onShow={setGroup} />
+          <GroupTabs current={group} onShow={setGroup} currentRef={groupTab} />
           <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
             {openLogFolder !== undefined && (
               <button
@@ -353,9 +359,12 @@ export function Settings({
 function GroupTabs({
   current,
   onShow,
+  currentRef,
 }: {
   current: SettingsGroup;
   onShow: (group: SettingsGroup) => void;
+  /** Given the tab of the group shown. */
+  currentRef?: Ref<HTMLButtonElement>;
 }) {
   const t = useT();
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -381,6 +390,7 @@ function GroupTabs({
         return (
           <button
             key={group}
+            ref={selected ? currentRef : undefined}
             type="button"
             role="tab"
             id={`settings-tab-${group}`}
