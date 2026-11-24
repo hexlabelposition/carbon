@@ -1,6 +1,5 @@
 import { useT } from "../../features/i18n/i18n";
-import { APP_MARK_ROOM } from "./AppMark";
-import { WINDOW_CONTROLS_ROOM } from "./WindowControls";
+import { APP_MARK_ROOM, WINDOW_CONTROLS_ROOM } from "./layout";
 import { Tooltip } from "../../features/ui/Tooltip";
 
 export interface TabBarTab {

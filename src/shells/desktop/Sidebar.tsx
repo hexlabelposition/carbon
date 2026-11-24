@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
+import { panelWidth } from "./layout";
 
 interface SidebarProps {
   /** Shown, or slid shut to the left edge. */
@@ -48,15 +49,4 @@ export function Sidebar({
       </aside>
     </SlidePanel>
   );
-}
-
-/**
- * How wide a side panel is open, as a CSS length: a share of the window
- * (`vw`), never narrower than the buttons in the top right corner, nor
- * than 180 pixels while those fold away over the whole screen. The same
- * for the sidebar and the right panel. Temporary, as `SIDEBAR_MIN`
- * (use-sidebar.ts): the tie to the corner buttons is to be replaced.
- */
-export function panelWidth(fraction: number): string {
-  return `max(11.25rem, var(--cb-controls-room), ${fraction * 100}vw)`;
 }

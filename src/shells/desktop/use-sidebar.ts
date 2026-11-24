@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { controlsRoomFraction } from "./WindowControls";
+import { controlsRoomFraction } from "./layout";
 
 /**
  * The sidebar width is a share of the window width, not pixels, so the
@@ -9,7 +9,7 @@ import { controlsRoomFraction } from "./WindowControls";
  *
  * Temporary: tying the minimum to those buttons is a stopgap, so both
  * panels share one minimum for now. It is to be worked out another way
- * later; `panelWidth` (Sidebar.tsx) changes with it.
+ * later; `panelWidth` (layout.ts) changes with it.
  */
 export const SIDEBAR_MIN = controlsRoomFraction;
 export const SIDEBAR_MAX = 0.5;

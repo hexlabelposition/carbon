@@ -67,7 +67,7 @@ import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-sh
 import { useWorkspace } from "../../features/workspace/workspace";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceProvider";
 import { HistoryButtons } from "../../features/workspace/HistoryButtons";
-import { panelWidth, Sidebar } from "./Sidebar";
+import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { useContextMenuGuard } from "./use-context-menu-guard";
 import { useTabFocusGuard } from "./use-tab-focus-guard";
@@ -75,19 +75,16 @@ import { useEmojiChooserGuard } from "./use-emoji-chooser-guard";
 import { useClickFocusGuard } from "./use-click-focus-guard";
 import { useReadyToShow } from "./use-ready-to-show";
 import { VaultMenu } from "./VaultMenu";
-import { useAnyDialogOpen } from "../../features/dialogs/AppDialog";
+import { useAnyDialogOpen } from "../../features/dialogs/dialog-count";
 import { useFileDropGuard } from "./use-file-drop-guard";
 import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
 import { ViewTabs } from "./ViewTabs";
-import {
-  TOOLBAR_WIDTH,
-  Toolbar,
-  toolbarIcons,
-  type ToolbarItem,
-} from "./Toolbar";
+import { Toolbar, type ToolbarItem } from "./Toolbar";
+import { toolbarIcons } from "./toolbar-icons";
+import { panelWidth, TOOLBAR_WIDTH, WINDOW_CONTROLS_ROOM } from "./layout";
 import {
   usePanelShortcuts,
   useRightPanel,
@@ -97,14 +94,12 @@ import {
 import { useSidePanel } from "./use-side-panel";
 import { useSidebar, type PanelWidth } from "./use-sidebar";
 import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
+import { DragStrip, WindowControls } from "./WindowControls";
 import {
-  DragStrip,
-  WINDOW_CONTROLS_ROOM,
-  WindowControls,
   useFullscreenShortcut,
   useWindowShape,
   type WindowFrame,
-} from "./WindowControls";
+} from "./window-frame";
 import { Tooltip } from "../../features/ui/Tooltip";
 import { useShortcutLabel } from "../../features/shortcuts/shortcuts";
 import { errorText } from "../../features/i18n/error-text";

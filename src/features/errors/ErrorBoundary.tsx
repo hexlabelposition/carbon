@@ -12,7 +12,7 @@ interface Props {
  * Catches a failure while the interface is drawn, so the window does not
  * go blank: writes it to the log and shows what can be done instead
  * (C-606). Failures in event handlers and promises do not reach it; the
- * handlers of `catchUnhandled` log those.
+ * handlers of `catchUnhandled` (catch-unhandled.ts) log those.
  */
 export class ErrorBoundary extends Component<Props, { failed: boolean }> {
   state = { failed: false };
@@ -69,17 +69,4 @@ function Crashed({ openLogFolder }: { openLogFolder?: () => Promise<void> }) {
       </div>
     </div>
   );
-}
-
-/**
- * Writes to the log what no code caught: a failure in an event handler,
- * a timer or a promise nobody waits for.
- */
-export function catchUnhandled(): void {
-  window.addEventListener("error", (event) => {
-    log.error("Uncaught", event.error ?? event.message);
-  });
-  window.addEventListener("unhandledrejection", (event) => {
-    log.error("Unhandled rejection", event.reason);
-  });
 }

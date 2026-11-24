@@ -9,7 +9,7 @@ import {
   readySinceStart,
   seconds,
   useLogIndexTiming,
-} from "../features/vault/IndexTiming";
+} from "../features/vault/index-timing";
 import { timing } from "../features/vault/timing";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";

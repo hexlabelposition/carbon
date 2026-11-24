@@ -3,7 +3,8 @@ import { useState, type ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { Tooltip } from "../../features/ui/Tooltip";
 import { useVaultSession } from "../../features/vault/vault-session";
-import { ToolbarIconButton, toolbarIcons } from "./Toolbar";
+import { ToolbarIconButton } from "./Toolbar";
+import { toolbarIcons } from "./toolbar-icons";
 
 const item =
   "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 whitespace-nowrap outline-none select-none data-highlighted:bg-raise";

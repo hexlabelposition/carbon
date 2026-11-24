@@ -1,12 +1,6 @@
 import { CarbonMark } from "../../features/brand/CarbonLogo";
 
 /**
- * Room to leave at the left end of the top row, under the mark: a square
- * as tall as the row.
- */
-export const APP_MARK_ROOM = "pl-bar";
-
-/**
  * The Carbon mark in the top left corner of the window, over the top row
  * of the layout, as the window buttons are in the top right one. The row
  * drags the window there too. The element at the left end of that row

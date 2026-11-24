@@ -1,7 +1,8 @@
 import type { SearchHit } from "@carbon/core";
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
-import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
+import { ScrollArea } from "../ui/ScrollArea";
+import { SCROLLBAR_ROOM } from "../ui/scrollbar-room";
 import { Highlighted } from "./Highlighted";
 import type { Search } from "./use-search";
 import { AppDialog } from "../dialogs/AppDialog";

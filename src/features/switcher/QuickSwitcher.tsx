@@ -2,7 +2,8 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useT } from "../i18n/i18n";
 import { Shortcut } from "../commands/Shortcut";
 import { Highlighted } from "../search/Highlighted";
-import { SCROLLBAR_ROOM, ScrollArea } from "../ui/ScrollArea";
+import { ScrollArea } from "../ui/ScrollArea";
+import { SCROLLBAR_ROOM } from "../ui/scrollbar-room";
 import type { QuickSwitcher as Switcher } from "./use-quick-switcher";
 import { AppDialog } from "../dialogs/AppDialog";
 

@@ -3,33 +3,12 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type ComponentProps,
   type ReactNode,
   type RefObject,
 } from "react";
+import { changeDialogCount } from "./dialog-count";
 import { openDialogId } from "./open-dialog";
-
-// How many dialogs are open now: the panels of the window wait for none.
-const listeners = new Set<() => void>();
-let openCount = 0;
-
-function changeCount(by: number) {
-  openCount += by;
-  for (const listener of listeners) listener();
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-};
-
-/** Whether any dialog stands over the window. */
-export function useAnyDialogOpen(): boolean {
-  return useSyncExternalStore(subscribe, () => openCount > 0);
-}
 
 /**
  * What the focus is not given back to: closed by Escape, base-ui would
@@ -96,8 +75,8 @@ export function AppDialog({
 
   useEffect(() => {
     if (!open) return;
-    changeCount(1);
-    return () => changeCount(-1);
+    changeDialogCount(1);
+    return () => changeDialogCount(-1);
   }, [open]);
 
   return (

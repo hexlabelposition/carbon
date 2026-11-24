@@ -23,7 +23,6 @@ import {
 } from "./graph-renderer";
 import {
   groupNotes,
-  GraphLegend,
   MAX_NODE_SIZE,
   PLAIN,
   sizeFor,
@@ -31,6 +30,7 @@ import {
   type GraphDisplay,
   type Groups,
 } from "./node-style";
+import { GraphLegend } from "./GraphLegend";
 import { GraphFilterBar } from "./GraphFilterBar";
 import { NodeGrid } from "./picking";
 import { sigmaRenderer } from "./sigma-renderer";

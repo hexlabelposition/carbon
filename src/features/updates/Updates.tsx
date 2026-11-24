@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCommands } from "../commands/commands";
-import { AppDialog, useAnyDialogOpen } from "../dialogs/AppDialog";
+import { AppDialog } from "../dialogs/AppDialog";
+import { useAnyDialogOpen } from "../dialogs/dialog-count";
 import { openDialog, useDialog } from "../dialogs/open-dialog";
 import { errorText } from "../i18n/error-text";
 import { useT } from "../i18n/i18n";

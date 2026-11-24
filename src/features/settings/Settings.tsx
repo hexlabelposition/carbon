@@ -84,7 +84,7 @@ import {
 } from "../updates/update-state";
 
 /** Opens the settings dialog; another dialog open closes. */
-export function openSettings(): void {
+function openSettings(): void {
   openDialog("settings");
 }
 

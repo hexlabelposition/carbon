@@ -1,7 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { catchUnhandled, ErrorBoundary } from "./features/errors/ErrorBoundary";
+import { catchUnhandled } from "./features/errors/catch-unhandled";
+import { ErrorBoundary } from "./features/errors/ErrorBoundary";
 import { log, setLogSink } from "./features/log/log";
 import { openLogFolder, writeLogLine } from "./platform";
 import { insideTauri } from "./platform/runtime";
