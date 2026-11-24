@@ -103,10 +103,27 @@ export const markdownHighlight = HighlightStyle.define([
     color: "var(--cb-faint)",
   },
   // Code inside a block. Syntax highlighting stays monochrome, as in
-  // `styles/markdown.css`: three greys and the link color.
+  // `styles/markdown.css`: three greys and the link color. Flags such as
+  // "-p" read as keywords, known commands such as "sudo" as bold ones,
+  // numbers and literals as strings.
   { tag: tags.comment, color: "var(--cb-faint)" },
-  { tag: tags.keyword, color: "var(--cb-muted)" },
-  { tag: [tags.string, tags.special(tags.string)], color: "var(--cb-link)" },
+  { tag: [tags.keyword, tags.attributeName], color: "var(--cb-muted)" },
+  {
+    tag: tags.standard(tags.variableName),
+    color: "var(--cb-muted)",
+    fontWeight: "600",
+  },
+  {
+    tag: [
+      tags.string,
+      tags.special(tags.string),
+      tags.number,
+      tags.bool,
+      tags.null,
+      tags.atom,
+    ],
+    color: "var(--cb-link)",
+  },
 ]);
 
 /**
