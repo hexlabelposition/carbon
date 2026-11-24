@@ -1,11 +1,11 @@
 name: Release
 
 # Builds the packages for a version tag, such as v0.1.0, and puts them on
-# a draft GitHub release, to check and publish by hand: the deb and the
-# AppImage for Linux (C-604), the installer for Windows (C-608), and the
-# latest.json the updater reads (C-607, ADR-034). Published as a regular
-# release, not a pre-release: the app looks at releases/latest, which
-# skips pre-releases.
+# a draft GitHub release (the one written by hand for the tag, or a new
+# one), to check and publish by hand: the deb and the AppImage for Linux
+# (C-604), the installer for Windows (C-608), and the latest.json the
+# updater reads (C-607, ADR-034). Published as a regular release, not a
+# pre-release: the app looks at releases/latest, which skips pre-releases.
 on:
   push:
     tags: ["v*"]
@@ -34,13 +34,29 @@ jobs:
             echo "The tag $GITHUB_REF_NAME is not v$version, the version in package.json"
             exit 1
           fi
-      - name: Create the draft release
+      # The draft written by hand for this version, with its notes, gets
+      # the packages and keeps its text. A draft is not found by
+      # releases/tags/{tag}, but it is in the list of releases, with the
+      # tag it is meant for. Without one, a new draft is made from
+      # release-notes.md.
+      - name: Find or create the draft release
         id: create
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # One call that answers with the id: a draft just made is not in
-        # the list of releases yet, and has no tag of its own to find it by.
         run: |
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.draft and .tag_name == \"$GITHUB_REF_NAME\") | .id")
+          id=$(head -n 1 <<< "$ids")
+          if [ -n "$id" ]; then
+            if [ "$(wc -l <<< "$ids")" -gt 1 ]; then
+              echo "::warning::Several drafts for $GITHUB_REF_NAME, using release $id"
+            fi
+            echo "Using the draft release $id"
+            echo "id=$id" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # One call that answers with the id: a draft just made is not in
+          # the list of releases yet, so it could not be found again.
           id=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" \
             -f tag_name="$GITHUB_REF_NAME" \
             -f name="Carbon $GITHUB_REF_NAME" \
