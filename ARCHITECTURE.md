@@ -127,7 +127,7 @@ my-vault/
   attachments/
     diagram.png
   .carbon/
-    config.json             # vault settings that should travel with the vault
+    config.json             # vault settings that should travel with the vault: its id
     bookmarks.json          # the bookmarks, in the order they were added
     drafts/                 # drafts: notes kept out of the file tree (ADR-031)
     trash/                  # deleted entries, one folder each (ADR-031)
@@ -264,7 +264,7 @@ The SQL of the index lives in the core (`index/`), behind the domain-shaped `Ind
 ### config
 
 - App settings (recent vaults, last opened note, theme) in the app config directory, through the `SettingsStore` interface. They also hold the vault left open (C-621): the app opens it again at start, showing nothing until then rather than the start screen; a vault the user closed, or one that cannot be opened any more, leads to the start screen.
-- Vault settings in `.carbon/config.json`.
+- Vault settings in `.carbon/config.json`. For now it holds the `id` of the vault: a UUID made when the vault is first opened, kept when the folder is moved or renamed (`vault/config.ts`). Other keys in the file are kept when it is written; a file that cannot be parsed is left as it is, and the vault gets an id for this session only, as on a read-only drive.
 
 ## 6. Public API and events
 
@@ -273,6 +273,7 @@ The UI talks to the core through one object. Sketch:
 ```ts
 const vault = await Vault.open(path, platform)
 
+vault.id                        // from .carbon/config.json, made on first open
 vault.tree()
 vault.drafts()                  // the tree of .carbon/drafts, which tree() leaves out
 vault.bookmarks.list() / has(path) / add(path) / remove(path)

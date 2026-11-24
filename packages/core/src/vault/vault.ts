@@ -21,6 +21,7 @@ import {
   normalizeRoot,
 } from "./path";
 import { Bookmarks } from "./bookmarks";
+import { vaultId } from "./config";
 import { VaultTrash } from "./trash";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
@@ -122,6 +123,7 @@ export class Vault {
   readonly bookmarks: Bookmarks;
 
   private readonly platform: Platform;
+  private vaultId = "";
   private readonly emitter = new Emitter<VaultEvents>();
   private readonly watch: VaultWatch;
   private isWatching = false;
@@ -269,6 +271,7 @@ export class Vault {
     } catch {
       // A vault on a read-only drive still opens, to be read.
     }
+    vault.vaultId = await vaultId(normalized, platform.fs);
     try {
       await vault.watch.start();
       vault.isWatching = true;
@@ -301,6 +304,14 @@ export class Vault {
     }
     await platform.fs.mkdir(root);
     return Vault.open(root, platform, options);
+  }
+
+  /**
+   * The id of the vault, kept in `.carbon/config.json`: it stays when the
+   * folder is moved or renamed (see `vaultId`).
+   */
+  get id(): string {
+    return this.vaultId;
   }
 
   /**

@@ -133,13 +133,14 @@ describe("vault.notes.write", () => {
 
   test("goes through the atomic write of the platform", async () => {
     const platform = createMemoryPlatform(files);
+    // Opened first: opening writes the id of the vault (`vaultId`).
+    const vault = await Vault.open("/vault", platform);
     const calls: string[] = [];
     const writeTextAtomic = platform.fs.writeTextAtomic.bind(platform.fs);
     platform.fs.writeTextAtomic = async (path, content) => {
       calls.push(path);
       await writeTextAtomic(path, content);
     };
-    const vault = await Vault.open("/vault", platform);
 
     await vault.notes.write(
       "projects/Carbon.md",

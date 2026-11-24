@@ -3,3 +3,6 @@
 
 declare function setTimeout(handler: () => void, ms: number): unknown;
 declare function clearTimeout(id: unknown): void;
+
+// Web Crypto exists there too: a vault gets its id from it.
+declare const crypto: { randomUUID(): string };
