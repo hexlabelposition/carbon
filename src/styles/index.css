@@ -203,14 +203,20 @@
 
 /*
  * The save mark of a note (NoteEditor): the dot of unsaved edits comes
- * in with a small pop, and the tick of a saved note is drawn in a stroke
- * from left to right. `pathLength="1"` on the tick makes the dash one
- * whole stroke.
+ * in with a small pop, then breathes until they are saved, a second or
+ * so; the tick of a saved note is drawn in a stroke from left to right.
+ * `pathLength="1"` on the tick makes the dash one whole stroke.
  */
 @keyframes cb-save-pop {
   from {
     opacity: 0;
     scale: 0.4;
+  }
+}
+
+@keyframes cb-save-pulse {
+  50% {
+    opacity: 0.35;
   }
 }
 
@@ -221,7 +227,9 @@
 }
 
 .cb-save-dot {
-  animation: cb-save-pop 150ms ease-out;
+  animation:
+    cb-save-pop 150ms ease-out,
+    cb-save-pulse 1.2s ease-in-out 150ms infinite;
 }
 
 .cb-save-tick {

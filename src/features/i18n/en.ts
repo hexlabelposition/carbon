@@ -185,7 +185,7 @@ export const en = {
   "save.resolve": "Resolve",
   "save.retry": "Retry",
   "save.saved": "Saved",
-  "save.unsaved": "Unsaved",
+  "save.unsaved": "Saving…",
   "search.empty": "No notes found",
   "search.failed": "Search is not available: {reason}",
   "search.partial": "Indexing: some notes may be missing.",

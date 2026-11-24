@@ -113,11 +113,6 @@ export function NoteEditor({
             {name}
           </span>
         </Tooltip>
-        <SaveIndicator
-          save={note.save}
-          onRetry={actions.saveNow}
-          onResolve={() => setPostponed(false)}
-        />
         <ModeButton
           label={t("editor.source")}
           hint={t("editor.sourceHint")}
@@ -189,7 +184,16 @@ export function NoteEditor({
           onStats={setStats}
         />
       </ScrollArea>
-      {stats !== null && <NoteStatsBar stats={stats} />}
+      <NoteStatsBar
+        stats={stats}
+        status={
+          <SaveIndicator
+            save={note.save}
+            onRetry={actions.saveNow}
+            onResolve={() => setPostponed(false)}
+          />
+        }
+      />
       {images.shown !== null && (
         <ImageViewer image={images.shown} onClose={images.closeShown} />
       )}
@@ -287,31 +291,30 @@ interface SaveIndicatorProps {
 const indicatorButton =
   "shrink-0 rounded-sm border border-line-strong px-1.5 hover:bg-raise";
 
-/** Tells whether the edits are on disk. Never by color alone. */
+/**
+ * Tells whether the edits are on disk, at the start of the bar below the
+ * note (`NoteStatsBar`). Never by color alone.
+ */
 function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   const t = useT();
   if (save.status === "saved" || save.status === "unsaved") {
     const saved = save.status === "saved";
     const label = t(saved ? "save.saved" : "save.unsaved");
-    // A mark in place of a word, told apart by its shape: a dot while
+    // A mark and a word, the mark told apart by its shape: a dot while
     // there are edits to save, a tick drawn in once they are on disk.
-    // The word is in the tooltip and for screen readers.
     return (
-      <Tooltip label={label}>
-        <span
-          role="status"
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-faint transition-colors duration-100 hover:bg-selected hover:text-muted"
-        >
-          <span className="sr-only">{label}</span>
+      <span role="status" className="flex shrink-0 items-center gap-1.5">
+        {/* As wide for both, so the word does not move. */}
+        <span className="flex size-3.5 items-center justify-center">
           {saved ? (
             <svg
               key="saved"
               viewBox="0 0 16 16"
               aria-hidden="true"
-              className="size-5"
+              className="size-3.5"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.25"
+              strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -325,16 +328,17 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
             <span
               key="unsaved"
               aria-hidden="true"
-              className="cb-save-dot size-2 rounded-full bg-muted"
+              className="cb-save-dot size-1.5 rounded-full bg-muted"
             />
           )}
         </span>
-      </Tooltip>
+        {label}
+      </span>
     );
   }
   if (save.status === "conflict") {
     return (
-      <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
+      <span role="alert" className="flex min-w-0 items-center gap-2">
         <span className="truncate text-danger">{t("save.conflict")}</span>
         <button type="button" className={indicatorButton} onClick={onResolve}>
           {t("save.resolve")}
@@ -343,7 +347,7 @@ function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
     );
   }
   return (
-    <span role="alert" className="flex min-w-0 items-center gap-2 text-small">
+    <span role="alert" className="flex min-w-0 items-center gap-2">
       <Tooltip label={save.message}>
         <span className="truncate text-danger">
           {t("save.failed", { reason: save.message })}

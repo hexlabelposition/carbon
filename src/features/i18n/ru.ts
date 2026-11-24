@@ -184,7 +184,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "save.resolve": "Решить",
   "save.retry": "Повторить",
   "save.saved": "Сохранено",
-  "save.unsaved": "Не сохранено",
+  "save.unsaved": "Сохранение…",
   "search.empty": "Заметки не найдены",
   "search.failed": "Поиск недоступен: {reason}",
   "search.partial": "Идёт индексация: некоторых заметок может не быть.",
