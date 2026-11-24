@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { startLayoutMotion } from "./layout-motion";
 
 /** How long it takes to slide, in milliseconds: `duration-200` below. */
 const SLIDE = 200;
@@ -63,8 +64,37 @@ export function SlidePanel({
     return () => clearTimeout(timer);
   }, [open, keepMounted]);
 
+  // While it glides, the note beside it changes width (`startLayoutMotion`).
+  // Native listeners: React does not pass `transitionrun` on in WebKitGTK.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = panel.current;
+    if (element === null) return;
+    let end: (() => void) | null = null;
+    const ownWidth = (event: TransitionEvent) =>
+      event.target === element && event.propertyName === "width";
+    const run = (event: TransitionEvent) => {
+      if (ownWidth(event)) end ??= startLayoutMotion();
+    };
+    const stop = (event: TransitionEvent) => {
+      if (!ownWidth(event)) return;
+      end?.();
+      end = null;
+    };
+    element.addEventListener("transitionrun", run);
+    element.addEventListener("transitionend", stop);
+    element.addEventListener("transitioncancel", stop);
+    return () => {
+      element.removeEventListener("transitionrun", run);
+      element.removeEventListener("transitionend", stop);
+      element.removeEventListener("transitioncancel", stop);
+      end?.();
+    };
+  }, []);
+
   return (
     <div
+      ref={panel}
       inert={!open}
       className={`flex h-full shrink-0 overflow-hidden ${
         side === "left" ? "justify-end" : "justify-start"

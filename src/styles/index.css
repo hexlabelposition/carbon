@@ -132,6 +132,16 @@
   }
 
   /*
+   * While a side panel slides or its edge is dragged, the note column
+   * changes width every frame. The text cursor of the editor is drawn a
+   * frame after the text, so it would jump about: it is hidden until the
+   * layout stops (`startLayoutMotion`).
+   */
+  html[data-layout-moving] .cm-cursorLayer {
+    visibility: hidden;
+  }
+
+  /*
    * A line along the edge of a window that is not maximized, over all of
    * the page, so the window stands apart from an app of the same color
    * behind it. A shadow would need room around the page inside the window,

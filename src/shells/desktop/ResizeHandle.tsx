@@ -1,4 +1,10 @@
-import { useEffect, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
+import { startLayoutMotion } from "./layout-motion";
 import { SIDEBAR_MAX, SIDEBAR_MIN } from "./use-sidebar";
 
 interface ResizeHandleProps {
@@ -31,7 +37,15 @@ export function ResizeHandle({
 
   // Gone in the middle of a drag, such as a panel shut by its shortcut:
   // text can be selected again.
-  useEffect(() => () => selectText(true), []);
+  // The note beside the panel changes width as it follows the pointer.
+  const endMotion = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      selectText(true);
+      endMotion.current?.();
+    },
+    [],
+  );
 
   function drag(event: PointerEvent<HTMLDivElement>) {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
@@ -77,11 +91,15 @@ export function ResizeHandle({
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
         selectText(false);
+        endMotion.current?.();
+        endMotion.current = startLayoutMotion();
         onDragging(true);
       }}
       onPointerMove={drag}
       onLostPointerCapture={() => {
         selectText(true);
+        endMotion.current?.();
+        endMotion.current = null;
         onDragging(false);
       }}
       onKeyDown={onKeyDown}
