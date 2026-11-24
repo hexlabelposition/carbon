@@ -78,33 +78,61 @@ export const linkCompletion = [
     ],
     icons: false,
   }),
-  EditorView.baseTheme({
+  // As the menus of the app (`EditorContextMenu`, `VaultMenu`): a card
+  // with a hairline and a shadow, rows of 28 pixels lit as when hovered,
+  // the hint at the right. A theme, not a base theme: base themes lose to
+  // the one of the suggestions themselves, which sets a monospace font.
+  EditorView.theme({
     ".cm-tooltip.cm-tooltip-autocomplete": {
-      border: "1px solid var(--cb-line-strong)",
-      borderRadius: "6px",
-      backgroundColor: "var(--cb-panel)",
+      border: "1px solid var(--cb-line)",
+      borderRadius: "var(--radius-md)",
+      backgroundColor: "var(--cb-bg)",
+      boxShadow: "var(--cb-shadow-dialog)",
+      padding: "4px",
       overflow: "hidden",
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul": {
       fontFamily: "var(--font-sans)",
-      fontSize: "14px",
-      maxHeight: "16em",
+      fontSize: "13px",
+      lineHeight: "1.4",
+      minWidth: "14rem",
+      maxWidth: "min(28rem, 90vw)",
+      // Ten rows, then it scrolls, with the thin bar of the app.
+      maxHeight: "17.5rem",
+      scrollbarWidth: "thin",
+      scrollbarColor: "var(--cb-line-strong) transparent",
+      // The rows end short of the bar, the lit one too.
+      paddingRight: "4px",
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul > li": {
-      padding: "3px 10px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "24px",
+      height: "28px",
+      padding: "0 8px",
+      borderRadius: "var(--radius-sm)",
       color: "var(--cb-fg)",
+      cursor: "default",
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
-      backgroundColor: "var(--cb-selected)",
+      backgroundColor: "var(--cb-raise)",
       color: "var(--cb-fg)",
+    },
+    ".cm-completionLabel": {
+      minWidth: "0",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",
       fontWeight: "600",
     },
     ".cm-completionDetail": {
-      marginLeft: "12px",
+      flexShrink: "0",
+      marginLeft: "0",
       fontStyle: "normal",
+      fontSize: "12px",
       color: "var(--cb-faint)",
     },
   }),
