@@ -5,19 +5,18 @@ import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
 import {
   characterCount,
-  codeKind,
+  codeBadge,
   parseCodeInfo,
   readCodeLine,
   summarizeCode,
   type CodeInfo,
-  type CodeKind,
   type CodeSummary,
   type LineMark,
 } from "./code-block";
 
 /**
  * Code blocks in live preview (ARCHITECTURE.md, section 8): the opening
- * fence becomes a header with the extension, the file and the language,
+ * fence becomes a header with the language and the file,
  * the lines get numbers and their marks (highlighted, added, removed), the
  * closing fence becomes a footer with line and character counts. What the fence
  * can say is in `code-block.ts`.
@@ -27,21 +26,17 @@ import {
  * lines stay, so the block does not jump.
  */
 
-/** Shown in place of the opening fence: the extension, the file and the language. */
+/** Shown in place of the opening fence: the language and the file. */
 class CodeHeaderWidget extends WidgetType {
   constructor(
-    private readonly kind: CodeKind,
+    private readonly badge: string,
     private readonly file: string,
   ) {
     super();
   }
 
   eq(other: CodeHeaderWidget): boolean {
-    return (
-      other.kind.ext === this.kind.ext &&
-      other.kind.name === this.kind.name &&
-      other.file === this.file
-    );
+    return other.badge === this.badge && other.file === this.file;
   }
 
   toDOM(): HTMLElement {
@@ -50,7 +45,7 @@ class CodeHeaderWidget extends WidgetType {
 
     const badge = document.createElement("span");
     badge.className = "cm-code-badge";
-    badge.textContent = `.${this.kind.ext}`;
+    badge.textContent = this.badge;
     header.append(badge);
 
     const file = document.createElement("span");
@@ -67,11 +62,6 @@ class CodeHeaderWidget extends WidgetType {
       file.append(folder, name);
     }
     header.append(file);
-
-    const language = document.createElement("span");
-    language.className = "cm-code-language";
-    language.textContent = this.kind.name;
-    header.append(language);
 
     return header;
   }
@@ -201,7 +191,7 @@ export function decorateCodeBlock(
           class: `cm-code cm-code-first cm-code-head${edge}`,
         }).range(line.from),
         Decoration.replace({
-          widget: new CodeHeaderWidget(codeKind(info), info.file),
+          widget: new CodeHeaderWidget(codeBadge(info), info.file),
         }).range(opening.from, line.to),
       );
       return;
@@ -255,26 +245,33 @@ export function decorateCodeBlock(
 
 /** The look of code blocks; the box itself is drawn in `live-preview.ts`. */
 export const codeBlockTheme = EditorView.baseTheme({
-  // The first and the last line: a bar of the color of the panels.
-  ".cm-line.cm-code.cm-code-head": {
-    padding: "4px 6px 4px 12px",
-    borderBottom: "1px solid var(--cb-line)",
+  // The first and the last line: a bar of the color of the panels, as high
+  // as the fence line it replaces,
+  // so the block keeps its height when the cursor enters it and shows the
+  // Markdown: a line of code plus the border of the box, the line between
+  // the bar and the code taken from the inside.
+  ".cm-line.cm-code.cm-code-head, .cm-line.cm-code.cm-code-foot": {
+    boxSizing: "border-box",
+    height: `calc(${noteSize(13)} * 1.6 + 1px)`,
+    padding: "0 12px",
+    lineHeight: "0",
     backgroundColor: "var(--cb-panel)",
   },
-  // No padding above and below: the lines between the counts reach the edges.
+  ".cm-line.cm-code.cm-code-head": {
+    borderBottom: "1px solid var(--cb-line)",
+  },
   ".cm-line.cm-code.cm-code-foot": {
-    padding: "0 12px",
     borderTop: "1px solid var(--cb-line)",
-    backgroundColor: "var(--cb-panel)",
   },
   ".cm-code-header, .cm-code-footer": {
     display: "inline-flex",
     alignItems: "center",
     gap: "10px",
     width: "100%",
+    height: "100%",
     verticalAlign: "top",
     fontFamily: "var(--font-sans)",
-    fontSize: noteSize(12),
+    fontSize: noteSize(11),
     lineHeight: "1.4",
     color: "var(--cb-faint)",
     userSelect: "none",
@@ -285,10 +282,11 @@ export const codeBlockTheme = EditorView.baseTheme({
     alignItems: "stretch",
     justifyContent: "flex-end",
     gap: "0",
-    fontSize: noteSize(11),
   },
   ".cm-code-stat": {
-    padding: "3px 8px",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 8px",
     borderLeft: "1px solid var(--cb-line)",
     fontVariantNumeric: "tabular-nums",
   },
@@ -327,7 +325,6 @@ export const codeBlockTheme = EditorView.baseTheme({
     color: "var(--cb-fg)",
     fontWeight: "600",
   },
-  ".cm-code-language": { flex: "none" },
   ".cm-code-count-added": { color: "var(--cb-callout-green)" },
   ".cm-code-count-removed": { color: "var(--cb-callout-red)" },
   // Numbers in a gutter of their own, drawn, so they are never copied.
