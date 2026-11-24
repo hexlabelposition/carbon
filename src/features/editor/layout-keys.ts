@@ -38,6 +38,11 @@ export function runAsLatin(
     altKey: event.altKey,
     shiftKey: event.shiftKey,
   });
+  // CodeMirror finds a shortcut with Shift, such as Ctrl+Shift+Z, by the
+  // key code, and a made event has none: the code of the Latin letter.
+  Object.defineProperty(latin, "keyCode", {
+    value: letter.toUpperCase().charCodeAt(0),
+  });
   if (!runScopeHandlers(view, latin, scope)) return false;
   event.preventDefault();
   return true;
