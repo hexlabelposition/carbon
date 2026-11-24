@@ -23,6 +23,7 @@
     "tauri": "tauri",
     "test": "bun test",
     "e2e": "bun scripts/e2e.ts",
+    "release": "bun scripts/release.ts",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.test.json && tsc -p e2e && bun run --filter '*' typecheck"
   },
   "dependencies": {

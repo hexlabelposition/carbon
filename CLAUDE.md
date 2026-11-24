@@ -36,6 +36,7 @@ bun run format:check          # Prettier (format to write)
 bun run e2e                   # end-to-end tests in the real app, Linux only
 bun gen:vault                 # generate a large vault for benchmarks
 bun bench                     # core benchmarks
+bun run release               # bump the version, signed tag, push (scripts/release.ts)
 ```
 
 CI runs typecheck, lint, format:check and `bun test`; run them all before considering a change done.
