@@ -97,7 +97,7 @@ function loadView(fallback: RightPanelView): RightPanelView {
 
 /**
  * The shortcuts that show or hide the panels: by default Ctrl+B the left
- * one, Ctrl+Alt+B the right one, Ctrl+` the toolbar, Cmd in place of Ctrl
+ * one, Ctrl+Shift+B the right one, Ctrl+` the toolbar, Cmd in place of Ctrl
  * on a Mac. Only while `enabled`: the panels belong to an open vault.
  */
 export function usePanelShortcuts(

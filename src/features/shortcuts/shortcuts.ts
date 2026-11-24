@@ -22,7 +22,7 @@ export const SHORTCUTS = [
   {
     id: "shell.rightPanel",
     label: "shell.toggleRightPanel",
-    fallback: "Mod+Alt+B",
+    fallback: "Mod+Shift+B",
   },
   { id: "shell.toolbar", label: "shell.toggleToolbar", fallback: "Mod+`" },
   { id: "settings.open", label: "settings.open", fallback: "Mod+," },
