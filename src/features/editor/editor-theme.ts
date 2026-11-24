@@ -48,13 +48,14 @@ export const editorTheme = EditorView.theme({
     padding: "12px 32px 40vh",
   },
   ".cm-line": { padding: "0" },
-  // The cursor and the selection are drawn by the editor (drawSelection).
+  // The cursor is drawn by the editor (drawSelection).
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--cb-fg)" },
-  // Over the text, not behind it: code blocks, tables and inline code have
-  // a background of their own that would hide it. The color is see-through.
-  ".cm-selectionLayer": { zIndex: "1 !important", pointerEvents: "none" },
-  ".cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground":
-    { background: "var(--cb-selection) !important" },
+  // The selection is the one of the page, over the text only, not the
+  // block drawSelection draws over whole lines. It hides this one with
+  // !important; these selectors are more specific.
+  ".cm-selectionLayer": { display: "none" },
+  ".cm-content ::selection, .cm-content .cm-line ::selection, .cm-content .cm-line::selection":
+    { backgroundColor: "var(--cb-selection) !important" },
 });
 
 /** Markdown highlighting: the text is styled, its marks are made quiet. */

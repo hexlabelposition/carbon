@@ -203,9 +203,10 @@ export function MarkdownEditor({
         doc: latest.current.text,
         extensions: [
           history(),
-          // The cursor and the selection are drawn by the editor: the caret
-          // of WebKitGTK lagged behind a change next to a widget, such as
-          // Tab in a list, and the old one stayed on screen for a while.
+          // The cursor is drawn by the editor: the caret of WebKitGTK lagged
+          // behind a change next to a widget, such as Tab in a list, and the
+          // old one stayed on screen for a while. The selection stays the
+          // one of the page (`editorTheme`).
           drawSelection(),
           EditorView.lineWrapping,
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
