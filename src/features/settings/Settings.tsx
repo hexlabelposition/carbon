@@ -292,13 +292,14 @@ export function Settings({
       </header>
       <div className="flex min-h-0 flex-1">
         {/* The groups at the left, one shown at a time at the right. */}
-        <nav className="flex w-52 shrink-0 flex-col border-r border-line bg-panel p-2">
+        {/* As wide as the longest name of a group, in any language. */}
+        <nav className="flex w-max min-w-52 shrink-0 flex-col border-r border-line bg-panel p-2">
           <GroupTabs current={group} onShow={setGroup} />
           <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
             {openLogFolder !== undefined && (
               <button
                 type="button"
-                className="-mx-1 rounded-sm px-1 text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+                className="-mx-1 rounded-sm px-1 text-left text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
                 onClick={() => {
                   openLogFolder().catch((reason: unknown) =>
                     log.error("Could not open the log folder", reason),
@@ -382,7 +383,7 @@ function GroupTabs({
             aria-selected={selected}
             aria-controls="settings-panel"
             tabIndex={selected ? 0 : -1}
-            className={`flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
+            className={`flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left whitespace-nowrap outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
               selected ? "bg-selected font-medium text-fg" : "text-muted"
             }`}
             onClick={() => onShow(group)}

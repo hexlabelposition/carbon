@@ -6,7 +6,7 @@ import { useVaultSession } from "../../features/vault/vault-session";
 import { ToolbarIconButton, toolbarIcons } from "./Toolbar";
 
 const item =
-  "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
+  "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 whitespace-nowrap outline-none select-none data-highlighted:bg-raise";
 
 /** An icon of 16 by 16 in a menu item, drawn as on the toolbar. */
 function ItemIcon({ children }: { children: ReactNode }) {
@@ -63,9 +63,11 @@ export function VaultMenu() {
             // Not back to the button: closed by Escape, base-ui would draw
             // its focus ring on it.
             finalFocus={false}
-            className="w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+            className="w-max min-w-64 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
           >
-            <div className="flex flex-col gap-0.5 px-2 pt-1.5 pb-2">
+            {/* As wide as the items, whatever their language: the name and
+                the path of the vault are cut short instead of widening it. */}
+            <div className="flex w-0 min-w-full flex-col gap-0.5 px-2 pt-1.5 pb-2">
               <span className="truncate font-semibold">{name}</span>
               <span className="truncate text-small text-faint">
                 {vault.root}
