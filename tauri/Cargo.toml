@@ -33,6 +33,9 @@ sqlx = { version = "0.8", default-features = false, features = ["sqlite"] }
 tauri-plugin-log = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# Cut, copy and paste from the context menu of a note: the WebView
+# cannot read the clipboard by itself.
+tauri-plugin-clipboard-manager = "2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

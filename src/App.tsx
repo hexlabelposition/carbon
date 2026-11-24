@@ -6,11 +6,13 @@ import { TooltipProvider } from "./features/ui/Tooltip";
 import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import { Updates } from "./features/updates/Updates";
+import { ClipboardContext } from "./features/editor/clipboard";
 import {
   openLogFolder,
   pickVaultFolder,
   setInterfaceZoom,
   showInFileManager,
+  tauriClipboard,
   tauriPlatform,
   tauriUpdater,
   tauriWindow,
@@ -28,20 +30,22 @@ const platform = { ...tauriPlatform, parser: createWorkerParser() };
 function App() {
   return (
     <TooltipProvider>
-      <AppSettingsProvider store={tauriPlatform.settings}>
-        <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
-          <CommandsProvider>
-            <InterfaceZoom apply={setInterfaceZoom} />
-            <ThemeSwitch />
-            <Settings openLogFolder={openLogFolder} />
-            <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
-            <DesktopShell
-              frame={tauriWindow}
-              showInFileManager={showInFileManager}
-            />
-          </CommandsProvider>
-        </VaultProvider>
-      </AppSettingsProvider>
+      <ClipboardContext value={tauriClipboard}>
+        <AppSettingsProvider store={tauriPlatform.settings}>
+          <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
+            <CommandsProvider>
+              <InterfaceZoom apply={setInterfaceZoom} />
+              <ThemeSwitch />
+              <Settings openLogFolder={openLogFolder} />
+              <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
+              <DesktopShell
+                frame={tauriWindow}
+                showInFileManager={showInFileManager}
+              />
+            </CommandsProvider>
+          </VaultProvider>
+        </AppSettingsProvider>
+      </ClipboardContext>
     </TooltipProvider>
   );
 }

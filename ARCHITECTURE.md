@@ -309,19 +309,20 @@ vault.on('trash', ...)          // the trash got, gave back or dropped something
 
 Carbon uses Tauri as a native layer through official plugins. `tauri/` contains what the Tauri CLI generates (config, capabilities, plugin registration lines) and the few custom commands listed below.
 
-| Need                                   | Plugin                                                 |
-| -------------------------------------- | ------------------------------------------------------ |
-| Read, write, list, rename, watch files | `fs` (file watching needs its `watch` feature enabled) |
-| SQLite index                           | `sql` with the `sqlite` feature                        |
-| Pick a vault folder                    | `dialog`                                               |
-| Keep access to picked folders          | `persisted-scope`                                      |
-| Open external links                    | `opener`                                               |
-| App settings                           | `fs`: `settings.json` in the app config directory      |
-| Updates from the GitHub releases       | `updater`, with `process` to start the app again       |
-| Move to the system trash               | no plugin: the `move_to_trash` command (ADR-019)       |
-| Copy a dropped file into the vault     | no plugin: the `import_file` command (ADR-020)         |
-| List every note with its size and time | no plugin: the `list_notes` command (ADR-028)          |
-| Several statements in one transaction  | no plugin: the `sql_batch` command (ADR-029)           |
+| Need                                   | Plugin                                                     |
+| -------------------------------------- | ---------------------------------------------------------- |
+| Read, write, list, rename, watch files | `fs` (file watching needs its `watch` feature enabled)     |
+| SQLite index                           | `sql` with the `sqlite` feature                            |
+| Pick a vault folder                    | `dialog`                                                   |
+| Keep access to picked folders          | `persisted-scope`                                          |
+| Open external links                    | `opener`                                                   |
+| App settings                           | `fs`: `settings.json` in the app config directory          |
+| Updates from the GitHub releases       | `updater`, with `process` to start the app again           |
+| Cut, copy, paste in the note menu      | `clipboard-manager`: the WebView cannot read the clipboard |
+| Move to the system trash               | no plugin: the `move_to_trash` command (ADR-019)           |
+| Copy a dropped file into the vault     | no plugin: the `import_file` command (ADR-020)             |
+| List every note with its size and time | no plugin: the `list_notes` command (ADR-028)              |
+| Several statements in one transaction  | no plugin: the `sql_batch` command (ADR-029)               |
 
 **M0 measurements**
 

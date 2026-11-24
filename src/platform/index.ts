@@ -16,6 +16,7 @@ export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
 export { tauriWindow } from "./window";
 export { tauriUpdater } from "./updater";
+export { tauriClipboard } from "./clipboard";
 
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,

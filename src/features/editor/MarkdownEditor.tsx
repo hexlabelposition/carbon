@@ -22,6 +22,8 @@ import {
 } from "./editor-theme";
 import { scrollParentOf } from "./glide";
 import { shortcutLetter } from "../workspace/shortcut-letter";
+import { EditorContextMenu } from "./EditorContextMenu";
+import { heldSelection } from "./held-selection";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
 import { layoutIndependentKeys } from "./layout-keys";
@@ -275,6 +277,7 @@ export function MarkdownEditor({
           findReplace,
           layoutIndependentKeys,
           editorTheme,
+          heldSelection,
           // Tab indents, as a notes editor should. It never moves the focus
           // out: the app turns that off (useTabFocusGuard).
           keymap.of([
@@ -449,7 +452,11 @@ export function MarkdownEditor({
   }, [text, revision]);
 
   // Fills the space below the note name, and grows with a longer text.
-  return <div ref={host} className="flex flex-1 flex-col" />;
+  return (
+    <EditorContextMenu view={() => editor.current} readOnly={readOnly}>
+      <div ref={host} className="flex flex-1 flex-col" />
+    </EditorContextMenu>
+  );
 }
 
 /**

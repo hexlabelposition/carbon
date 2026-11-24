@@ -187,6 +187,8 @@ pub fn run() {
         // starts the app again once one is installed.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // Cut, copy and paste from the context menu of a note.
+        .plugin(tauri_plugin_clipboard_manager::init())
         // Picking a vault folder grants access to it for one run of the app.
         // This keeps the grant, so a recent vault opens after a restart.
         // It must come after the `fs` plugin.

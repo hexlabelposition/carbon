@@ -46,6 +46,8 @@
     "sql:default",
     "sql:allow-execute",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text"
   ]
 }
