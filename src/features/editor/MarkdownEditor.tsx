@@ -32,6 +32,7 @@ import { isMac, keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
 import { listGuides } from "./list-guides";
+import { listHangingIndent } from "./list-hanging-indent";
 import { listGuidesPreference } from "../settings/note-style";
 import { codeLanguage } from "./code-languages";
 import {
@@ -235,6 +236,7 @@ export function MarkdownEditor({
           editing.current.of(editable(!latest.current.readOnly)),
           options.current.of(editorOptions(indentPreference.get())),
           guides.current.of(listGuidesPreference.get() ? listGuides : []),
+          listHangingIndent,
           imageInput,
           imageHost.of({
             load: (target) =>
