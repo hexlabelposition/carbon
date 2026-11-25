@@ -2,6 +2,7 @@ import type { TrashItem, Vault } from "@carbon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useDialog } from "../dialogs/open-dialog";
 import { errorText } from "../i18n/error-text";
+import { imageTypeOf } from "../image/image-file";
 
 export type TrashListState =
   | { status: "loading" }
@@ -32,6 +33,13 @@ export interface TrashView {
    */
   confirmed(system: boolean): void;
   cancel(): void;
+  /**
+   * The note or image shown to read (`TrashPreview`), or `null`: in a
+   * dialog, which closes when another opens.
+   */
+  preview: TrashItem | null;
+  open(item: TrashItem): void;
+  closePreview(): void;
   /** The last thing that went wrong, in words for the user. */
   error: string | null;
   dismiss(): void;
@@ -51,6 +59,9 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
     setAsked(next);
     setDialogOpen(true);
   };
+  const [shown, setShown] = useState<TrashItem | null>(null);
+  const [previewOpen, setPreviewOpen] = useDialog("trashPreview");
+  const preview = previewOpen ? shown : null;
   const [error, setError] = useState<string | null>(null);
   /** Raised to ask for the list again. */
   const [version, setVersion] = useState(0);
@@ -96,9 +107,23 @@ export function useTrash(vault: Vault, enabled: boolean): TrashView {
       );
     },
     cancel: () => setDialogOpen(false),
+    preview,
+    open(item) {
+      setShown(item);
+      setPreviewOpen(true);
+    },
+    closePreview: () => setPreviewOpen(false),
     error,
     dismiss: () => setError(null),
   };
+}
+
+/** Whether an item of the trash can be looked at: a note or an image. */
+export function canPreview(item: TrashItem): boolean {
+  return (
+    item.kind === "note" ||
+    (item.kind === "file" && imageTypeOf(item.path) !== null)
+  );
 }
 
 function messageOf(reason: unknown): string {

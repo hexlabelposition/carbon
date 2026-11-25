@@ -396,6 +396,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "trash.empty": "Корзина пуста.",
   "trash.emptyAll": "Очистить корзину",
   "trash.failed": "Корзина недоступна: {reason}",
+  "trash.readOnly": "Только чтение",
   "trash.restore": "Восстановить",
   "trash.root": "Корень хранилища",
   "trash.toSystem": "В системную корзину",

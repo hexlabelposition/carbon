@@ -8,6 +8,7 @@ export type DialogId =
   | "settings"
   | "search"
   | "trashConfirm"
+  | "trashPreview"
   | "update"
   | "dev";
 

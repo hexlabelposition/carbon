@@ -369,6 +369,7 @@ export const en = {
   "trash.empty": "The trash is empty.",
   "trash.emptyAll": "Empty trash",
   "trash.failed": "The trash is not available: {reason}",
+  "trash.readOnly": "Read only",
   "trash.restore": "Restore",
   "trash.root": "Vault root",
   "trash.toSystem": "To the system trash",

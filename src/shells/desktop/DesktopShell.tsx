@@ -494,7 +494,7 @@ function SidebarContent({
         aria-label={t("shell.trash")}
         className={view === "trash" ? "min-h-0 flex-1" : "hidden"}
       >
-        <TrashPanel trash={trash} />
+        <TrashPanel vault={vault} trash={trash} />
       </div>
       <VaultStatus vault={vault} />
     </div>

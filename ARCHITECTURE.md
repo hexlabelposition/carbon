@@ -277,7 +277,7 @@ vault.id                        // from .carbon/config.json, made on first open
 vault.tree()
 vault.drafts()                  // the tree of .carbon/drafts, which tree() leaves out
 vault.bookmarks.list() / has(path) / add(path) / remove(path)
-vault.trash.list() / restore(id) / remove(id, { system }) / empty({ system })
+vault.trash.list() / readText(id) / readBytes(id) / restore(id) / remove(id, { system }) / empty({ system })
 vault.notes.read(path)
 vault.notes.write(path, content, baseHash)
 vault.notes.create(path) / rename(from, to) / remove(path)
@@ -432,7 +432,7 @@ Desktop and phone layouts differ too much to stretch one layout over both. Carbo
 - A shell decides which features it mounts. A reduced mobile feature set needs no conditions scattered through the code.
 - Bookmarks (C-620) are a view of the sidebar with a button of their own: notes and images, added from the menu of the file tree or by the command "Add to bookmarks" for the open note, opened with a click, taken off with the bookmark of the row.
 - Searching all notes is a dialog over the blurred window, as the quick switcher (C-619): Ctrl+Shift+F, the toolbar or the palette open it, the arrow keys and Enter open a hit at its first match, and the last query stays for the next time. While it is shut it does not search.
-- The drafts and the trash (ADR-031) show in the sidebar of the desktop shell, from their toolbar buttons or the palette, as the files and the tags: the sidebar has no row of tabs, each view is opened by its button. The drafts are the file tree (`FileTree` with `scope="drafts"`), so everything the tree does works there, and its menu moves a note between the drafts and the vault. The trash (`src/features/trash`) lists what was deleted, the latest first, to restore or to take out: to the system trash or for good, asked each time in a dialog over the blurred window, as the other dialogs, for one item or with "Empty trash" for all. Where deleting goes, the vault trash or the system one, is a setting (`deleteToPreference`).
+- The drafts and the trash (ADR-031) show in the sidebar of the desktop shell, from their toolbar buttons or the palette, as the files and the tags: the sidebar has no row of tabs, each view is opened by its button. The drafts are the file tree (`FileTree` with `scope="drafts"`), so everything the tree does works there, and its menu moves a note between the drafts and the vault. The trash (`src/features/trash`) lists what was deleted, the latest first, to read (a note or an image opens in a dialog, read only, with "Restore"), to restore or to take out: to the system trash or for good, asked each time in a dialog over the blurred window, as the other dialogs, for one item or with "Empty trash" for all. Where deleting goes, the vault trash or the system one, is a setting (`deleteToPreference`).
 
 Three rules that keep a second shell cheap:
 

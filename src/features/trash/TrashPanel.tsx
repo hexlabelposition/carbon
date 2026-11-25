@@ -1,19 +1,27 @@
-import type { TrashItem } from "@carbon/core";
+import type { TrashItem, Vault } from "@carbon/core";
 import { useMemo, useRef, type ReactNode } from "react";
 import { useLanguage, useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { nameOf } from "../vault/paths";
 import { placeOf } from "../vault/place";
-import type { TrashConfirm, TrashView } from "./use-trash";
+import { canPreview, type TrashConfirm, type TrashView } from "./use-trash";
 import { AppDialog } from "../dialogs/AppDialog";
+import { TrashPreview } from "./TrashPreview";
 
 /**
  * The trash of the vault: what was deleted, the latest first, each with
  * where it was and when it went. An item can be put back where it was or
  * taken out of the trash, and the whole trash emptied: what is taken out
  * goes to the system trash or is deleted for good, as asked each time.
+ * A note or an image opens to be read with a click (`TrashPreview`).
  */
-export function TrashPanel({ trash }: { trash: TrashView }) {
+export function TrashPanel({
+  vault,
+  trash,
+}: {
+  vault: Vault;
+  trash: TrashView;
+}) {
   const t = useT();
   const language = useLanguage();
   const when = useMemo(
@@ -40,6 +48,18 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
       {trash.confirm !== null && (
         <ConfirmDialog trash={trash} confirm={trash.confirm} />
       )}
+      {trash.preview !== null && (
+        <TrashPreview
+          vault={vault}
+          item={trash.preview}
+          onRestore={() => {
+            const item = trash.preview;
+            trash.closePreview();
+            if (item !== null) trash.restore(item);
+          }}
+          onClose={trash.closePreview}
+        />
+      )}
       {list.items.length === 0 ? (
         <p className="px-3 py-4 text-center text-faint">{t("trash.empty")}</p>
       ) : (
@@ -63,16 +83,12 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
                 key={item.id}
                 className="group flex items-center gap-1 rounded-md py-1 pr-1 pl-2 hover:bg-raise"
               >
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate ${item.kind === "file" ? "text-muted" : ""}`}
-                  >
-                    {labelOf(item)}
-                  </p>
-                  <p className="truncate text-small text-faint">
-                    {placeOf(item.path, t)} · {when.format(item.deletedAt)}
-                  </p>
-                </div>
+                <ItemText
+                  label={labelOf(item)}
+                  muted={item.kind === "file"}
+                  details={`${placeOf(item.path, t)} · ${when.format(item.deletedAt)}`}
+                  onOpen={canPreview(item) ? () => trash.open(item) : undefined}
+                />
                 <RowButton
                   label={t("trash.restore")}
                   onClick={() => trash.restore(item)}
@@ -92,6 +108,43 @@ export function TrashPanel({ trash }: { trash: TrashView }) {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The name of an item and where it was, a button that opens it to read
+ * when it can be (a note or an image), plain text otherwise.
+ */
+function ItemText({
+  label,
+  muted,
+  details,
+  onOpen,
+}: {
+  label: string;
+  muted: boolean;
+  details: string;
+  onOpen?: () => void;
+}) {
+  const content = (
+    <>
+      <span className={`block truncate ${muted ? "text-muted" : ""}`}>
+        {label}
+      </span>
+      <span className="block truncate text-small text-faint">{details}</span>
+    </>
+  );
+  if (onOpen === undefined) {
+    return <div className="min-w-0 flex-1">{content}</div>;
+  }
+  return (
+    <button
+      type="button"
+      className="min-w-0 flex-1 cursor-default text-left outline-none focus-visible:underline"
+      onClick={onOpen}
+    >
+      {content}
+    </button>
   );
 }
 

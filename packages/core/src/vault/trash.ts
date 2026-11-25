@@ -123,6 +123,26 @@ export class VaultTrash {
   }
 
   /**
+   * The text of a note in the trash, to read it before it is restored.
+   * Rejects for a folder or a file that is not a note.
+   */
+  async readText(id: string): Promise<string> {
+    const { item, source } = await this.read(id);
+    if (item.kind !== "note") throw notAFile(item);
+    return this.options.fs.readText(source);
+  }
+
+  /**
+   * The bytes of a note or file in the trash, as an image to look at
+   * before it is restored. Rejects for a folder.
+   */
+  async readBytes(id: string): Promise<Uint8Array> {
+    const { item, source } = await this.read(id);
+    if (item.kind === "folder") throw notAFile(item);
+    return this.options.fs.readBytes(source);
+  }
+
+  /**
    * Takes an item out of the trash: deletes it for good, or moves it to
    * the system trash with `system`. If that fails, it stays.
    */
@@ -220,6 +240,10 @@ export class VaultTrash {
 interface Found {
   item: TrashItem;
   source: string;
+}
+
+function notAFile(item: TrashItem): VaultError {
+  return new VaultError("notAFile", item.path, `Not a file: ${item.path}`);
 }
 
 /** Ids are made by `freeId`; anything else is not an item. */

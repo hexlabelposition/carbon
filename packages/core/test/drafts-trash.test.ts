@@ -265,5 +265,30 @@ describe("vault.trash", () => {
     const { vault } = await setup();
     await expect(vault.trash.restore("../x")).rejects.toThrow("Not in");
     await expect(vault.trash.remove("..")).rejects.toThrow("Not in");
+    await expect(vault.trash.readText("../x")).rejects.toThrow("Not in");
+    await expect(vault.trash.readBytes("..")).rejects.toThrow("Not in");
+  });
+
+  test("reads a note or a file it keeps, leaving it there", async () => {
+    const { vault } = await setup({ "dir/a.md": "text", "b.png": "png" });
+    await vault.notes.remove("dir/a.md");
+    await vault.notes.remove("b.png");
+    const [image, note] = await vault.trash.list();
+    expect(await vault.trash.readText(note.id)).toBe("text");
+    expect(
+      new TextDecoder().decode(await vault.trash.readBytes(image.id)),
+    ).toBe("png");
+    await expect(vault.trash.readText(image.id)).rejects.toThrow("Not a file");
+    expect(await vault.trash.list()).toHaveLength(2);
+  });
+
+  test("does not read a folder as a file", async () => {
+    const { vault } = await setup({ "dir/a.md": "" });
+    await vault.folders.remove("dir");
+    const [folder] = await vault.trash.list();
+    await expect(vault.trash.readText(folder.id)).rejects.toThrow("Not a file");
+    await expect(vault.trash.readBytes(folder.id)).rejects.toThrow(
+      "Not a file",
+    );
   });
 });
