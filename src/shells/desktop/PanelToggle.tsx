@@ -4,7 +4,6 @@ import { Tooltip } from "../../features/ui/Tooltip";
 const LABELS = {
   left: { show: "panels.showLeft", hide: "panels.hideLeft" },
   right: { show: "panels.showRight", hide: "panels.hideRight" },
-  toolbar: { show: "panels.showToolbar", hide: "panels.hideToolbar" },
 } as const;
 
 /**
@@ -14,12 +13,11 @@ const LABELS = {
 const COLUMNS = {
   left: { line: 6, x: 2, width: 4 },
   right: { line: 10, x: 10, width: 4 },
-  toolbar: { line: 5.5, x: 2, width: 3.5 },
 } as const;
 
 interface PanelToggleProps {
-  /** The panel at the left or the right, or the toolbar at the left edge. */
-  side: "left" | "right" | "toolbar";
+  /** The panel at the left or the right. */
+  side: "left" | "right";
   open: boolean;
   /** The keys that do the same, as the user reads them, if any. */
   shortcut?: string;
@@ -28,8 +26,9 @@ interface PanelToggleProps {
 
 /**
  * The button that shows or hides the panel at one side: a window with that
- * side drawn as a column, filled while the panel is open. The toolbar is
- * a narrow column at the very left with three small buttons in it.
+ * side drawn as a column, filled while the panel is open. The toolbar has
+ * none: it is shown or hidden from the settings, the command palette or
+ * its shortcut.
  */
 export function PanelToggle({
   side,
@@ -63,7 +62,7 @@ export function PanelToggle({
           >
             <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
             <path d={`M${line} 2.5v11`} />
-            {open ? (
+            {open && (
               <rect
                 x={x}
                 y="3"
@@ -73,20 +72,6 @@ export function PanelToggle({
                 fill="currentColor"
                 stroke="none"
               />
-            ) : (
-              side === "toolbar" &&
-              [4.3, 7.1, 9.9].map((y) => (
-                <rect
-                  key={y}
-                  x="2.6"
-                  y={y}
-                  width="1.8"
-                  height="1.8"
-                  rx="0.4"
-                  fill="currentColor"
-                  stroke="none"
-                />
-              ))
             )}
           </svg>
         </span>

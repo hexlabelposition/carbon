@@ -343,12 +343,6 @@ export function DesktopShell({
           vault !== null && !showDev ? (
             <>
               <PanelToggle
-                side="toolbar"
-                open={toolbarOpen}
-                shortcut={toolbarShortcut}
-                onToggle={toggleToolbar}
-              />
-              <PanelToggle
                 side="left"
                 open={!sidebar.collapsed}
                 shortcut={leftShortcut}
