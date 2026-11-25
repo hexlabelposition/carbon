@@ -18,7 +18,8 @@ function state(doc: string): { state: EditorState; pos: number } {
   return {
     pos,
     state: EditorState.create({
-      doc: doc.replace("|", ""),
+      // The one `|` taken out where it is: it marks the cursor.
+      doc: doc.slice(0, pos) + doc.slice(pos + 1),
       selection: { anchor: pos },
       extensions: [markdown({ base: markdownLanguage }), markdownInput],
     }),
