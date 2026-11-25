@@ -34,6 +34,12 @@ updates:
       cargo-minor:
         patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      # sqlx goes with tauri-plugin-sql, which is on 0.8: a newer major one
+      # would build a second sqlx, and 0.9 changes the API sql_batch uses.
+      # To lift once the plugin moves to it.
+      - dependency-name: sqlx
+        update-types: [version-update:semver-major, version-update:semver-minor]
 
   # The workflows, and the composite actions they share.
   - package-ecosystem: github-actions
