@@ -55,23 +55,38 @@ export const tablePreview = [
     ]),
   ),
   EditorView.baseTheme({
+    // As wide as its text, never wider than the note: a long cell wraps.
+    // A box with rounded corners, as a code block, lines between the
+    // columns and the rows. The borders are kept apart, not collapsed:
+    // collapsed, a table cannot have rounded corners.
     ".cm-table": {
-      width: "100%",
-      borderCollapse: "collapse",
+      borderCollapse: "separate",
+      borderSpacing: "0",
+      border: "1px solid var(--cb-line)",
+      borderRadius: "6px",
       fontSize: noteSize(14),
       cursor: "text",
     },
     ".cm-table th, .cm-table td": {
-      padding: "8px 12px",
+      padding: "6px 12px",
+      borderRight: "1px solid var(--cb-line)",
       borderBottom: "1px solid var(--cb-line)",
       textAlign: "left",
       verticalAlign: "top",
     },
+    ".cm-table tr > :last-child": { borderRight: "none" },
+    ".cm-table tbody tr:last-child > *": { borderBottom: "none" },
+    // A table of only a header: the line below it is the box itself.
+    ".cm-table:not(:has(tbody tr)) th": { borderBottom: "none" },
     ".cm-table th": {
       fontSize: noteSize(12),
       fontWeight: "600",
       color: "var(--cb-faint)",
+      backgroundColor: "var(--cb-code)",
     },
+    // The header keeps inside the rounded corners of the box.
+    ".cm-table th:first-child": { borderTopLeftRadius: "5px" },
+    ".cm-table th:last-child": { borderTopRightRadius: "5px" },
     ".cm-table code": {
       padding: "1px 5px",
       border: "1px solid var(--cb-line)",
