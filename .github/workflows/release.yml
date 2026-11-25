@@ -102,7 +102,7 @@ jobs:
           fi
       # The deb and the AppImage of tauri.conf.json.
       - name: Build the packages and attach them to the draft
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -157,7 +157,7 @@ jobs:
       # The NSIS installer of tauri.conf.json: for the current user, no
       # administrator rights, in English or Russian by the system.
       - name: Build the installer and attach it to the draft
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
