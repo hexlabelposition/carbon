@@ -62,8 +62,13 @@ export function Tooltip({
           // Over the dialogs too: their buttons have tooltips.
           className="z-60"
         >
-          <Base.Popup className="flex max-w-80 origin-(--transform-origin) items-center gap-2 rounded-md border border-line bg-panel px-2 py-1 text-small text-fg shadow-dialog transition-[opacity,scale] duration-100 ease-out select-none data-ending-style:scale-95 data-ending-style:opacity-0 data-instant:transition-none data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">
-            <span className="min-w-0 break-words">{label}</span>
+          <Base.Popup
+            // One line, as wide as its text: placed by the side of the
+            // window, it would else be squeezed into the room left there
+            // and wrap. Only a text wider than the window is cut short.
+            className="flex w-max max-w-[calc(100vw-16px)] origin-(--transform-origin) items-center gap-2 rounded-md border border-line bg-panel px-2 py-1 text-small text-fg shadow-dialog transition-[opacity,scale] duration-100 ease-out select-none data-ending-style:scale-95 data-ending-style:opacity-0 data-instant:transition-none data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none"
+          >
+            <span className="min-w-0 truncate">{label}</span>
             {shortcut !== undefined && <Shortcut text={shortcut} />}
           </Base.Popup>
         </Base.Positioner>
