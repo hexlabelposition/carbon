@@ -25,10 +25,13 @@ export function indentText(indent: Indent): string {
   return indent === "tab" ? "\t" : " ".repeat(Number(indent));
 }
 
-/** Two spaces until another is chosen: what CodeMirror does by itself. */
+/**
+ * Four spaces until another is chosen: with two, a nested list stood too
+ * close to the one around it for the lines along it to show.
+ */
 export const indentPreference = preference<Indent>(
   "carbon.editor.indent",
-  "2",
+  "4",
   oneOf(INDENTS.map((indent) => indent.value)),
 );
 
