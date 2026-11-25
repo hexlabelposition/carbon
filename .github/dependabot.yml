@@ -1,0 +1,50 @@
+# Dependency updates, once a week. Minor and patch updates come grouped in
+# one pull request per ecosystem; a major one comes on its own, to be looked
+# at. Commits read "chore(deps): ...", as the rest of the history.
+version: 2
+updates:
+  # The app, the scripts and the workspace packages (packages/*): one
+  # bun.lock at the root.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      bun-minor:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # TypeScript 7, the native rewrite, is not supported by most of the
+      # tools around it yet (typescript-eslint, the editors' plugins).
+      - dependency-name: typescript
+        versions: [">= 7.0.0"]
+
+  # The Tauri shell.
+  - package-ecosystem: cargo
+    directory: /tauri
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      cargo-minor:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # The workflows, and the composite actions they share.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
