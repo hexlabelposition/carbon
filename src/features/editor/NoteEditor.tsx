@@ -4,6 +4,7 @@ import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { NoteNameField } from "./NoteNameField";
 import { NoteTitleField } from "./NoteTitleField";
 import type { OutlineLink } from "./outline";
 import { useNoteDocument } from "./use-note-document";
@@ -104,11 +105,7 @@ export function NoteEditor({
     <div ref={wheelTextSize} className="flex h-full flex-col">
       <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
         {history}
-        <Tooltip label={path}>
-          <span className="min-w-0 flex-1 truncate px-2 text-muted">
-            {name}
-          </span>
-        </Tooltip>
+        <NoteNameField path={path} title={title} readOnly={readingMode} />
         <NoteModeMenu mode={mode} onChange={onModeChange} />
       </header>
       {images.error !== null && (
@@ -116,6 +113,13 @@ export function NoteEditor({
       )}
       {links.error !== null && (
         <EditorAlert message={links.error} onDismiss={links.dismissError} />
+      )}
+      {/* The title above the text tells it itself, when it is shown. */}
+      {title.error !== null && !inlineTitle && (
+        <EditorAlert
+          message={t("editor.renameFailed", { reason: title.error })}
+          onDismiss={title.dismissError}
+        />
       )}
       {/* One scroll for the name and the text: the name scrolls away.
           No CSS glide: on a long jump the editor measures the lines it

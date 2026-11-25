@@ -1,5 +1,6 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef } from "react";
 import { useT } from "../i18n/i18n";
+import { useNameField } from "./use-name-field";
 import type { NoteTitle } from "./use-note-title";
 
 /**
@@ -16,34 +17,9 @@ export function NoteTitleField({
   readOnly?: boolean;
 }) {
   const t = useT();
-  const field = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState(title.name);
-  /** Escape was pressed: the blur that follows renames nothing. */
-  const cancelled = useRef(false);
-
-  async function commit() {
-    if (cancelled.current) {
-      cancelled.current = false;
-      return;
-    }
-    const renamed = await title.rename(text);
-    // Taken: the note moves and this field goes with its editor. Not
-    // taken: the name as it is.
-    if (!renamed) setText(title.name);
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      field.current?.blur();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      cancelled.current = true;
-      setText(title.name);
-      title.dismissError();
-      field.current?.blur();
-    }
-  }
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const field = useNameField(title, ref);
+  const { text } = field;
 
   // w-full: in the column around it, a block with auto margins would
   // shrink to its text and move to the middle. The width and padding are
@@ -64,7 +40,7 @@ export function NoteTitleField({
           {text}{" "}
         </div>
         <textarea
-          ref={field}
+          ref={ref}
           rows={1}
           aria-label={t("editor.noteName")}
           readOnly={readOnly}
@@ -74,10 +50,10 @@ export function NoteTitleField({
           value={text}
           // A name is one line: line breaks typed or pasted become spaces.
           onChange={(event) =>
-            setText(event.target.value.replace(/\r?\n/g, " "))
+            field.edit(event.target.value.replace(/\r?\n/g, " "))
           }
-          onKeyDown={onKeyDown}
-          onBlur={() => void commit()}
+          onKeyDown={field.onKeyDown}
+          onBlur={field.onBlur}
           className={`block h-full w-full resize-none overflow-hidden bg-transparent [grid-area:1/1] text-fg outline-none ${TITLE_TEXT}`}
         />
       </div>
