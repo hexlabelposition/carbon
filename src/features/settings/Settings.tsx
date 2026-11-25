@@ -302,8 +302,10 @@ export function Settings({
       initialFocus={groupTab}
       // Centered by its margins, not moved back by half its size: a move of
       // half an odd size lands between pixels, and the text in it is drawn
-      // blurred.
-      className="fixed inset-0 m-auto flex h-[min(600px,calc(100vh-96px))] w-220 max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
+      // blurred. Sizes in pixels, not as the classes of the scale: the root
+      // text is 13px, so a step of the scale is 3.25px, and "w-220" would be
+      // 715px, not 880.
+      className="fixed inset-0 m-auto flex h-[min(600px,calc(100vh-96px))] w-[880px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-lg border border-line bg-bg shadow-dialog"
     >
       {/* A header as the one above a note: the name, and a way out. */}
       <header className="flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel pr-1.5 pl-4">
@@ -337,8 +339,8 @@ export function Settings({
           id="settings-panel"
           aria-labelledby={`settings-tab-${group}`}
         >
-          {/* A readable column, as the text of a note. */}
-          <div className="mx-auto flex max-w-150 flex-col gap-6 px-8 pt-6 pb-8">
+          {/* A readable column, as the text of a note: 600px wide at most. */}
+          <div className="mx-auto flex max-w-[600px] flex-col gap-6 px-8 pt-6 pb-8">
             <h2 className="text-h2 font-semibold">
               {t(
                 GROUPS.find((g) => g.group === group)?.label ??
