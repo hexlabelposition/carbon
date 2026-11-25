@@ -8,19 +8,33 @@ import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
 import { useIndexStatus } from "../vault/use-index-status";
 import { useVaultSession } from "../vault/vault-session";
+import { notify } from "../notifications/notifications";
+import { timing } from "../vault/timing";
 import { showStartup } from "./show-startup";
+import { slowStart, slowStartNoticePreference } from "./slow-start";
 import { CopyStartupButton, StartupTable } from "./StartupReport";
 import { startupLine, startupRows } from "./startup-report";
 
 /**
- * Writes how the app started to the log, once the startup scan of the
- * vault is over: so a bug report about a slow start has the times.
+ * Once the startup scan of the vault is over, writes how the app started
+ * to the log, so a bug report about a slow start has the times, and tells
+ * of a slow start under the bell, unless that is turned off.
  */
-function useLogStartup(status: IndexStatus): void {
+function useReportStartup(status: IndexStatus): void {
   const ready = status.state === "ready" ? status : null;
   useEffect(() => {
     if (ready === null) return;
     log.info(startupLine(startupRows(ready)));
+    const took = slowStart(ready, timing.openedAt);
+    if (took === null || !slowStartNoticePreference.get()) return;
+    notify({
+      id: "startup.slow",
+      title: "startup.slowTitle",
+      text: "startup.slowText",
+      // To the tenth of a second, in the format of the language.
+      params: { seconds: Math.round(took / 100) / 10 },
+      action: { label: "startup.details", run: showStartup },
+    });
   }, [ready]);
 }
 
@@ -33,7 +47,7 @@ export function StartupHost({ vault }: { vault: Vault }) {
   const t = useT();
   const status = useIndexStatus(vault);
   const [open, setOpen] = useDialog("startup");
-  useLogStartup(status);
+  useReportStartup(status);
 
   useCommands(
     useMemo(

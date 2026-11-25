@@ -10,6 +10,8 @@ import {
   StartupTable,
 } from "../features/startup/StartupReport";
 import { startupRows } from "../features/startup/startup-report";
+import { showStartup } from "../features/startup/show-startup";
+import { notify } from "../features/notifications/notifications";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";
 import { Tooltip } from "../features/ui/Tooltip";
@@ -151,6 +153,27 @@ function DevButton({
           >
             {panelOpen ? "Close dev panel" : "Open dev panel"}
           </button>
+          <Tooltip
+            label="Sends the notice of a slow start, as if the vault took 4.2 s"
+            side="left"
+          >
+            <button
+              type="button"
+              className={action}
+              onClick={() => {
+                setOpen(false);
+                notify({
+                  id: "startup.slow",
+                  title: "startup.slowTitle",
+                  text: "startup.slowText",
+                  params: { seconds: 4.2 },
+                  action: { label: "startup.details", run: showStartup },
+                });
+              }}
+            >
+              Test notification
+            </button>
+          </Tooltip>
           <Tooltip
             label="Loads the app page afresh, as F5 in a browser"
             side="left"

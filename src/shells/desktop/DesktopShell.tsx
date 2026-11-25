@@ -62,6 +62,7 @@ import { StartScreen } from "../../features/start/StartScreen";
 import { timing } from "../../features/vault/timing";
 import { IndexTiming } from "../../features/vault/IndexTiming";
 import { StartupHost } from "../../features/startup/StartupHost";
+import { NotificationsButton } from "../../features/notifications/NotificationsButton";
 import { useIndexStatus } from "../../features/vault/use-index-status";
 import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
@@ -339,6 +340,9 @@ export function DesktopShell({
               />
             </Suspense>
           ) : undefined
+        }
+        notifications={
+          vault !== null && !showDev ? <NotificationsButton /> : undefined
         }
         panels={
           vault !== null && !showDev ? (

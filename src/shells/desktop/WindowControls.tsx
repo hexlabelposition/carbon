@@ -7,18 +7,22 @@ import { log } from "../../features/log/log";
 
 /**
  * Minimize, maximize or restore, and close, in the top right corner of the
- * window, over the top row of the layout, with `panels` before them: the
- * buttons of the side panels. The element at the right end of that row
+ * window, over the top row of the layout, with groups of buttons before
+ * them: the dev tools, the bell of the notifications and the buttons of
+ * the side panels. The element at the right end of that row
  * leaves `WINDOW_CONTROLS_ROOM` free for them.
  */
 export function WindowControls({
   frame,
   dev,
+  notifications,
   panels,
 }: {
   frame: WindowFrame;
-  /** The dev tools, in a group of their own before the panels: dev builds. */
+  /** The dev tools, in a group of their own before the others: dev builds. */
   dev?: ReactNode;
+  /** The bell of the notifications, in a group of its own. */
+  notifications?: ReactNode;
   panels?: ReactNode;
 }) {
   const t = useT();
@@ -42,6 +46,12 @@ export function WindowControls({
     };
   }, []);
 
+  const groups = [
+    { key: "dev", content: dev },
+    { key: "notifications", content: notifications },
+    { key: "panels", content: panels },
+  ].filter((group) => group.content !== undefined);
+
   const act = (action: () => Promise<void>) => () => {
     action().catch((reason: unknown) =>
       log.error("The window did not do it", reason),
@@ -56,33 +66,24 @@ export function WindowControls({
       data-window-controls
       className="fixed top-0 right-0 z-40 flex h-bar border-b border-line bg-panel"
     >
-      {dev !== undefined && (
-        // Set off by a line before it; the panels after it have their own,
-        // and without them it takes theirs.
+      {groups.map(({ key, content }, index) => (
+        // Each group is set off by a line before it: from the tabs or the
+        // right panel, or from the group before. The last one has a line
+        // after it too, from the buttons of the window; over the whole
+        // screen those fold away, and that line fades.
         <div
+          key={key}
           className={`flex border-l border-l-line px-1.5 ${
-            panels !== undefined
-              ? ""
-              : `border-r transition-colors duration-200 ease-out motion-reduce:transition-none ${
+            index === groups.length - 1
+              ? `border-r transition-colors duration-200 ease-out motion-reduce:transition-none ${
                   fullscreen ? "border-r-transparent" : "border-r-line"
                 }`
+              : ""
           }`}
         >
-          {dev}
+          {content}
         </div>
-      )}
-      {panels !== undefined && (
-        // Set off by a line at each side: from the tabs or the right panel
-        // before it, and from the buttons of the window after it. Over the
-        // whole screen those fold away, and the line after them fades.
-        <div
-          className={`flex border-x border-l-line px-1.5 transition-colors duration-200 ease-out motion-reduce:transition-none ${
-            fullscreen ? "border-r-transparent" : "border-r-line"
-          }`}
-        >
-          {panels}
-        </div>
-      )}
+      ))}
       {/* Over the whole screen (F11) the window has nothing to minimize or
           restore: the buttons fade and fold away, and the row takes back
           their room as they go. */}
