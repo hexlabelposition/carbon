@@ -16,7 +16,7 @@ export interface SourceMode {
  * Whether notes are shown as raw Markdown. One switch for every note, so
  * a tab that is opened looks like the one before it. Remembered between
  * app starts, unless the settings choose the mode to start in. Its
- * shortcut, Ctrl+E (Cmd+E on a Mac) by default, switches it.
+ * shortcut has no keys by default; the settings can give it some.
  */
 export function useSourceMode(): SourceMode {
   const t = useT();

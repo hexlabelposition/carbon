@@ -56,6 +56,7 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const t = useT();
   const sourceModeShortcut = useShortcutLabel("editor.sourceMode");
+  const readingModeShortcut = useShortcutLabel("editor.readingMode");
   const [note, actions] = useNoteDocument(vault, path);
   const images = useNoteImages(vault, path);
   const links = useNoteLinks(vault, path);
@@ -125,6 +126,7 @@ export function NoteEditor({
         <ModeButton
           label={t("editor.read")}
           hint={t("editor.readHint")}
+          shortcut={readingModeShortcut}
           pressed={readingMode}
           onToggle={onToggleReadingMode}
         >

@@ -14,10 +14,11 @@ export const SHORTCUTS = [
   { id: "note.new", label: "tree.newNote", fallback: "Mod+N" },
   { id: "workspace.closeTab", label: "workspace.closeTab", fallback: "Mod+W" },
   {
-    id: "editor.sourceMode",
-    label: "editor.toggleSource",
+    id: "editor.readingMode",
+    label: "editor.toggleReading",
     fallback: "Mod+E",
   },
+  { id: "editor.sourceMode", label: "editor.toggleSource", fallback: "" },
   { id: "shell.sidebar", label: "shell.toggleLeftPanel", fallback: "Mod+B" },
   {
     id: "shell.rightPanel",

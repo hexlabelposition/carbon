@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { startModePreference } from "../settings/editor-options";
+import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
 
 const STORAGE_KEY = "carbon.editor.readingMode";
 
@@ -15,11 +16,13 @@ export interface ReadingMode {
  * Whether notes are shown to read: no cursor, no Markdown shown on a
  * click, no typing; tasks can still be ticked. One switch for every note,
  * as source mode, remembered between app starts unless the settings
- * choose the mode to start in.
+ * choose the mode to start in. Its shortcut, Ctrl+E (Cmd+E on a Mac) by
+ * default, switches it.
  */
 export function useReadingMode(): ReadingMode {
   const t = useT();
   const [on, setOn] = useState(load);
+  const shortcut = useShortcutLabel("editor.readingMode");
 
   useEffect(() => {
     try {
@@ -36,12 +39,25 @@ export function useReadingMode(): ReadingMode {
         {
           id: "editor.readingMode",
           title: t("editor.toggleReading"),
+          shortcut,
           run: toggle,
         },
       ],
-      [t, toggle],
+      [t, toggle, shortcut],
     ),
   );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!matchesShortcut(event, "editor.readingMode")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggle();
+    }
+    // Capture: the shortcut is taken before the focused element sees it.
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [toggle]);
 
   return { on, toggle };
 }
