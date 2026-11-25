@@ -10,6 +10,7 @@ export type DialogId =
   | "trashConfirm"
   | "trashPreview"
   | "update"
+  | "startup"
   | "dev";
 
 // Which dialog is open: anything may open one.

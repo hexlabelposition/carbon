@@ -1,6 +1,6 @@
 import type { IndexStatus } from "@carbon/core";
 import { timing } from "./timing";
-import { readySinceStart, seconds, useLogIndexTiming } from "./index-timing";
+import { readySinceStart, seconds } from "./index-timing";
 import { Tooltip } from "../ui/Tooltip";
 
 /**
@@ -11,7 +11,6 @@ import { Tooltip } from "../ui/Tooltip";
  * tools.
  */
 export function IndexTiming({ status }: { status: IndexStatus }) {
-  useLogIndexTiming(status);
   if (status.state !== "ready") return null;
   const sinceStart = readySinceStart(status.doneAt);
   const { list, read, parse, write } = status.waits;

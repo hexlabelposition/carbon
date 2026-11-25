@@ -61,6 +61,7 @@ import { SettingsOpener } from "../../features/settings/Settings";
 import { StartScreen } from "../../features/start/StartScreen";
 import { timing } from "../../features/vault/timing";
 import { IndexTiming } from "../../features/vault/IndexTiming";
+import { StartupHost } from "../../features/startup/StartupHost";
 import { useIndexStatus } from "../../features/vault/use-index-status";
 import { useVaultSession } from "../../features/vault/vault-session";
 import { useWorkspaceShortcuts } from "../../features/workspace/use-workspace-shortcuts";
@@ -426,6 +427,7 @@ export function DesktopShell({
             <QuickSwitcherHost vault={vault} />
             <SearchHost vault={vault} />
             <NewNoteHost vault={vault} />
+            <StartupHost vault={vault} />
           </WorkspaceProvider>
         )}
       </div>

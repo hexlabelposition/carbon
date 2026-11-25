@@ -75,6 +75,8 @@ import { ScrollArea } from "../ui/ScrollArea";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
 import { newIssueUrl } from "../help/report-bug";
+import { StartupOverSettings } from "../startup/StartupHost";
+import { slowStartNoticePreference } from "../startup/slow-start";
 import { resetPreferences } from "./preference";
 import { toolbarPreference } from "./toolbar";
 import {
@@ -502,34 +504,81 @@ function GeneralSettings({ help }: { help: Help }) {
           </Row>
         </Rows>
       )}
-      {(help.reportBug !== undefined || help.openLogs !== undefined) && (
-        <Rows title={t("help.title")}>
-          {help.reportBug !== undefined && (
-            <Row label={t("help.reportBug")}>
-              <button
-                type="button"
-                className={cardButton}
-                onClick={help.reportBug}
-              >
-                {t("help.reportBugButton")}
-              </button>
-            </Row>
-          )}
-          {help.openLogs !== undefined && (
-            <Row label={t("logs.row")}>
-              <button
-                type="button"
-                className={cardButton}
-                onClick={help.openLogs}
-              >
-                {t("logs.openShort")}
-              </button>
-            </Row>
-          )}
-        </Rows>
-      )}
+      <Rows title={t("help.title")}>
+        {help.reportBug !== undefined && (
+          <Row label={t("help.reportBug")}>
+            <button
+              type="button"
+              className={cardButton}
+              onClick={help.reportBug}
+            >
+              {t("help.reportBugButton")}
+            </button>
+          </Row>
+        )}
+        {help.openLogs !== undefined && (
+          <Row label={t("logs.row")}>
+            <button
+              type="button"
+              className={cardButton}
+              onClick={help.openLogs}
+            >
+              {t("logs.openShort")}
+            </button>
+          </Row>
+        )}
+        <StartupRow />
+      </Rows>
       <ResetSettings />
     </>
+  );
+}
+
+/**
+ * Whether to be told of a slow start, with a stopwatch beside the switch
+ * that shows how the vault started: over the settings, which stay open
+ * below it, as the question before a reset.
+ */
+function StartupRow() {
+  const t = useT();
+  const notice = slowStartNoticePreference.use();
+  const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+
+  function close() {
+    setOpen(false);
+    // The focus is not given back while the settings are open
+    // (`AppDialog`): back to the button here.
+    requestAnimationFrame(() => button.current?.focus());
+  }
+
+  return (
+    <Row label={t("startup.notice")}>
+      <div className="flex shrink-0 items-center gap-3">
+        <Tooltip label={t("startup.show")}>
+          <button
+            ref={button}
+            type="button"
+            aria-label={t("startup.show")}
+            // Framed as the reset buttons beside other settings.
+            className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line-strong bg-panel text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+            onClick={() => setOpen(true)}
+          >
+            <SettingsIcon>
+              {/* A stopwatch: the dial, its hand, the button on top. */}
+              <circle cx="8" cy="9" r="5" />
+              <path d="M8 9V6.5M6.5 2.5h3M8 2.5V4M12 4.5l1-1" />
+            </SettingsIcon>
+          </button>
+        </Tooltip>
+        <SettingSwitch
+          label={t("startup.notice")}
+          checked={notice}
+          onChange={slowStartNoticePreference.set}
+        />
+      </div>
+      <StartupOverSettings open={open} onClose={close} />
+    </Row>
   );
 }
 

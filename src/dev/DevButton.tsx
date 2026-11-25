@@ -1,20 +1,18 @@
 import { Dialog } from "@base-ui/react/dialog";
 import type { IndexStatus, Vault } from "@carbon/core";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AppDialog } from "../features/dialogs/AppDialog";
 import { useDialog } from "../features/dialogs/open-dialog";
 import { LANGUAGE_SETTINGS, languagePreference } from "../features/i18n/i18n";
 import { THEMES, themePreference } from "../features/theme/use-theme";
 import {
-  readySinceStart,
-  seconds,
-  useLogIndexTiming,
-} from "../features/vault/index-timing";
-import { timing } from "../features/vault/timing";
+  CopyStartupButton,
+  StartupTable,
+} from "../features/startup/StartupReport";
+import { startupRows } from "../features/startup/startup-report";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";
 import { Tooltip } from "../features/ui/Tooltip";
-import { log } from "../features/log/log";
 
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: an orange
@@ -78,7 +76,6 @@ function DevButton({
           </span>
         </button>
       </Tooltip>
-      {/* Kept mounted: the timings log to the console once the vault is ready. */}
       <AppDialog
         open={open}
         keepMounted
@@ -172,146 +169,28 @@ function DevButton({
   );
 }
 
-/** The timings of the open vault; they log once its startup scan is over. */
+/** How the open vault started (the log has it too: `StartupHost`). */
 function VaultStartup({ vault }: { vault: Vault }) {
-  const status = useIndexStatus(vault);
-  useLogIndexTiming(status);
-  return <Startup status={status} />;
-}
-
-/** One line of the startup table; `sub` lines belong to the one above. */
-interface StartupRow {
-  label: string;
-  value: string;
-  sub?: boolean;
-}
-
-/** How the app started, as lines to show and to copy. */
-function startupRows(status: IndexStatus | null): StartupRow[] {
-  const rows: StartupRow[] = [
-    {
-      label: "Window shown",
-      value: timing.shownAt === null ? "…" : seconds(timing.shownAt),
-    },
-  ];
-  if (status === null) return [...rows, { label: "Vault", value: "none open" }];
-  if (status.state === "failed") {
-    return [...rows, { label: "Index", value: "failed" }];
-  }
-  if (status.state === "scanning") {
-    const of = status.total === null ? "" : ` of ${status.total}`;
-    return [
-      ...rows,
-      { label: "Index", value: `scanning, ${status.done}${of}` },
-    ];
-  }
-  const sinceStart = readySinceStart(status.doneAt);
-  const { list, read, parse, write } = status.waits;
-  return [
-    ...rows,
-    { label: "Ready", value: seconds(sinceStart) },
-    ...(timing.openedAt === null
-      ? []
-      : [
-          {
-            label: "Opened to ready",
-            value: seconds(sinceStart - timing.openedAt),
-          },
-        ]),
-    { label: "Notes", value: status.notes.toLocaleString("en") },
-    { label: "Indexed", value: status.indexed.toLocaleString("en") },
-    { label: "Scan took", value: seconds(status.ms) },
-    { label: "list", value: seconds(list), sub: true },
-    { label: "read", value: seconds(read), sub: true },
-    { label: "parse", value: seconds(parse), sub: true },
-    { label: "write", value: seconds(write), sub: true },
-  ];
-}
-
-/** The lines as plain text, one "label: value" each. */
-function startupText(rows: readonly StartupRow[]): string {
-  return [
-    "Carbon startup (times from the start of the page)",
-    ...rows.map(
-      ({ label, value, sub }) =>
-        `${sub === true ? "  " : ""}${label}: ${value}`,
-    ),
-  ].join("\n");
+  return <Startup status={useIndexStatus(vault)} />;
 }
 
 /**
- * How the app started, as a table of times from the start of the page,
- * with a button that copies it as text.
+ * How the app started, as in the settings (`StartupHost`): a table of
+ * times from the start of the app, with a button that copies it as text.
  */
 function Startup({ status }: { status: IndexStatus | null }) {
   const rows = startupRows(status);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 1500);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
-  function copy() {
-    navigator.clipboard.writeText(startupText(rows)).then(
-      () => setCopied(true),
-      (reason: unknown) => log.error("Could not copy the timings", reason),
-    );
-  }
-
   return (
     <Section
       title="Startup"
       action={
-        <button
-          type="button"
+        <CopyStartupButton
+          rows={rows}
           className="flex h-6 items-center gap-1.5 rounded-md px-2 text-muted outline-none hover:bg-raise hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-          onClick={copy}
-        >
-          <svg
-            viewBox="0 0 16 16"
-            aria-hidden
-            className="size-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {copied ? (
-              <path d="M3 8.5l3 3 7-7" />
-            ) : (
-              <>
-                <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
-                <path d="M10.5 5.5V4a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" />
-              </>
-            )}
-          </svg>
-          {copied ? "Copied" : "Copy"}
-        </button>
+        />
       }
     >
-      <dl className="grid grid-cols-[1fr_auto] gap-x-4 rounded-md border border-line bg-panel px-3 py-2">
-        {rows.map(({ label, value, sub }) => (
-          <div key={label} className="contents">
-            <dt
-              className={
-                sub === true ? "py-0.5 pl-3 text-faint" : "py-0.5 text-muted"
-              }
-            >
-              {label}
-            </dt>
-            <dd
-              className={`py-0.5 text-right font-mono tabular-nums ${
-                sub === true ? "text-faint" : "text-fg"
-              }`}
-            >
-              {value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <StartupTable rows={rows} />
     </Section>
   );
 }
