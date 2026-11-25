@@ -1,0 +1,52 @@
+name: Pages
+
+# Builds the landing page (website/, Astro) and publishes it on GitHub
+# Pages. Only when it changes, or by hand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "src/styles/tokens.css"
+      - "bun.lock"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - uses: ./.github/actions/bun
+      - name: Set up Pages
+        uses: actions/configure-pages@v6
+      - name: Build the site
+        run: bun run --filter @carbon/website build
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

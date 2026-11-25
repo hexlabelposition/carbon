@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+/* The colors of the app, so the page looks like it, in both themes. */
+@import "../../../src/styles/tokens.css";
+
+/* The tokens as Tailwind colors, as in the app (src/styles/index.css). */
+@theme inline {
+  --color-bg: var(--cb-bg);
+  --color-panel: var(--cb-panel);
+  --color-raise: var(--cb-raise);
+  --color-selected: var(--cb-selected);
+  --color-code: var(--cb-code);
+  --color-line: var(--cb-line);
+  --color-line-strong: var(--cb-line-strong);
+  --color-fg: var(--cb-fg);
+  --color-muted: var(--cb-muted);
+  --color-faint: var(--cb-faint);
+  --color-link: var(--cb-link);
+  --color-highlight: var(--cb-highlight);
+  --color-solid: var(--cb-solid);
+  --color-on-solid: var(--cb-on-solid);
+  --shadow-window: var(--cb-shadow-dialog);
+}
+
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+
+  ::selection {
+    background: var(--cb-selection);
+  }
+}

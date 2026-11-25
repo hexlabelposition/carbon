@@ -1,0 +1,29 @@
+---
+// The mark of the logo, as in the corner of the app (CarbonMark): its
+// shades come from the tokens, so they follow the theme.
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+const hexagon = "62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7";
+const cells = [
+  { x: 0, y: -117, fill: "var(--cb-logo-top)" },
+  { x: -101.3, y: -58.5, fill: "var(--cb-logo-upper)" },
+  { x: 101.3, y: -58.5, fill: "var(--cb-logo-upper)" },
+  { x: -101.3, y: 58.5, fill: "var(--cb-logo-lower)" },
+  { x: 101.3, y: 58.5, fill: "var(--cb-logo-lower)" },
+  { x: 0, y: 117, fill: "var(--cb-logo-bottom)" },
+  { x: 0, y: 0, fill: "var(--cb-logo-center)" },
+];
+---
+
+<svg class={className} viewBox="-164 -171 328 342" aria-hidden="true">
+  {cells.map(({ x, y, fill }) => (
+    <polygon
+      points={hexagon}
+      transform={`translate(${x},${y})`}
+      style={`fill: ${fill}`}
+    />
+  ))}
+</svg>

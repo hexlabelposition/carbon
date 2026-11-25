@@ -2,17 +2,20 @@ name: Build
 
 # Checks that the app compiles on Windows. Linux is compiled by the
 # end-to-end tests (e2e.yml), the packages for a version tag (release.yml).
-# Changes that cannot affect the build (documentation) skip it.
+# Changes that cannot affect the build (documentation, the landing page)
+# skip it.
 on:
   push:
     branches: [main]
     paths-ignore:
       - "**.md"
       - LICENSE
+      - "website/**"
   pull_request:
     paths-ignore:
       - "**.md"
       - LICENSE
+      - "website/**"
 
 concurrency:
   group: build-${{ github.ref }}

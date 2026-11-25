@@ -23,7 +23,13 @@ const noTauri: [string, string] = [
 ];
 
 export default defineConfig([
-  globalIgnores(["dist", "tauri/target", "tauri/gen"]),
+  globalIgnores([
+    "dist",
+    "tauri/target",
+    "tauri/gen",
+    "website/dist",
+    "website/.astro",
+  ]),
 
   js.configs.recommended,
   tseslint.configs.recommended,
@@ -56,8 +62,14 @@ export default defineConfig([
 
   // Scripts and config files run in Bun or Node.
   {
-    files: ["scripts/**", "e2e/**", "*.config.{js,ts}"],
+    files: ["scripts/**", "e2e/**", "*.config.{js,ts}", "website/*.config.ts"],
     languageOptions: { globals: globals.node },
+  },
+
+  // The scripts of the landing page (website/) run in the browser.
+  {
+    files: ["website/src/**/*.ts"],
+    languageOptions: { globals: globals.browser },
   },
 
   // Turns off rules that would fight with Prettier. Keep it last.

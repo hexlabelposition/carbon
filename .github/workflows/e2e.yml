@@ -9,10 +9,12 @@ on:
     paths-ignore:
       - "**.md"
       - LICENSE
+      - "website/**"
   pull_request:
     paths-ignore:
       - "**.md"
       - LICENSE
+      - "website/**"
 
 concurrency:
   group: e2e-${{ github.ref }}

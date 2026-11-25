@@ -11,3 +11,7 @@ tauri/Cargo.lock
 
 # Test data, kept exactly as written
 fixtures/
+
+# The landing page is formatted by its own package, with its plugin
+# (bun run --filter @carbon/website format)
+website/

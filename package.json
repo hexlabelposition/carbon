@@ -7,15 +7,16 @@
   "type": "module",
   "packageManager": "bun@1.4.2",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "website"
   ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json && vite build",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write . && bun run --filter @carbon/website format",
+    "format:check": "prettier --check . && bun run --filter @carbon/website format:check",
     "preview": "vite preview",
     "gen:vault": "bun scripts/generate-vault.ts",
     "bench": "bun packages/core/bench/bench.ts",

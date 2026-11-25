@@ -1,0 +1,22 @@
+---
+interface Props {
+  href: string;
+  primary?: boolean;
+  [attribute: string]: unknown;
+}
+
+const { href, primary = false, ...rest } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[
+    "inline-flex h-10.5 items-center justify-center rounded-lg border px-5 text-[15px] font-medium transition-colors hover:no-underline",
+    primary
+      ? "border-transparent bg-solid text-on-solid hover:opacity-90"
+      : "border-line-strong bg-bg text-fg hover:bg-raise",
+  ]}
+  {...rest}
+>
+  <slot />
+</a>

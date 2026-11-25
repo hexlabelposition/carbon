@@ -1,0 +1,187 @@
+---
+import AppWindow from "../components/AppWindow.astro";
+import Button from "../components/Button.astro";
+import Mark from "../components/Mark.astro";
+import RichText from "../components/RichText.astro";
+import Layout from "../layouts/Layout.astro";
+
+const repo = "https://github.com/hexlabelposition/carbon";
+const latest = `${repo}/releases/latest`;
+
+// `code` in a text is shown as code.
+const features = [
+  {
+    title: "Speed",
+    text: "A system WebView instead of a bundled Chromium. Heavy work stays off the UI thread, and search answers in milliseconds even in a vault of ten thousand notes.",
+  },
+  {
+    title: "Simplicity",
+    text: "Sensible defaults and fewer settings. Links, backlinks, tags, search and a graph work out of the box, with no plugin hunt.",
+  },
+  {
+    title: "Ownership",
+    text: "Your notes are ordinary `.md` files in a folder you choose. Delete Carbon and every note stays readable.",
+  },
+  {
+    title: "Links that hold",
+    text: "Write `[[a note]]` to link it. Rename a note or a tag, and Carbon rewrites every link to it.",
+  },
+  {
+    title: "Live preview",
+    text: "Markdown renders as you type: headings, tasks, tables, callouts, images and code blocks. On disk it is still plain Markdown.",
+  },
+  {
+    title: "Private by default",
+    text: "Everything works offline. No account, no telemetry. The only network call is the update check, and a setting turns it off.",
+  },
+];
+
+const platforms = [
+  {
+    os: "linux",
+    name: "Linux",
+    about: "Primary platform: developed and tested here first.",
+    files: [
+      { label: "AppImage", suffix: ".AppImage" },
+      { label: ".deb", suffix: ".deb" },
+    ],
+    hint: "Make the AppImage executable first. The .deb is for Debian and Ubuntu.",
+  },
+  {
+    os: "windows",
+    name: "Windows",
+    about: "Supported and tested before each release.",
+    files: [{ label: "Installer", suffix: "-setup.exe" }],
+    hint: "Installs for your user, no administrator rights. Not signed yet: if Windows warns you, choose “More info”, then “Run anyway”.",
+  },
+];
+
+const container = "mx-auto max-w-270 px-6";
+const sectionTitle = "text-center text-[34px] font-bold tracking-tight";
+---
+
+<Layout
+  title="Carbon — fast, local-first notes with links"
+  description="Carbon is a fast, local-first Markdown notes app with links between notes. Your notes are plain .md files in a folder you choose. Free and open source, for Linux and Windows."
+>
+  <header class="sticky top-0 z-10 bg-bg/85 backdrop-blur-md">
+    <div class:list={[container, "flex items-center justify-between py-3.5"]}>
+      <a href="#" class="flex items-center gap-2.5 text-[17px] font-semibold">
+        <Mark class="size-5.5" />
+        Carbon
+      </a>
+      <nav class="flex gap-6 text-[15px] text-muted">
+        <a class="hidden hover:text-fg sm:inline" href="#features">
+          Features
+        </a>
+        <a class="hidden hover:text-fg sm:inline" href="#download">
+          Download
+        </a>
+        <a class="hover:text-fg" href={repo}>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class={container}>
+    <section class="pt-12 pb-12 text-center sm:pt-18">
+      <Mark class="mx-auto mb-7 size-18" />
+      <h1 class="text-[clamp(36px,6vw,60px)] leading-[1.08] font-bold tracking-[-0.03em]">
+        Notes that stay yours.
+        <br />
+        And stay fast.
+      </h1>
+      <p class="mx-auto mt-6 max-w-155 text-[19px] leading-relaxed text-muted">
+        Carbon is a local-first Markdown notes app with links between notes. A
+        simpler, more human alternative to Obsidian: plain files, sensible
+        defaults, no Electron.
+      </p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <Button href="#download" primary data-primary>
+          Download
+        </Button>
+        <Button href={repo}>View on GitHub</Button>
+      </div>
+      <p class="mt-4.5 text-sm text-faint">
+        <span data-version>Free and open source</span> · Linux and Windows
+      </p>
+    </section>
+
+    <section class="pt-6 pb-16" aria-label="What a note looks like in Carbon">
+      <AppWindow />
+    </section>
+
+    <section id="features" class="scroll-mt-16 py-12">
+      <h2 class={sectionTitle}>Why Carbon</h2>
+      <div class="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map(({ title, text }) => (
+          <div class="rounded-xl border border-line bg-panel p-6">
+            <h3 class="mb-2 text-lg font-semibold">{title}</h3>
+            <p class="text-[15px] leading-relaxed text-muted">
+              <RichText text={text} />
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section id="download" class="scroll-mt-16 pt-16 pb-20 text-center">
+      <h2 class={sectionTitle}>Download</h2>
+      <p class="mx-auto mt-2 max-w-155 text-[17px] text-muted">
+        <span data-version-long>The latest release</span> from GitHub. Carbon
+        checks for updates at start and installs them when you agree.
+      </p>
+      <div class="mx-auto mt-9 mb-6 grid max-w-205 gap-4 text-left sm:grid-cols-2">
+        {platforms.map(({ os, name, about, files, hint }) => (
+          <div data-os={os} class="rounded-xl border border-line p-7">
+            <h3 class="mb-1 text-[22px] font-semibold">{name}</h3>
+            <p class="text-muted">{about}</p>
+            <div class="mt-5 mb-3.5 flex gap-2.5">
+              {files.map(({ label, suffix }, i) => (
+                <Button href={latest} primary={i === 0} data-asset={suffix}>
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <p class="text-sm text-faint">{hint}</p>
+          </div>
+        ))}
+      </div>
+      <p class="text-sm text-faint">
+        macOS, Android and iOS are under consideration ·
+        <a class="text-link hover:underline" href={`${repo}/releases`}>
+          All releases
+        </a>
+      </p>
+    </section>
+  </main>
+
+  <footer class="border-t border-line">
+    <div
+      class:list={[
+        container,
+        "flex flex-wrap justify-between gap-3 pt-7 pb-10 text-sm text-faint",
+      ]}
+    >
+      <span>Carbon is free software under the MIT license.</span>
+      <span class="text-link">
+        <a class="hover:underline" href={repo}>
+          Source
+        </a>{" "}
+        ·
+        <a class="hover:underline" href={`${repo}/releases`}>
+          Releases
+        </a>{" "}
+        ·
+        <a class="hover:underline" href={`${repo}/issues`}>
+          Issues
+        </a>
+      </span>
+    </div>
+  </footer>
+</Layout>
+
+<script>
+  import "../scripts/download.ts";
+</script>

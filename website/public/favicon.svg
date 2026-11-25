@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-164 -171 328 342">
+  <!-- The mark of the logo alone, as in the corner of the app (CarbonMark):
+       its shades for a light or a dark background, as the browser is set. -->
+  <style>
+    .top { fill: #dde0e4 } .upper { fill: #b9bec4 } .lower { fill: #8d939a }
+    .bottom { fill: #61676e } .center { fill: #2f3338 }
+    @media (prefers-color-scheme: dark) {
+      .top { fill: #f4f5f7 } .upper { fill: #d9dce0 } .lower { fill: #a9afb6 }
+      .bottom { fill: #7e858d } .center { fill: #ffffff }
+    }
+  </style>
+  <polygon class="top" transform="translate(0,-117)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="upper" transform="translate(-101.3,-58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="upper" transform="translate(101.3,-58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="lower" transform="translate(-101.3,58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="lower" transform="translate(101.3,58.5)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="bottom" transform="translate(0,117)" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+  <polygon class="center" points="62,0 31,53.7 -31,53.7 -62,0 -31,-53.7 31,-53.7"/>
+</svg>
