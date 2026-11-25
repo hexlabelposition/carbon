@@ -1,36 +1,32 @@
 import { useCallback, useEffect, useState } from "react";
-import { controlsRoomFraction } from "./layout";
+import { panelCloseFraction } from "./layout";
 
 /**
  * The sidebar width is a share of the window width, not pixels, so the
  * layout keeps its proportions on any screen (ARCHITECTURE.md, section 8).
- * At its narrowest a side panel is as wide as the buttons in the top right
- * corner, the same on any window: `SIDEBAR_MIN` asks how much that is now.
- *
- * Temporary: tying the minimum to those buttons is a stopgap, so both
- * panels share one minimum for now. It is to be worked out another way
- * later; `panelWidth` (layout.ts) changes with it.
+ * It has no narrowest width: a panel dragged near its edge closes instead
+ * (`ResizeHandle`), so a width below `panelCloseFraction` is never kept.
+ * Nor a widest: it stops short of the other panel (`noteMinFraction`).
  */
-export const SIDEBAR_MIN = controlsRoomFraction;
-export const SIDEBAR_MAX = 0.5;
 const SIDEBAR_DEFAULT = 0.22;
 /** One arrow-key press on the resize handle. */
-const SIDEBAR_STEP = 0.02;
+export const SIDEBAR_STEP = 0.02;
 
 const STORAGE_KEY = "carbon.desktop.sidebar";
 
 interface SidebarState {
-  /** Width as a share of the window width, between the two limits. */
+  /** Width as a share of the window width. */
   fraction: number;
   collapsed: boolean;
 }
 
 export interface Sidebar extends SidebarState {
-  /** Sets the width; values outside the limits are pulled back in. */
+  /** Sets the width, as a share of the window width. */
   resize(fraction: number): void;
   /** Makes the sidebar wider (positive) or narrower by whole steps. */
   nudge(steps: number): void;
   toggle(): void;
+  close(): void;
 }
 
 /** The state of the desktop sidebar, remembered between app starts. */
@@ -57,12 +53,23 @@ export function useSidebar(): Sidebar {
   const toggle = useCallback(() => {
     setState((s) => ({ ...s, collapsed: !s.collapsed }));
   }, []);
+  const close = useCallback(() => {
+    setState((s) => ({ ...s, collapsed: true }));
+  }, []);
 
-  return { ...state, resize, nudge, toggle };
+  return { ...state, resize, nudge, toggle, close };
 }
 
 function clamp(fraction: number): number {
-  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN(), fraction));
+  return Math.min(1, Math.max(0, fraction));
+}
+
+/**
+ * A width saved before, if it can be used: one narrower than a panel is
+ * kept open at, such as the width a panel was closed at, is not.
+ */
+function savedWidth(fraction: number, fallback: number): number {
+  return fraction >= panelCloseFraction() ? clamp(fraction) : fallback;
 }
 
 function load(): SidebarState {
@@ -72,7 +79,7 @@ function load(): SidebarState {
     if (typeof saved !== "object" || saved === null) return state;
     const { fraction, collapsed } = saved as Record<string, unknown>;
     if (typeof fraction === "number" && Number.isFinite(fraction)) {
-      state.fraction = clamp(fraction);
+      state.fraction = savedWidth(fraction, SIDEBAR_DEFAULT);
     }
     if (typeof collapsed === "boolean") state.collapsed = collapsed;
   } catch {
@@ -82,9 +89,9 @@ function load(): SidebarState {
 }
 
 export interface PanelWidth {
-  /** Width as a share of the window width, between the two limits. */
+  /** Width as a share of the window width. */
   fraction: number;
-  /** Sets the width; values outside the limits are pulled back in. */
+  /** Sets the width, as a share of the window width. */
   resize(fraction: number): void;
   /** Makes the panel wider (positive) or narrower by whole steps. */
   nudge(steps: number): void;
@@ -101,7 +108,7 @@ export function usePanelWidth(
   const [fraction, setFraction] = useState(() => {
     try {
       const saved = Number(localStorage.getItem(storageKey) ?? Number.NaN);
-      return Number.isFinite(saved) ? clamp(saved) : fallback;
+      return Number.isFinite(saved) ? savedWidth(saved, fallback) : fallback;
     } catch {
       return fallback;
     }

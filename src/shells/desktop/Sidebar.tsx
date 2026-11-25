@@ -2,15 +2,20 @@ import { useState, type ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
-import { panelWidth } from "./layout";
 
 interface SidebarProps {
   /** Shown, or slid shut to the left edge. */
   open: boolean;
   /** Width as a share of the window width. */
   fraction: number;
+  /** How wide it is open, as a CSS length (`panelWidth`). */
+  width: string;
+  /** The widest it can be now, beside the right panel (`ResizeHandle`). */
+  room: () => number;
   onResize: (fraction: number) => void;
   onNudge: (steps: number) => void;
+  /** Closes it: its edge dragged near the left edge of the window. */
+  onClose: () => void;
   children: ReactNode;
 }
 
@@ -22,8 +27,11 @@ interface SidebarProps {
 export function Sidebar({
   open,
   fraction,
+  width,
+  room,
   onResize,
   onNudge,
+  onClose,
   children,
 }: SidebarProps) {
   const t = useT();
@@ -31,7 +39,7 @@ export function Sidebar({
   const [resizing, setResizing] = useState(false);
 
   return (
-    <SlidePanel open={open} width={panelWidth(fraction)} animate={!resizing}>
+    <SlidePanel open={open} width={width} animate={!resizing}>
       <aside
         aria-label={t("shell.leftPanel")}
         className="relative flex h-full flex-col border-r border-line bg-panel"
@@ -42,8 +50,10 @@ export function Sidebar({
           side="left"
           label={t("shell.resizeLeftPanel")}
           fraction={fraction}
+          room={room}
           onResize={onResize}
           onNudge={onNudge}
+          onClose={onClose}
           onDragging={setResizing}
         />
       </aside>

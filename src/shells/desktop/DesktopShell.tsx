@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { BacklinksPanel } from "../../features/backlinks/BacklinksPanel";
@@ -82,7 +83,13 @@ import { SlidePanel } from "./SlidePanel";
 import { ViewTabs } from "./ViewTabs";
 import { Toolbar, type ToolbarItem } from "./Toolbar";
 import { toolbarIcons } from "./toolbar-icons";
-import { panelWidth, TOOLBAR_WIDTH, WINDOW_CONTROLS_ROOM } from "./layout";
+import {
+  noteMinFraction,
+  panelWidth,
+  TOOLBAR_WIDTH,
+  toolbarFraction,
+  WINDOW_CONTROLS_ROOM,
+} from "./layout";
 import {
   usePanelShortcuts,
   useRightPanel,
@@ -157,6 +164,38 @@ export function DesktopShell({
   const { toggle: toggleRightPanel } = rightPanel;
   // Shown or hidden here, in the settings and by its shortcut alike.
   const toolbarOpen = toolbarPreference.use();
+  // The two side panels never cover each other: each is at most as wide
+  // as the window less the toolbar, the other panel and the narrowest
+  // notes between them. As drawn (`panelWidth`), so as it is dragged.
+  const rightOpen = rightPanel.open;
+  const rightFraction = rightPanel.width.fraction;
+  const sidebarFraction = sidebar.fraction;
+  /** The sidebar as it is drawn, as a share of the window. */
+  const drawnSidebar = useCallback(
+    () =>
+      collapsed
+        ? 0
+        : Math.min(
+            sidebarFraction,
+            1 - toolbarFraction(toolbarOpen) - noteMinFraction(),
+          ),
+    [collapsed, sidebarFraction, toolbarOpen],
+  );
+  const startFraction = useCallback(
+    () => toolbarFraction(toolbarOpen) + drawnSidebar(),
+    [toolbarOpen, drawnSidebar],
+  );
+  const sidebarRoom = useCallback(() => {
+    const note = noteMinFraction();
+    // The right panel as it is drawn: made narrower by the sidebar, if
+    // that was opened wide while it was shut (`NoteArea`).
+    const right = rightOpen
+      ? Math.min(rightFraction, 1 - startFraction() - note)
+      : 0;
+    return 1 - toolbarFraction(toolbarOpen) - right - note;
+  }, [toolbarOpen, rightOpen, rightFraction, startFraction]);
+  const toolbarWidth = toolbarOpen ? TOOLBAR_WIDTH : "0px";
+  const sidebarWidth = panelWidth(sidebar.fraction, toolbarWidth);
   useFileDropGuard();
   useContextMenuGuard();
   useTabFocusGuard();
@@ -357,9 +396,10 @@ export function DesktopShell({
               <NoteArea
                 vault={vault}
                 right={rightPanel}
-                startWidth={`calc(${toolbarOpen ? TOOLBAR_WIDTH : "0px"} + ${
-                  sidebar.collapsed ? "0px" : panelWidth(sidebar.fraction)
+                startWidth={`calc(${toolbarWidth} + ${
+                  sidebar.collapsed ? "0px" : sidebarWidth
                 })`}
+                startFraction={startFraction}
                 start={
                   <>
                     <ToolbarHost
@@ -372,8 +412,11 @@ export function DesktopShell({
                     <Sidebar
                       open={!sidebar.collapsed}
                       fraction={sidebar.fraction}
+                      width={sidebarWidth}
+                      room={sidebarRoom}
                       onResize={sidebar.resize}
                       onNudge={sidebar.nudge}
+                      onClose={sidebar.close}
                     >
                       <SidebarContent
                         vault={vault}
@@ -652,6 +695,8 @@ interface NoteAreaProps {
   start: ReactNode;
   /** How wide `start` is now, as a CSS length. */
   startWidth: string;
+  /** How wide `start` is now, as a share of the window width. */
+  startFraction: () => number;
 }
 
 /**
@@ -660,7 +705,13 @@ interface NoteAreaProps {
  * backlinks, one above the other. The toolbar and the sidebar stand at the
  * left of the first pane, below its tabs.
  */
-function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
+function NoteArea({
+  vault,
+  right,
+  start,
+  startWidth,
+  startFraction,
+}: NoteAreaProps) {
   const workspace = useWorkspace();
   const t = useT();
   useWorkspaceShortcuts();
@@ -686,6 +737,17 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   );
   /** The edge of the right panel is being dragged: it does not glide. */
   const [resizingRight, setResizingRight] = useState(false);
+  /**
+   * How wide the right panel is open: as wide as it was made, but never
+   * over what stands at the left, with the narrowest notes between, such
+   * as the sidebar opened wide while it was shut, or a window made
+   * narrower.
+   */
+  const rightWidth = panelWidth(right.width.fraction, startWidth);
+  const rightRoom = useCallback(
+    () => 1 - startFraction() - noteMinFraction(),
+    [startFraction],
+  );
 
   const rightPanel = (
     <SlidePanel
@@ -693,13 +755,15 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
       side="right"
       // As the sidebar: at its narrowest its edge meets the buttons in
       // the corner above it.
-      width={panelWidth(right.width.fraction)}
+      width={rightWidth}
       animate={!resizingRight}
       keepMounted={false}
     >
       <RightPanelContent
         width={right.width}
         onResizing={setResizingRight}
+        onClose={right.close}
+        room={rightRoom}
         vault={vault}
         path={path}
         view={right.view}
@@ -770,7 +834,7 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
           onActivate={() => {}}
           onClose={closeGraph}
           leaveRoomStart
-          leaveRoom={!right.open}
+          leaveRoom
         />,
         <section
           aria-label={t("graph.title")}
@@ -789,14 +853,23 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
     : null;
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div
+      className="flex min-h-0 flex-1"
+      // What the right panel covers of the window buttons above it: the
+      // top rows of the notes leave room for the rest (WINDOW_CONTROLS_ROOM).
+      style={
+        {
+          "--cb-right-panel-cover": right.open ? rightWidth : "0px",
+        } as CSSProperties
+      }
+    >
       {panes.length === 0
         ? graph.open
           ? graphColumn
           : column(
               0,
               0,
-              <DragStrip room={!right.open} roomStart />,
+              <DragStrip room roomStart />,
               <div className="min-w-0 flex-1">
                 <Watermark label={t("shell.noNoteOpen")} />
               </div>,
@@ -873,8 +946,9 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
                   onClose={workspace.closeTab}
                   // The first bar starts at the left edge, under the mark.
                   leaveRoomStart={index === 0}
-                  // The right end of the top row holds the window buttons.
-                  leaveRoom={!right.open && index === last}
+                  // The right end of the top row holds the window buttons:
+                  // what the right panel does not cover of them.
+                  leaveRoom={index === last}
                 />
               </div>,
               body,
@@ -918,6 +992,10 @@ interface RightPanelProps {
   width: PanelWidth;
   /** Told when its edge is dragged and let go. */
   onResizing: (resizing: boolean) => void;
+  /** Closes it: its edge dragged near the right edge of the window. */
+  onClose: () => void;
+  /** The widest it can be now, beside the sidebar (`ResizeHandle`). */
+  room: () => number;
   vault: Vault;
   /** The note it is about; `null` while none is open: it is empty then. */
   path: string | null;
@@ -968,6 +1046,8 @@ function RightPanelForNote(props: RightPanelProps & { path: string }) {
 function RightPanelFrame({
   width,
   onResizing,
+  onClose,
+  room,
   view,
   onShow,
   backlinks,
@@ -982,6 +1062,8 @@ function RightPanelFrame({
     <aside
       aria-label={t("shell.rightPanel")}
       className="relative flex h-full flex-col bg-panel"
+      // Its own top row leaves the window buttons all their room.
+      style={{ "--cb-right-panel-cover": "0px" } as CSSProperties}
     >
       <ResizeHandle
         side="right"
@@ -989,6 +1071,8 @@ function RightPanelFrame({
         fraction={width.fraction}
         onResize={width.resize}
         onNudge={width.nudge}
+        onClose={onClose}
+        room={room}
         onDragging={onResizing}
       />
       {/* Runs on into the top row beside it, with no line between. */}
@@ -1007,7 +1091,9 @@ function RightPanelFrame({
                 <>
                   {t("shell.backlinks")}
                   {backlinks !== null && (
-                    <span className="text-faint">{backlinks}</span>
+                    // A space, not a gap: the name and the count are cut
+                    // short together, as one line of text.
+                    <span className="ml-1.5 text-faint">{backlinks}</span>
                   )}
                 </>
               ),

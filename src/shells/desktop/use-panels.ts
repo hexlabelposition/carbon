@@ -10,6 +10,7 @@ export interface RightPanel {
   /** How wide it is, as the sidebar: a share of the window. */
   width: PanelWidth;
   toggle(): void;
+  close(): void;
   view: RightPanelView;
   /** Shows `view` in the panel, opening it if it is shut. */
   show(view: RightPanelView): void;
@@ -35,6 +36,7 @@ export function useRightPanel(): RightPanel {
   }));
   const [open, set] = useState(() => loadFlag(OPEN_KEY));
   const toggle = useCallback(() => set((value) => !value), []);
+  const close = useCallback(() => set(false), []);
   // About 16rem, the width it had before it could be resized, on a
   // window 1280 pixels wide.
   const width = usePanelWidth("carbon.desktop.rightPanel.width", 0.2);
@@ -73,7 +75,7 @@ export function useRightPanel(): RightPanel {
     [open, view, set, show],
   );
 
-  return { open, width, toggle, view, show, toggleView };
+  return { open, width, toggle, close, view, show, toggleView };
 }
 
 function loadFlag(key: string): boolean {

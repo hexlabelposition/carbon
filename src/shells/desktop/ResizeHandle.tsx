@@ -4,8 +4,9 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
+import { panelCloseFraction } from "./layout";
 import { startLayoutMotion } from "./layout-motion";
-import { SIDEBAR_MAX, SIDEBAR_MIN } from "./use-sidebar";
+import { SIDEBAR_STEP } from "./use-sidebar";
 
 interface ResizeHandleProps {
   /** The edge of the window the panel stands at. */
@@ -14,8 +15,16 @@ interface ResizeHandleProps {
   label: string;
   /** Width of the panel as a share of the window width. */
   fraction: number;
+  /**
+   * The widest it can be now, as a share of the window: what the other
+   * panel or the toolbar leaves, with the narrowest notes beside it, so
+   * the two panels never cover each other.
+   */
+  room: () => number;
   onResize: (fraction: number) => void;
   onNudge: (steps: number) => void;
+  /** Closes the panel: dragged or nudged near the edge it stands at. */
+  onClose: () => void;
   /** Told when a drag starts and ends: the panel stops gliding meanwhile. */
   onDragging: (dragging: boolean) => void;
 }
@@ -24,13 +33,21 @@ interface ResizeHandleProps {
  * The edge of a side panel that resizes it: dragged, or with the arrow
  * keys once focused. It sits on the inner edge, inside the panel, which
  * cuts what reaches past it as it slides.
+ *
+ * The panel has no narrowest width: it follows the pointer down to the
+ * edge, and a drag that ends near the edge (`panelCloseFraction`) closes
+ * it, at the width it had when the drag started, so it opens again at a
+ * width it can be used at. An arrow key that would make it that narrow
+ * closes it too.
  */
 export function ResizeHandle({
   side,
   label,
   fraction,
+  room,
   onResize,
   onNudge,
+  onClose,
   onDragging,
 }: ResizeHandleProps) {
   const percent = (value: number) => Math.round(value * 100);
@@ -39,6 +56,8 @@ export function ResizeHandle({
   // text can be selected again.
   // The note beside the panel changes width as it follows the pointer.
   const endMotion = useRef<(() => void) | null>(null);
+  /** The width as the drag started, and the last one it set. */
+  const dragWidths = useRef<{ start: number; last: number } | null>(null);
   useEffect(
     () => () => {
       selectText(true);
@@ -58,16 +77,31 @@ export function ResizeHandle({
       side === "left"
         ? event.clientX - panel.left
         : panel.right - event.clientX;
-    onResize(x / width);
+    const next = Math.max(0, Math.min(room(), x / width));
+    if (dragWidths.current !== null) dragWidths.current.last = next;
+    onResize(next);
+  }
+
+  /** A drag ended: near the edge, the panel closes at its earlier width. */
+  function endDrag() {
+    const widths = dragWidths.current;
+    dragWidths.current = null;
+    if (widths === null || widths.last >= panelCloseFraction()) return;
+    onResize(widths.start);
+    onClose();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     // The arrow that points away from the edge makes the panel wider.
     const wider = side === "left" ? "ArrowRight" : "ArrowLeft";
     const narrower = side === "left" ? "ArrowLeft" : "ArrowRight";
-    if (event.key === wider) onNudge(1);
-    else if (event.key === narrower) onNudge(-1);
-    else return;
+    if (event.key === wider) {
+      if (fraction + SIDEBAR_STEP > room()) onResize(room());
+      else onNudge(1);
+    } else if (event.key === narrower) {
+      if (fraction - SIDEBAR_STEP < panelCloseFraction()) onClose();
+      else onNudge(-1);
+    } else return;
     event.preventDefault();
   }
 
@@ -77,8 +111,8 @@ export function ResizeHandle({
       aria-orientation="vertical"
       aria-label={label}
       aria-valuenow={percent(fraction)}
-      aria-valuemin={percent(SIDEBAR_MIN())}
-      aria-valuemax={percent(SIDEBAR_MAX)}
+      aria-valuemin={0}
+      aria-valuemax={percent(room())}
       tabIndex={0}
       // The right panel has a top row of its own, which runs on into the
       // one beside it and drags the window: the handle starts below it, as
@@ -93,6 +127,7 @@ export function ResizeHandle({
         selectText(false);
         endMotion.current?.();
         endMotion.current = startLayoutMotion();
+        dragWidths.current = { start: fraction, last: fraction };
         onDragging(true);
       }}
       onPointerMove={drag}
@@ -101,6 +136,7 @@ export function ResizeHandle({
         endMotion.current?.();
         endMotion.current = null;
         onDragging(false);
+        endDrag();
       }}
       onKeyDown={onKeyDown}
     />
