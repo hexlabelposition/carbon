@@ -9,6 +9,7 @@ import { Updates } from "./features/updates/Updates";
 import { ClipboardContext } from "./features/editor/clipboard";
 import {
   openLogFolder,
+  openWebPage,
   pickVaultFolder,
   setInterfaceZoom,
   showInFileManager,
@@ -36,7 +37,10 @@ function App() {
             <CommandsProvider>
               <InterfaceZoom apply={setInterfaceZoom} />
               <ThemeSwitch />
-              <Settings openLogFolder={openLogFolder} />
+              <Settings
+                openLogFolder={openLogFolder}
+                openWebPage={openWebPage}
+              />
               <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
               <DesktopShell
                 frame={tauriWindow}

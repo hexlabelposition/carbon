@@ -74,6 +74,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { SettingSelect, SettingSwitch } from "../ui/controls";
 import { log } from "../log/log";
+import { newIssueUrl } from "../help/report-bug";
 import { resetPreferences } from "./preference";
 import { toolbarPreference } from "./toolbar";
 import {
@@ -239,12 +240,16 @@ function SettingsIcon({
  * The settings of the app: applies the note settings and the language
  * and shows the dialog while it is open. Mount it once, inside the
  * commands provider. What opens it is `SettingsOpener`, mounted apart.
- * `openLogFolder` shows where the log file is (C-606).
+ * `openLogFolder` shows where the log file is (C-606), `openWebPage`
+ * opens the page to report a bug on: each is offered in the General group
+ * and in the command palette where the platform gives it.
  */
 export function Settings({
   openLogFolder,
+  openWebPage,
 }: {
   openLogFolder?: () => Promise<void>;
+  openWebPage?: (url: string) => Promise<void>;
 }) {
   useNoteStyle();
   useFonts();
@@ -261,6 +266,8 @@ export function Settings({
     document.documentElement.lang = language;
   }, [language]);
 
+  const help = useHelp(openLogFolder, openWebPage);
+
   useCommands(
     useMemo(
       () => [
@@ -269,8 +276,20 @@ export function Settings({
           title: t("settings.resetNoteSize"),
           run: resetNoteSize,
         },
+        ...(help.openLogs === undefined
+          ? []
+          : [{ id: "logs.open", title: t("logs.open"), run: help.openLogs }]),
+        ...(help.reportBug === undefined
+          ? []
+          : [
+              {
+                id: "help.reportBug",
+                title: t("help.reportBug"),
+                run: help.reportBug,
+              },
+            ]),
       ],
-      [t],
+      [t, help],
     ),
   );
 
@@ -307,24 +326,9 @@ export function Settings({
         {/* As wide as the longest name of a group, in any language. */}
         <nav className="flex w-max min-w-52 shrink-0 flex-col border-r border-line bg-panel p-2">
           <GroupTabs current={group} onShow={setGroup} currentRef={groupTab} />
-          <div className="mt-auto flex flex-col items-start gap-0.5 px-2.5 pb-1 text-small">
-            {openLogFolder !== undefined && (
-              <button
-                type="button"
-                className="-mx-1 rounded-sm px-1 text-left text-muted outline-none hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
-                onClick={() => {
-                  openLogFolder().catch((reason: unknown) =>
-                    log.error("Could not open the log folder", reason),
-                  );
-                }}
-              >
-                {t("logs.open")}
-              </button>
-            )}
-            <p className="text-faint">
-              {t("settings.version", { version: __CARBON_VERSION__ })}
-            </p>
-          </div>
+          <p className="mt-auto px-2.5 pb-1 text-small text-faint">
+            {t("settings.version", { version: __CARBON_VERSION__ })}
+          </p>
         </nav>
         <ScrollArea
           rootClassName="min-w-0 flex-1"
@@ -341,7 +345,7 @@ export function Settings({
                   "settings.general",
               )}
             </h2>
-            {group === "general" && <GeneralSettings />}
+            {group === "general" && <GeneralSettings help={help} />}
             {group === "appearance" && <AppearanceSettings />}
             {group === "fonts" && <FontSettings />}
             {group === "notes" && <NoteSettings />}
@@ -413,7 +417,44 @@ function GroupTabs({
   );
 }
 
-function GeneralSettings() {
+/** The ways to get help that the platform gives: each may be missing. */
+interface Help {
+  openLogs?: () => void;
+  reportBug?: () => void;
+}
+
+/**
+ * Opening the log folder and the page of a new issue, for the General
+ * group and the command palette. The same object while the platform and
+ * the version stay, so the commands are not offered again on every draw.
+ */
+function useHelp(
+  openLogFolder: (() => Promise<void>) | undefined,
+  openWebPage: ((url: string) => Promise<void>) | undefined,
+): Help {
+  return useMemo(
+    () => ({
+      openLogs:
+        openLogFolder &&
+        (() => {
+          openLogFolder().catch((reason: unknown) =>
+            log.error("Could not open the log folder", reason),
+          );
+        }),
+      reportBug:
+        openWebPage &&
+        (() => {
+          openWebPage(newIssueUrl(__CARBON_VERSION__)).catch(
+            (reason: unknown) =>
+              log.error("Could not open the page to report a bug", reason),
+          );
+        }),
+    }),
+    [openLogFolder, openWebPage],
+  );
+}
+
+function GeneralSettings({ help }: { help: Help }) {
   const t = useT();
   const language = languagePreference.use();
   const deleteTo = deleteToPreference.use();
@@ -457,6 +498,32 @@ function GeneralSettings() {
               onChange={checkAtStartPreference.set}
             />
           </Row>
+        </Rows>
+      )}
+      {(help.reportBug !== undefined || help.openLogs !== undefined) && (
+        <Rows title={t("help.title")}>
+          {help.reportBug !== undefined && (
+            <Row label={t("help.reportBug")}>
+              <button
+                type="button"
+                className={cardButton}
+                onClick={help.reportBug}
+              >
+                {t("help.reportBugButton")}
+              </button>
+            </Row>
+          )}
+          {help.openLogs !== undefined && (
+            <Row label={t("logs.row")}>
+              <button
+                type="button"
+                className={cardButton}
+                onClick={help.openLogs}
+              >
+                {t("logs.openShort")}
+              </button>
+            </Row>
+          )}
         </Rows>
       )}
       <ResetSettings />
