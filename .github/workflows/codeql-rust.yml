@@ -1,0 +1,41 @@
+name: CodeQL Rust
+
+# Code scanning of the Rust shell (tauri/): it reads all the crates Tauri
+# is built of and takes minutes, so it runs only when the shell changes,
+# and once a week. A newer push cancels the run before it.
+on:
+  push:
+    branches: [main]
+    paths: &rust
+      - "tauri/**"
+  pull_request:
+    paths: *rust
+  schedule:
+    - cron: "37 4 * * 1"
+
+concurrency:
+  group: codeql-rust-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (rust)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: rust
+          build-mode: none
+      - name: Scan
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:rust

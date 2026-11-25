@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Code scanning of the TypeScript and of the workflows. Only when they
+# change, and a newer push cancels the run before it: a few commits pushed
+# in a row are scanned once. Once a week too, as the queries get updates.
+# The Rust shell has a workflow of its own (codeql-rust.yml), as it takes
+# minutes and changes rarely.
+on:
+  push:
+    branches: [main]
+    paths: &code
+      - "src/**"
+      - "packages/**"
+      - "scripts/**"
+      - "e2e/**"
+      - "*.ts"
+      - "*.js"
+      - "package.json"
+      - "bun.lock"
+      - ".github/**"
+  pull_request:
+    paths: *code
+  schedule:
+    - cron: "17 4 * * 1"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - name: Scan
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
