@@ -8,6 +8,17 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
+ * Focus rings are hidden for now: opening a panel or a dialog puts the
+ * focus on its first button, and the ring drawn around it draws the eye.
+ * `focus-visible:` works only under `cb-focus-rings` on <html>, which is
+ * not set; the classes stay where they are. To show the rings again, put
+ * `class="cb-focus-rings"` on <html> in index.html.
+ */
+@custom-variant focus-visible (&:where(.cb-focus-rings *):focus-visible);
+/* A row whose button has the focus ring (the tags panel), as above. */
+@custom-variant has-focus-ring (&:where(.cb-focus-rings *):has(button:focus-visible));
+
+/*
  * Map the tokens to Tailwind. `inline` keeps the var() reference, so the
  * utilities switch with the theme at runtime.
  */
@@ -166,8 +177,12 @@
    * The focus ring of an element that draws none of its own: a thin line
    * in the colors of the theme, as `focus-visible:ring-1` elsewhere, not
    * the blue one of the WebView. `outline-none` on an element still wins.
+   * None while the rings are hidden (`cb-focus-rings` above).
    */
   :focus-visible {
+    outline: none;
+  }
+  .cb-focus-rings :focus-visible {
     outline: 1px solid var(--color-line-strong);
     outline-offset: -1px;
   }

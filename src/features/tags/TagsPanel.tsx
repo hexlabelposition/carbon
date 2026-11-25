@@ -159,7 +159,7 @@ function TagRow({
     >
       <div
         // The focus shows on the whole row, as the selection in the file tree.
-        className={`flex h-6 items-center gap-1 pr-3 has-[button:focus-visible]:outline-1 has-[button:focus-visible]:-outline-offset-1 has-[button:focus-visible]:outline-line-strong ${
+        className={`flex h-6 items-center gap-1 pr-3 has-focus-ring:outline-1 has-focus-ring:-outline-offset-1 has-focus-ring:outline-line-strong ${
           selected ? "bg-selected text-fg" : "text-muted hover:bg-raise"
         }`}
         style={{ paddingLeft: depth * INDENT + 6 }}
