@@ -1,6 +1,6 @@
 [package]
 name = "carbon"
-version = "0.3.0"
+version = "0.4.0"
 description = "Fast, local-first notes with links"
 authors = ["Vladyslav Kudriashov"]
 license = "MIT"
