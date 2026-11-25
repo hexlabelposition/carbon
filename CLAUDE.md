@@ -79,7 +79,7 @@ The biggest feature (about 190 KB). Open only the files the task touches:
 - Live preview: `live-preview.ts` (inline marks, headings, lists, tasks, wiki links), plus `-frontmatter` (properties block and editor), `-table`, `-image`, `-callout`, `-code` (code blocks: header with language badge and file, line numbers, highlighted and diff lines; what the fence says is parsed in `code-block.ts`, the language to highlight with is found in `code-languages.ts`).
 - Links: `wiki-link.ts` (labels), `link-completion.ts` (`[[` suggestions), `link-follow.ts` (Ctrl+click), `link-preview.ts` (hover), `missing-links.ts` (links to notes that don't exist), `use-note-links.ts`.
 - Tags: `tag-completion.ts`, `use-note-tags.ts`. Images: `use-note-images.ts` (paste, drop), `ImageViewer.tsx`.
-- Other: `find-replace.ts`, `outline.ts`, `note-stats.ts` + `NoteStatsBar.tsx`, `NoteTitleField.tsx` + `use-note-title.ts` (rename), `editor-theme.ts` (text sizes), `layout-keys.ts` (shortcuts on non-Latin layouts), `glide.ts` (smooth scroll), `frontmatter-range.ts`, `use-reading-mode.ts`, `use-source-mode.ts`, `use-wheel-text-size.ts`.
+- Other: `find-replace.ts`, `outline.ts`, `note-stats.ts` + `NoteStatsBar.tsx`, `NoteTitleField.tsx` + `use-note-title.ts` (rename), `editor-theme.ts` (text sizes), `layout-keys.ts` (shortcuts on non-Latin layouts), `glide.ts` (smooth scroll), `frontmatter-range.ts`, `use-note-mode.ts` + `NoteModeMenu.tsx` (live, source, reading), `use-wheel-text-size.ts`.
 
 ### Tauri (`tauri/`)
 

@@ -35,7 +35,7 @@ export const indentPreference = preference<Indent>(
 /**
  * The mode notes are in when the app starts: the one they were in when
  * it was closed, or always the same one. The modes are one switch for
- * every note (`useSourceMode`, `useReadingMode`), so this is when the
+ * every note (`useNoteMode`), so this is when the
  * choice applies.
  */
 export const startModePreference = preference<StartMode>(

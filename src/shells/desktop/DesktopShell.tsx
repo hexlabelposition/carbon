@@ -23,8 +23,7 @@ import { NoteEditor } from "../../features/editor/NoteEditor";
 import { CarbonMark } from "../../features/brand/CarbonLogo";
 import { ImageView } from "../../features/image/ImageView";
 import { imageTypeOf } from "../../features/image/image-file";
-import { useReadingMode } from "../../features/editor/use-reading-mode";
-import { useSourceMode } from "../../features/editor/use-source-mode";
+import { useNoteMode } from "../../features/editor/use-note-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
@@ -666,8 +665,7 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
   const t = useT();
   useWorkspaceShortcuts();
   useRandomNote(vault);
-  const sourceMode = useSourceMode();
-  const readingMode = useReadingMode();
+  const noteMode = useNoteMode();
   const outline = useOutline();
   const graph = useGraphView();
   const { path, open } = workspace;
@@ -846,10 +844,8 @@ function NoteArea({ vault, right, start, startWidth }: NoteAreaProps) {
                       vault={vault}
                       path={pane.path}
                       history={history}
-                      sourceMode={sourceMode.on}
-                      onToggleSourceMode={sourceMode.toggle}
-                      readingMode={readingMode.on}
-                      onToggleReadingMode={readingMode.toggle}
+                      mode={noteMode.mode}
+                      onModeChange={noteMode.setMode}
                       // One outline: of the note in the active pane.
                       outline={active ? outline.link : undefined}
                       active={active}
