@@ -68,6 +68,7 @@ import {
   useNoteStyle,
   wheelTextSizePreference,
   inlineTitlePreference,
+  listGuidesPreference,
 } from "./note-style";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
@@ -635,6 +636,7 @@ function NoteSettings() {
   const wheelSize = wheelTextSizePreference.use();
   const lineHeight = lineHeightPreference.use();
   const inlineTitle = inlineTitlePreference.use();
+  const listGuides = listGuidesPreference.use();
   return (
     <>
       <Rows>
@@ -643,6 +645,13 @@ function NoteSettings() {
             label={t("settings.inlineTitle")}
             checked={inlineTitle}
             onChange={inlineTitlePreference.set}
+          />
+        </Row>
+        <Row label={t("settings.listGuides")}>
+          <SettingSwitch
+            label={t("settings.listGuides")}
+            checked={listGuides}
+            onChange={listGuidesPreference.set}
           />
         </Row>
       </Rows>

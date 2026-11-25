@@ -93,6 +93,17 @@ export const inlineTitlePreference = preference<boolean>(
     stored === "true" ? true : stored === "false" ? false : undefined,
 );
 
+/**
+ * Whether nested lists show lines from an item down along the items
+ * under it (`listGuides`). On until turned off.
+ */
+export const listGuidesPreference = preference<boolean>(
+  "carbon.note.listGuides",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
 export const noteWidthPreference = preference<NoteWidth>(
   "carbon.note.width",
   "normal",

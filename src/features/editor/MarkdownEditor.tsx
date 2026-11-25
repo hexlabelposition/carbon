@@ -31,6 +31,8 @@ import { layoutIndependentKeys } from "./layout-keys";
 import { isMac, keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
+import { listGuides } from "./list-guides";
+import { listGuidesPreference } from "../settings/note-style";
 import { codeLanguage } from "./code-languages";
 import {
   imageHost,
@@ -147,6 +149,9 @@ export function MarkdownEditor({
   /** Holds the indent the settings choose. */
   const options = useRef(new Compartment());
   const indent = indentPreference.use();
+  /** Holds the lines along nested lists, while the settings show them. */
+  const guides = useRef(new Compartment());
+  const showGuides = listGuidesPreference.use();
   // The latest values, so new ones do not rebuild the editor.
   const latest = useRef({
     text,
@@ -229,6 +234,7 @@ export function MarkdownEditor({
           ),
           editing.current.of(editable(!latest.current.readOnly)),
           options.current.of(editorOptions(indentPreference.get())),
+          guides.current.of(listGuidesPreference.get() ? listGuides : []),
           imageInput,
           imageHost.of({
             load: (target) =>
@@ -387,6 +393,12 @@ export function MarkdownEditor({
       effects: options.current.reconfigure(editorOptions(indent)),
     });
   }, [indent]);
+
+  useEffect(() => {
+    editor.current?.dispatch({
+      effects: guides.current.reconfigure(showGuides ? listGuides : []),
+    });
+  }, [showGuides]);
 
   useEffect(() => {
     const view = editor.current;

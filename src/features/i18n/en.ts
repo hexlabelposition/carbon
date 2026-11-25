@@ -220,6 +220,7 @@ export const en = {
   "settings.lineHeight.compact": "Compact",
   "settings.lineHeight.normal": "Normal",
   "settings.lineHeight.relaxed": "Relaxed",
+  "settings.listGuides": "Lines along nested lists",
   "settings.notes": "Notes",
   "settings.open": "Open settings",
   "settings.pixels": "{count} px",
