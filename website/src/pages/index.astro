@@ -54,8 +54,9 @@ const platforms = [
     files: [
       { label: "AppImage", suffix: ".AppImage" },
       { label: ".deb", suffix: ".deb" },
+      { label: "Arch", suffix: ".pkg.tar.zst" },
     ],
-    hint: "Make the AppImage executable first. The .deb is for Debian and Ubuntu.",
+    hint: "Make the AppImage executable first. The .deb is for Debian and Ubuntu. The Arch package installs with `pacman -U`, and a new one updates it.",
   },
   {
     os: "windows",
@@ -247,7 +248,9 @@ const versionText = release.version
                 </Button>
               ))}
             </div>
-            <p class="text-sm text-faint">{hint}</p>
+            <p class="text-sm text-faint">
+              <RichText text={hint} />
+            </p>
           </div>
         ))}
       </div>
