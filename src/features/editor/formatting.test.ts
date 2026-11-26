@@ -114,6 +114,12 @@ describe("lists", () => {
     expect(run(toggleOrderedList, "- a|")).toBe("1. a|");
   });
 
+  test("start an item on an empty line", () => {
+    expect(run(toggleTaskList, "a\n|")).toBe("a\n- [ ] |");
+    expect(run(toggleBulletList, "|")).toBe("- |");
+    expect(run(toggleOrderedList, "  |")).toBe("  1. |");
+  });
+
   test("leave blank lines out", () => {
     expect(run(toggleBulletList, "[a\n\nb]")).toBe("- [a\n\n- b]");
   });

@@ -223,16 +223,22 @@ const LIST_PATTERNS: Record<ListKind, RegExp> = {
  * A list on the selected lines: if every one is already that kind of
  * list, its marks come off; otherwise each line becomes an item of it,
  * in place of the mark of another kind. A numbered list counts from 1.
+ * Blank lines among others are left as they are; on blank lines alone, as
+ * an empty line with the cursor, the item is started.
  */
 function toggleList(kind: ListKind): FormatCommand {
   return (state) => {
-    const lines = selectedLines(state).filter((line) => line.text.trim());
+    const selected = selectedLines(state);
+    const lines = selected.filter((line) => line.text.trim());
+    // Only blank lines, as an empty line with the cursor: each gets the
+    // mark, and the cursor goes after it, to type the item.
+    const blank = lines.length === 0;
     const all =
-      lines.length > 0 &&
+      !blank &&
       lines.every((line) => LIST_PATTERNS[kind].test(parts(line).list));
     let number = 0;
     return onLines(state, (line) => {
-      if (line.text.trim() === "") return null;
+      if (!blank && line.text.trim() === "") return null;
       const { indent, quote, list } = parts(line);
       const from = line.from + indent.length + quote.length;
       const mark =
