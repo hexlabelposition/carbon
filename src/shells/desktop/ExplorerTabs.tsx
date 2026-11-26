@@ -6,7 +6,7 @@ import { toolbarIcons } from "./toolbar-icons";
 import { EXPLORER_VIEWS, type ExplorerView } from "./use-sidebar-view";
 
 const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
-  files: { label: "shell.files", icon: toolbarIcons.files },
+  files: { label: "shell.files", icon: toolbarIcons.fileTree },
   bookmarks: { label: "shell.bookmarks", icon: toolbarIcons.bookmarks },
   drafts: { label: "shell.drafts", icon: toolbarIcons.drafts },
   trash: { label: "shell.trash", icon: toolbarIcons.trash },
@@ -15,7 +15,8 @@ const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
 /**
  * The row of tabs at the top of the file explorer: the files, the
  * bookmarks, the drafts and the trash, one shown at a time below it. Drawn
- * as the buttons of the toolbar, side by side.
+ * as the buttons of the toolbar, side by side, and as tall as the bar
+ * above a note, so their lines meet.
  */
 export function ExplorerTabs({
   current,
@@ -26,7 +27,7 @@ export function ExplorerTabs({
 }) {
   const t = useT();
   return (
-    <div className="flex h-10 shrink-0 items-center gap-0.5 border-b border-line px-1.5">
+    <div className="flex h-11 shrink-0 items-center gap-0.5 border-b border-line px-1.5">
       {EXPLORER_VIEWS.map((view) => {
         const label = t(TABS[view].label);
         const shown = view === current;
