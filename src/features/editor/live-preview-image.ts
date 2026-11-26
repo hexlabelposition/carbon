@@ -60,8 +60,8 @@ export interface ShownImage {
 }
 
 /**
- * The size of an image that is not there, as it is drawn and edited: a
- * wide box, never wider than the note.
+ * The shape of an image that is not there, as it is drawn and edited: a
+ * wide box as wide as the note (`editedImageLine` stretches it).
  */
 const MISSING_IMAGE: SeenImage = { url: "", width: 560, height: 315 };
 
@@ -273,7 +273,8 @@ export const imagePreview = [
       justifyContent: "center",
       gap: "8px",
       boxSizing: "border-box",
-      width: `min(100%, ${MISSING_IMAGE.width}px)`,
+      position: "relative",
+      width: "100%",
       aspectRatio: `${MISSING_IMAGE.width} / ${MISSING_IMAGE.height}`,
       padding: "16px 24px",
       border: "1px dashed var(--cb-line-strong)",
@@ -387,13 +388,14 @@ const imageSource = Decoration.mark({ class: "cm-image-source" });
 
 /** Draws `box` as an image that is not there, saying why. */
 function drawMissing(view: EditorView, box: HTMLElement, text: string): void {
+  // The button for the Markdown, as on a shown image; nothing to open.
   box.className = "cm-image cm-image-missing";
   box.style.cursor = "";
   const icon = document.createElement("span");
   icon.innerHTML = MISSING_ICON;
   const label = document.createElement("span");
   label.textContent = text;
-  box.replaceChildren(icon, label);
+  box.replaceChildren(icon, label, imageTools(view, box, null));
   view.requestMeasure();
 }
 
@@ -613,7 +615,8 @@ function editedImageLine(image: SeenImage, missing: boolean): Decoration {
     attributes: {
       style:
         `--cm-image: url("${url}"); ` +
-        `--cm-image-width: ${image.width}px; ` +
+        // A missing image is as wide as the note, as it is drawn.
+        `--cm-image-width: ${image === MISSING_IMAGE ? "100%" : `${image.width}px`}; ` +
         `--cm-image-ratio: ${image.width} / ${image.height}`,
     },
   });
@@ -803,12 +806,13 @@ class WebImageWidget extends WidgetType {
  * pointer is over it, as in Obsidian: one shows the image on its own,
  * where it can be zoomed, the other its Markdown to edit (not in reading
  * mode). A click on the image shows it too, and the keys reach the
- * Markdown: the buttons are a shortcut, not the only way.
+ * Markdown: the buttons are a shortcut, not the only way. Without `open`,
+ * for an image that is not there, only the Markdown one.
  */
 function imageTools(
   view: EditorView,
   box: HTMLElement,
-  open: () => void,
+  open: (() => void) | null,
 ): HTMLElement {
   const tools = document.createElement("span");
   tools.className = "cm-image-tools";
@@ -832,7 +836,7 @@ function imageTools(
     });
     tools.append(element);
   };
-  button("open", t("images.open"), ZOOM_ICON, open);
+  if (open !== null) button("open", t("images.open"), ZOOM_ICON, open);
   button("source", t("images.source"), CODE_ICON, () => {
     if (view.state.readOnly) return;
     view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
