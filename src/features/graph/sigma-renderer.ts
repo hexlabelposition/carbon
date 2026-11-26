@@ -265,12 +265,16 @@ export const sigmaRenderer: GraphRendererFactory = (
     resize() {
       sigma.resize();
       setCamera(camera);
-      // sigma draws anew only when the window resizes: a side panel made
-      // wider would show the old picture stretched over the canvases until
-      // the next frame of sigma. Drawn at once, before the frame is
-      // painted (the resize comes from a `ResizeObserver`), the titles too.
-      // A refresh of nothing only renders: `render` itself is private.
-      sigma.refresh({ partialGraph: {}, skipIndexation: true });
+      // sigma draws anew only when the window resizes, and maps the layout
+      // to pixels by the size of the view it had when it last processed the
+      // notes, not by the size it is given here. Without a full refresh a
+      // side panel made wider shows the old picture stretched, and one
+      // dragged narrower shrinks the links under titles that stay put,
+      // until something else makes sigma process the notes again. Done at
+      // once, before the frame is painted (the resize comes from a
+      // `ResizeObserver`): the graph keeps its scale, the view only shows
+      // more or less of it.
+      sigma.refresh();
     },
     destroy() {
       cancelAnimationFrame(fadeFrame);
