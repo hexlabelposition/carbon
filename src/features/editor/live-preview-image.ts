@@ -2,7 +2,9 @@ import { syntaxTree } from "@codemirror/language";
 import {
   Facet,
   StateEffect,
+  StateField,
   type ChangeDesc,
+  type EditorState,
   type Range,
 } from "@codemirror/state";
 import {
@@ -65,6 +67,28 @@ export interface ShownImage {
  */
 const MISSING_IMAGE: SeenImage = { url: "", width: 560, height: 315 };
 
+const revealImage = StateEffect.define<number>();
+
+/**
+ * Where the image starts whose Markdown the user asked to see, with its
+ * button. Only that one shows its Markdown: a cursor put beside an image
+ * by a click or the keys leaves it drawn. It is drawn again once the
+ * cursor leaves its line.
+ */
+const revealedImage = StateField.define<number | null>({
+  create: () => null,
+  update(value, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(revealImage)) return effect.value;
+    }
+    if (value === null) return null;
+    const at = tr.changes.mapPos(value);
+    const line = tr.state.doc.lineAt(at);
+    const head = tr.state.selection.main.head;
+    return head >= line.from && head <= line.to ? at : null;
+  },
+});
+
 /** The image host of an editor. Without one, images stay text. */
 export const imageHost = Facet.define<ImageHost, ImageHost | null>({
   combine: (hosts) => hosts[0] ?? null,
@@ -72,14 +96,15 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
 
 /**
  * Images in the editor: `![alt](file.png)` that points at a file of the
- * vault is shown as the image. While the cursor is in it, its Markdown is
- * shown as well.
+ * vault is shown as the image. Its Markdown shows when its button asks
+ * for it (`revealedImage`), over the image blurred in its place.
  *
  * Images from the web are loaded only when the settings say so, or once
  * the user clicks "Show" on the line that stands in for one: opening a
  * note tells nobody that it was opened (`web-images.ts`).
  */
 export const imagePreview = [
+  revealedImage,
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -399,6 +424,22 @@ function drawMissing(view: EditorView, box: HTMLElement, text: string): void {
   view.requestMeasure();
 }
 
+/** Shows the Markdown of the image drawn in `box`, to edit. */
+function revealSource(view: EditorView, box: HTMLElement): void {
+  if (view.state.readOnly) return;
+  const at = view.posAtDOM(box);
+  view.dispatch({ selection: { anchor: at }, effects: revealImage.of(at) });
+  view.focus();
+}
+
+/** Whether the image at `from` shows its Markdown (`revealedImage`). */
+function revealed(state: EditorState, from: number): boolean {
+  const at = state.field(revealedImage, false) ?? null;
+  return (
+    at !== null && state.doc.lineAt(at).from === state.doc.lineAt(from).from
+  );
+}
+
 /**
  * An image may now be shown that could not, or the other way round: a web
  * image was allowed, or the address being edited was looked up. Draw
@@ -506,7 +547,7 @@ function decorate(view: EditorView, edit: ImageEdit): DecorationSet {
         const widget = web
           ? new WebImageWidget(target, alt?.[1] ?? "", webImageAllowed(target))
           : new ImageWidget(target, alt?.[1] ?? "");
-        if (editing(node.from, node.to)) {
+        if (editing(node.from, node.to) && revealed(state, node.from)) {
           const line = state.doc.lineAt(node.from);
           const alone =
             node.to <= line.to &&
@@ -649,19 +690,15 @@ class ImageWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const box = document.createElement("span");
     box.className = "cm-image";
-    // A click on the image shows it on its own. A click on a missing
-    // image selects its place, which shows its Markdown; so does a click
-    // beside any image.
+    // A click on the image shows it on its own; on a missing one it does
+    // nothing, its button shows the Markdown.
     box.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
       const image = box.querySelector("img");
       if (image !== null && view.state.facet(imageHost) !== null) {
         this.show(view, image);
-        return;
       }
-      view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
-      view.focus();
     });
 
     const missing = () =>
@@ -750,10 +787,9 @@ class WebImageWidget extends WidgetType {
           allowWebImage(address);
           return;
         }
-        // Beside "Show": the Markdown of the image, as for a missing one.
-        if (view.state.readOnly) return;
-        view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
-        view.focus();
+        // Beside "Show": the Markdown of the image. The line has no
+        // buttons, so the line itself is the one.
+        revealSource(view, box);
       });
       return box;
     }
@@ -785,13 +821,7 @@ class WebImageWidget extends WidgetType {
     box.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
-      if (box.contains(image)) {
-        open();
-        return;
-      }
-      if (view.state.readOnly) return;
-      view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
-      view.focus();
+      if (box.contains(image)) open();
     });
     return box;
   }
@@ -805,9 +835,10 @@ class WebImageWidget extends WidgetType {
  * The buttons over a shown image, in its top right corner while the
  * pointer is over it, as in Obsidian: one shows the image on its own,
  * where it can be zoomed, the other its Markdown to edit (not in reading
- * mode). A click on the image shows it too, and the keys reach the
- * Markdown: the buttons are a shortcut, not the only way. Without `open`,
- * for an image that is not there, only the Markdown one.
+ * mode). A click on the image shows it too. The Markdown shows only by
+ * the button (`revealedImage`): a click beside the image or the arrow
+ * keys put the cursor by it and leave it drawn. Without `open`, for an
+ * image that is not there, only the Markdown one.
  */
 function imageTools(
   view: EditorView,
@@ -837,11 +868,9 @@ function imageTools(
     tools.append(element);
   };
   if (open !== null) button("open", t("images.open"), ZOOM_ICON, open);
-  button("source", t("images.source"), CODE_ICON, () => {
-    if (view.state.readOnly) return;
-    view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
-    view.focus();
-  });
+  button("source", t("images.source"), CODE_ICON, () =>
+    revealSource(view, box),
+  );
   return tools;
 }
 
