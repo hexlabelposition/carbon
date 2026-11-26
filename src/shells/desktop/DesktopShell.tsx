@@ -1103,21 +1103,22 @@ function RightPanelFrame({
         <ViewTabs
           label={t("shell.rightPanelViews")}
           views={[
-            { view: "outline", label: t("shell.outline") },
+            {
+              view: "outline",
+              label: t("shell.outline"),
+              icon: toolbarIcons.outline,
+            },
             {
               view: "backlinks",
-              label: (
-                <>
-                  {t("shell.backlinks")}
-                  {backlinks !== null && (
-                    // A space, not a gap: the name and the count are cut
-                    // short together, as one line of text.
-                    <span className="ml-1.5 text-faint">{backlinks}</span>
-                  )}
-                </>
-              ),
+              label: t("shell.backlinks"),
+              icon: toolbarIcons.backlinks,
+              count: backlinks,
             },
-            { view: "graph", label: t("shell.graph") },
+            {
+              view: "graph",
+              label: t("shell.graph"),
+              icon: toolbarIcons.graph,
+            },
           ]}
           current={view}
           onShow={onShow}

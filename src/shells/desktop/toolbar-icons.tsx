@@ -78,6 +78,22 @@ export const toolbarIcons = {
       <circle cx="10.25" cy="11.5" r="1.75" />
     </>
   ),
+  // The headings of a note as a list: a dot before each, the two under
+  // the first set in.
+  outline: (
+    <>
+      <path d="M5 4h8.5M8 8h5.5M8 12h5.5" />
+      <g fill="currentColor" stroke="none">
+        <circle cx="2.75" cy="4" r="1" />
+        <circle cx="5.75" cy="8" r="1" />
+        <circle cx="5.75" cy="12" r="1" />
+      </g>
+    </>
+  ),
+  // An arrow coming into a note from outside it: the notes that link here.
+  backlinks: (
+    <path d="M7.5 2.5h4.5a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H7.5M2 8h7.5M7 5.5 9.5 8 7 10.5" />
+  ),
   // A safe: its door, the dial on it and its feet.
   vault: (
     <>
