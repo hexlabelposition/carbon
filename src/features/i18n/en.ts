@@ -127,6 +127,7 @@ export const en = {
   "format.bar": "Formatting bar",
   "format.bold": "Bold",
   "format.bulletList": "Bulleted list",
+  "format.clear": "Clear formatting",
   "format.code": "Inline code",
   "format.codeBlock": "Code block",
   "format.heading": "Heading",

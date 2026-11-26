@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from "react";
 import { useT, type MessageKey } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import {
+  clearFormatting,
   cycleHeading,
   insertLink,
   toggleBold,
@@ -24,7 +25,7 @@ interface FormatButton {
   icon: ReactNode;
 }
 
-/** The buttons, in groups: inline marks, then blocks. */
+/** The buttons, in groups: inline marks, blocks, and clearing them. */
 const GROUPS: FormatButton[][] = [
   [
     {
@@ -104,6 +105,16 @@ const GROUPS: FormatButton[][] = [
       command: toggleCodeBlock,
       icon: (
         <path d="M2.75 2.75h10.5v10.5H2.75zM6.75 6.25 5 8l1.75 1.75M9.25 6.25 11 8l-1.75 1.75" />
+      ),
+    },
+  ],
+  [
+    {
+      label: "format.clear",
+      command: clearFormatting,
+      // A T with a stroke through it.
+      icon: (
+        <path d="M3 4.25V2.75h9.5v1.5M7.75 2.75 6.5 8.25M5 13.25h3.5M6 13.25l.6-2.6M10 10l4 4M14 10l-4 4" />
       ),
     },
   ],

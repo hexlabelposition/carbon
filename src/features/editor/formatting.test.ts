@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import {
+  clearFormatting,
   cycleHeading,
   insertLink,
   toggleBold,
@@ -47,6 +48,17 @@ function run(command: FormatCommand, doc: string): string {
   return from === to
     ? out.slice(0, from) + "|" + out.slice(from)
     : out.slice(0, from) + "[" + out.slice(from, to) + "]" + out.slice(to);
+}
+
+/** Runs `command` on all of `doc` selected, and gives the text after it. */
+function all(command: FormatCommand, doc: string): string {
+  const state = EditorState.create({
+    doc,
+    selection: EditorSelection.single(0, doc.length),
+    extensions: [markdown({ base: markdownLanguage })],
+  });
+  const spec = command(state);
+  return spec === null ? "null" : state.update(spec).state.doc.toString();
 }
 
 describe("inline marks", () => {
@@ -134,4 +146,25 @@ test("does nothing in a note that cannot be edited", () => {
     extensions: [EditorState.readOnly.of(true)],
   });
   expect(toggleBold(state)).toBeNull();
+});
+
+describe("clearFormatting", () => {
+  test("takes inline marks off the selection", () => {
+    expect(run(clearFormatting, "[a **b** *c* ~~d~~ `e`]")).toBe("[a b c d e]");
+  });
+
+  test("takes the marks around the cursor off", () => {
+    expect(run(clearFormatting, "x **bo|ld** y")).toBe("x bo|ld y");
+  });
+
+  test("takes headings, list marks and quotes off the lines", () => {
+    expect(all(clearFormatting, "## Title\n- item\n- [ ] task\n> quote")).toBe(
+      "Title\nitem\ntask\nquote",
+    );
+    expect(run(clearFormatting, "  1. **a|**")).toBe("  a|");
+  });
+
+  test("keeps links", () => {
+    expect(all(clearFormatting, "see [x](y) **z**")).toBe("see [x](y) z");
+  });
 });

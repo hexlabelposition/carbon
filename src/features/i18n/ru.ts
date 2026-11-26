@@ -118,6 +118,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "format.bar": "Панель форматирования",
   "format.bold": "Жирный",
   "format.bulletList": "Маркированный список",
+  "format.clear": "Очистить форматирование",
   "format.code": "Код в строке",
   "format.codeBlock": "Блок кода",
   "format.heading": "Заголовок",

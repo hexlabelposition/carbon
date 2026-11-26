@@ -306,3 +306,68 @@ export const toggleCodeBlock: FormatCommand = (state) => {
     userEvent: "input.format",
   };
 };
+
+/** The inline marks "Clear formatting" takes off. */
+const CLEARED = new Set([
+  "StrongEmphasis",
+  "Emphasis",
+  "Strikethrough",
+  "InlineCode",
+]);
+
+/**
+ * Takes the formatting off: bold, italic, strikethrough and inline code
+ * in the selection (at the cursor, the ones around it), and headings,
+ * list marks and quotes on its lines, keeping their indent. Links and code
+ * blocks stay: they are content, not looks.
+ */
+export const clearFormatting: FormatCommand = (state) => {
+  if (state.readOnly) return null;
+  const changes: ChangeSpec[] = [];
+  const seen = new Set<number>();
+  const remove = (from: number, to: number) => {
+    if (from >= to || seen.has(from)) return;
+    seen.add(from);
+    changes.push({ from, to });
+  };
+  const clear = (node: SyntaxNode) => {
+    for (let child = node.firstChild; child; child = child.nextSibling) {
+      if (/Mark$/.test(child.name)) remove(child.from, child.to);
+    }
+  };
+  const tree = syntaxTree(state);
+  for (const range of state.selection.ranges) {
+    if (range.empty) {
+      for (const side of [1, -1] as const) {
+        for (
+          let node: SyntaxNode | null = tree.resolveInner(range.from, side);
+          node !== null;
+          node = node.parent
+        ) {
+          if (CLEARED.has(node.name)) clear(node);
+        }
+      }
+    } else {
+      tree.iterate({
+        from: range.from,
+        to: range.to,
+        enter: ({ name, node }) => {
+          if (CLEARED.has(name)) clear(node);
+        },
+      });
+    }
+  }
+  for (const line of selectedLines(state)) {
+    const { indent, quote, list, heading } = parts(line);
+    const from = line.from + indent.length;
+    remove(from, from + quote.length + list.length + heading.length);
+  }
+  if (changes.length === 0) return null;
+  const set = state.changes(changes);
+  return {
+    changes: set,
+    selection: state.selection.map(set, 1),
+    scrollIntoView: true,
+    userEvent: "input.format",
+  };
+};
