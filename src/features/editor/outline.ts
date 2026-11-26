@@ -1,4 +1,4 @@
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { Facet, type EditorState } from "@codemirror/state";
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
@@ -129,7 +129,7 @@ const NO_HEADINGS = new Set([
 
 const HEADING = /^(?:ATX|Setext)Heading([1-6])$/;
 
-/** The headings in the parsed part of the note, as the outline shows them. */
+/** The headings of the note, as the outline shows them. */
 export function headingsOf(state: EditorState): Heading[] {
   return headingsIn(state).map(withoutPlace);
 }
@@ -151,10 +151,21 @@ export function outlineOf(state: EditorState): {
   return { headings: found.map(withoutPlace), current };
 }
 
-/** The headings in the parsed part of the note, in order. */
+/**
+ * How long the outline may wait for the note to be parsed to its end, in
+ * milliseconds. Left to itself the editor parses what is in sight first,
+ * the rest in the background over a second or two, and the outline of a
+ * long note would show its first headings, then the rest bit by bit.
+ */
+const PARSE_BUDGET = 100;
+
+/** The headings of the note, in order: of its parsed part, past the budget. */
 function headingsIn(state: EditorState): Found[] {
   const found: Found[] = [];
-  syntaxTree(state).iterate({
+  const tree =
+    ensureSyntaxTree(state, state.doc.length, PARSE_BUDGET) ??
+    syntaxTree(state);
+  tree.iterate({
     enter({ name, node }) {
       const level = HEADING.exec(name)?.[1];
       if (level !== undefined) {
