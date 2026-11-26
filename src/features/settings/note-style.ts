@@ -135,6 +135,18 @@ export const webImagesPreference = preference<boolean>(
     stored === "true" ? true : stored === "false" ? false : undefined,
 );
 
+/**
+ * Whether the formatting bar floats at the bottom of the note, with
+ * buttons for bold, lists and the like (`FormatBar`). Off until the
+ * button above the note turns it on.
+ */
+export const formatBarPreference = preference<boolean>(
+  "carbon.editor.formatBar",
+  false,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
 export const noteWidthPreference = preference<NoteWidth>(
   "carbon.note.width",
   "normal",

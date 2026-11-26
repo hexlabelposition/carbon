@@ -19,7 +19,12 @@ import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
 import type { NoteStats } from "./note-stats";
 import { focusOnOpenPreference } from "../settings/editor-options";
-import { inlineTitlePreference } from "../settings/note-style";
+import {
+  formatBarPreference,
+  inlineTitlePreference,
+} from "../settings/note-style";
+import type { EditorView } from "@codemirror/view";
+import { FormatBar, FormatBarIcon } from "./FormatBar";
 import { NoteModeMenu } from "./NoteModeMenu";
 import type { NoteMode } from "./use-note-mode";
 
@@ -70,6 +75,9 @@ export function NoteEditor({
    */
   const [focusAtOpen] = useState(() => active && focusOnOpenPreference.get());
   const inlineTitle = inlineTitlePreference.use();
+  const formatBar = formatBarPreference.use();
+  /** The CodeMirror view, for the formatting bar. */
+  const editorView = useRef<EditorView | null>(null);
   const scroll = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
   const ready = note.status === "ready";
@@ -106,6 +114,22 @@ export function NoteEditor({
       <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
         {history}
         <NoteNameField path={path} title={title} readOnly={readingMode} />
+        {/* Nothing is formatted while reading: the bar waits for editing. */}
+        <Tooltip label={t("format.bar")}>
+          <button
+            type="button"
+            aria-label={t("format.bar")}
+            aria-pressed={formatBar}
+            disabled={readingMode}
+            className={
+              "flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40 " +
+              (formatBar && !readingMode ? "text-fg" : "text-muted")
+            }
+            onClick={() => formatBarPreference.set(!formatBar)}
+          >
+            <FormatBarIcon className="size-5" />
+          </button>
+        </Tooltip>
         <NoteModeMenu mode={mode} onChange={onModeChange} />
       </header>
       {images.error !== null && (
@@ -126,48 +150,57 @@ export function NoteEditor({
           passes and sets `scrollTop` again to keep its place, and each of
           those would start a CSS glide anew, so the scroll stopped short.
           The outline glides by itself instead (`glideTo`). */}
-      <ScrollArea
-        ref={scroll}
-        rootClassName="flex-1"
-        // The name and the editor fill the height: a click below the text
-        // still puts the cursor in it. Grown by the text, never held to
-        // the height of the view: the scrollbar watches its size, and
-        // would not see the text grow with a larger text size.
-        contentClassName="flex shrink-0 grow flex-col"
-        // To read, the scroll takes the focus on a click, so Page Up and
-        // Page Down, the arrows and Space scroll it: the text cannot. The
-        // editor keeps a click from focusing it, so it is focused here.
-        // To edit, it can be focused too, by a note that opens; a click
-        // on the text still puts the cursor in the editor.
-        tabIndex={-1}
-        onMouseDown={(event) => {
-          if (readingMode) event.currentTarget.focus({ preventScroll: true });
-        }}
-        className="flex flex-1 flex-col"
-      >
-        {inlineTitle ? (
-          <NoteTitleField title={title} readOnly={readingMode} />
-        ) : (
-          // Without the title, the text keeps some room below the bar.
-          <div aria-hidden="true" className="h-8 shrink-0" />
+      {/* The formatting bar floats over the bottom of the text. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <ScrollArea
+          ref={scroll}
+          rootClassName="flex-1"
+          // The name and the editor fill the height: a click below the text
+          // still puts the cursor in it. Grown by the text, never held to
+          // the height of the view: the scrollbar watches its size, and
+          // would not see the text grow with a larger text size.
+          contentClassName="flex shrink-0 grow flex-col"
+          // To read, the scroll takes the focus on a click, so Page Up and
+          // Page Down, the arrows and Space scroll it: the text cannot. The
+          // editor keeps a click from focusing it, so it is focused here.
+          // To edit, it can be focused too, by a note that opens; a click
+          // on the text still puts the cursor in the editor.
+          tabIndex={-1}
+          onMouseDown={(event) => {
+            if (readingMode) event.currentTarget.focus({ preventScroll: true });
+          }}
+          className="flex flex-1 flex-col"
+        >
+          {inlineTitle ? (
+            <NoteTitleField title={title} readOnly={readingMode} />
+          ) : (
+            // Without the title, the text keeps some room below the bar.
+            <div aria-hidden="true" className="h-8 shrink-0" />
+          )}
+          <MarkdownEditor
+            text={note.text}
+            revision={note.revision}
+            label={path}
+            onChange={actions.edited}
+            onSave={actions.saveNow}
+            images={images.host}
+            sourceMode={mode === "source"}
+            readOnly={readingMode}
+            outline={outline}
+            active={active}
+            links={links.host}
+            tags={tags}
+            reveal={reveal?.path === path ? reveal : null}
+            onStats={setStats}
+            onView={(view) => {
+              editorView.current = view;
+            }}
+          />
+        </ScrollArea>
+        {formatBar && !readingMode && (
+          <FormatBar view={() => editorView.current} />
         )}
-        <MarkdownEditor
-          text={note.text}
-          revision={note.revision}
-          label={path}
-          onChange={actions.edited}
-          onSave={actions.saveNow}
-          images={images.host}
-          sourceMode={mode === "source"}
-          readOnly={readingMode}
-          outline={outline}
-          active={active}
-          links={links.host}
-          tags={tags}
-          reveal={reveal?.path === path ? reveal : null}
-          onStats={setStats}
-        />
-      </ScrollArea>
+      </div>
       <NoteStatsBar
         stats={stats}
         status={

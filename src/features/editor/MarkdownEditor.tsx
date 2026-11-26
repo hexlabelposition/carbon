@@ -109,6 +109,8 @@ interface MarkdownEditorProps {
    * in note", in the command palette.
    */
   active?: boolean;
+  /** Told of the CodeMirror view once it is made, and `null` as it goes. */
+  onView?: (view: EditorView | null) => void;
 }
 
 /** How long typing must stop before the whole note is counted again. */
@@ -141,6 +143,7 @@ export function MarkdownEditor({
   reveal = null,
   active = false,
   onStats,
+  onView,
 }: MarkdownEditorProps) {
   const t = useT();
   const host = useRef<HTMLDivElement>(null);
@@ -193,6 +196,12 @@ export function MarkdownEditor({
     tags,
     onStats,
   ]);
+
+  // The latest `onView`, so a new one does not rebuild the editor.
+  const latestView = useRef(onView);
+  useEffect(() => {
+    latestView.current = onView;
+  }, [onView]);
 
   // Before the first paint, so a note never shows as an empty area first.
   useLayoutEffect(() => {
@@ -333,9 +342,11 @@ export function MarkdownEditor({
     });
     editor.current = view;
     report(view.state);
+    latestView.current?.(view);
     return () => {
       clearTimeout(counting);
       editor.current = null;
+      latestView.current?.(null);
       view.destroy();
     };
   }, [label]);
