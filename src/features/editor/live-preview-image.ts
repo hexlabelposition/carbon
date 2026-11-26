@@ -289,7 +289,11 @@ export const imagePreview = [
       display: "block",
       maxWidth: "100%",
       borderRadius: "6px",
+      transition: "opacity 200ms ease-out",
     },
+    // Loading at a size known from before (`LOADING`): the image comes in
+    // once it is loaded, over the place that shimmers meanwhile.
+    ".cm-image.cm-image-loading img": { opacity: "0" },
     // An image being edited: its line keeps its size, the image blurred
     // behind the Markdown.
     ".cm-line.cm-image-edited": {
@@ -919,6 +923,12 @@ function keepSize(image: HTMLImageElement, size: ImageSize): void {
 }
 
 /**
+ * The class of an image box loading at a size known from before: its
+ * place shimmers (`index.css`) and the image fades in once loaded.
+ */
+const LOADING = "cm-image-loading";
+
+/**
  * Holds the place of an image whose address the host has not given yet,
  * at the size it was drawn at before: until `freeBox`.
  */
@@ -1021,7 +1031,7 @@ class ImageWidget extends WidgetType {
       const drawn = document.createElement("img");
       image = drawn;
       // Drawn as missing before, and found now: the box is an image again.
-      box.className = "cm-image";
+      box.classList.remove("cm-image-missing");
       box.replaceChildren();
       freeBox(box);
       const size = imageSizes(view)?.get(this.target);
@@ -1032,6 +1042,7 @@ class ImageWidget extends WidgetType {
       // measure its lines again then.
       drawn.addEventListener("load", () => {
         rememberImage(view, this.target, drawn);
+        box.classList.remove(LOADING);
         view.requestMeasure();
       });
       drawn.addEventListener("error", missing);
@@ -1044,10 +1055,12 @@ class ImageWidget extends WidgetType {
     // An image shown before is drawn at once, at its size: the host
     // answers a moment later, and the line would shrink to a line of
     // text meanwhile, as when the cursor leaves an image it showed the
-    // Markdown of, then grow back.
-    // Seen in an editor before, only its size is known: its place is held.
+    // Markdown of, then grow back. Shown in an earlier editor, only its
+    // size is known: its place is held. Either way it shimmers until
+    // the image is loaded.
     const known = seenImage(view, this.target);
     const size = imageSizes(view)?.get(this.target);
+    if (size) box.classList.add(LOADING);
     if (known !== undefined) draw(known.url);
     else if (size === null) drawAsMissing();
     else if (size !== undefined) holdBox(box, size);
@@ -1155,6 +1168,7 @@ class WebImageWidget extends WidgetType {
       );
     image.addEventListener("load", () => {
       rememberImage(view, this.target, image);
+      box.classList.remove(LOADING);
       // Drawn as missing before, and loaded now: the image takes its box.
       if (!box.contains(image)) drawImage();
       view.requestMeasure();
@@ -1167,7 +1181,10 @@ class WebImageWidget extends WidgetType {
     // Its size known from before, the line does not shrink while it loads;
     // found missing before, it shows that at once.
     const size = imageSizes(view)?.get(this.target);
-    if (size) keepSize(image, size);
+    if (size) {
+      keepSize(image, size);
+      box.classList.add(LOADING);
+    }
     if (size === null) {
       drawAsMissing();
     } else {

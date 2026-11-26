@@ -228,6 +228,47 @@
 }
 
 /*
+ * An image of a note loading at a size known from before
+ * (`live-preview-image.ts`): its place shimmers softly until the image
+ * fades in. The shimmer comes in only after a moment, so an image that
+ * loads at once does not flash it.
+ */
+@keyframes cb-image-wait {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cb-image-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.cm-editor .cm-image.cm-image-loading {
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+      100deg,
+      var(--cb-code) 35%,
+      var(--cb-line) 50%,
+      var(--cb-code) 65%
+    )
+    0 0 / 200% 100%;
+  animation:
+    cb-image-wait 200ms ease-out 150ms both,
+    cb-image-shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-editor .cm-image.cm-image-loading {
+    animation: cb-image-wait 200ms ease-out 150ms both;
+  }
+}
+
+/*
  * The save mark of a note (NoteEditor): the dot of unsaved edits comes
  * in with a small pop, then breathes until they are saved, a second or
  * so; the tick of a saved note is drawn in a stroke from left to right.
