@@ -779,6 +779,25 @@ function seenImage(view: EditorView, target: string): SeenImage | undefined {
   return seenImages(view)?.get(target);
 }
 
+/**
+ * The addresses each editor found no image at, by their address in the
+ * note: drawn again, they show that at once (`drawMissing`), as the host
+ * takes a moment to tell. Until then the line would shrink to a line of
+ * text, then grow back to the box of a missing image.
+ */
+const missingImages = new WeakMap<ImageHost, Set<string>>();
+
+function missingTargets(view: EditorView): Set<string> | null {
+  const host = view.state.facet(imageHost);
+  if (host === null) return null;
+  let targets = missingImages.get(host);
+  if (targets === undefined) {
+    targets = new Set();
+    missingImages.set(host, targets);
+  }
+  return targets;
+}
+
 /** Remembers a loaded image, for the line that stands in for it. */
 function rememberImage(
   view: EditorView,
@@ -786,6 +805,7 @@ function rememberImage(
   image: HTMLImageElement,
 ) {
   if (image.naturalWidth === 0 || image.naturalHeight === 0) return;
+  missingTargets(view)?.delete(target);
   seenImages(view)?.set(target, {
     url: image.src,
     width: image.naturalWidth,
@@ -863,7 +883,7 @@ class ImageWidget extends WidgetType {
       }
     });
 
-    const missing = () =>
+    const drawAsMissing = () =>
       drawMissing(
         view,
         box,
@@ -871,6 +891,10 @@ class ImageWidget extends WidgetType {
           ? t("images.noAddress")
           : t("images.notFound", { name: this.alt || this.target }),
       );
+    const missing = () => {
+      missingTargets(view)?.add(this.target);
+      drawAsMissing();
+    };
     if (this.target === "") {
       missing();
       return box;
@@ -890,6 +914,9 @@ class ImageWidget extends WidgetType {
       }
       const drawn = document.createElement("img");
       image = drawn;
+      // Drawn as missing before, and found now: the box is an image again.
+      box.className = "cm-image";
+      box.replaceChildren();
       drawn.alt = this.alt;
       drawn.draggable = false;
       // The image has a height only once it is loaded; the editor must
@@ -913,6 +940,8 @@ class ImageWidget extends WidgetType {
     if (known !== undefined) {
       draw(known.url);
       if (image !== null) keepSize(image, known);
+    } else if (missingTargets(view)?.has(this.target) === true) {
+      drawAsMissing();
     }
     host.load(this.target).then((url) => {
       if (url === null) missing();
@@ -984,26 +1013,44 @@ class WebImageWidget extends WidgetType {
     image.draggable = false;
     // The site is not told which page asked for the image.
     image.referrerPolicy = "no-referrer";
-    image.addEventListener("load", () => {
-      rememberImage(view, this.target, image);
-      view.requestMeasure();
-    });
-    image.addEventListener("error", () =>
-      drawMissing(
-        view,
-        box,
-        t("images.notFound", { name: this.alt || imageName(this.target) }),
-      ),
-    );
-    image.src = address;
-    // Its size known from before, the line does not shrink while it loads.
-    const known = seenImage(view, this.target);
-    if (known !== undefined) keepSize(image, known);
     const open = () =>
       view.state
         .facet(imageHost)
         ?.open({ url: address, target: this.target, alt: this.alt });
-    box.append(image, imageTools(view, box, open));
+    const drawImage = () => {
+      box.className = "cm-image";
+      box.style.cursor = "pointer";
+      box.replaceChildren(image, imageTools(view, box, open));
+    };
+    const drawAsMissing = () =>
+      drawMissing(
+        view,
+        box,
+        t("images.notFound", { name: this.alt || imageName(this.target) }),
+      );
+    image.addEventListener("load", () => {
+      rememberImage(view, this.target, image);
+      // Drawn as missing before, and loaded now: the image takes its box.
+      if (!box.contains(image)) drawImage();
+      view.requestMeasure();
+    });
+    image.addEventListener("error", () => {
+      missingTargets(view)?.add(this.target);
+      drawAsMissing();
+    });
+    image.src = address;
+    // Its size known from before, the line does not shrink while it loads;
+    // found missing before, it shows that at once.
+    const known = seenImage(view, this.target);
+    if (known !== undefined) keepSize(image, known);
+    if (
+      known === undefined &&
+      missingTargets(view)?.has(this.target) === true
+    ) {
+      drawAsMissing();
+    } else {
+      box.append(image, imageTools(view, box, open));
+    }
     box.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
