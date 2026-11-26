@@ -142,12 +142,12 @@ export function StartScreen() {
                 <button
                   type="button"
                   className="mr-1 shrink-0 rounded-sm px-1.5 py-0.5 text-small text-muted hover:bg-selected hover:text-fg"
-                  aria-label={t("start.removeRecentLabel", {
+                  aria-label={t("vault.forgetRecentLabel", {
                     name: nameOf(path),
                   })}
                   onClick={() => start.forgetRecent(path)}
                 >
-                  {t("start.removeRecent")}
+                  {t("vault.forgetRecent")}
                 </button>
               </li>
             ))}

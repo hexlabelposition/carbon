@@ -338,12 +338,12 @@ export const ru: Record<keyof typeof en, Message> = {
   "start.chooseAndCreate": "Выбрать место и создать",
   "start.couldNotOpen": "Не удалось открыть {root}: {reason}",
   "start.couldNotOpenHint":
-    "Если папку переместили или удалили, уберите её из списка ниже. Если она на месте, откройте её снова через «Открыть хранилище».",
+    "Если папку переместили или удалили, забудьте её в списке ниже. Если она на месте, откройте её снова через «Открыть хранилище».",
   "start.createVault": "Создать хранилище",
   "start.intro":
     "Хранилище — это папка с заметками в Markdown. Откройте его, чтобы начать.",
   "start.missing": "Хранилища «{name}» больше нет на месте",
-  "start.missingForget": "Убрать из списка",
+  "start.missingForget": "Забыть это хранилище",
   "start.missingHint":
     "Его папку переместили или удалили. Если переместили, откройте её на новом месте через «Открыть хранилище».",
   "start.newVaultHint":
@@ -351,8 +351,6 @@ export const ru: Record<keyof typeof en, Message> = {
   "start.newVaultName": "Название нового хранилища",
   "start.openVault": "Открыть хранилище",
   "start.recentVaults": "Недавние хранилища",
-  "start.removeRecent": "Убрать",
-  "start.removeRecentLabel": "Убрать {name} из недавних хранилищ",
   "startup.command": "Показать, как запускалось хранилище",
   "startup.copied": "Скопировано",
   "startup.copy": "Копировать",
@@ -507,6 +505,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "updates.title": "Обновления",
   "updates.update": "Обновить",
   "updates.upToDate": "У вас последняя версия, Carbon {version}.",
+  "vault.forgetRecent": "Забыть",
+  "vault.forgetRecentLabel": "Забыть {name}: убрать из недавних хранилищ",
   "vault.pickCreate": "Выберите, где создать «{name}»",
   "vault.pickOpen": "Откройте папку хранилища",
   "window.close": "Закрыть",

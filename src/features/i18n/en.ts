@@ -336,11 +336,11 @@ export const en = {
   "start.chooseAndCreate": "Choose location and create",
   "start.couldNotOpen": "Could not open {root}: {reason}",
   "start.couldNotOpenHint":
-    "If the folder was moved or deleted, remove it from the list below. If it is still there, open it again with “Open vault”.",
+    "If the folder was moved or deleted, forget it in the list below. If it is still there, open it again with “Open vault”.",
   "start.createVault": "Create vault",
   "start.intro": "A vault is a folder of Markdown notes. Open one to start.",
   "start.missing": "The vault “{name}” is not there any more",
-  "start.missingForget": "Remove from the list",
+  "start.missingForget": "Forget this vault",
   "start.missingHint":
     "Its folder was moved or deleted. If it was moved, open it from its new place with “Open vault”.",
   "start.newVaultHint":
@@ -348,8 +348,6 @@ export const en = {
   "start.newVaultName": "Name of the new vault",
   "start.openVault": "Open vault",
   "start.recentVaults": "Recent vaults",
-  "start.removeRecent": "Remove",
-  "start.removeRecentLabel": "Remove {name} from the recent vaults",
   "startup.command": "Show how the vault started",
   "startup.copied": "Copied",
   "startup.copy": "Copy",
@@ -480,6 +478,8 @@ export const en = {
   "updates.title": "Updates",
   "updates.update": "Update",
   "updates.upToDate": "Carbon {version} is the latest version.",
+  "vault.forgetRecent": "Forget",
+  "vault.forgetRecentLabel": "Forget {name}: take it off the recent vaults",
   "vault.pickCreate": "Choose where to create “{name}”",
   "vault.pickOpen": "Open a vault folder",
   "window.close": "Close",

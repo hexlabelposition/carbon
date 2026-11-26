@@ -49,7 +49,7 @@ function Icon({
 export function VaultMenu() {
   const t = useT();
   const { vault, opening, open, pickAndOpen, close } = useVaultSession();
-  const { recentVaults } = useAppSettings();
+  const { recentVaults, removeRecentVault } = useAppSettings();
   const [shown, setShown] = useState(false);
   if (vault === null) return null;
   const recent = recentVaults
@@ -123,10 +123,13 @@ export function VaultMenu() {
               </h2>
               <ul className="flex flex-col">
                 {recent.map(({ path }) => (
-                  <li key={path}>
+                  <li
+                    key={path}
+                    className="flex items-center gap-1 rounded-md hover:bg-raise"
+                  >
                     <button
                       type="button"
-                      className="flex w-full min-w-0 flex-col items-start rounded-md px-2 py-1.5 text-left outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong disabled:text-faint disabled:hover:bg-transparent"
+                      className="flex min-w-0 flex-1 flex-col items-start rounded-md px-2 py-1.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-line-strong disabled:text-faint"
                       disabled={opening}
                       onClick={then(() => void open(path))}
                     >
@@ -136,6 +139,17 @@ export function VaultMenu() {
                       <span className="max-w-full truncate text-small text-faint">
                         {path}
                       </span>
+                    </button>
+                    {/* Takes it off the list only: its folder is not touched. */}
+                    <button
+                      type="button"
+                      className="mr-1 shrink-0 rounded-sm px-1.5 py-0.5 text-small text-muted outline-none hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong"
+                      aria-label={t("vault.forgetRecentLabel", {
+                        name: nameOf(path),
+                      })}
+                      onClick={() => void removeRecentVault(path)}
+                    >
+                      {t("vault.forgetRecent")}
                     </button>
                   </li>
                 ))}
