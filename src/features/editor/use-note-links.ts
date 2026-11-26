@@ -1,6 +1,7 @@
 import {
   linksToFile,
   parseNote,
+  readFrontmatter,
   type NotePath,
   type TreeNode,
   type Vault,
@@ -9,7 +10,7 @@ import { useMemo, useState } from "react";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { asFragment, type LinkHost } from "./link-completion";
-import { previewText } from "./link-preview";
+import { previewMarkdown } from "./link-preview";
 import { errorText } from "../i18n/error-text";
 
 export interface NoteLinks {
@@ -73,11 +74,13 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
         const heading = parsed.headings.find(
           (h) => asFragment(h.text).toLowerCase() === wanted,
         );
-        const body =
-          heading === undefined
-            ? parsed.plainText
-            : parseNote(note, text.slice(heading.pos)).plainText;
-        return { path: note, title: parsed.title, text: previewText(body) };
+        // Heading offsets are those of the whole text.
+        const start = heading?.pos ?? readFrontmatter(text)?.length ?? 0;
+        return {
+          path: note,
+          title: parsed.title,
+          markdown: previewMarkdown(text.slice(start).replace(/^\s*\n/, "")),
+        };
       },
       follow: (link, options) => {
         // The index can take a moment during the startup scan: the note

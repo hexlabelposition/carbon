@@ -1,16 +1,28 @@
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { syntaxHighlighting } from "@codemirror/language";
+import { EditorState } from "@codemirror/state";
 import { EditorView, hoverTooltip } from "@codemirror/view";
-import type { Link, NotePath } from "@carbon/core";
+import { hashtag, wikiLink, type Link, type NotePath } from "@carbon/core";
 import { t } from "../i18n/i18n";
+import { codeLanguage } from "./code-languages";
+import { editorTheme, markdownHighlight } from "./editor-theme";
 import { linkHost } from "./link-completion";
 import { linkAt } from "./link-follow";
+import { listHangingIndent } from "./list-hanging-indent";
+import { livePreview } from "./live-preview";
+import { imageHost, imagePreview, type ImageHost } from "./live-preview-image";
+import { tablePreview } from "./live-preview-table";
 
 /** What a hover over a link shows. */
 export type LinkPreview =
   | {
       path: NotePath;
       title: string;
-      /** The start of the note, or of the heading the link points to. */
-      text: string;
+      /**
+       * The Markdown of the note without its frontmatter, or from the
+       * heading the link points to, cut short (`previewMarkdown`).
+       */
+      markdown: string;
     }
   /** The link points to no note; following it creates one, if it can. */
   | {
@@ -20,14 +32,15 @@ export type LinkPreview =
     };
 
 /** Lines of the note a preview shows at most. */
-const PREVIEW_LINES = 12;
+const PREVIEW_LINES = 80;
 /** Characters of the note a preview shows at most. */
-const PREVIEW_CHARS = 800;
+const PREVIEW_CHARS = 6000;
 
 /**
- * Resting the mouse on a link to a note shows the start of that note: its
- * title and its first lines as plain text, from the heading if the link
- * points to one. A link to a missing note says that a click creates it.
+ * Resting the mouse on a link to a note shows that note as reading mode
+ * does: its title, then its text drawn by live preview, read-only, from
+ * the heading if the link points to one. A long note scrolls in the box.
+ * A link to a missing note says that a click creates it.
  */
 export const linkPreview = [
   hoverTooltip(
@@ -38,11 +51,12 @@ export const linkPreview = [
       if (link === null || link.target === "") return null;
       const preview = await host.preview(link).catch(() => null);
       if (preview === null) return null;
+      const images = view.state.facet(imageHost);
       return {
         pos: link.start,
         end: link.end,
         above: true,
-        create: () => ({ dom: previewDom(preview) }),
+        create: () => previewView(preview, images),
       };
     },
     { hoverTime: 500 },
@@ -54,8 +68,13 @@ export const linkPreview = [
       backgroundColor: "transparent",
     },
     ".cm-link-preview": {
-      maxWidth: "360px",
-      padding: "8px 12px",
+      display: "flex",
+      flexDirection: "column",
+      width: "480px",
+      maxWidth: "calc(100vw - 32px)",
+      maxHeight: "min(420px, 60vh)",
+      overflow: "hidden",
+      boxSizing: "border-box",
       border: "1px solid var(--cb-line-strong)",
       borderRadius: "6px",
       backgroundColor: "var(--cb-panel)",
@@ -64,48 +83,117 @@ export const linkPreview = [
       fontSize: "13px",
       lineHeight: "1.5",
     },
-    ".cm-link-preview-title": { fontWeight: "600", marginBottom: "4px" },
-    ".cm-link-preview-text": {
+    ".cm-link-preview-missing": {
+      width: "auto",
+      maxWidth: "360px",
+      padding: "8px 12px",
+    },
+    // The name of the note is a bar of its own above its text: it is not
+    // part of the note, and stays in place while the text scrolls.
+    ".cm-link-preview-title": {
+      flexShrink: "0",
+      padding: "7px 14px",
+      borderBottom: "1px solid var(--cb-line)",
       color: "var(--cb-muted)",
-      whiteSpace: "pre-line",
-      overflowWrap: "anywhere",
+      fontSize: "12px",
+      fontWeight: "600",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+    },
+    ".cm-link-preview-body": {
+      minHeight: "0",
+      overflowY: "auto",
+      overscrollBehavior: "contain",
+      padding: "10px 14px 12px",
     },
     ".cm-link-preview-empty": { color: "var(--cb-faint)" },
+    // The note inside, smaller than in its tab: all its sizes follow the
+    // note size (`noteSize`). The editor theme is made for a tab, with a
+    // column in the middle and room below the text; here it fills the box.
+    ".cm-link-preview .cm-editor": {
+      "--cb-note-size": "13px",
+      flexGrow: "0",
+      flexShrink: "0",
+    },
+    ".cm-link-preview .cm-content": {
+      maxWidth: "none",
+      margin: "0",
+      padding: "0",
+    },
   }),
 ];
 
-/** The text of a note as a preview shows it: its first lines, cut short. */
-export function previewText(plainText: string): string {
-  const lines = plainText.split("\n").slice(0, PREVIEW_LINES).join("\n");
-  const cut = lines.length > PREVIEW_CHARS || plainText.length > lines.length;
-  const text = lines.slice(0, PREVIEW_CHARS).trimEnd();
-  return cut ? `${text}…` : text;
+/**
+ * The Markdown a preview shows: its first lines, cut at the end of a line.
+ * What is left out is marked by "…" on a line of its own.
+ */
+export function previewMarkdown(text: string): string {
+  const lines = text.split("\n");
+  let kept = lines.slice(0, PREVIEW_LINES).join("\n");
+  if (kept.length > PREVIEW_CHARS) {
+    const end = kept.lastIndexOf("\n", PREVIEW_CHARS);
+    kept = kept.slice(0, end > 0 ? end : PREVIEW_CHARS);
+  }
+  kept = kept.trimEnd();
+  return kept.length < text.trimEnd().length ? `${kept}\n\n…` : kept;
 }
 
 /** The link to preview: only what the host needs to find the note. */
 export type PreviewedLink = Pick<Link, "kind" | "target" | "fragment">;
 
-function previewDom(preview: LinkPreview): HTMLElement {
+/**
+ * The box of a preview. A note is shown by an editor of its own, made as
+ * the one of a tab in reading mode: the same live preview, nothing typed.
+ * Links in it are not followed and not previewed: it is a glance.
+ */
+function previewView(
+  preview: LinkPreview,
+  images: ImageHost | null,
+): { dom: HTMLElement; destroy?: () => void } {
   const box = document.createElement("div");
   box.className = "cm-link-preview";
   if (preview.path === null) {
     box.textContent = preview.canCreate
       ? t("linkPreview.missing")
       : t("linkPreview.notNote");
-    box.classList.add("cm-link-preview-empty");
-    return box;
+    box.classList.add("cm-link-preview-missing", "cm-link-preview-empty");
+    return { dom: box };
   }
   const title = document.createElement("div");
   title.className = "cm-link-preview-title";
   title.textContent = preview.title;
   title.title = preview.path;
-  const text = document.createElement("div");
-  text.className =
-    preview.text === ""
-      ? "cm-link-preview-text cm-link-preview-empty"
-      : "cm-link-preview-text";
-  text.textContent =
-    preview.text === "" ? t("linkPreview.empty") : preview.text;
-  box.append(title, text);
-  return box;
+  const body = document.createElement("div");
+  body.className = "cm-link-preview-body";
+  box.append(title, body);
+  if (preview.markdown.trim() === "") {
+    body.classList.add("cm-link-preview-empty");
+    body.textContent = t("linkPreview.empty");
+    return { dom: box };
+  }
+  const note = new EditorView({
+    parent: body,
+    state: EditorState.create({
+      doc: preview.markdown,
+      extensions: [
+        EditorView.lineWrapping,
+        markdown({
+          base: markdownLanguage,
+          codeLanguages: codeLanguage,
+          extensions: [wikiLink, hashtag],
+        }),
+        syntaxHighlighting(markdownHighlight),
+        livePreview,
+        tablePreview,
+        imagePreview,
+        images === null ? [] : imageHost.of(images),
+        listHangingIndent,
+        editorTheme,
+        EditorView.editable.of(false),
+        EditorState.readOnly.of(true),
+      ],
+    }),
+  });
+  return { dom: box, destroy: () => note.destroy() };
 }
