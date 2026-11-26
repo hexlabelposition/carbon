@@ -11,6 +11,7 @@ import { useClipboard } from "./clipboard";
 import { codeAt, type CodeAt } from "./code-at";
 import { scrollParentOf } from "./glide";
 import { holdSelection } from "./held-selection";
+import { useOpenWebLink, webLinkAt, type WebLink } from "./web-link";
 
 interface EditorContextMenuProps {
   /** The editor the menu acts on, once it is made. */
@@ -29,7 +30,9 @@ const separator = "mx-1 my-1 h-px bg-line";
  * The menu of the right button in a note: undo and redo, cut, copy,
  * paste and select all, as the one of a text field in other apps. On
  * inline code or a code block it also copies that code alone, without
- * its backticks or fences, and in a block the line clicked (`codeAt`). It
+ * its backticks or fences, and in a block the line clicked (`codeAt`).
+ * On a web link or an email address it opens it in the browser or the
+ * mail app, or copies it (`webLinkAt`). It
  * takes the place of the menu of the WebView, which the app shuts
  * (`useContextMenuGuard`).
  */
@@ -44,6 +47,9 @@ export function EditorContextMenu({
   const [selected, setSelected] = useState(false);
   /** The code the menu was opened on, if it was. */
   const [code, setCode] = useState<CodeAt | null>(null);
+  /** The web link or email address it was opened on, if it was. */
+  const [webLink, setWebLink] = useState<WebLink | null>(null);
+  const openWebLink = useOpenWebLink();
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
   /** Whether the text had the focus when the menu was asked for. */
@@ -72,6 +78,7 @@ export function EditorContextMenu({
     }
     setSelected(editor.state.selection.ranges.some((r) => !r.empty));
     setCode(at === null ? null : codeAt(editor.state, at));
+    setWebLink(at === null ? null : webLinkAt(editor.state, at));
     setSteps({
       undo: undoDepth(editor.state) > 0,
       redo: redoDepth(editor.state) > 0,
@@ -179,7 +186,37 @@ export function EditorContextMenu({
             }}
             className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
           >
-            {/* First: it is there only on code, so it is seen at once. */}
+            {/* First: they are there only on a link or on code, so they
+                are seen at once. */}
+            {webLink !== null && (
+              <>
+                {openWebLink !== null && (
+                  <ContextMenu.Item
+                    className={item}
+                    onClick={() =>
+                      openWebLink(webLink.url).catch((reason: unknown) =>
+                        log.error("Could not open a link", reason),
+                      )
+                    }
+                  >
+                    {t(webLink.email ? "editor.writeEmail" : "editor.openLink")}
+                  </ContextMenu.Item>
+                )}
+                <ContextMenu.Item
+                  className={item}
+                  onClick={() =>
+                    copyText(
+                      webLink.email
+                        ? webLink.url.replace(/^mailto:/i, "")
+                        : webLink.url,
+                    )
+                  }
+                >
+                  {t(webLink.email ? "editor.copyEmail" : "editor.copyLink")}
+                </ContextMenu.Item>
+                <ContextMenu.Separator className={separator} />
+              </>
+            )}
             {code !== null && (
               <>
                 <ContextMenu.Item

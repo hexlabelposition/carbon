@@ -50,6 +50,12 @@ import {
 } from "../settings/editor-options";
 import { tagHost, type TagHost } from "./tag-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
+import {
+  openWebLinkOnClick,
+  useOpenWebLink,
+  webLinkOpener,
+  webLinkStyle,
+} from "./web-link";
 import { linkPreview } from "./link-preview";
 import { formatPlaceholder } from "./formatting";
 import { t as translate, useT } from "../i18n/i18n";
@@ -126,6 +132,7 @@ const livePreviewExtensions: Extension = [
   imagePreview,
   embedPreview,
   followOnClick,
+  webLinkStyle,
 ];
 const noPreview: Extension = [syntaxHighlighting(sourceHighlight)];
 
@@ -160,6 +167,8 @@ export function MarkdownEditor({
   /** Holds the lines along nested lists, while the settings show them. */
   const guides = useRef(new Compartment());
   const showGuides = listGuidesPreference.use();
+  /** How web links and email addresses open, from the app. */
+  const openWebLink = useOpenWebLink();
   // The latest values, so new ones do not rebuild the editor.
   const latest = useRef({
     text,
@@ -172,6 +181,7 @@ export function MarkdownEditor({
     links,
     tags,
     onStats,
+    openWebLink,
   });
   useEffect(() => {
     latest.current = {
@@ -185,6 +195,7 @@ export function MarkdownEditor({
       links,
       tags,
       onStats,
+      openWebLink,
     };
   }, [
     text,
@@ -197,6 +208,7 @@ export function MarkdownEditor({
     links,
     tags,
     onStats,
+    openWebLink,
   ]);
 
   // The latest `onView`, so a new one does not rebuild the editor.
@@ -274,6 +286,12 @@ export function MarkdownEditor({
           formatPlaceholder.of(translate("format.placeholder")),
           markdownInput,
           followOnModClick,
+          openWebLinkOnClick,
+          webLinkOpener.of((url) =>
+            latest.current.openWebLink === null
+              ? Promise.reject(new Error("Links cannot be opened here"))
+              : latest.current.openWebLink(url),
+          ),
           linkPreview,
           missingLinks,
           linkHost.of({

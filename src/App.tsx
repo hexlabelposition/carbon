@@ -7,6 +7,7 @@ import { ThemeSwitch } from "./features/theme/ThemeSwitch";
 import { InterfaceZoom } from "./features/zoom/InterfaceZoom";
 import { Updates } from "./features/updates/Updates";
 import { ClipboardContext } from "./features/editor/clipboard";
+import { WebLinkContext } from "./features/editor/web-link";
 import {
   openLogFolder,
   openWebPage,
@@ -38,27 +39,29 @@ function App() {
   return (
     <TooltipProvider>
       <ClipboardContext value={tauriClipboard}>
-        <AppSettingsProvider store={tauriPlatform.settings}>
-          <VaultProvider
-            platform={platform}
-            pickFolder={pickVaultFolder}
-            cacheFolder={appCacheFolder}
-          >
-            <CommandsProvider>
-              <InterfaceZoom apply={setInterfaceZoom} />
-              <ThemeSwitch />
-              <Settings
-                openLogFolder={openLogFolder}
-                openWebPage={openWebPage}
-              />
-              <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
-              <DesktopShell
-                frame={tauriWindow}
-                showInFileManager={showInFileManager}
-              />
-            </CommandsProvider>
-          </VaultProvider>
-        </AppSettingsProvider>
+        <WebLinkContext value={openWebPage}>
+          <AppSettingsProvider store={tauriPlatform.settings}>
+            <VaultProvider
+              platform={platform}
+              pickFolder={pickVaultFolder}
+              cacheFolder={appCacheFolder}
+            >
+              <CommandsProvider>
+                <InterfaceZoom apply={setInterfaceZoom} />
+                <ThemeSwitch />
+                <Settings
+                  openLogFolder={openLogFolder}
+                  openWebPage={openWebPage}
+                />
+                <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
+                <DesktopShell
+                  frame={tauriWindow}
+                  showInFileManager={showInFileManager}
+                />
+              </CommandsProvider>
+            </VaultProvider>
+          </AppSettingsProvider>
+        </WebLinkContext>
       </ClipboardContext>
     </TooltipProvider>
   );

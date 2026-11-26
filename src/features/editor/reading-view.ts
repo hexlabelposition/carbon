@@ -9,6 +9,7 @@ import { listHangingIndent } from "./list-hanging-indent";
 import { livePreview } from "./live-preview";
 import { imageHost, imagePreview, type ImageHost } from "./live-preview-image";
 import { tablePreview } from "./live-preview-table";
+import { webLinkStyle } from "./web-link";
 
 /**
  * An editor that shows a piece of another note as reading mode draws it:
@@ -35,6 +36,7 @@ export function readingView(
         }),
         syntaxHighlighting(markdownHighlight),
         livePreview,
+        webLinkStyle,
         tablePreview,
         imagePreview,
         images === null ? [] : imageHost.of(images),
