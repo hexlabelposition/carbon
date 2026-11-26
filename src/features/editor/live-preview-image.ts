@@ -1,12 +1,10 @@
 import { syntaxTree } from "@codemirror/language";
 import type { SyntaxNode } from "@lezer/common";
 import {
-  EditorSelection,
   Facet,
   Prec,
   StateEffect,
   StateField,
-  type SelectionRange,
   type ChangeDesc,
   type EditorState,
   type Range,
@@ -76,10 +74,11 @@ const MISSING_IMAGE: SeenImage = { url: "", width: 560, height: 315 };
 const revealImage = StateEffect.define<number>();
 
 /**
- * Where the image starts whose Markdown the user asked to see, with its
- * button. Only that one shows its Markdown: a cursor put beside an image
- * by a click or the keys leaves it drawn. It is drawn again once the
- * selection leaves its line.
+ * Where the image starts whose Markdown the user asked to see: with its
+ * button, or by coming to it with the arrow keys (`enterImage`). Only
+ * that one shows its Markdown: a click beside an image puts the cursor on
+ * the line above or below it. It is drawn again once the selection
+ * leaves its line.
  */
 const revealedImage = StateField.define<number | null>({
   create: () => null,
@@ -116,13 +115,13 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
  */
 export const imagePreview = [
   revealedImage,
-  // The arrow keys pass over a drawn image, as over one tall line.
+  // The arrow keys open a drawn image they come to, to edit its Markdown.
   Prec.high(
     keymap.of([
-      { key: "ArrowDown", run: (view) => passImages(view, true, true) },
-      { key: "ArrowUp", run: (view) => passImages(view, false, true) },
-      { key: "ArrowRight", run: (view) => passImages(view, true, false) },
-      { key: "ArrowLeft", run: (view) => passImages(view, false, false) },
+      { key: "ArrowDown", run: (view) => enterImage(view, true, true) },
+      { key: "ArrowUp", run: (view) => enterImage(view, false, true) },
+      { key: "ArrowRight", run: (view) => enterImage(view, true, false) },
+      { key: "ArrowLeft", run: (view) => enterImage(view, false, false) },
     ]),
   ),
   // A click beside a drawn image puts the cursor on the line above or
@@ -527,13 +526,14 @@ function drawnImageLine(state: EditorState, from: number, to: number): boolean {
 }
 
 /**
- * Moves the cursor as the arrow key would, and on past the lines of drawn
- * images it lands on: up and down to the line beyond, keeping the column,
- * left and right to the end of the line before or the start of the one
- * after. `false`, for the usual move, when no image is in the way, or
- * when the image is the first or the last line and there is nowhere to go.
+ * Moves the cursor as the arrow key would; if it comes to the line of a
+ * drawn image, that image shows its Markdown (`revealedImage`), with the
+ * cursor at its start coming from above or the left, at its end coming
+ * from below or the right. So the keys go through an image as through
+ * text, and Enter at its end puts a line under it. `false`, for the usual
+ * move, when no image is in the way.
  */
-function passImages(
+function enterImage(
   view: EditorView,
   forward: boolean,
   vertical: boolean,
@@ -542,44 +542,18 @@ function passImages(
   if (state.readOnly) return false;
   const { selection, doc } = state;
   if (selection.ranges.length !== 1 || !selection.main.empty) return false;
-  const start = selection.main;
-  const imageAt = (number: number) => {
-    const line = doc.line(number);
-    return drawnImageLine(state, line.from, line.to);
-  };
   const moved = vertical
-    ? view.moveVertically(start, forward)
-    : view.moveByChar(start, forward);
-  let number = doc.lineAt(moved.head).number;
-  if (!imageAt(number)) return false;
-  // A few images one under another are passed together.
-  while (imageAt(number)) {
-    number += forward ? 1 : -1;
-    if (number < 1 || number > doc.lines) return false;
-  }
-  const line = doc.line(number);
-  let range: SelectionRange;
-  if (!vertical) {
-    range = EditorSelection.cursor(forward ? line.from : line.to);
-  } else {
-    // In the column the cursor keeps while it goes up and down, on the
-    // nearest row of the line: its first going down, its last going up.
-    const content = view.contentDOM.getBoundingClientRect();
-    const goal =
-      start.goalColumn ??
-      (view.coordsAtPos(start.head)?.left ?? content.left) - content.left;
-    const block = view.lineBlockAt(line.from);
-    const y = view.documentTop + (forward ? block.top + 2 : block.bottom - 2);
-    const at = view.posAtCoords({ x: content.left + goal, y }, false);
-    range = EditorSelection.cursor(
-      Math.min(Math.max(at, line.from), line.to),
-      0,
-      undefined,
-      goal,
-    );
-  }
+    ? view.moveVertically(selection.main, forward)
+    : view.moveByChar(selection.main, forward);
+  const line = doc.lineAt(moved.head);
+  // Already on that line: the usual move, within it.
+  if (doc.lineAt(selection.main.head).number === line.number) return false;
+  if (!drawnImageLine(state, line.from, line.to)) return false;
+  const start = line.from + (line.text.length - line.text.trimStart().length);
+  const end = line.from + line.text.trimEnd().length;
   view.dispatch({
-    selection: range,
+    selection: { anchor: forward ? start : end },
+    effects: revealImage.of(start),
     scrollIntoView: true,
     userEvent: "select",
   });
@@ -1018,10 +992,9 @@ class WebImageWidget extends WidgetType {
  * The buttons over a shown image, in its top right corner while the
  * pointer is over it, as in Obsidian: one shows the image on its own,
  * where it can be zoomed, the other its Markdown to edit (not in reading
- * mode). A click on the image shows it too. The Markdown shows only by
- * the button (`revealedImage`): a click beside the image or the arrow
- * keys put the cursor by it and leave it drawn. Without `open`, for an
- * image that is not there, only the Markdown one.
+ * mode). A click on the image shows it too, and the arrow keys open the
+ * Markdown as well (`revealedImage`). Without `open`, for an image that
+ * is not there, only the Markdown one.
  */
 function imageTools(
   view: EditorView,
