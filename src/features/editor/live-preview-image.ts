@@ -107,7 +107,40 @@ export const imagePreview = [
       verticalAlign: "top",
       cursor: "default",
     },
-    ".cm-image:has(img)": { cursor: "pointer" },
+    ".cm-image:has(img)": { cursor: "pointer", position: "relative" },
+    ".cm-image-tools": {
+      position: "absolute",
+      top: "8px",
+      right: "8px",
+      display: "flex",
+      gap: "2px",
+      padding: "2px",
+      borderRadius: "6px",
+      backgroundColor: "rgb(20 20 20 / 0.6)",
+      backdropFilter: "blur(6px)",
+      opacity: "0",
+      transition: "opacity 120ms ease-out",
+      pointerEvents: "none",
+    },
+    ".cm-image:hover .cm-image-tools": { opacity: "1", pointerEvents: "auto" },
+    ".cm-image-tool": {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "26px",
+      height: "24px",
+      borderRadius: "4px",
+      color: "rgb(255 255 255 / 0.85)",
+      cursor: "pointer",
+    },
+    ".cm-image-tool:hover": {
+      color: "#fff",
+      backgroundColor: "rgb(255 255 255 / 0.15)",
+    },
+    // In reading mode there is no Markdown to edit.
+    ".cm-content[contenteditable=false] .cm-image-tool-source": {
+      display: "none",
+    },
     ".cm-image img": {
       display: "block",
       maxWidth: "100%",
@@ -141,6 +174,16 @@ export const imagePreview = [
       // Past the edges: a blur fades them out otherwise.
       transform: "scale(1.15)",
       filter: "blur(14px) brightness(0.5)",
+    },
+    // A dark glow under the Markdown, over the blurred image: the text
+    // reads on an image of any colors, its edges still show.
+    ".cm-line.cm-image-edited::after": {
+      content: '""',
+      position: "absolute",
+      inset: "0",
+      zIndex: "-1",
+      background:
+        "radial-gradient(ellipse 70% 45% at center, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.15) 100%)",
     },
     ".cm-line.cm-image-edited > *": { minWidth: "0" },
     // The address of an image is one long word. Without this the line
@@ -404,6 +447,13 @@ class ImageWidget extends WidgetType {
     return other.target === this.target && other.alt === this.alt;
   }
 
+  /** Shows the image on its own, where it can be zoomed. */
+  show(view: EditorView, image: HTMLImageElement): void {
+    view.state
+      .facet(imageHost)
+      ?.open({ url: image.src, target: this.target, alt: this.alt });
+  }
+
   toDOM(view: EditorView): HTMLElement {
     const box = document.createElement("span");
     box.className = "cm-image";
@@ -414,9 +464,8 @@ class ImageWidget extends WidgetType {
       if (event.button !== 0) return;
       event.preventDefault();
       const image = box.querySelector("img");
-      const host = view.state.facet(imageHost);
-      if (image !== null && host !== null) {
-        host.open({ url: image.src, target: this.target, alt: this.alt });
+      if (image !== null && view.state.facet(imageHost) !== null) {
+        this.show(view, image);
         return;
       }
       view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
@@ -448,7 +497,10 @@ class ImageWidget extends WidgetType {
       });
       image.addEventListener("error", missing);
       image.src = url;
-      box.append(image);
+      box.append(
+        image,
+        imageTools(view, box, () => this.show(view, image)),
+      );
     }, missing);
     return box;
   }
@@ -523,13 +575,16 @@ class WebImageWidget extends WidgetType {
       box.textContent = t("images.notFound", { name: this.alt || address });
     });
     image.src = address;
-    box.append(image);
+    const open = () =>
+      view.state
+        .facet(imageHost)
+        ?.open({ url: address, target: this.target, alt: this.alt });
+    box.append(image, imageTools(view, box, open));
     box.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       event.preventDefault();
-      const host = view.state.facet(imageHost);
-      if (box.contains(image) && host !== null) {
-        host.open({ url: address, target: this.target, alt: this.alt });
+      if (box.contains(image)) {
+        open();
         return;
       }
       if (view.state.readOnly) return;
@@ -543,6 +598,54 @@ class WebImageWidget extends WidgetType {
     return true;
   }
 }
+
+/**
+ * The buttons over a shown image, in its top right corner while the
+ * pointer is over it, as in Obsidian: one shows the image on its own,
+ * where it can be zoomed, the other its Markdown to edit (not in reading
+ * mode). A click on the image shows it too, and the keys reach the
+ * Markdown: the buttons are a shortcut, not the only way.
+ */
+function imageTools(
+  view: EditorView,
+  box: HTMLElement,
+  open: () => void,
+): HTMLElement {
+  const tools = document.createElement("span");
+  tools.className = "cm-image-tools";
+  const button = (
+    kind: string,
+    label: string,
+    icon: string,
+    run: () => void,
+  ) => {
+    const element = document.createElement("span");
+    element.className = `cm-image-tool cm-image-tool-${kind}`;
+    element.title = label;
+    element.innerHTML = icon;
+    element.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      run();
+    });
+    tools.append(element);
+  };
+  button("open", t("images.open"), ZOOM_ICON, open);
+  button("source", t("images.source"), CODE_ICON, () => {
+    if (view.state.readOnly) return;
+    view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
+    view.focus();
+  });
+  return tools;
+}
+
+const ICON_ATTRIBUTES =
+  'viewBox="0 0 16 16" width="16" height="16" fill="none" ' +
+  'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" ' +
+  'stroke-linejoin="round" aria-hidden="true"';
+const ZOOM_ICON = `<svg ${ICON_ATTRIBUTES}><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14M7 5v4M5 7h4"/></svg>`;
+const CODE_ICON = `<svg ${ICON_ATTRIBUTES}><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5M9 3 7 13"/></svg>`;
 
 /** The site of an address, for the line that stands in for its image. */
 function siteOf(address: string): string {
