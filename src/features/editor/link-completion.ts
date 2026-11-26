@@ -5,9 +5,18 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
-import { Facet } from "@codemirror/state";
+import { Facet, type ChangeSpec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import type { Link, NoteAlias, NotePath } from "@carbon/core";
+import {
+  asFragment,
+  noteBlocks,
+  newBlockId,
+  withBlockId,
+  type Link,
+  type NoteAlias,
+  type NoteBlock,
+  type NotePath,
+} from "@carbon/core";
 import type { OpenTarget } from "../workspace/workspace";
 import type { LinkPreview, PreviewedLink } from "./link-preview";
 import { headingsOf, type Heading } from "./outline";
@@ -31,6 +40,16 @@ export interface LinkHost {
    */
   headings(target: string): Promise<readonly Heading[]>;
   /**
+   * The blocks of the note `[[target]]` points to, that `[[target#^id]]`
+   * can name (`noteBlocks`). Empty if it points to none.
+   */
+  blocks(target: string): Promise<readonly NoteBlock[]>;
+  /**
+   * The id of the block of that note that starts at `from`, written into
+   * the note first if the block has none (`vault.links.blockId`).
+   */
+  blockId(target: string, from: number): Promise<string | null>;
+  /**
    * Of the targets of wiki links of the current note, as written, the
    * ones that find no note.
    */
@@ -42,9 +61,12 @@ export interface LinkHost {
   onIndexChange(listener: () => void): () => void;
   /** What a hover over a link of the current note shows. */
   preview(link: PreviewedLink): Promise<LinkPreview>;
-  /** Opens the note a link of the current note points to. */
+  /**
+   * Opens the note a link of the current note points to, at the heading
+   * or the block its fragment names.
+   */
   follow(
-    link: Pick<Link, "kind" | "target">,
+    link: Pick<Link, "kind" | "target" | "fragment">,
     options: { target: OpenTarget },
   ): void;
 }
@@ -61,7 +83,9 @@ export const linkHost = Facet.define<LinkHost, LinkHost | null>({
  * Suggests notes after "[[", by their names and their aliases, and their
  * headings after "[[Note#" (the headings of this note after "[[#"): the
  * list narrows while the user types, and picking one writes it and closes
- * the link with "]]". An alias is written as `[[Note|alias]]`, so the
+ * the link with "]]". After "[[Note#^" it suggests the blocks of the
+ * note, paragraphs and list items by their text; picking one without an
+ * id gives it one in that note. An alias is written as `[[Note|alias]]`, so the
  * link finds the note by its name and reads as the alias. Typing on goes
  * on as usual; Escape closes the list.
  */
@@ -206,17 +230,6 @@ async function suggestNotes(
   return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
 }
 
-/**
- * A heading as it can be written after "#" in a wiki link: the characters
- * that end the link or its parts are left out.
- */
-export function asFragment(heading: string): string {
-  return heading
-    .replace(/[[\]|#]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /** Characters that end the heading of a wiki link. */
 const HEADING_END = /[[\]|\n]/;
 
@@ -233,6 +246,9 @@ async function suggestHeadings(
   const target = written.slice(0, hash).trim();
   const from = typed.from + 2 + hash + 1;
   const { to, closed } = partEnd(state, pos, HEADING_END, /^(\]\]|\|)/);
+  if (state.sliceDoc(from, from + 1) === "^") {
+    return suggestBlocks(context, target, from + 1, to, closed);
+  }
 
   // "[[#": a heading of this note, as it is now, saved or not.
   const headings =
@@ -259,6 +275,75 @@ async function suggestHeadings(
       },
     });
   }
+  return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
+}
+
+/**
+ * The blocks of a note after "[[Note#^", by their text; after "[[#^" the
+ * blocks of this note as it is now. Picking one writes its id; a block
+ * without one gets a new id first, written at the end of the block.
+ */
+async function suggestBlocks(
+  context: CompletionContext,
+  target: string,
+  from: number,
+  to: number,
+  closed: boolean,
+): Promise<CompletionResult | null> {
+  const { state } = context;
+  const host = state.facet(linkHost);
+  if (host === null) return null;
+  const own = target === "";
+  const blocks = own
+    ? noteBlocks(state.doc.toString())
+    : await host.blocks(target).catch(() => []);
+  if (context.aborted) return null;
+
+  const options = blocks
+    .filter((block) => block.label !== "")
+    .map((block): Completion => ({
+      label: block.label,
+      detail: block.id === null ? undefined : `^${block.id}`,
+      apply: (view, completion, start, end) => {
+        const write = (id: string, extra: ChangeSpec[] = []) => {
+          const insert = closed ? id : `${id}]]`;
+          view.dispatch({
+            changes: [{ from: start, to: end, insert }, ...extra],
+            selection: { anchor: start + insert.length },
+            userEvent: "input.complete",
+            annotations: pickedCompletion.of(completion),
+          });
+        };
+        if (block.id !== null) {
+          write(block.id);
+          return;
+        }
+        if (own) {
+          // This note: the id goes into it in the same change.
+          const text = view.state.doc.toString();
+          const id = newBlockId(text);
+          const marked = withBlockId(text, block, id);
+          const added = marked.slice(
+            block.idAt,
+            block.idAt + marked.length - text.length,
+          );
+          write(id, [{ from: block.idAt, insert: added }]);
+          return;
+        }
+        // Another note: its id is written there first, then here, if
+        // the link is still as it was.
+        const typed = view.state.sliceDoc(start, end);
+        void host.blockId(target, block.from).then(
+          (id) => {
+            if (id === null || view.state.sliceDoc(start, end) !== typed) {
+              return;
+            }
+            write(id);
+          },
+          () => {},
+        );
+      },
+    }));
   return { from, to, options, validFor: /^[^[\]|#\n]*$/ };
 }
 

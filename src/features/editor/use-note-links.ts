@@ -1,6 +1,7 @@
 import {
+  fragmentRange,
   linksToFile,
-  parseNote,
+  noteBlocks,
   readFrontmatter,
   type NotePath,
   type TreeNode,
@@ -9,7 +10,7 @@ import {
 import { useMemo, useState } from "react";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
-import { asFragment, type LinkHost } from "./link-completion";
+import type { LinkHost } from "./link-completion";
 import { previewMarkdown } from "./link-preview";
 import { errorText } from "../i18n/error-text";
 
@@ -61,33 +62,34 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
           for (const stop of stops) stop();
         };
       },
+      blocks: async (target) => {
+        const note = await vault.links
+          .resolve(path, { kind: "wiki", target })
+          .catch(() => null);
+        if (note === null) return [];
+        return noteBlocks(await vault.notes.read(note));
+      },
+      blockId: async (target, from) => {
+        const note = await vault.links.resolve(path, { kind: "wiki", target });
+        return note === null ? null : vault.links.blockId(note, from);
+      },
       preview: async (link) => {
         const note = await vault.links.resolve(path, link);
         if (note === null) return { path: null, canCreate: !linksToFile(link) };
         const text = await vault.notes.read(note);
-        const parsed = parseNote(note, text);
-        // "[[Note#Heading]]" shows the section of that heading: up to the
-        // next heading of the same level or a higher one.
-        const wanted =
-          link.fragment === null
-            ? null
-            : asFragment(link.fragment).toLowerCase();
-        const heading = parsed.headings.find(
-          (h) => asFragment(h.text).toLowerCase() === wanted,
-        );
-        // Heading offsets are those of the whole text.
-        const start = heading?.pos ?? readFrontmatter(text)?.length ?? 0;
-        const end =
-          heading === undefined
-            ? text.length
-            : (parsed.headings.find(
-                (h) => h.pos > heading.pos && h.level <= heading.level,
-              )?.pos ?? text.length);
-        const shown = text.slice(start, end).replace(/^\s*\n/, "");
+        // "[[Note#Heading]]" shows the section of that heading, up to the
+        // next heading of its level; "[[Note#^id]]" the block of that id.
+        // A fragment the note does not have shows the whole note.
+        const range =
+          link.fragment === null ? null : fragmentRange(text, link.fragment);
+        const start = range?.from ?? readFrontmatter(text)?.length ?? 0;
+        const shown = text
+          .slice(start, range?.to ?? text.length)
+          .replace(/^\s*\n/, "");
         return {
           path: note,
-          title: parsed.title,
-          heading: heading?.text ?? null,
+          title: titleOf(note),
+          heading: range === null ? null : link.fragment,
           markdown: previewMarkdown(shown),
         };
       },
@@ -105,7 +107,19 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
               return;
             }
             setError(null);
-            open(followed.path, options);
+            // At the heading or block the link names, if the note has it.
+            const fragment = link.fragment ?? null;
+            if (followed.created || fragment === null) {
+              open(followed.path, options);
+              return;
+            }
+            vault.notes.read(followed.path).then(
+              (text) => {
+                const at = fragmentRange(text, fragment)?.from;
+                open(followed.path, { ...options, at });
+              },
+              () => open(followed.path, options),
+            );
           },
           (reason: unknown) => {
             const message = errorText(reason);
@@ -130,4 +144,8 @@ function notesIn(tree: readonly TreeNode[]): NotePath[] {
   };
   walk(tree);
   return notes;
+}
+
+function titleOf(path: NotePath): string {
+  return path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/i, "");
 }

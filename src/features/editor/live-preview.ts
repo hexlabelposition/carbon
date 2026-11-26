@@ -462,6 +462,14 @@ function decorate(view: EditorView): DecorationSet {
           const line = state.doc.lineAt(node.from);
           if (!editing(line.from, line.to))
             hideHeadingMarks(state, node, ranges);
+        } else if (name === "BlockId") {
+          // "^id" names the block for links to it; it is shown only to edit.
+          const line = state.doc.lineAt(node.from);
+          if (!editing(line.from, line.to)) {
+            const before = state.sliceDoc(line.from, node.from);
+            const from = node.from - (before.length - before.trimEnd().length);
+            ranges.push(hide.range(from, node.to));
+          }
         } else if (name === "WikiLink") {
           if (!editing(node.from, node.to)) {
             decorateWikiLink(state, node, ranges);

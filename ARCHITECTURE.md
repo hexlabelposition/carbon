@@ -144,6 +144,8 @@ my-vault/
 
 - CommonMark + GFM (tables, task lists, strikethrough)
 - Wiki links: `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]`
+- Embeds: `![[Note]]`, `![[Note#Heading]]`, `![[Note#^id]]` draw that note, section or block in place (editor only; the index sees a wiki link)
+- Block ids, as in Obsidian: `^id` at the end of a paragraph or list item, or alone on the line under a quote, table or code block, names that block for `[[Note#^id]]`. Blocks are found on demand from the text (`noteBlocks`, `fragmentRange` in `parser/blocks.ts`), not stored in the index
 - Regular Markdown links to local `.md` files count as links too
 - Tags: `#tag`, nested `#area/topic`, and `tags:` in frontmatter
 - YAML frontmatter: `tags`, `aliases`, plus arbitrary properties

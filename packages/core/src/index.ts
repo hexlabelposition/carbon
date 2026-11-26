@@ -26,6 +26,15 @@ export { parseFiles } from "./parser/parse-files";
 export { markdownParser, parseNote } from "./parser/parse-note";
 export { wikiLink } from "./parser/wiki-link";
 export { hashtag, isTagLabel } from "./parser/hashtag";
+export { blockId, isBlockId } from "./parser/block-id";
+export {
+  asFragment,
+  fragmentRange,
+  newBlockId,
+  noteBlocks,
+  withBlockId,
+} from "./parser/blocks";
+export type { FragmentRange, NoteBlock } from "./parser/blocks";
 export { readFrontmatter } from "./parser/frontmatter";
 export type { FrontmatterEntry } from "./parser/frontmatter";
 export { editFrontmatter, propertyValue } from "./parser/frontmatter-edit";

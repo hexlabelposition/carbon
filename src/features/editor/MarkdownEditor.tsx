@@ -6,7 +6,7 @@ import {
 } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { indentUnit, syntaxHighlighting } from "@codemirror/language";
-import { hashtag, wikiLink } from "@carbon/core";
+import { blockId, hashtag, wikiLink } from "@carbon/core";
 import {
   Compartment,
   EditorState,
@@ -224,12 +224,12 @@ export function MarkdownEditor({
           // GitHub Flavored Markdown: tables, task lists, strikethrough.
           // The language of a code block is loaded when one first uses it,
           // found by its name or by the file the fence names.
-          // Wiki links and tags come from the core: one grammar for the
+          // Wiki links, tags and block ids come from the core: one grammar for the
           // editor and the index (ADR-012).
           markdown({
             base: markdownLanguage,
             codeLanguages: codeLanguage,
-            extensions: [wikiLink, hashtag],
+            extensions: [wikiLink, hashtag, blockId],
           }),
           syntaxHighlighting(markdownHighlight),
           preview.current.of(
@@ -266,6 +266,11 @@ export function MarkdownEditor({
             },
             headings: (target) =>
               latest.current.links?.headings(target) ?? Promise.resolve([]),
+            blocks: (target) =>
+              latest.current.links?.blocks(target) ?? Promise.resolve([]),
+            blockId: (target, from) =>
+              latest.current.links?.blockId(target, from) ??
+              Promise.resolve(null),
             missing: (targets) =>
               latest.current.links?.missing(targets) ??
               Promise.resolve(new Set()),

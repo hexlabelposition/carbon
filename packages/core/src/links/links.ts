@@ -16,6 +16,7 @@ import { mapPool } from "../util/pool";
 import { findMentions, mentionQuery } from "./mentions";
 import { linkPath, linksToFile } from "./resolve";
 import { VaultError } from "../errors";
+import { newBlockId, noteBlocks, withBlockId } from "../parser/blocks";
 
 /** What `Links` needs from the vault. */
 export interface LinksContext {
@@ -29,6 +30,11 @@ export interface LinksContext {
   read(path: NotePath): Promise<string>;
   /** `Notes.write`: rejects if the note is not `baseHash` any more. */
   write(path: NotePath, text: string, baseHash: string): Promise<string>;
+  /**
+   * `Notes.write` for a change the vault makes on its own: an editor that
+   * shows the note reads it again (the `rewritten` event).
+   */
+  rewrite(path: NotePath, text: string, baseHash: string): Promise<string>;
 }
 
 /**
@@ -190,5 +196,26 @@ export class Links {
       throw error;
     }
     return { path, created: true };
+  }
+
+  /**
+   * The id of the block of the note at `path` that starts at `from`, as
+   * `noteBlocks` lists it, for a link `[[Note#^id]]` to it. A block without
+   * one gets a new id written into the note. `null` if no block starts
+   * there any more. Rejects with a `WriteConflictError` if the note changed
+   * while it was read.
+   */
+  async blockId(path: NotePath, from: number): Promise<string | null> {
+    const text = await this.context.read(path);
+    const block = noteBlocks(text).find((found) => found.from === from);
+    if (block === undefined) return null;
+    if (block.id !== null) return block.id;
+    const id = newBlockId(text);
+    await this.context.rewrite(
+      path,
+      withBlockId(text, block, id),
+      contentHash(text),
+    );
+    return id;
   }
 }

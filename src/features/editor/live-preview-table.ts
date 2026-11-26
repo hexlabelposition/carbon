@@ -268,12 +268,25 @@ function readTable(state: EditorState, table: SyntaxNode): TableModel {
     if (node.name === "TableHeader") {
       model.header = readRow(state, node, table.from);
     } else if (node.name === "TableRow") {
+      // "^id" under a table names it (`blockIds`): it is no row.
+      if (node.nextSibling === null && isBlockIdRow(state, node)) continue;
       model.rows.push(readRow(state, node, table.from));
     } else if (node.name === "TableDelimiter") {
       model.align = readAlign(state.sliceDoc(node.from, node.to));
     }
   }
   return model;
+}
+
+/** Whether a row is only a block id, as "^id" under a table reads. */
+function isBlockIdRow(state: EditorState, row: SyntaxNode): boolean {
+  const cells = row.getChildren("TableCell");
+  return (
+    cells.length === 1 &&
+    row.getChild("TableDelimiter") === null &&
+    cells[0]!.firstChild?.name === "BlockId" &&
+    /^\s*\^[A-Za-z0-9-]+\s*$/.test(state.sliceDoc(row.from, row.to))
+  );
 }
 
 /**

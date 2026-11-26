@@ -50,11 +50,12 @@ export interface IndexEntry {
 }
 
 /**
- * Bump on every change to `SCHEMA`. An index of another version is thrown
+ * Bump on every change to `SCHEMA`, or to what the parser puts in it, such
+ * as the plain text of a note. An index of another version is thrown
  * away and built again: it is a cache, so it needs no migrations
  * (ARCHITECTURE.md, section 5).
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * Notes, their headings, aliases, tags, properties and links. A link

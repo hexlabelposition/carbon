@@ -2,13 +2,14 @@ import type { SyntaxNode } from "@lezer/common";
 import { Emoji, GFM, parser, Subscript, Superscript } from "@lezer/markdown";
 import type { Heading, Link, NotePath, ParsedNote, TextRange } from "../types";
 import { findFrontmatter, parseFrontmatter, unique } from "./frontmatter";
+import { blockId } from "./block-id";
 import { hashtag } from "./hashtag";
 import { wikiLink } from "./wiki-link";
 
 /**
  * The Markdown grammar of Carbon: the one the editor uses (GFM with
  * subscript, superscript and emoji, as in `@codemirror/lang-markdown`)
- * plus wiki links and tags (ADR-012).
+ * plus wiki links, tags and block ids (ADR-012).
  */
 export const markdownParser = parser.configure([
   GFM,
@@ -17,6 +18,7 @@ export const markdownParser = parser.configure([
   Emoji,
   wikiLink,
   hashtag,
+  blockId,
 ]);
 
 /**
@@ -319,6 +321,7 @@ const SYNTAX = new Set([
   "ProcessingInstruction",
   "ProcessingInstructionBlock",
   "LinkReference",
+  "BlockId",
 ]);
 
 /** Nodes that start a line of their own in the plain text. */

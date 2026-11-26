@@ -1,7 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { parseNote, type Link } from "@carbon/core";
+import { fragmentRange, parseNote, type Link } from "@carbon/core";
 import type { OpenTarget } from "../workspace/workspace";
 import type { SyntaxNode } from "@lezer/common";
 import { linkHost } from "./link-completion";
@@ -52,8 +52,24 @@ function follow(
   const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
   if (host === null || pos === null) return false;
   const link = linkAt(view.state, pos, host.current);
-  // "[[#Heading]]" points into this note: nothing to open.
-  if (link === null || link.target === "") return false;
+  if (link === null) return false;
+  if (link.target === "") {
+    // "[[#Heading]]" or "[[#^id]]" points into this note: go there.
+    const range =
+      link.fragment === null
+        ? null
+        : fragmentRange(view.state.doc.toString(), link.fragment);
+    if (range === null) return false;
+    event.preventDefault();
+    view.dispatch({
+      selection: { anchor: range.from },
+      effects: EditorView.scrollIntoView(range.from, {
+        y: "start",
+        yMargin: 48,
+      }),
+    });
+    return true;
+  }
   event.preventDefault();
   host.follow(link, { target });
   return true;

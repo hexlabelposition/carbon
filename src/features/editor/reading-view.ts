@@ -2,7 +2,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { syntaxHighlighting } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { hashtag, wikiLink } from "@carbon/core";
+import { blockId, hashtag, wikiLink } from "@carbon/core";
 import { codeLanguage } from "./code-languages";
 import { editorTheme, markdownHighlight } from "./editor-theme";
 import { listHangingIndent } from "./list-hanging-indent";
@@ -31,7 +31,7 @@ export function readingView(
         markdown({
           base: markdownLanguage,
           codeLanguages: codeLanguage,
-          extensions: [wikiLink, hashtag],
+          extensions: [wikiLink, hashtag, blockId],
         }),
         syntaxHighlighting(markdownHighlight),
         livePreview,

@@ -205,6 +205,7 @@ export class Vault {
       createNote: (path) => this.notes.create(path),
       read: (path) => this.notes.read(path),
       write: (path, text, baseHash) => this.notes.write(path, text, baseHash),
+      rewrite,
     });
     this.search = new Search({
       index,
