@@ -265,6 +265,12 @@ export const sigmaRenderer: GraphRendererFactory = (
     resize() {
       sigma.resize();
       setCamera(camera);
+      // sigma draws anew only when the window resizes: a side panel made
+      // wider would show the old picture stretched over the canvases until
+      // the next frame of sigma. Drawn at once, before the frame is
+      // painted (the resize comes from a `ResizeObserver`), the titles too.
+      // A refresh of nothing only renders: `render` itself is private.
+      sigma.refresh({ partialGraph: {}, skipIndexation: true });
     },
     destroy() {
       cancelAnimationFrame(fadeFrame);
