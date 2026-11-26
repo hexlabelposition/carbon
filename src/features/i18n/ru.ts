@@ -148,6 +148,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "graph.tagFilter": "Фильтр по тегу",
   "graph.title": "Граф",
   "graph.toggle": "Показать или скрыть граф",
+  "images.noAddress": "У картинки пока нет адреса",
   "images.notFound": "Картинка не найдена: {name}",
   "help.reportBug": "Сообщить об ошибке",
   "help.reportBugButton": "Открыть GitHub",

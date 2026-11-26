@@ -152,6 +152,7 @@ export const en = {
   "graph.tagFilter": "Filter by tag",
   "graph.title": "Graph",
   "graph.toggle": "Toggle graph view",
+  "images.noAddress": "No address for the image yet",
   "images.notFound": "Image not found: {name}",
   "help.reportBug": "Report a bug",
   "help.reportBugButton": "Open GitHub",

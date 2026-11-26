@@ -22,6 +22,7 @@ import {
   onWebImagesChange,
   webImageAddress,
   webImageAllowed,
+  imageName,
 } from "./web-images";
 
 /** What the editor needs from outside to show and to take in images. */
@@ -57,6 +58,12 @@ export interface ShownImage {
   target: string;
   alt: string;
 }
+
+/**
+ * The size of an image that is not there, as it is drawn and edited: a
+ * wide box, never wider than the note.
+ */
+const MISSING_IMAGE: SeenImage = { url: "", width: 560, height: 315 };
 
 /** The image host of an editor. Without one, images stay text. */
 export const imageHost = Facet.define<ImageHost, ImageHost | null>({
@@ -257,12 +264,27 @@ export const imagePreview = [
       cursor: "pointer",
     },
     ".cm-image-web-show:hover": { textDecoration: "underline" },
-    ".cm-image-missing": {
-      padding: "1px 6px",
+    // An image that is not there takes a size of its own, as one that is
+    // would: the note keeps its shape while an address is fixed.
+    ".cm-image.cm-image-missing": {
+      display: "inline-flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+      boxSizing: "border-box",
+      width: `min(100%, ${MISSING_IMAGE.width}px)`,
+      aspectRatio: `${MISSING_IMAGE.width} / ${MISSING_IMAGE.height}`,
+      padding: "16px 24px",
       border: "1px dashed var(--cb-line-strong)",
-      borderRadius: "4px",
+      borderRadius: "6px",
+      fontFamily: "var(--cb-ui-font)",
       fontSize: "13px",
+      lineHeight: "1.4",
+      textAlign: "center",
+      overflowWrap: "anywhere",
       color: "var(--cb-faint)",
+      cursor: "text",
     },
   }),
 ];
@@ -363,6 +385,18 @@ export const imageInput = [
 
 const imageSource = Decoration.mark({ class: "cm-image-source" });
 
+/** Draws `box` as an image that is not there, saying why. */
+function drawMissing(view: EditorView, box: HTMLElement, text: string): void {
+  box.className = "cm-image cm-image-missing";
+  box.style.cursor = "";
+  const icon = document.createElement("span");
+  icon.innerHTML = MISSING_ICON;
+  const label = document.createElement("span");
+  label.textContent = text;
+  box.replaceChildren(icon, label);
+  view.requestMeasure();
+}
+
 /**
  * An image may now be shown that could not, or the other way round: a web
  * image was allowed, or the address being edited was looked up. Draw
@@ -459,8 +493,10 @@ function decorate(view: EditorView, edit: ImageEdit): DecorationSet {
       enter({ name, node }) {
         if (name !== "Image") return;
         const url = node.getChild("URL");
-        if (url === null) return;
-        const target = state.sliceDoc(url.from, url.to);
+        // "![alt]()" has no address yet; "![alt][ref]" is left as text.
+        const written = state.sliceDoc(node.from, node.to);
+        if (url === null && !/\]\(\s*\)$/.test(written)) return;
+        const target = url === null ? "" : state.sliceDoc(url.from, url.to);
         const web = isWebImage(target);
         if (!web && !isLocal(target)) return;
         // What stands between "![" and "]".
@@ -481,16 +517,25 @@ function decorate(view: EditorView, edit: ImageEdit): DecorationSet {
           // last image it showed, or its size with no image once the
           // address shows none.
           const last = edit.line?.from === line.from ? edit.line.image : null;
-          if (alone && (seen !== undefined || last !== null)) {
+          // A web image not allowed yet stays a line with "Show": it has
+          // no size to keep.
+          const hidden = web && !webImageAllowed(target);
+          if (alone && (seen !== undefined || last !== null || !hidden)) {
             editedLine = true;
             if (seen !== undefined) {
               edit.line = { from: line.from, image: seen };
-            } else if (!edit.isMissing(target)) {
+            } else if (target !== "" && !edit.isMissing(target)) {
               edit.lookUp(target);
             }
-            const missing = seen === undefined && edit.isMissing(target);
+            // Not found, or not looked up yet with no image before it: the
+            // size of the last image, or of a missing one, with no image.
+            const missing =
+              seen === undefined &&
+              (last === null || target === "" || edit.isMissing(target));
             ranges.push(
-              editedImageLine(seen ?? last!, missing).range(line.from),
+              editedImageLine(seen ?? last ?? MISSING_IMAGE, missing).range(
+                line.from,
+              ),
               imageSource.range(node.from, node.to),
             );
             return;
@@ -616,10 +661,18 @@ class ImageWidget extends WidgetType {
       view.focus();
     });
 
-    const missing = () => {
-      box.classList.add("cm-image-missing");
-      box.textContent = t("images.notFound", { name: this.alt || this.target });
-    };
+    const missing = () =>
+      drawMissing(
+        view,
+        box,
+        this.target === ""
+          ? t("images.noAddress")
+          : t("images.notFound", { name: this.alt || this.target }),
+      );
+    if (this.target === "") {
+      missing();
+      return box;
+    }
     const host = view.state.facet(imageHost);
     if (host === null) {
       missing();
@@ -713,11 +766,13 @@ class WebImageWidget extends WidgetType {
       rememberImage(view, this.target, image);
       view.requestMeasure();
     });
-    image.addEventListener("error", () => {
-      box.className = "cm-image-missing";
-      box.style.cursor = "";
-      box.textContent = t("images.notFound", { name: this.alt || address });
-    });
+    image.addEventListener("error", () =>
+      drawMissing(
+        view,
+        box,
+        t("images.notFound", { name: this.alt || imageName(this.target) }),
+      ),
+    );
     image.src = address;
     const open = () =>
       view.state
@@ -790,6 +845,7 @@ const ICON_ATTRIBUTES =
   'viewBox="0 0 16 16" width="16" height="16" fill="none" ' +
   'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" ' +
   'stroke-linejoin="round" aria-hidden="true"';
+const MISSING_ICON = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/><path d="M3 3l18 18"/></svg>`;
 const ZOOM_ICON = `<svg ${ICON_ATTRIBUTES}><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14M7 5v4M5 7h4"/></svg>`;
 const CODE_ICON = `<svg ${ICON_ATTRIBUTES}><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5M9 3 7 13"/></svg>`;
 
