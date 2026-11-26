@@ -124,6 +124,7 @@ export const imagePreview = [
     },
     ".cm-image:hover .cm-image-tools": { opacity: "1", pointerEvents: "auto" },
     ".cm-image-tool": {
+      position: "relative",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -132,6 +133,35 @@ export const imagePreview = [
       borderRadius: "4px",
       color: "rgb(255 255 255 / 0.85)",
       cursor: "pointer",
+    },
+    // The tooltip of the app (`Tooltip`), drawn in CSS: the editor's own
+    // DOM has no React in it. Under the button, held to the right edge.
+    ".cm-image-tool::after": {
+      content: "attr(data-tooltip)",
+      position: "absolute",
+      top: "calc(100% + 6px)",
+      right: "-2px",
+      padding: "4px 8px",
+      border: "1px solid var(--cb-line)",
+      borderRadius: "6px",
+      backgroundColor: "var(--cb-panel)",
+      color: "var(--cb-fg)",
+      boxShadow: "var(--cb-shadow-dialog)",
+      fontFamily: "var(--cb-ui-font)",
+      fontSize: "12px",
+      lineHeight: "1.4",
+      whiteSpace: "nowrap",
+      textShadow: "none",
+      pointerEvents: "none",
+      opacity: "0",
+      transform: "scale(0.95)",
+      transformOrigin: "top right",
+      transition: "opacity 100ms ease-out, transform 100ms ease-out",
+    },
+    ".cm-image-tool:hover::after": {
+      opacity: "1",
+      transform: "none",
+      transitionDelay: "400ms",
     },
     ".cm-image-tool:hover": {
       color: "#fff",
@@ -186,6 +216,9 @@ export const imagePreview = [
         "radial-gradient(ellipse 70% 45% at center, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.15) 100%)",
     },
     ".cm-line.cm-image-edited > *": { minWidth: "0" },
+    // White on the darkened image in either theme: the highlighting gives
+    // the marks and the address the colors of the theme, dark when light.
+    ".cm-line.cm-image-edited *": { color: "#fff !important" },
     // The address of an image is one long word. Without this the line
     // would break before it, at the "(", and leave "![]" alone on a line.
     ".cm-image-source": { wordBreak: "break-all" },
@@ -621,7 +654,9 @@ function imageTools(
   ) => {
     const element = document.createElement("span");
     element.className = `cm-image-tool cm-image-tool-${kind}`;
-    element.title = label;
+    // Not `title`: WebKitGTK draws it as a big system tooltip, not as the
+    // tooltips of the app.
+    element.dataset.tooltip = label;
     element.innerHTML = icon;
     element.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
