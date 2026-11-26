@@ -55,7 +55,27 @@ export const tablePreview = [
     ]),
   ),
   EditorView.baseTheme({
-    // As wide as its text, never wider than the note: a long cell wraps.
+    // A table wider than the note scrolls sideways in its box, the side
+    // with more of it fading out (`--cm-fade-left`, `--cm-fade-right`).
+    ".cm-table-scroll": {
+      width: "fit-content",
+      maxWidth: "100%",
+      overflowX: "auto",
+      overflowY: "hidden",
+      scrollbarWidth: "thin",
+      "--cm-fade-left": "0px",
+      "--cm-fade-right": "0px",
+      maskImage:
+        "linear-gradient(to right, transparent, #000 var(--cm-fade-left), #000 calc(100% - var(--cm-fade-right)), transparent)",
+      WebkitMaskImage:
+        "linear-gradient(to right, transparent, #000 var(--cm-fade-left), #000 calc(100% - var(--cm-fade-right)), transparent)",
+    },
+    ".cm-table-scroll.cm-table-more-left": { "--cm-fade-left": "32px" },
+    ".cm-table-scroll.cm-table-more-right": { "--cm-fade-right": "32px" },
+    // As wide as its text; a long cell wraps between its words, never
+    // inside one: the editor breaks long words anywhere, which squeezed a
+    // narrow column down to a letter or two a line. A short cell keeps
+    // to one line.
     // A box with rounded corners, as a code block, lines between the
     // columns and the rows. The borders are kept apart, not collapsed:
     // collapsed, a table cannot have rounded corners.
@@ -66,6 +86,12 @@ export const tablePreview = [
       borderRadius: "6px",
       fontSize: noteSize(14),
       cursor: "text",
+      // As wide as its cells want, not squeezed to the note: a wider one
+      // scrolls in its box.
+      width: "max-content",
+      whiteSpace: "normal",
+      overflowWrap: "normal",
+      wordBreak: "normal",
     },
     ".cm-table th, .cm-table td": {
       padding: "6px 12px",
@@ -74,6 +100,8 @@ export const tablePreview = [
       textAlign: "left",
       verticalAlign: "top",
     },
+    // A cell grows with its text up to about 400 pixels, then wraps it.
+    ".cm-table-cell": { maxWidth: "28em" },
     ".cm-table tr > :last-child": { borderRight: "none" },
     ".cm-table tbody tr:last-child > *": { borderBottom: "none" },
     // A table of only a header: the line below it is the box itself.
@@ -104,6 +132,28 @@ export const tablePreview = [
     },
   }),
 ];
+
+/**
+ * Marks which sides of a scrolled table have more of it out of sight, for
+ * the fade on those sides: as it scrolls, and as it or the note changes
+ * width. `TableWidget.destroy` stops it.
+ */
+function watchOverflow(scroll: HTMLElement): void {
+  const update = () => {
+    const more = scroll.scrollWidth - scroll.clientWidth;
+    scroll.classList.toggle("cm-table-more-left", scroll.scrollLeft > 1);
+    scroll.classList.toggle(
+      "cm-table-more-right",
+      more - scroll.scrollLeft > 1,
+    );
+  };
+  scroll.addEventListener("scroll", update, { passive: true });
+  const observer = new ResizeObserver(update);
+  observer.observe(scroll);
+  observers.set(scroll, observer);
+}
+
+const observers = new WeakMap<HTMLElement, ResizeObserver>();
 
 /** Formatted text inside a cell: plain text, or an element around more. */
 type Inline = string | { tag: string; children: Inline[] };
@@ -210,7 +260,10 @@ class TableWidget extends WidgetType {
         const align = this.model.align[column];
         if (align) element.style.textAlign = align;
         element.dataset.offset = String(cell.offset);
-        appendInline(element, cell.content);
+        // A cell cannot be held to a width itself: a block in it can.
+        const content = element.appendChild(document.createElement("div"));
+        content.className = "cm-table-cell";
+        appendInline(content, cell.content);
       });
     };
     addRow(
@@ -220,6 +273,10 @@ class TableWidget extends WidgetType {
     );
     const body = table.appendChild(document.createElement("tbody"));
     for (const row of this.model.rows) addRow(body, row, "td");
+    const scroll = document.createElement("div");
+    scroll.className = "cm-table-scroll";
+    scroll.append(table);
+    watchOverflow(scroll);
 
     // A click on a cell puts the cursor at that cell in the Markdown,
     // which also turns the table back into text.
@@ -236,7 +293,11 @@ class TableWidget extends WidgetType {
       });
       view.focus();
     });
-    return table;
+    return scroll;
+  }
+
+  destroy(dom: HTMLElement): void {
+    observers.get(dom)?.disconnect();
   }
 
   ignoreEvent(): boolean {
