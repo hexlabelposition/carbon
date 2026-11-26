@@ -33,6 +33,7 @@ import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
 import { listGuides } from "./list-guides";
 import { listHangingIndent } from "./list-hanging-indent";
+import { listContinueKeymap } from "./list-continue";
 import { listGuidesPreference } from "../settings/note-style";
 import { codeLanguage } from "./code-languages";
 import {
@@ -240,7 +241,10 @@ export function MarkdownEditor({
             base: markdownLanguage,
             codeLanguages: codeLanguage,
             extensions: [wikiLink, hashtag, blockId],
+            // Its Enter adds a blank line in a loose list: ours does not.
+            addKeymap: false,
           }),
+          listContinueKeymap,
           syntaxHighlighting(markdownHighlight),
           preview.current.of(
             latest.current.sourceMode ? noPreview : livePreviewExtensions,
