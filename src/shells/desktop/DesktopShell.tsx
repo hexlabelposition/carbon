@@ -341,9 +341,6 @@ export function DesktopShell({
             </Suspense>
           ) : undefined
         }
-        notifications={
-          vault !== null && !showDev ? <NotificationsButton /> : undefined
-        }
         panels={
           vault !== null && !showDev ? (
             <>
@@ -579,7 +576,7 @@ const SHOW_TIMING =
  * The toolbar at the left edge: files, tags and drafts, which show in the
  * sidebar and hide it when it shows them already, and a few commands, the
  * search dialog first; at the foot
- * the settings and the menu of the vault.
+ * the notifications, the settings and the menu of the vault.
  */
 function ToolbarHost({
   open,
@@ -639,6 +636,7 @@ function ToolbarHost({
       items={[
         sidebarItem("files", t("shell.files"), toolbarIcons.files),
         sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
+        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
         ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
@@ -647,10 +645,8 @@ function ToolbarHost({
         ...command(TOGGLE_GRAPH, toolbarIcons.graph),
         ...command(OPEN_PALETTE, toolbarIcons.commands),
       ]}
-      footer={[
-        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
-        ...command("settings.open", toolbarIcons.settings),
-      ]}
+      footerStart={<NotificationsButton />}
+      footer={[...command("settings.open", toolbarIcons.settings)]}
       footerEnd={<VaultMenu />}
     />
   );

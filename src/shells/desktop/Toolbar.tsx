@@ -23,12 +23,14 @@ interface ToolbarProps {
   open: boolean;
   /** The buttons from the top. */
   items: readonly ToolbarItem[];
-  /** The buttons at the foot, such as the settings. */
-  footer: readonly ToolbarItem[];
   /**
-   * What stands below them, at the very foot, parted from them by a line
-   * across the whole toolbar: the vault.
+   * The buttons at the foot, such as the settings, parted from those above
+   * by a line across the whole toolbar.
    */
+  footer: readonly ToolbarItem[];
+  /** What stands above them in that group: the notifications. */
+  footerStart?: ReactNode;
+  /** What stands below them in that group, at the very foot: the vault. */
   footerEnd?: ReactNode;
 }
 
@@ -38,7 +40,13 @@ interface ToolbarProps {
  * right under the mark in the corner. Layout only: what the buttons do
  * comes from outside.
  */
-export function Toolbar({ open, items, footer, footerEnd }: ToolbarProps) {
+export function Toolbar({
+  open,
+  items,
+  footer,
+  footerStart,
+  footerEnd,
+}: ToolbarProps) {
   const t = useT();
   return (
     <SlidePanel open={open} width={TOOLBAR_WIDTH}>
@@ -48,23 +56,37 @@ export function Toolbar({ open, items, footer, footerEnd }: ToolbarProps) {
       >
         <ToolbarGroup items={items} />
         <div data-tauri-drag-region className="min-h-0 flex-1" />
-        <ToolbarGroup items={footer} />
-        {footerEnd !== undefined && (
-          <div className="flex shrink-0 flex-col border-t border-line py-1.5">
-            {footerEnd}
-          </div>
-        )}
+        <ToolbarGroup
+          items={footer}
+          start={footerStart}
+          end={footerEnd}
+          className="border-t border-line"
+        />
       </nav>
     </SlidePanel>
   );
 }
 
-function ToolbarGroup({ items }: { items: readonly ToolbarItem[] }) {
+function ToolbarGroup({
+  items,
+  start,
+  end,
+  className = "",
+}: {
+  items: readonly ToolbarItem[];
+  /** What stands before the buttons, such as one that opens a popup. */
+  start?: ReactNode;
+  /** What stands after them, such as a button with a menu. */
+  end?: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex shrink-0 flex-col py-1.5">
+    <div className={`flex shrink-0 flex-col py-1.5 ${className}`}>
+      {start}
       {items.map((item) => (
         <ToolbarButton key={item.id} item={item} />
       ))}
+      {end}
     </div>
   );
 }

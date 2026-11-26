@@ -8,21 +8,17 @@ import { log } from "../../features/log/log";
 /**
  * Minimize, maximize or restore, and close, in the top right corner of the
  * window, over the top row of the layout, with groups of buttons before
- * them: the dev tools, the bell of the notifications and the buttons of
- * the side panels. The element at the right end of that row
+ * them: the dev tools and the buttons of the side panels. The element at the right end of that row
  * leaves `WINDOW_CONTROLS_ROOM` free for them.
  */
 export function WindowControls({
   frame,
   dev,
-  notifications,
   panels,
 }: {
   frame: WindowFrame;
   /** The dev tools, in a group of their own before the others: dev builds. */
   dev?: ReactNode;
-  /** The bell of the notifications, in a group of its own. */
-  notifications?: ReactNode;
   panels?: ReactNode;
 }) {
   const t = useT();
@@ -48,7 +44,6 @@ export function WindowControls({
 
   const groups = [
     { key: "dev", content: dev },
-    { key: "notifications", content: notifications },
     { key: "panels", content: panels },
   ].filter((group) => group.content !== undefined);
 

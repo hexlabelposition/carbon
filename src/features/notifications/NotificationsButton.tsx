@@ -10,10 +10,10 @@ import {
 } from "./notifications";
 
 /**
- * A bell in the top row that opens the notifications under it: news that
- * need not interrupt, such as a slow start. A dot on the bell tells of
- * one not yet seen; opening the panel takes it away. Shown with nothing
- * in it too, so the buttons beside it keep their places.
+ * A bell at the foot of the toolbar that opens the notifications beside
+ * it: news that need not interrupt, such as a slow start. A dot on the
+ * bell tells of one not yet seen; opening the panel takes it away. Shown
+ * with nothing in it too, so the buttons beside it keep their places.
  */
 export function NotificationsButton() {
   const t = useT();
@@ -26,12 +26,13 @@ export function NotificationsButton() {
         if (open) markRead();
       }}
     >
-      <Tooltip label={label}>
+      <Tooltip label={label} side="right">
         <Popover.Trigger
           aria-label={label}
-          // As the buttons of the panels beside it: as tall as the row, only
-          // a rounded square around the icon lights up.
-          className="group flex h-full w-10 shrink-0 items-center justify-center text-muted outline-none hover:text-fg data-popup-open:text-fg"
+          // As the other buttons of the toolbar: the whole width of the
+          // strip takes the click, only a rounded square around the icon
+          // lights up.
+          className="group flex h-10 w-full shrink-0 items-center justify-center text-muted outline-none hover:text-fg data-popup-open:text-fg"
         >
           <span className="relative flex size-8 items-center justify-center rounded-md transition-colors duration-100 group-hover:bg-selected group-focus-visible:ring-1 group-focus-visible:ring-line-strong group-data-popup-open:bg-selected">
             <svg
@@ -55,9 +56,10 @@ export function NotificationsButton() {
       </Tooltip>
       <Popover.Portal>
         <Popover.Positioner
-          side="bottom"
+          side="right"
           align="end"
           sideOffset={4}
+          collisionPadding={8}
           className="z-50 outline-none"
         >
           <Popover.Popup
