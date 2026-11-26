@@ -2,7 +2,7 @@ import { attachmentLink, type NotePath, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n/i18n";
 import { imageEndingOf, imageTypeOf } from "../image/image-file";
-import type { ImageHost, ShownImage } from "./live-preview-image";
+import type { ImageHost, ImageSizes, ShownImage } from "./live-preview-image";
 import { errorText } from "../i18n/error-text";
 
 export interface NoteImages {
@@ -13,6 +13,28 @@ export interface NoteImages {
   /** The image shown on its own, over the whole window, if one is. */
   shown: ShownImage | null;
   closeShown(): void;
+}
+
+/**
+ * The sizes of the images of each note, kept while the vault is open: a
+ * note opened again draws its images at their size at once, and the
+ * editor knows the height of those out of sight, so the scroll bar does
+ * not grow as they load.
+ */
+const sizesByVault = new WeakMap<Vault, Map<NotePath, ImageSizes>>();
+
+function sizesOf(vault: Vault, path: NotePath): ImageSizes {
+  let notes = sizesByVault.get(vault);
+  if (notes === undefined) {
+    notes = new Map();
+    sizesByVault.set(vault, notes);
+  }
+  let sizes = notes.get(path);
+  if (sizes === undefined) {
+    sizes = new Map();
+    notes.set(path, sizes);
+  }
+  return sizes;
 }
 
 /**
@@ -78,6 +100,8 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
       refuse: setError,
 
       open: setShown,
+
+      sizes: sizesOf(vault, path),
     };
   }, [vault, path]);
 

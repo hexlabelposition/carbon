@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import type { SyntaxNode } from "@lezer/common";
+import type { SyntaxNode, Tree } from "@lezer/common";
 import {
   Facet,
   Prec,
@@ -54,7 +54,24 @@ export interface ImageHost {
   refuse(reason: string): void;
   /** Shows an image of the note on its own, over the whole window. */
   open(image: ShownImage): void;
+  /**
+   * The sizes of the images of the note, by their address in it, `null`
+   * for one that showed no image: kept by the host for longer than the
+   * editor, so a note opened again draws its images at their size at
+   * once, and knows the height of those below. Without it, the editor
+   * keeps its own.
+   */
+  readonly sizes?: ImageSizes;
 }
+
+/** The real size of an image, in pixels. */
+export interface ImageSize {
+  width: number;
+  height: number;
+}
+
+/** Image sizes by their address in a note, `null` for none there. */
+export type ImageSizes = Map<string, ImageSize | null>;
 
 /** An image of a note, ready to be shown. */
 export interface ShownImage {
@@ -185,6 +202,9 @@ export const imagePreview = [
           ) ||
           update.docChanged ||
           update.viewportChanged ||
+          // The width images are drawn at, for the height of those out of
+          // sight: unknown until the editor is in the page.
+          update.geometryChanged ||
           update.selectionSet ||
           update.focusChanged ||
           holdingChanged(update) ||
@@ -472,6 +492,7 @@ function drawMissing(view: EditorView, box: HTMLElement, text: string): void {
   // The button for the Markdown, as on a shown image; nothing to open.
   box.className = "cm-image cm-image-missing";
   box.style.cursor = "";
+  freeBox(box);
   const icon = document.createElement("span");
   icon.innerHTML = MISSING_ICON;
   const label = document.createElement("span");
@@ -680,71 +701,81 @@ function decorate(view: EditorView, edit: ImageEdit): DecorationSet {
       (range) => range.from <= to && range.to >= from,
     );
   let editedLine = false;
+  const sizes = imageSizes(view);
+  // How wide an image can be drawn: the editor guesses the height of the
+  // lines of images out of sight from it.
+  const room = view.contentDOM.clientWidth;
+  const estimate = (target: string) => {
+    const size = sizes?.get(target);
+    if (size === undefined || room === 0) return -1;
+    const { width, height } = size ?? MISSING_IMAGE;
+    // A missing image is as wide as the note.
+    const drawn = size === null ? room : Math.min(width, room);
+    return Math.round((drawn * height) / width);
+  };
 
-  for (const { from, to } of view.visibleRanges) {
-    syntaxTree(state).iterate({
-      from,
-      to,
-      enter({ name, node }) {
-        if (name !== "Image") return;
-        const url = node.getChild("URL");
-        // "![alt]()" has no address yet; "![alt][ref]" is left as text.
-        const written = state.sliceDoc(node.from, node.to);
-        if (url === null && !/\]\(\s*\)$/.test(written)) return;
-        const target = url === null ? "" : state.sliceDoc(url.from, url.to);
-        const web = isWebImage(target);
-        if (!web && !isLocal(target)) return;
-        // What stands between "![" and "]".
-        const alt = /^!\[(.*?)\]/s.exec(state.sliceDoc(node.from, node.to));
-        const widget = web
-          ? new WebImageWidget(target, alt?.[1] ?? "", webImageAllowed(target))
-          : new ImageWidget(target, alt?.[1] ?? "");
-        if (editing(node.from, node.to) && revealed(state, node.from)) {
-          const line = state.doc.lineAt(node.from);
-          const alone =
-            node.to <= line.to &&
-            state.sliceDoc(line.from, line.to).trim() ===
-              state.sliceDoc(node.from, node.to);
-          const seen = alone ? seenImage(view, target) : undefined;
-          // Being edited, alone on its line: the line takes the place and
-          // the size of the image, blurred behind the Markdown, so nothing
-          // below moves. While another address is typed, it keeps the
-          // last image it showed, or its size with no image once the
-          // address shows none.
-          const last = edit.line?.from === line.from ? edit.line.image : null;
-          // A web image not allowed yet stays a line with "Show": it has
-          // no size to keep.
-          const hidden = web && !webImageAllowed(target);
-          if (alone && (seen !== undefined || last !== null || !hidden)) {
-            editedLine = true;
-            if (seen !== undefined) {
-              edit.line = { from: line.from, image: seen };
-            } else if (target !== "" && !edit.isMissing(target)) {
-              edit.lookUp(target);
-            }
-            // Not found, or not looked up yet with no image before it: the
-            // size of the last image, or of a missing one, with no image.
-            const missing =
-              seen === undefined &&
-              (last === null || target === "" || edit.isMissing(target));
-            ranges.push(
-              editedImageLine(seen ?? last ?? MISSING_IMAGE, missing).range(
-                line.from,
-              ),
-              imageSource.range(node.from, node.to),
-            );
-            return;
-          }
-          // Being edited: the Markdown stays, the image follows it.
-          ranges.push(
-            imageSource.range(node.from, node.to),
-            Decoration.widget({ widget, side: 1 }).range(node.to),
-          );
-        } else {
-          ranges.push(Decoration.replace({ widget }).range(node.from, node.to));
+  // Every image of the note, not only those in sight: the editor knows
+  // the heights of those it has not drawn, so the scroll bar does not
+  // grow as they come into sight.
+  for (const node of imageNodes(state)) {
+    const url = node.url;
+    const target = url === null ? "" : state.sliceDoc(url.from, url.to);
+    const web = isWebImage(target);
+    if (!web && !isLocal(target)) continue;
+    // What stands between "![" and "]".
+    const alt = /^!\[(.*?)\]/s.exec(state.sliceDoc(node.from, node.to));
+    const widget = web
+      ? new WebImageWidget(
+          target,
+          alt?.[1] ?? "",
+          webImageAllowed(target),
+          estimate(target),
+        )
+      : new ImageWidget(target, alt?.[1] ?? "", estimate(target));
+    if (editing(node.from, node.to) && revealed(state, node.from)) {
+      const line = state.doc.lineAt(node.from);
+      const alone =
+        node.to <= line.to &&
+        state.sliceDoc(line.from, line.to).trim() ===
+          state.sliceDoc(node.from, node.to);
+      const seen = alone ? seenImage(view, target) : undefined;
+      // Being edited, alone on its line: the line takes the place and
+      // the size of the image, blurred behind the Markdown, so nothing
+      // below moves. While another address is typed, it keeps the
+      // last image it showed, or its size with no image once the
+      // address shows none.
+      const last = edit.line?.from === line.from ? edit.line.image : null;
+      // A web image not allowed yet stays a line with "Show": it has
+      // no size to keep.
+      const hidden = web && !webImageAllowed(target);
+      if (alone && (seen !== undefined || last !== null || !hidden)) {
+        editedLine = true;
+        if (seen !== undefined) {
+          edit.line = { from: line.from, image: seen };
+        } else if (target !== "" && !edit.isMissing(target)) {
+          edit.lookUp(target);
         }
-      },
-    });
+        // Not found, or not looked up yet with no image before it: the
+        // size of the last image, or of a missing one, with no image.
+        const missing =
+          seen === undefined &&
+          (last === null || target === "" || edit.isMissing(target));
+        ranges.push(
+          editedImageLine(seen ?? last ?? MISSING_IMAGE, missing).range(
+            line.from,
+          ),
+          imageSource.range(node.from, node.to),
+        );
+        continue;
+      }
+      // Being edited: the Markdown stays, the image follows it.
+      ranges.push(
+        imageSource.range(node.from, node.to),
+        Decoration.widget({ widget, side: 1 }).range(node.to),
+      );
+    } else {
+      ranges.push(Decoration.replace({ widget }).range(node.from, node.to));
+    }
   }
   // No image line is edited any more: the next one starts afresh.
   if (!editedLine) edit.line = null;
@@ -780,22 +811,61 @@ function seenImage(view: EditorView, target: string): SeenImage | undefined {
 }
 
 /**
- * The addresses each editor found no image at, by their address in the
- * note: drawn again, they show that at once (`drawMissing`), as the host
- * takes a moment to tell. Until then the line would shrink to a line of
- * text, then grow back to the box of a missing image.
+ * The sizes of the images each editor has drawn, by their address in the
+ * note, `null` for an address that showed none, for a host that keeps
+ * none itself (`ImageHost.sizes`). Drawn again, an image takes its size
+ * at once, and a missing one its box: the host takes a moment to answer,
+ * and the line would shrink to a line of text meanwhile, then grow back.
  */
-const missingImages = new WeakMap<ImageHost, Set<string>>();
+const ownSizes = new WeakMap<ImageHost, ImageSizes>();
 
-function missingTargets(view: EditorView): Set<string> | null {
+function imageSizes(view: EditorView): ImageSizes | null {
   const host = view.state.facet(imageHost);
   if (host === null) return null;
-  let targets = missingImages.get(host);
-  if (targets === undefined) {
-    targets = new Set();
-    missingImages.set(host, targets);
+  if (host.sizes !== undefined) return host.sizes;
+  let sizes = ownSizes.get(host);
+  if (sizes === undefined) {
+    sizes = new Map();
+    ownSizes.set(host, sizes);
   }
-  return targets;
+  return sizes;
+}
+
+/** An image of a note, where it is written, and its address. */
+interface ImageNode {
+  from: number;
+  to: number;
+  /** The address, `null` for "![alt]()", which has none yet. */
+  url: { from: number; to: number } | null;
+}
+
+/** The images of each syntax tree: worked out once, not at every move. */
+const imagesOfTree = new WeakMap<Tree, ImageNode[]>();
+
+/** Every image of the note that may be drawn, in the order written. */
+function imageNodes(state: EditorState): ImageNode[] {
+  const tree = syntaxTree(state);
+  let nodes = imagesOfTree.get(tree);
+  if (nodes !== undefined) return nodes;
+  const found: ImageNode[] = [];
+  tree.iterate({
+    enter({ name, node }) {
+      if (name !== "Image") return;
+      const url = node.getChild("URL");
+      // "![alt]()" has no address yet; "![alt][ref]" is left as text.
+      const written = state.sliceDoc(node.from, node.to);
+      if (url === null && !/\]\(\s*\)$/.test(written)) return false;
+      found.push({
+        from: node.from,
+        to: node.to,
+        url: url === null ? null : { from: url.from, to: url.to },
+      });
+      return false;
+    },
+  });
+  nodes = found;
+  imagesOfTree.set(tree, nodes);
+  return nodes;
 }
 
 /** Remembers a loaded image, for the line that stands in for it. */
@@ -805,7 +875,10 @@ function rememberImage(
   image: HTMLImageElement,
 ) {
   if (image.naturalWidth === 0 || image.naturalHeight === 0) return;
-  missingTargets(view)?.delete(target);
+  imageSizes(view)?.set(target, {
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+  });
   seenImages(view)?.set(target, {
     url: image.src,
     width: image.naturalWidth,
@@ -840,9 +913,23 @@ function editedImageLine(image: SeenImage, missing: boolean): Decoration {
  * so its line keeps its height until it is loaded: as wide as it is
  * (never wider than the note, `max-width`), as high as its shape makes it.
  */
-function keepSize(image: HTMLImageElement, seen: SeenImage): void {
-  image.width = seen.width;
-  image.style.aspectRatio = `${seen.width} / ${seen.height}`;
+function keepSize(image: HTMLImageElement, size: ImageSize): void {
+  image.width = size.width;
+  image.style.aspectRatio = `${size.width} / ${size.height}`;
+}
+
+/**
+ * Holds the place of an image whose address the host has not given yet,
+ * at the size it was drawn at before: until `freeBox`.
+ */
+function holdBox(box: HTMLElement, size: ImageSize): void {
+  box.style.width = `${size.width}px`;
+  box.style.aspectRatio = `${size.width} / ${size.height}`;
+}
+
+function freeBox(box: HTMLElement): void {
+  box.style.width = "";
+  box.style.aspectRatio = "";
 }
 
 /** False for addresses on the web: "https:", "data:", "//host". */
@@ -854,12 +941,31 @@ class ImageWidget extends WidgetType {
   constructor(
     private readonly target: string,
     private readonly alt: string,
+    /** Its height drawn, as last seen, for the editor; `-1` unknown. */
+    private readonly height: number,
   ) {
     super();
   }
 
+  get estimatedHeight(): number {
+    return this.height;
+  }
+
   eq(other: ImageWidget): boolean {
-    return other.target === this.target && other.alt === this.alt;
+    return (
+      other.target === this.target &&
+      other.alt === this.alt &&
+      other.height === this.height
+    );
+  }
+
+  /** Only the height guessed changed: the image drawn stays. */
+  updateDOM(_dom: HTMLElement, _view: EditorView, from: WidgetType): boolean {
+    return (
+      from instanceof ImageWidget &&
+      from.target === this.target &&
+      from.alt === this.alt
+    );
   }
 
   /** Shows the image on its own, where it can be zoomed. */
@@ -892,7 +998,7 @@ class ImageWidget extends WidgetType {
           : t("images.notFound", { name: this.alt || this.target }),
       );
     const missing = () => {
-      missingTargets(view)?.add(this.target);
+      imageSizes(view)?.set(this.target, null);
       drawAsMissing();
     };
     if (this.target === "") {
@@ -917,6 +1023,9 @@ class ImageWidget extends WidgetType {
       // Drawn as missing before, and found now: the box is an image again.
       box.className = "cm-image";
       box.replaceChildren();
+      freeBox(box);
+      const size = imageSizes(view)?.get(this.target);
+      if (size) keepSize(drawn, size);
       drawn.alt = this.alt;
       drawn.draggable = false;
       // The image has a height only once it is loaded; the editor must
@@ -936,13 +1045,12 @@ class ImageWidget extends WidgetType {
     // answers a moment later, and the line would shrink to a line of
     // text meanwhile, as when the cursor leaves an image it showed the
     // Markdown of, then grow back.
+    // Seen in an editor before, only its size is known: its place is held.
     const known = seenImage(view, this.target);
-    if (known !== undefined) {
-      draw(known.url);
-      if (image !== null) keepSize(image, known);
-    } else if (missingTargets(view)?.has(this.target) === true) {
-      drawAsMissing();
-    }
+    const size = imageSizes(view)?.get(this.target);
+    if (known !== undefined) draw(known.url);
+    else if (size === null) drawAsMissing();
+    else if (size !== undefined) holdBox(box, size);
     host.load(this.target).then((url) => {
       if (url === null) missing();
       else draw(url);
@@ -968,15 +1076,32 @@ class WebImageWidget extends WidgetType {
     private readonly target: string,
     private readonly alt: string,
     private readonly allowed: boolean,
+    /** Its height drawn, as last seen, for the editor; `-1` unknown. */
+    private readonly height: number,
   ) {
     super();
+  }
+
+  get estimatedHeight(): number {
+    return this.allowed ? this.height : -1;
   }
 
   eq(other: WebImageWidget): boolean {
     return (
       other.target === this.target &&
       other.alt === this.alt &&
-      other.allowed === this.allowed
+      other.allowed === this.allowed &&
+      other.height === this.height
+    );
+  }
+
+  /** Only the height guessed changed: the image drawn stays. */
+  updateDOM(_dom: HTMLElement, _view: EditorView, from: WidgetType): boolean {
+    return (
+      from instanceof WebImageWidget &&
+      from.target === this.target &&
+      from.alt === this.alt &&
+      from.allowed === this.allowed
     );
   }
 
@@ -1035,18 +1160,15 @@ class WebImageWidget extends WidgetType {
       view.requestMeasure();
     });
     image.addEventListener("error", () => {
-      missingTargets(view)?.add(this.target);
+      imageSizes(view)?.set(this.target, null);
       drawAsMissing();
     });
     image.src = address;
     // Its size known from before, the line does not shrink while it loads;
     // found missing before, it shows that at once.
-    const known = seenImage(view, this.target);
-    if (known !== undefined) keepSize(image, known);
-    if (
-      known === undefined &&
-      missingTargets(view)?.has(this.target) === true
-    ) {
+    const size = imageSizes(view)?.get(this.target);
+    if (size) keepSize(image, size);
+    if (size === null) {
       drawAsMissing();
     } else {
       box.append(image, imageTools(view, box, open));

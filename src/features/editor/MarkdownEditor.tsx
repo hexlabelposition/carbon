@@ -265,6 +265,9 @@ export function MarkdownEditor({
               Promise.reject(new Error("Images cannot be saved here")),
             refuse: (reason) => latest.current.images?.refuse(reason),
             open: (image) => latest.current.images?.open(image),
+            get sizes() {
+              return latest.current.images?.sizes;
+            },
           }),
           linkCompletion,
           // The word the formatting bar puts on an empty line to type over.
