@@ -18,14 +18,13 @@ import {
   type AvailableUpdate,
 } from "../features/updates/update-state";
 import { useIndexStatus } from "../features/vault/use-index-status";
-import { useVaultSession } from "../features/vault/vault-session";
 import { Tooltip } from "../features/ui/Tooltip";
 
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: an orange
  * bug in the top row, before the buttons of the panels, that opens a
- * dialog with how the app started, the theme, the language, the test vault
- * and the dev panel. It is there on the start screen too, where the
+ * dialog with how the app started, the theme, the language and the dev
+ * panel. It is there on the start screen too, where the
  * palette is not. Not translated.
  */
 function DevButton({
@@ -38,19 +37,8 @@ function DevButton({
   onTogglePanel(): void;
 }) {
   const [open, setOpen] = useDialog("dev");
-  const session = useVaultSession();
   const theme = themePreference.use();
   const language = languagePreference.use();
-
-  function openTestVault() {
-    setOpen(false);
-    // The test vault is made afresh in place: not while it is open.
-    session.close();
-    void session.openPrepared(async () => {
-      const { prepareTestVault } = await import("./test-vault");
-      return prepareTestVault();
-    });
-  }
 
   return (
     <>
@@ -135,19 +123,6 @@ function DevButton({
         </Section>
 
         <div className="flex flex-col gap-1.5">
-          <Tooltip
-            label="A copy of fixtures/test-vault, made afresh each time"
-            side="left"
-          >
-            <button
-              type="button"
-              className={action}
-              disabled={session.opening}
-              onClick={openTestVault}
-            >
-              Open test vault
-            </button>
-          </Tooltip>
           <button
             type="button"
             className={action}

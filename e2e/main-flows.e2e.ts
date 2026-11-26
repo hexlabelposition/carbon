@@ -20,7 +20,7 @@ if (APP === undefined || CACHE === undefined) {
   throw new Error("Run the end-to-end tests with `bun run e2e`");
 }
 
-/** Where "Open test vault" makes its copy of `fixtures/test-vault`. */
+/** Where `bun run e2e` puts its copy of `fixtures/test-vault`. */
 const VAULT = join(CACHE, "io.github.hexlabelposition.carbon", "test-vault");
 
 let app: Session;
@@ -100,8 +100,7 @@ beforeAll(async () => {
       "localStorage.setItem('carbon.note.inlineTitle', 'true');" +
       "location.reload();",
   );
-  await (await app.find('[aria-label="Dev tools"]', 30_000)).click();
-  await (await app.button("Open test vault")).click();
+  // The test vault was left open in the settings: it opens at start.
   await app.find('[role="tree"] [data-path="Start here.md"]', 30_000);
 });
 
@@ -110,7 +109,7 @@ afterAll(async () => {
 });
 
 describe("Carbon", () => {
-  flow("opens the test vault from the start screen", async () => {
+  flow("opens the vault left open at start", async () => {
     const items = await app.all('[role="tree"] [role="treeitem"]');
     expect(items.length).toBeGreaterThan(5);
   });

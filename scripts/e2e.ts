@@ -4,9 +4,11 @@
  * 1. the Vite dev server on port 1420, unless one runs already: the debug
  *    build of the app loads its interface from there;
  * 2. the debug build of the app, with `cargo build`;
- * 3. `tauri-driver`, with a profile of its own in a temporary folder, so
- *    the user's vaults and settings are never touched;
- * 4. the tests, with `bun test`.
+ * 3. a profile of its own in a temporary folder, so the user's vaults
+ *    and settings are never touched: a copy of `fixtures/test-vault` in
+ *    its cache, and settings that open it at start;
+ * 4. `tauri-driver`, with that profile;
+ * 5. the tests, with `bun test`.
  *
  * Linux only, as `tauri-driver` on top of WebKitWebDriver. Only what this
  * script started is stopped at the end. A failure keeps the temporary
@@ -14,7 +16,7 @@
  */
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,6 +26,8 @@ const DEV_URL = "http://localhost:1420";
 const DRIVER_PORT = 4444;
 const DRIVER_URL = `http://127.0.0.1:${DRIVER_PORT}`;
 const APP = join(ROOT, "tauri", "target", "debug", "carbon");
+/** The app's folder in the config and cache folders of the profile. */
+const IDENTIFIER = "io.github.hexlabelposition.carbon";
 
 const started: ChildProcess[] = [];
 
@@ -111,6 +115,17 @@ async function main(): Promise<number> {
     XDG_DATA_HOME: join(profile, "data"),
     XDG_CACHE_HOME: join(profile, "cache"),
   };
+  // The test vault, in the one place of the cache a debug build lets its
+  // commands reach (`tauri/src/lib.rs`), left open as the app was closed:
+  // it opens at start, with no dialog to pick it in.
+  const vault = join(profile, "cache", IDENTIFIER, "test-vault");
+  await cp(join(ROOT, "fixtures", "test-vault"), vault, { recursive: true });
+  const config = join(profile, "config", IDENTIFIER);
+  await mkdir(config, { recursive: true });
+  await writeFile(
+    join(config, "settings.json"),
+    `${JSON.stringify({ openVault: vault, recentVaults: [{ path: vault }] }, null, 2)}\n`,
+  );
   start(driver, ["--port", String(DRIVER_PORT)], env);
   await waitUntil(`${DRIVER_URL}/status`, "tauri-driver", 20_000);
 
