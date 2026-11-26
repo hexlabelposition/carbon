@@ -4,7 +4,9 @@ name: Pages
 # leaves to it, and its build, published on GitHub Pages when it changes on
 # main, when a release is published (the page shows the version and links
 # to the files of the latest release, read at build time), or by hand. A
-# pull request is checked and built, not published.
+# pull request is checked and built, not published. A published release
+# runs it again on main: only main may deploy to the github-pages
+# environment, not the tag of the release, and main has the latest site.
 on:
   push:
     branches: [main]
@@ -28,8 +30,23 @@ permissions:
   contents: read
 
 jobs:
+  # A run started by the token of the workflow is not started again by
+  # its own events, except by workflow_dispatch.
+  rerun-on-main:
+    name: Build again on main
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Start the workflow on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+
   build:
     name: Check and build
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
@@ -54,7 +71,7 @@ jobs:
 
   deploy:
     name: Deploy
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.event_name != 'release'
     needs: build
     runs-on: ubuntu-latest
     # One deploy at a time, none cancelled halfway.
