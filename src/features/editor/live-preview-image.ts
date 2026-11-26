@@ -13,6 +13,7 @@ import {
   ViewPlugin,
   WidgetType,
   type DecorationSet,
+  type Rect,
   type ViewUpdate,
 } from "@codemirror/view";
 import { t } from "../i18n/i18n";
@@ -424,6 +425,23 @@ function drawMissing(view: EditorView, box: HTMLElement, text: string): void {
   view.requestMeasure();
 }
 
+/**
+ * Where the cursor is drawn beside an image: as high as a line of text,
+ * at the bottom of the image, before or after it. The editor draws it as
+ * high as the image otherwise.
+ */
+function cursorBeside(dom: HTMLElement, pos: number): Rect {
+  const rect = dom.getBoundingClientRect();
+  const height = parseFloat(getComputedStyle(dom).lineHeight) || 24;
+  const x = pos === 0 ? rect.left : rect.right;
+  return {
+    left: x,
+    right: x,
+    top: Math.max(rect.top, rect.bottom - height),
+    bottom: rect.bottom,
+  };
+}
+
 /** Shows the Markdown of the image drawn in `box`, to edit. */
 function revealSource(view: EditorView, box: HTMLElement): void {
   if (view.state.readOnly) return;
@@ -742,6 +760,10 @@ class ImageWidget extends WidgetType {
     return box;
   }
 
+  coordsAt(dom: HTMLElement, pos: number): Rect {
+    return cursorBeside(dom, pos);
+  }
+
   ignoreEvent(): boolean {
     return true;
   }
@@ -824,6 +846,10 @@ class WebImageWidget extends WidgetType {
       if (box.contains(image)) open();
     });
     return box;
+  }
+
+  coordsAt(dom: HTMLElement, pos: number): Rect {
+    return cursorBeside(dom, pos);
   }
 
   ignoreEvent(): boolean {
