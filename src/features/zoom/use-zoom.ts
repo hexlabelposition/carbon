@@ -30,6 +30,44 @@ const zoomOut = () => step(-1);
 const reset = () => zoomPreference.set(1);
 
 /**
+ * How long to wait for the zoomed layout, in milliseconds, when no resize
+ * comes: the scale was the same, or the WebView took longer than the call.
+ */
+const ZOOM_SETTLE = 150;
+
+/** How many changes of zoom are under way: one key held down repeats. */
+let holding = 0;
+
+/**
+ * Turns off every CSS transition while the zoom changes, through
+ * `data-zooming` on the root element (`index.css`). The WebView counts
+ * the sizes of the page anew at the new scale, a panel `20vw` or `3rem`
+ * wide among them, and the panels that glide to a new width would slide
+ * there instead of standing still. Returns the function to call once the
+ * zoom is applied: the transitions come back after the resize it brings,
+ * two frames on, when the layout has been drawn at the new scale.
+ */
+function holdTransitions(): () => void {
+  const root = document.documentElement;
+  holding++;
+  root.dataset.zooming = "";
+  return () => {
+    let timer = 0;
+    const release = () => {
+      window.removeEventListener("resize", release);
+      clearTimeout(timer);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (--holding === 0) delete root.dataset.zooming;
+        }),
+      );
+    };
+    window.addEventListener("resize", release);
+    timer = window.setTimeout(release, ZOOM_SETTLE);
+  };
+}
+
+/**
  * The zoom of the whole interface, remembered between app starts.
  * Ctrl+= (or Ctrl++) zooms in, Ctrl+- out, Ctrl+0 back to 100%; on a Mac
  * Cmd takes the place of Ctrl. The keys are found by their place too, so
@@ -41,9 +79,12 @@ export function useZoom(apply: (scale: number) => Promise<void>): void {
   const scale = zoomPreference.use();
 
   useEffect(() => {
-    apply(scale).catch((reason: unknown) =>
-      log.error("Could not zoom the interface", reason),
-    );
+    const done = holdTransitions();
+    apply(scale)
+      .catch((reason: unknown) =>
+        log.error("Could not zoom the interface", reason),
+      )
+      .finally(done);
   }, [apply, scale]);
 
   useEffect(() => {

@@ -153,6 +153,17 @@
   }
 
   /*
+   * While the zoom changes (`use-zoom.ts`) nothing glides: the sizes of
+   * the page are counted anew at the new scale, and the side panels and
+   * the toolbar would slide to their new widths.
+   */
+  html[data-zooming] *,
+  html[data-zooming] *::before,
+  html[data-zooming] *::after {
+    transition: none !important;
+  }
+
+  /*
    * A line along the edge of a window that is not maximized, over all of
    * the page, so the window stands apart from an app of the same color
    * behind it. A shadow would need room around the page inside the window,
