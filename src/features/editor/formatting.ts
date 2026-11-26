@@ -1,6 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import {
   EditorSelection,
+  Facet,
   type ChangeSpec,
   type EditorState,
   type Line,
@@ -31,8 +32,10 @@ const CODE: InlineMark = { mark: "`", node: "InlineCode" };
 
 /**
  * Bold, italic, strikethrough or inline code on each selection: around
- * the selected text, or a pair of marks with the cursor between them. In
- * text that has the mark already, the mark is taken off instead.
+ * the selected text; at a cursor inside a word, around the word; on an
+ * empty line, around a word to type over (`formatPlaceholder`); else a
+ * pair of marks with the cursor between them. In text that has the mark
+ * already, the mark is taken off instead.
  */
 function toggleInline(kind: InlineMark): FormatCommand {
   return (state) => {
@@ -43,6 +46,34 @@ function toggleInline(kind: InlineMark): FormatCommand {
         if (around !== null) return unwrap(state, range, around);
         const { mark } = kind;
         if (range.empty) {
+          const line = state.doc.lineAt(range.from);
+          const word = wordAt(line, range.from);
+          if (word !== null) {
+            // In a word: the word, the cursor where it was in it.
+            return {
+              changes: [
+                { from: word.from, insert: mark },
+                { from: word.to, insert: mark },
+              ],
+              range: EditorSelection.cursor(range.from + mark.length),
+            };
+          }
+          const { indent, quote, list } = parts(line);
+          const rest = line.text.slice(
+            indent.length + quote.length + list.length,
+          );
+          if (rest.trim() === "") {
+            // Alone on a line, a pair of marks would read as a code fence
+            // ("~~~~") or a rule ("****"): a word to type over goes in it.
+            const placeholder = state.facet(formatPlaceholder);
+            return {
+              changes: { from: range.from, insert: mark + placeholder + mark },
+              range: EditorSelection.range(
+                range.from + mark.length,
+                range.from + mark.length + placeholder.length,
+              ),
+            };
+          }
           return {
             changes: { from: range.from, insert: mark + mark },
             range: EditorSelection.cursor(range.from + mark.length),
@@ -63,6 +94,31 @@ function toggleInline(kind: InlineMark): FormatCommand {
       userEvent: "input.format",
     };
   };
+}
+
+/**
+ * The word typed over when a mark is put on an empty line, in the language
+ * of the app. "text" until the editor gives one.
+ */
+export const formatPlaceholder = Facet.define<string, string>({
+  combine: (values) => values[0] ?? "text",
+});
+
+/** Letters, digits and "_": what a word is made of. */
+const WORD = /[\p{L}\p{N}_]/u;
+
+/** The word the cursor at `pos` is inside, not at its edge; or `null`. */
+function wordAt(line: Line, pos: number): { from: number; to: number } | null {
+  const at = pos - line.from;
+  const text = line.text;
+  if (!WORD.test(text.charAt(at - 1)) || !WORD.test(text.charAt(at))) {
+    return null;
+  }
+  let from = at;
+  while (from > 0 && WORD.test(text.charAt(from - 1))) from--;
+  let to = at;
+  while (to < text.length && WORD.test(text.charAt(to))) to++;
+  return { from: line.from + from, to: line.from + to };
 }
 
 /** The node named `name` the whole of `range` is in, or `null`. */

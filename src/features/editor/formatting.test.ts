@@ -70,9 +70,20 @@ describe("inline marks", () => {
     expect(run(toggleInlineCode, "[x]")).toBe("`[x]`");
   });
 
-  test("put a pair of marks at the cursor", () => {
-    expect(run(toggleBold, "a |b")).toBe("a **|**b");
-    expect(run(toggleInlineCode, "|")).toBe("`|`");
+  test("put a pair of marks at the cursor between words", () => {
+    expect(run(toggleBold, "a | b")).toBe("a **|** b");
+    expect(run(toggleInlineCode, "a |")).toBe("a `|`");
+  });
+
+  test("wrap the word the cursor is in", () => {
+    expect(run(toggleBold, "a wo|rd b")).toBe("a **wo|rd** b");
+    expect(run(toggleItalic, "сло|во")).toBe("*сло|во*");
+  });
+
+  test("put a word to type over on an empty line", () => {
+    // Not "~~~~" or "****": a code fence and a rule, alone on a line.
+    expect(run(toggleStrikethrough, "|")).toBe("~~[text]~~");
+    expect(run(toggleBold, "- |")).toBe("- **[text]**");
   });
 
   test("come off with the cursor anywhere in the marked text", () => {

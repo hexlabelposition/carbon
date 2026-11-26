@@ -50,7 +50,8 @@ import {
 import { tagHost, type TagHost } from "./tag-completion";
 import { followOnClick, followOnModClick } from "./link-follow";
 import { linkPreview } from "./link-preview";
-import { useT } from "../i18n/i18n";
+import { formatPlaceholder } from "./formatting";
+import { t as translate, useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
 import { embedPreview } from "./live-preview-embed";
@@ -262,6 +263,8 @@ export function MarkdownEditor({
             open: (image) => latest.current.images?.open(image),
           }),
           linkCompletion,
+          // The word the formatting bar puts on an empty line to type over.
+          formatPlaceholder.of(translate("format.placeholder")),
           markdownInput,
           followOnModClick,
           linkPreview,

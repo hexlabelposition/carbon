@@ -125,6 +125,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "format.italic": "Курсив",
   "format.link": "Ссылка",
   "format.orderedList": "Нумерованный список",
+  "format.placeholder": "текст",
   "format.quote": "Цитата",
   "format.strikethrough": "Зачёркнутый",
   "format.taskList": "Список задач",

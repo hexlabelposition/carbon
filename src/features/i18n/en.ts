@@ -134,6 +134,7 @@ export const en = {
   "format.italic": "Italic",
   "format.link": "Link",
   "format.orderedList": "Numbered list",
+  "format.placeholder": "text",
   "format.quote": "Quote",
   "format.strikethrough": "Strikethrough",
   "format.taskList": "Task list",
