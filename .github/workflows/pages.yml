@@ -1,7 +1,9 @@
 name: Pages
 
 # Builds the landing page (website/, Astro) and publishes it on GitHub
-# Pages. Only when it changes, or by hand.
+# Pages: when it changes, when a release is published (the page shows the
+# version and links to the files of the latest release, read at build
+# time), or by hand.
 on:
   push:
     branches: [main]
@@ -10,6 +12,8 @@ on:
       - "src/styles/tokens.css"
       - "bun.lock"
       - ".github/workflows/pages.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -31,6 +35,9 @@ jobs:
         uses: actions/configure-pages@v6
       - name: Build the site
         run: bun run --filter @carbon/website build
+        env:
+          # For the GitHub API, so the build stays clear of its rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5
         with:

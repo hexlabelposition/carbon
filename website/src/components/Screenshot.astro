@@ -1,0 +1,68 @@
+---
+// A screenshot of the app, from the demo vault, in the theme of the page:
+// both are in the page and CSS shows the one that matches, so the theme
+// switch changes it too (a <source media> follows only the system). Both
+// load at once: it is the first thing seen, and the other one is small.
+// Astro makes AVIF and WebP of a few sizes; the PNG stays as the fallback.
+import { getImage } from "astro:assets";
+import dark from "../assets/app-dark.png";
+import light from "../assets/app-light.png";
+
+const widths = [760, 1032, dark.width];
+const sizes = "(min-width: 1080px) 1032px, calc(100vw - 48px)";
+const formats = ["avif", "webp"] as const;
+const alt =
+  "Carbon with a note open: the file tree on the left, a note in live preview with headings, links, a callout and tasks, and the word count below.";
+
+const shots = await Promise.all(
+  [
+    { image: dark, theme: "dark" },
+    { image: light, theme: "light" },
+  ].map(async ({ image, theme }) => ({
+    theme,
+    image,
+    sources: await Promise.all(
+      formats.map(async (format) => {
+        const result = await getImage({ src: image, widths, format });
+        return { type: `image/${format}`, srcset: result.srcSet.attribute };
+      }),
+    ),
+    fallback: await getImage({ src: image, format: "png" }),
+  })),
+);
+---
+
+{shots.map(({ theme, image, sources, fallback }) => (
+  <picture class={`shot shot-${theme}`}>
+    {sources.map(({ type, srcset }) => (
+      <source type={type} srcset={srcset} sizes={sizes} />
+    ))}
+    <img
+      src={fallback.src}
+      width={image.width}
+      height={image.height}
+      alt={alt}
+      loading="eager"
+      decoding="async"
+      class="h-auto w-full drop-shadow-[0_24px_48px_rgb(0_0_0/0.18)]"
+    />
+  </picture>
+))}
+
+<style is:global>
+  /* The screenshot of the theme in use: the chosen one, or the system's. */
+  :root[data-theme="dark"] .shot-light,
+  :root[data-theme="light"] .shot-dark,
+  :root:not([data-theme]) .shot-dark {
+    display: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .shot-dark {
+      display: block;
+    }
+    :root:not([data-theme]) .shot-light {
+      display: none;
+    }
+  }
+</style>

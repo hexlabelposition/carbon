@@ -1,36 +1,46 @@
 ---
-import AppWindow from "../components/AppWindow.astro";
 import Button from "../components/Button.astro";
+import Icon, { type IconName } from "../components/Icon.astro";
 import Mark from "../components/Mark.astro";
 import RichText from "../components/RichText.astro";
+import Screenshot from "../components/Screenshot.astro";
+import ThemeSwitch from "../components/ThemeSwitch.astro";
+import { REPO_URL, release } from "../data/release";
 import Layout from "../layouts/Layout.astro";
 
-const repo = "https://github.com/hexlabelposition/carbon";
-const latest = `${repo}/releases/latest`;
+const title = "Carbon: fast, local-first Markdown notes for Linux and Windows";
+const description =
+  "Carbon is a free, open-source Markdown notes app with wiki links, backlinks, tags, search and a graph. Your notes stay plain .md files on your disk.";
 
 // `code` in a text is shown as code.
-const features = [
+const features: { icon: IconName; title: string; text: string }[] = [
   {
+    icon: "bolt",
     title: "Speed",
     text: "A system WebView instead of a bundled Chromium. Heavy work stays off the UI thread, and search answers in milliseconds even in a vault of ten thousand notes.",
   },
   {
+    icon: "settings",
     title: "Simplicity",
     text: "Sensible defaults and fewer settings. Links, backlinks, tags, search and a graph work out of the box, with no plugin hunt.",
   },
   {
+    icon: "files",
     title: "Ownership",
     text: "Your notes are ordinary `.md` files in a folder you choose. Delete Carbon and every note stays readable.",
   },
   {
+    icon: "graph",
     title: "Links that hold",
     text: "Write `[[a note]]` to link it. Rename a note or a tag, and Carbon rewrites every link to it.",
   },
   {
+    icon: "eye",
     title: "Live preview",
     text: "Markdown renders as you type: headings, tasks, tables, callouts, images and code blocks. On disk it is still plain Markdown.",
   },
   {
+    icon: "lock",
     title: "Private by default",
     text: "Everything works offline. No account, no telemetry. The only network call is the update check, and a setting turns it off.",
   },
@@ -40,7 +50,7 @@ const platforms = [
   {
     os: "linux",
     name: "Linux",
-    about: "Primary platform: developed and tested here first.",
+    about: "The primary platform: developed and tested here first.",
     files: [
       { label: "AppImage", suffix: ".AppImage" },
       { label: ".deb", suffix: ".deb" },
@@ -52,71 +62,160 @@ const platforms = [
     name: "Windows",
     about: "Supported and tested before each release.",
     files: [{ label: "Installer", suffix: "-setup.exe" }],
-    hint: "Installs for your user, no administrator rights. Not signed yet: if Windows warns you, choose “More info”, then “Run anyway”.",
+    hint: "Installs for your user, without administrator rights. It is not signed yet: if Windows warns you, choose “More info”, then “Run anyway”.",
+  },
+];
+
+const faq = [
+  {
+    q: "Is Carbon free?",
+    a: "Yes. Carbon is free and open source under the MIT license. There is no account and no subscription.",
+  },
+  {
+    q: "Where are my notes stored?",
+    a: "In a folder you choose, as ordinary Markdown files. Carbon adds a small `.carbon` folder inside it for its trash, drafts, bookmarks and settings. The search index is only a cache, rebuilt from the files at any time.",
+  },
+  {
+    q: "Can I open a folder of Markdown notes I already have?",
+    a: "Yes. Any folder can be a vault. Notes link with `[[wiki links]]`, the syntax many Markdown apps share, and tags are read from the text and from the frontmatter.",
+  },
+  {
+    q: "How is Carbon different from Obsidian?",
+    a: "Carbon keeps the same idea, plain Markdown files with links between them, and focuses on speed and simple defaults. It runs on the system WebView instead of Electron, and the basics work without plugins. It has no plugin system yet.",
+  },
+  {
+    q: "Does Carbon sync my notes?",
+    a: "Not by itself. A vault is a normal folder, so git, Syncthing or any cloud drive can keep it in sync between your devices.",
+  },
+  {
+    q: "Does Carbon collect any data?",
+    a: "No. There is no telemetry. The only time Carbon goes to the network is the update check at start, and a setting turns it off.",
+  },
+  {
+    q: "Which systems does Carbon run on?",
+    a: "Linux, where it is developed first, and Windows. A web version is planned, and macOS and Android are under consideration.",
+  },
+];
+
+const site = new URL(import.meta.env.BASE_URL, Astro.site).href;
+const schema = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Carbon",
+    description,
+    url: site,
+    image: new URL("og.png", site).href,
+    applicationCategory: "ProductivityApplication",
+    operatingSystem: "Linux, Windows",
+    ...(release.version && { softwareVersion: release.version }),
+    downloadUrl: `${REPO_URL}/releases/latest`,
+    license: "https://opensource.org/licenses/MIT",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    codeRepository: REPO_URL,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a.replaceAll("`", "") },
+    })),
   },
 ];
 
 const container = "mx-auto max-w-270 px-6";
-const sectionTitle = "text-center text-[34px] font-bold tracking-tight";
+const sectionTitle =
+  "text-center text-[32px] font-bold tracking-tight sm:text-[36px]";
+const sectionLead = "mx-auto mt-3 max-w-150 text-center text-[17px] text-muted";
+const versionText = release.version
+  ? `Version ${release.version}`
+  : "The latest version";
 ---
 
-<Layout
-  title="Carbon — fast, local-first notes with links"
-  description="Carbon is a fast, local-first Markdown notes app with links between notes. Your notes are plain .md files in a folder you choose. Free and open source, for Linux and Windows."
->
-  <header class="sticky top-0 z-10 bg-bg/85 backdrop-blur-md">
-    <div class:list={[container, "flex items-center justify-between py-3.5"]}>
+<Layout title={title} description={description} schema={schema}>
+  <header class="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-md">
+    <div class:list={[container, "flex h-15 items-center justify-between"]}>
       <a href="#" class="flex items-center gap-2.5 text-[17px] font-semibold">
         <Mark class="size-5.5" />
         Carbon
       </a>
-      <nav class="flex gap-6 text-[15px] text-muted">
-        <a class="hidden hover:text-fg sm:inline" href="#features">
-          Features
-        </a>
-        <a class="hidden hover:text-fg sm:inline" href="#download">
-          Download
-        </a>
-        <a class="hover:text-fg" href={repo}>
-          GitHub
-        </a>
-      </nav>
+      <div class="flex items-center gap-5">
+        <nav class="flex items-center gap-6 text-[15px] text-muted">
+          <a class="hidden hover:text-fg sm:inline" href="#features">
+            Features
+          </a>
+          <a class="hidden hover:text-fg sm:inline" href="#faq">
+            FAQ
+          </a>
+          <a class="hidden hover:text-fg sm:inline" href="#download">
+            Download
+          </a>
+          <a
+            class="flex items-center gap-1.5 hover:text-fg"
+            href={REPO_URL}
+            aria-label="Carbon on GitHub"
+          >
+            <Icon name="github" class="size-4.5" />
+            <span class="hidden sm:inline">GitHub</span>
+          </a>
+        </nav>
+        <ThemeSwitch />
+      </div>
     </div>
   </header>
 
-  <main class={container}>
-    <section class="pt-12 pb-12 text-center sm:pt-18">
-      <Mark class="mx-auto mb-7 size-18" />
-      <h1 class="text-[clamp(36px,6vw,60px)] leading-[1.08] font-bold tracking-[-0.03em]">
-        Notes that stay yours.
-        <br />
-        And stay fast.
+  <main>
+    <section class:list={[container, "pt-14 pb-14 text-center sm:pt-20"]}>
+      <Mark wave class="mx-auto mb-8 size-20" />
+      <p class="mx-auto mb-5 w-fit rounded-full border border-line bg-panel px-3 py-1 text-[13px] text-muted">
+        Open-source Markdown notes
+        <span class="hidden sm:inline">for Linux and Windows</span>
+      </p>
+      <h1 class="text-[clamp(38px,6.4vw,64px)] leading-[1.05] font-bold tracking-[-0.035em]">
+        Notes that hold together.
       </h1>
-      <p class="mx-auto mt-6 max-w-155 text-[19px] leading-relaxed text-muted">
-        Carbon is a local-first Markdown notes app with links between notes. A
-        simpler, more human alternative to Obsidian: plain files, sensible
-        defaults, no Electron.
+      <p class="mx-auto mt-6 max-w-155 text-[18px] leading-relaxed text-muted sm:text-[19px]">
+        Carbon is a local-first notes app with links between notes. A simpler,
+        more human alternative to Obsidian, built with Tauri.
       </p>
       <div class="mt-9 flex flex-wrap justify-center gap-3">
-        <Button href="#download" primary data-primary>
-          Download
+        <Button href="#download" primary>
+          <Icon name="download" />
+          <span data-primary-label>Download</span>
         </Button>
-        <Button href={repo}>View on GitHub</Button>
+        <Button href={REPO_URL}>
+          <Icon name="github" />
+          View on GitHub
+        </Button>
       </div>
-      <p class="mt-4.5 text-sm text-faint">
-        <span data-version>Free and open source</span> · Linux and Windows
+      <p class="mt-5 text-sm text-faint">
+        {versionText} · Free, MIT license · No account
       </p>
     </section>
 
-    <section class="pt-6 pb-16" aria-label="What a note looks like in Carbon">
-      <AppWindow />
+    <section
+      class:list={[container, "pb-20"]}
+      aria-label="What a note looks like in Carbon"
+    >
+      <Screenshot />
     </section>
 
-    <section id="features" class="scroll-mt-16 py-12">
+    <section id="features" class:list={[container, "scroll-mt-16 py-16"]}>
       <h2 class={sectionTitle}>Why Carbon</h2>
-      <div class="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map(({ title, text }) => (
-          <div class="rounded-xl border border-line bg-panel p-6">
+      <p class={sectionLead}>
+        Plain files and links between notes are a great way to think. Carbon
+        keeps that idea and focuses on three things: speed, simplicity and
+        ownership.
+      </p>
+      <div class="mt-11 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map(({ icon, title, text }) => (
+          <div class="reveal group rounded-xl border border-line bg-panel p-6 transition-[border-color,translate] duration-200 hover:-translate-y-0.5 hover:border-line-strong">
+            <span class="mb-4 flex size-9 items-center justify-center rounded-lg border border-line bg-bg text-fg transition-colors group-hover:border-line-strong">
+              <Icon name={icon} class="size-4.5" />
+            </span>
             <h3 class="mb-2 text-lg font-semibold">{title}</h3>
             <p class="text-[15px] leading-relaxed text-muted">
               <RichText text={text} />
@@ -126,20 +225,24 @@ const sectionTitle = "text-center text-[34px] font-bold tracking-tight";
       </div>
     </section>
 
-    <section id="download" class="scroll-mt-16 pt-16 pb-20 text-center">
-      <h2 class={sectionTitle}>Download</h2>
-      <p class="mx-auto mt-2 max-w-155 text-[17px] text-muted">
-        <span data-version-long>The latest release</span> from GitHub. Carbon
-        checks for updates at start and installs them when you agree.
+    <section id="download" class:list={[container, "scroll-mt-16 py-16"]}>
+      <h2 class={sectionTitle}>Download Carbon</h2>
+      <p class={sectionLead}>
+        {release.version ? `Carbon ${release.version}` : "The latest release"},
+        free for Linux and Windows. Carbon checks for updates at start and
+        installs them when you agree.
       </p>
-      <div class="mx-auto mt-9 mb-6 grid max-w-205 gap-4 text-left sm:grid-cols-2">
+      <div class="mx-auto mt-11 grid max-w-205 gap-4 sm:grid-cols-2 sm:grid-rows-[auto_auto_auto_auto] sm:gap-y-0">
         {platforms.map(({ os, name, about, files, hint }) => (
-          <div data-os={os} class="rounded-xl border border-line p-7">
-            <h3 class="mb-1 text-[22px] font-semibold">{name}</h3>
-            <p class="text-muted">{about}</p>
-            <div class="mt-5 mb-3.5 flex gap-2.5">
+          <div
+            data-os={os}
+            class="reveal grid rounded-xl border border-line p-7 data-current:border-line-strong data-current:bg-panel sm:row-span-4 sm:grid-rows-subgrid sm:gap-y-0"
+          >
+            <h3 class="text-[22px] font-semibold">{name}</h3>
+            <p class="mt-1 text-muted">{about}</p>
+            <div class="mt-5 mb-4 flex gap-2.5 self-end">
               {files.map(({ label, suffix }, i) => (
-                <Button href={latest} primary={i === 0} data-asset={suffix}>
+                <Button href={release.file(suffix)} primary={i === 0}>
                   {label}
                 </Button>
               ))}
@@ -148,33 +251,55 @@ const sectionTitle = "text-center text-[34px] font-bold tracking-tight";
           </div>
         ))}
       </div>
-      <p class="text-sm text-faint">
-        macOS, Android and iOS are under consideration ·
-        <a class="text-link hover:underline" href={`${repo}/releases`}>
+      <p class="mt-6 text-center text-sm text-faint">
+        A web version is planned. macOS, Android and iOS are under consideration
+        ·
+        <a class="text-link hover:underline" href={`${REPO_URL}/releases`}>
           All releases
         </a>
       </p>
     </section>
+
+    <section id="faq" class:list={[container, "scroll-mt-16 py-16"]}>
+      <h2 class={sectionTitle}>Questions</h2>
+      <div class="mx-auto mt-10 max-w-180 divide-y divide-line border-y border-line">
+        {faq.map(({ q, a }) => (
+          <details class="group">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-4.5 text-[17px] font-medium [&::-webkit-details-marker]:hidden">
+              <h3>{q}</h3>
+              <Icon
+                name="chevron"
+                class="size-4 shrink-0 text-faint transition-transform group-open:rotate-90"
+              />
+            </summary>
+            <p class="pb-5 leading-relaxed text-muted">
+              <RichText text={a} />
+            </p>
+          </details>
+        ))}
+      </div>
+    </section>
   </main>
 
-  <footer class="border-t border-line">
+  <footer class="mt-10 border-t border-line">
     <div
       class:list={[
         container,
-        "flex flex-wrap justify-between gap-3 pt-7 pb-10 text-sm text-faint",
+        "flex flex-wrap items-center justify-between gap-4 py-8 text-sm text-faint",
       ]}
     >
-      <span>Carbon is free software under the MIT license.</span>
-      <span class="text-link">
-        <a class="hover:underline" href={repo}>
+      <span class="flex items-center gap-2">
+        <Mark class="size-4" />
+        Carbon is free software under the MIT license.
+      </span>
+      <span class="flex gap-5">
+        <a class="hover:text-fg" href={REPO_URL}>
           Source
-        </a>{" "}
-        ·
-        <a class="hover:underline" href={`${repo}/releases`}>
+        </a>
+        <a class="hover:text-fg" href={`${REPO_URL}/releases`}>
           Releases
-        </a>{" "}
-        ·
-        <a class="hover:underline" href={`${repo}/issues`}>
+        </a>
+        <a class="hover:text-fg" href={`${REPO_URL}/issues`}>
           Issues
         </a>
       </span>
@@ -183,5 +308,6 @@ const sectionTitle = "text-center text-[34px] font-bold tracking-tight";
 </Layout>
 
 <script>
-  import "../scripts/download.ts";
+  import "../scripts/platform.ts";
+  import "../scripts/theme.ts";
 </script>

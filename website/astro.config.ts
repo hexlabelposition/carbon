@@ -1,3 +1,4 @@
+import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
@@ -8,5 +9,6 @@ export default defineConfig({
   base: "/carbon",
   // Compressed HTML drops the spaces at line breaks before inline links.
   compressHTML: false,
+  integrations: [sitemap()],
   vite: { plugins: [tailwindcss()] },
 });
