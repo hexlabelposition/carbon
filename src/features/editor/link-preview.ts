@@ -1,26 +1,21 @@
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { syntaxHighlighting } from "@codemirror/language";
-import { EditorState } from "@codemirror/state";
 import { EditorView, hoverTooltip } from "@codemirror/view";
-import { hashtag, wikiLink, type Link, type NotePath } from "@carbon/core";
+import type { Link, NotePath } from "@carbon/core";
 import { t } from "../i18n/i18n";
-import { codeLanguage } from "./code-languages";
-import { editorTheme, markdownHighlight } from "./editor-theme";
 import { linkHost } from "./link-completion";
 import { linkAt } from "./link-follow";
-import { listHangingIndent } from "./list-hanging-indent";
-import { livePreview } from "./live-preview";
-import { imageHost, imagePreview, type ImageHost } from "./live-preview-image";
-import { tablePreview } from "./live-preview-table";
+import { imageHost, type ImageHost } from "./live-preview-image";
+import { readingView } from "./reading-view";
 
 /** What a hover over a link shows. */
 export type LinkPreview =
   | {
       path: NotePath;
       title: string;
+      /** The heading the link points to, as written in the note. */
+      heading: string | null;
       /**
-       * The Markdown of the note without its frontmatter, or from the
-       * heading the link points to, cut short (`previewMarkdown`).
+       * The Markdown of the note without its frontmatter, or the section
+       * of the heading the link points to, cut short (`previewMarkdown`).
        */
       markdown: string;
     }
@@ -39,7 +34,8 @@ const PREVIEW_CHARS = 6000;
 /**
  * Resting the mouse on a link to a note shows that note as reading mode
  * does: its title, then its text drawn by live preview, read-only, from
- * the heading if the link points to one. A long note scrolls in the box.
+ * the section of the heading if the link points to one. A long note
+ * scrolls in the box.
  * A link to a missing note says that a click creates it.
  */
 export const linkPreview = [
@@ -49,6 +45,8 @@ export const linkPreview = [
       if (host === null) return null;
       const link = linkAt(view.state, pos, host.current);
       if (link === null || link.target === "") return null;
+      // An embed shows the note in place already (`embedPreview`).
+      if (view.state.sliceDoc(link.start - 1, link.start) === "!") return null;
       const preview = await host.preview(link).catch(() => null);
       if (preview === null) return null;
       const images = view.state.facet(imageHost);
@@ -109,18 +107,8 @@ export const linkPreview = [
     },
     ".cm-link-preview-empty": { color: "var(--cb-faint)" },
     // The note inside, smaller than in its tab: all its sizes follow the
-    // note size (`noteSize`). The editor theme is made for a tab, with a
-    // column in the middle and room below the text; here it fills the box.
-    ".cm-link-preview .cm-editor": {
-      "--cb-note-size": "13px",
-      flexGrow: "0",
-      flexShrink: "0",
-    },
-    ".cm-link-preview .cm-content": {
-      maxWidth: "none",
-      margin: "0",
-      padding: "0",
-    },
+    // note size (`noteSize`).
+    ".cm-link-preview .cm-editor": { "--cb-note-size": "13px" },
   }),
 ];
 
@@ -144,8 +132,7 @@ export type PreviewedLink = Pick<Link, "kind" | "target" | "fragment">;
 
 /**
  * The box of a preview. A note is shown by an editor of its own, made as
- * the one of a tab in reading mode: the same live preview, nothing typed.
- * Links in it are not followed and not previewed: it is a glance.
+ * the one of a tab in reading mode (`readingView`).
  */
 function previewView(
   preview: LinkPreview,
@@ -172,28 +159,6 @@ function previewView(
     body.textContent = t("linkPreview.empty");
     return { dom: box };
   }
-  const note = new EditorView({
-    parent: body,
-    state: EditorState.create({
-      doc: preview.markdown,
-      extensions: [
-        EditorView.lineWrapping,
-        markdown({
-          base: markdownLanguage,
-          codeLanguages: codeLanguage,
-          extensions: [wikiLink, hashtag],
-        }),
-        syntaxHighlighting(markdownHighlight),
-        livePreview,
-        tablePreview,
-        imagePreview,
-        images === null ? [] : imageHost.of(images),
-        listHangingIndent,
-        editorTheme,
-        EditorView.editable.of(false),
-        EditorState.readOnly.of(true),
-      ],
-    }),
-  });
+  const note = readingView(body, preview.markdown, images);
   return { dom: box, destroy: () => note.destroy() };
 }

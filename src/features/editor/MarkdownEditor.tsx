@@ -53,6 +53,7 @@ import { linkPreview } from "./link-preview";
 import { useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
+import { embedPreview } from "./live-preview-embed";
 import { addProperty, frontmatterPreview } from "./live-preview-frontmatter";
 import {
   outlineHost,
@@ -119,6 +120,7 @@ const livePreviewExtensions: Extension = [
   frontmatterPreview,
   tablePreview,
   imagePreview,
+  embedPreview,
   followOnClick,
 ];
 const noPreview: Extension = [syntaxHighlighting(sourceHighlight)];

@@ -66,7 +66,8 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
         if (note === null) return { path: null, canCreate: !linksToFile(link) };
         const text = await vault.notes.read(note);
         const parsed = parseNote(note, text);
-        // "[[Note#Heading]]" shows the note from that heading on.
+        // "[[Note#Heading]]" shows the section of that heading: up to the
+        // next heading of the same level or a higher one.
         const wanted =
           link.fragment === null
             ? null
@@ -76,10 +77,18 @@ export function useNoteLinks(vault: Vault, path: NotePath): NoteLinks {
         );
         // Heading offsets are those of the whole text.
         const start = heading?.pos ?? readFrontmatter(text)?.length ?? 0;
+        const end =
+          heading === undefined
+            ? text.length
+            : (parsed.headings.find(
+                (h) => h.pos > heading.pos && h.level <= heading.level,
+              )?.pos ?? text.length);
+        const shown = text.slice(start, end).replace(/^\s*\n/, "");
         return {
           path: note,
           title: parsed.title,
-          markdown: previewMarkdown(text.slice(start).replace(/^\s*\n/, "")),
+          heading: heading?.text ?? null,
+          markdown: previewMarkdown(shown),
         };
       },
       follow: (link, options) => {
