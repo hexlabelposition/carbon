@@ -232,6 +232,7 @@ export const en = {
   "settings.lineHeight.normal": "Normal",
   "settings.lineHeight.relaxed": "Relaxed",
   "settings.listGuides": "Lines along nested lists",
+  "settings.nameHeading": "Name as the heading of a new note",
   "settings.notes": "Notes",
   "settings.open": "Open settings",
   "settings.pixels": "{count} px",

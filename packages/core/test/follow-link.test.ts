@@ -16,6 +16,17 @@ async function openVault(files: Record<string, string>) {
 const wiki = (target: string) => ({ kind: "wiki" as const, target });
 
 describe("vault.links.follow", () => {
+  test("a note it creates starts with the text the vault is given", async () => {
+    const { vault } = await openVault({ "src.md": "" });
+    vault.notes.setNewNoteText((path) => `# ${path}\n`);
+    await vault.links.follow("src.md", wiki("Idea"));
+    expect(await vault.notes.read("Idea.md")).toBe("# Idea.md\n");
+    // A text given to `create` wins.
+    await vault.notes.create("Other.md", "own");
+    expect(await vault.notes.read("Other.md")).toBe("own");
+    vault.close();
+  });
+
   test("opens the note a link points to", async () => {
     const { vault } = await openVault({ "dir/Note.md": "x", "src.md": "" });
     expect(await vault.links.follow("src.md", wiki("note"))).toEqual({

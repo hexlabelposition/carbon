@@ -104,6 +104,25 @@ export const listGuidesPreference = preference<boolean>(
     stored === "true" ? true : stored === "false" ? false : undefined,
 );
 
+/**
+ * Whether a new note starts with its name as a heading, "# Name". On
+ * until turned off: the inline title, which shows the name too, is off
+ * at first.
+ */
+export const nameHeadingPreference = preference<boolean>(
+  "carbon.note.nameHeading",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
+/** The text a new note starts with (`vault.notes.setNewNoteText`). */
+export function newNoteText(path: string): string {
+  if (!nameHeadingPreference.get()) return "";
+  const name = path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/i, "");
+  return `# ${name}\n\n`;
+}
+
 export const noteWidthPreference = preference<NoteWidth>(
   "carbon.note.width",
   "normal",

@@ -14,6 +14,7 @@ import {
 } from "react";
 import { t } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
+import { newNoteText } from "../settings/note-style";
 import {
   VaultSessionContext,
   type VaultError,
@@ -50,6 +51,8 @@ export function VaultProvider({
   const current = useRef<Vault | null>(null);
 
   const replace = useCallback((next: Vault | null) => {
+    // A new note starts as the settings say, read when it is made.
+    next?.notes.setNewNoteText(newNoteText);
     current.current?.close();
     current.current = next;
     setVault(next);

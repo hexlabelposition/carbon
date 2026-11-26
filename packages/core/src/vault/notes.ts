@@ -29,10 +29,22 @@ export class WriteConflictError extends VaultError {
  * work for other files in the vault, such as images.
  */
 export class Notes {
+  /** The text a new note starts with, unless `create` is given one. */
+  private newNoteText: (path: NotePath) => string = () => "";
+
   constructor(
     private readonly context: VaultContext,
     private readonly links: LinkRewriter,
   ) {}
+
+  /**
+   * Sets the text a new note starts with, by its path, such as its name
+   * as a heading: for every note `create` makes without a text, also one
+   * a link creates. Empty until set.
+   */
+  setNewNoteText(make: (path: NotePath) => string): void {
+    this.newNoteText = make;
+  }
 
   /** Reads the text of a note. */
   async read(path: NotePath): Promise<string> {
@@ -81,9 +93,11 @@ export class Notes {
 
   /**
    * Creates a new note, with its folders if they are missing. Rejects if
-   * something already exists at `path`.
+   * something already exists at `path`. Without `content` it starts with
+   * the text `setNewNoteText` gives.
    */
-  async create(path: NotePath, content = ""): Promise<void> {
+  async create(path: NotePath, content?: string): Promise<void> {
+    content ??= this.newNoteText(path);
     const { root, fs, own } = this.context;
     const target = resolveNewInVault(root, path);
     await expectFree(this.context, path);
