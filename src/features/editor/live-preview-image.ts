@@ -1,4 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
+import type { SyntaxNode } from "@lezer/common";
 import {
   Facet,
   StateEffect,
@@ -446,7 +447,20 @@ function cursorBeside(dom: HTMLElement, pos: number): Rect {
 function revealSource(view: EditorView, box: HTMLElement): void {
   if (view.state.readOnly) return;
   const at = view.posAtDOM(box);
-  view.dispatch({ selection: { anchor: at }, effects: revealImage.of(at) });
+  // The cursor goes after the Markdown, at the end of the address, where
+  // it is edited.
+  let end = at;
+  for (
+    let node: SyntaxNode | null = syntaxTree(view.state).resolveInner(at, 1);
+    node !== null;
+    node = node.parent
+  ) {
+    if (node.name === "Image") {
+      end = node.to;
+      break;
+    }
+  }
+  view.dispatch({ selection: { anchor: end }, effects: revealImage.of(at) });
   view.focus();
 }
 
