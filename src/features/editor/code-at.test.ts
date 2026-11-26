@@ -18,6 +18,7 @@ describe("codeAt", () => {
     expect(code("Run `bun |test` now")).toEqual({
       text: "bun test",
       block: false,
+      line: null,
     });
     expect(code("Run `|x`")?.text).toBe("x");
     expect(code("A `` a ` b| `` c")?.text).toBe("a ` b");
@@ -27,6 +28,7 @@ describe("codeAt", () => {
     expect(code("```js\nconst a = 1;|\nconst b = 2;\n```")).toEqual({
       text: "const a = 1;\nconst b = 2;",
       block: true,
+      line: "const a = 1;",
     });
     // On the fence itself too, and in a block that is not closed.
     expect(code("|```\nx\n```")?.text).toBe("x");
@@ -51,5 +53,18 @@ describe("codeAt", () => {
   test("nothing outside code", () => {
     expect(code("Plain |text")).toBeNull();
     expect(code("**bold|**")).toBeNull();
+  });
+
+  test("the line of a block at the place, without its indent", () => {
+    expect(code("```\na\n  b|\n```")?.line).toBe("b");
+    expect(code("- x\n\n  ```\n  one\n    |two\n  ```")?.line).toBe("two");
+    expect(code("> ```\n> |q\n> ```")?.line).toBe("q");
+    expect(code("Text\n\n    one\n    tw|o\n")?.line).toBe("two");
+  });
+
+  test("no line on a fence or a blank line", () => {
+    expect(code("|```\nx\n```")?.line).toBeNull();
+    expect(code("```\nx\n|```")?.line).toBeNull();
+    expect(code("```\nx\n|\ny\n```")?.line).toBeNull();
   });
 });

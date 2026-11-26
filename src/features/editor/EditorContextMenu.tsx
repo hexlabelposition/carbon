@@ -8,7 +8,7 @@ import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
 import { useClipboard } from "./clipboard";
-import { codeAt } from "./code-at";
+import { codeAt, type CodeAt } from "./code-at";
 import { scrollParentOf } from "./glide";
 import { holdSelection } from "./held-selection";
 
@@ -29,7 +29,7 @@ const separator = "mx-1 my-1 h-px bg-line";
  * The menu of the right button in a note: undo and redo, cut, copy,
  * paste and select all, as the one of a text field in other apps. On
  * inline code or a code block it also copies that code alone, without
- * its backticks or fences (`codeAt`). It
+ * its backticks or fences, and in a block the line clicked (`codeAt`). It
  * takes the place of the menu of the WebView, which the app shuts
  * (`useContextMenuGuard`).
  */
@@ -43,7 +43,7 @@ export function EditorContextMenu({
   /** Whether text was selected when the menu opened. */
   const [selected, setSelected] = useState(false);
   /** The code the menu was opened on, if it was. */
-  const [code, setCode] = useState<string | null>(null);
+  const [code, setCode] = useState<CodeAt | null>(null);
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
   /** Whether the text had the focus when the menu was asked for. */
@@ -71,7 +71,7 @@ export function EditorContextMenu({
       editor.dispatch({ selection: EditorSelection.cursor(at) });
     }
     setSelected(editor.state.selection.ranges.some((r) => !r.empty));
-    setCode(at === null ? null : (codeAt(editor.state, at)?.text ?? null));
+    setCode(at === null ? null : codeAt(editor.state, at));
     setSteps({
       undo: undoDepth(editor.state) > 0,
       redo: redoDepth(editor.state) > 0,
@@ -104,10 +104,9 @@ export function EditorContextMenu({
     );
   }
 
-  function copyCode() {
-    if (code === null) return;
+  function copyText(text: string) {
     clipboard
-      .writeText(code)
+      .writeText(text)
       .catch((reason: unknown) =>
         log.error("Could not copy to the clipboard", reason),
       );
@@ -183,9 +182,21 @@ export function EditorContextMenu({
             {/* First: it is there only on code, so it is seen at once. */}
             {code !== null && (
               <>
-                <ContextMenu.Item className={item} onClick={copyCode}>
-                  {t("editor.copyCode")}
+                <ContextMenu.Item
+                  className={item}
+                  onClick={() => copyText(code.text)}
+                >
+                  {/* "All" sets it apart from the line, in a block. */}
+                  {t(code.block ? "editor.copyAllCode" : "editor.copyCode")}
                 </ContextMenu.Item>
+                {code.line !== null && (
+                  <ContextMenu.Item
+                    className={item}
+                    onClick={() => copyText(code.line!)}
+                  >
+                    {t("editor.copyCodeLine")}
+                  </ContextMenu.Item>
+                )}
                 <ContextMenu.Separator className={separator} />
               </>
             )}

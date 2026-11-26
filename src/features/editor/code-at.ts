@@ -8,13 +8,20 @@ export interface CodeAt {
   text: string;
   /** A code block, not code inside a line. */
   block: boolean;
+  /**
+   * The line of a code block at the place, without the spaces around it,
+   * which only matter among the other lines. `null` for inline code, on a
+   * fence and on a blank line.
+   */
+  line: string | null;
 }
 
 /**
  * The code at `pos`: the text of inline code without its backticks, or
  * the lines of a code block without its fences. A block inside a list or
  * a quote loses the indent and the ">" marks those add to its lines, so
- * it reads as it would on its own. `null` outside code.
+ * it reads as it would on its own; so does the line at `pos`. `null`
+ * outside code.
  */
 export function codeAt(state: EditorState, pos: number): CodeAt | null {
   const tree = ensureSyntaxTree(state, pos, 50) ?? syntaxTree(state);
@@ -25,13 +32,19 @@ export function codeAt(state: EditorState, pos: number): CodeAt | null {
       node = node.parent
     ) {
       if (node.name === "InlineCode") {
-        return { text: inlineCode(state, node), block: false };
+        return { text: inlineCode(state, node), block: false, line: null };
       }
-      if (node.name === "FencedCode") {
-        return { text: fencedCode(state, node), block: true };
-      }
-      if (node.name === "CodeBlock") {
-        return { text: indentedCode(state, node), block: true };
+      if (node.name === "FencedCode" || node.name === "CodeBlock") {
+        const code =
+          node.name === "FencedCode"
+            ? fencedCode(state, node)
+            : indentedCode(state, node);
+        const line = code.lines[state.doc.lineAt(pos).number - code.first];
+        return {
+          text: code.lines.join("\n"),
+          block: true,
+          line: line === undefined || line.trim() === "" ? null : line.trim(),
+        };
       }
     }
   }
@@ -49,11 +62,17 @@ function inlineCode(state: EditorState, node: SyntaxNode): string {
   return /^ .* $/s.test(text) && text.trim() !== "" ? text.slice(1, -1) : text;
 }
 
-function fencedCode(state: EditorState, node: SyntaxNode): string {
+/** The lines of a block, and the number of the first in the note. */
+interface BlockLines {
+  lines: string[];
+  first: number;
+}
+
+function fencedCode(state: EditorState, node: SyntaxNode): BlockLines {
   // In a list or a quote the code is one piece per line, between the
   // marks and the indent those add.
   const pieces = node.getChildren("CodeText");
-  if (pieces.length === 0) return "";
+  if (pieces.length === 0) return { lines: [], first: 0 };
   const code = { from: pieces[0]!.from, to: pieces[pieces.length - 1]!.to };
   // The column of the opening fence: what a list adds before every line.
   const fenceLine = state.doc.lineAt(node.from);
@@ -62,17 +81,18 @@ function fencedCode(state: EditorState, node: SyntaxNode): string {
   // start of their line.
   const first = state.doc.lineAt(code.from);
   const text = state.sliceDoc(first.from, code.to);
-  return lines(text, quoteDepth(node), indent).join("\n");
+  return { lines: lines(text, quoteDepth(node), indent), first: first.number };
 }
 
-function indentedCode(state: EditorState, node: SyntaxNode): string {
+function indentedCode(state: EditorState, node: SyntaxNode): BlockLines {
   const first = state.doc.lineAt(node.from);
   const text = state.sliceDoc(first.from, node.to);
   const column = node.from - first.from - quoteWidth(first.text);
-  // The block starts after its four spaces of indent.
-  return lines(text, quoteDepth(node), Math.max(0, column))
-    .join("\n")
-    .replace(/\n+$/, "");
+  // The block starts after its four spaces of indent; the blank lines
+  // that end it are not code.
+  const all = lines(text, quoteDepth(node), Math.max(0, column));
+  while (all.length > 0 && all[all.length - 1]!.trim() === "") all.pop();
+  return { lines: all, first: first.number };
 }
 
 /** Lines of `text` without `depth` quote marks and `indent` spaces each. */
