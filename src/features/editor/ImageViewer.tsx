@@ -7,7 +7,9 @@ import { imageName } from "./web-images";
 
 /**
  * An image of a note on its own, over the window below its top row, fit
- * into it.
+ * into it. The wheel zooms it at the pointer, a double click shows it at
+ * its real size and back, a zoomed one is dragged, and "+", "-" and "0"
+ * zoom too (`FittedImage`).
  * Escape, the close button or a click beside the image closes it.
  */
 export function ImageViewer({
@@ -28,7 +30,13 @@ export function ImageViewer({
       backdrop="bg-transparent"
       className="fixed inset-x-0 top-bar bottom-0 bg-backdrop/90"
     >
-      <FittedImage url={image.url} alt={image.alt} onClickBeside={onClose} />
+      <FittedImage
+        url={image.url}
+        alt={image.alt}
+        onClickBeside={onClose}
+        zoomable
+        keys
+      />
       <p className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-16 py-4 text-center text-small text-muted">
         {image.alt || name}
       </p>

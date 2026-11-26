@@ -61,7 +61,9 @@ export function ImageView({
         </Tooltip>
       </header>
       <div className="min-h-0 flex-1">
-        {image.status === "ready" && <FittedImage url={image.url} alt={path} />}
+        {image.status === "ready" && (
+          <FittedImage url={image.url} alt={path} zoomable />
+        )}
         {image.status === "error" && (
           <p
             role="alert"
