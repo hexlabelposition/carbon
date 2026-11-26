@@ -22,7 +22,9 @@ export function OutlinePanel({
   const t = useT();
   if (headings.length === 0) {
     return (
-      <p className="px-3 py-2 text-small text-faint">{t("outline.empty")}</p>
+      <p className="truncate px-3 py-2 text-small text-faint">
+        {t("outline.empty")}
+      </p>
     );
   }
   const top = Math.min(...headings.map((heading) => heading.level));

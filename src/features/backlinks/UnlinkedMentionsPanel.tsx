@@ -30,13 +30,13 @@ export function UnlinkedMentionsPanel({
       <button
         type="button"
         aria-expanded={open}
-        className="flex w-full items-center gap-1 px-3 py-0.5 text-left font-semibold hover:bg-raise"
+        className="flex w-full items-center gap-1 overflow-hidden px-3 py-0.5 text-left font-semibold whitespace-nowrap hover:bg-raise"
         onClick={onToggle}
       >
-        <span aria-hidden className="w-3 text-faint">
+        <span aria-hidden className="w-3 shrink-0 text-faint">
           {open ? "▾" : "▸"}
         </span>
-        {t("mentions.title")}
+        <span className="min-w-0 truncate">{t("mentions.title")}</span>
         {count !== null && (
           <span className="font-normal text-small text-faint">{count}</span>
         )}
@@ -67,13 +67,17 @@ function MentionList({
   }
   if (state.status !== "ready") {
     return (
-      <p className="px-3 py-1 text-small text-faint">{t("mentions.looking")}</p>
+      <p className="truncate px-3 py-1 text-small text-faint">
+        {t("mentions.looking")}
+      </p>
     );
   }
   const groups = bySource(state.mentions);
   if (groups.length === 0) {
     return (
-      <p className="px-3 py-1 text-small text-faint">{t("mentions.empty")}</p>
+      <p className="truncate px-3 py-1 text-small text-faint">
+        {t("mentions.empty")}
+      </p>
     );
   }
   return (
@@ -97,7 +101,7 @@ function MentionList({
               >
                 <button
                   type="button"
-                  className="min-w-0 flex-1 py-0.5 pl-5 text-left text-small text-muted hover:text-fg"
+                  className="min-w-0 flex-1 truncate py-0.5 pl-5 text-left text-small text-muted hover:text-fg"
                   onClick={() => onOpen(source, mention.start)}
                 >
                   <Highlighted

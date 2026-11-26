@@ -29,12 +29,12 @@ export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
   return (
     <div className="py-1">
       {state.partial && (
-        <p role="status" className="px-3 pb-1 text-small text-faint">
+        <p role="status" className="truncate px-3 pb-1 text-small text-faint">
           {t("backlinks.partial")}
         </p>
       )}
       {groups.length === 0 ? (
-        <p className="px-3 py-1 text-small text-faint">
+        <p className="truncate px-3 py-1 text-small text-faint">
           {t("backlinks.empty")}
         </p>
       ) : (
@@ -55,7 +55,7 @@ export function BacklinksPanel({ state, onOpen }: BacklinksPanelProps) {
                   <li key={link.start}>
                     <button
                       type="button"
-                      className="block w-full px-3 py-0.5 pl-5 text-left text-small text-muted hover:bg-raise hover:text-fg"
+                      className="block w-full truncate px-3 py-0.5 pl-5 text-left text-small text-muted hover:bg-raise hover:text-fg"
                       onClick={() => onOpen(source, link.start)}
                     >
                       {link.snippet || t("backlinks.emptySnippet")}

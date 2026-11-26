@@ -553,7 +553,7 @@ function GraphCanvas({
         {hovered !== null && graph !== null ? graph.titles[hovered] : ""}
       </div>
       {/* Its first line level with the middle of the settings button. */}
-      <div className="pointer-events-none absolute top-3 left-4 flex flex-col gap-1 py-1.5 text-small text-faint">
+      <div className="pointer-events-none absolute top-3 left-4 flex flex-col gap-1 py-1.5 text-small whitespace-nowrap text-faint">
         {data.status === "loading" && <p>{t("graph.loading")}</p>}
         {data.status === "error" && (
           <p className="text-danger">
@@ -682,7 +682,7 @@ export function LocalGraphView({ vault, path, onOpen }: LocalGraphViewProps) {
       <div
         role="radiogroup"
         aria-label={t("graph.depth")}
-        className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-md border border-line bg-panel p-0.5 text-small"
+        className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-md border border-line bg-panel p-0.5 text-small whitespace-nowrap"
       >
         <span className="px-1 text-faint">{t("graph.depth")}</span>
         {DEPTHS.map((value) => (
