@@ -115,6 +115,12 @@ export function FileTree({
   const [dragging, setDragging] = useState<string | null>(null);
   /** The folder a drop would go to; `tree.root` is the root of the tree. */
   const [dropFolder, setDropFolder] = useState<string | null>(null);
+  /**
+   * Whether the tree is being moved through with the arrows: only then is
+   * the row the keys act on outlined. A click shows what it opened, not a
+   * ring, and neither does the focus coming back after a menu or a dialog.
+   */
+  const [byKeys, setByKeys] = useState(false);
 
   useEffect(() => {
     scrollToIndex(tree.selectedIndex);
@@ -252,7 +258,9 @@ export function FileTree({
             ? "bg-selected"
             : "hover:bg-raise"
         } ${
-          selected ? "outline-1 -outline-offset-1 outline-line-strong" : ""
+          selected && byKeys
+            ? "outline-1 -outline-offset-1 outline-line-strong"
+            : ""
         } ${
           tree.cut === node.path || dragging === node.path ? "opacity-50" : ""
         } ${node.kind === "file" ? "text-muted" : ""}`}
@@ -373,7 +381,18 @@ export function FileTree({
               dropFolder === tree.root ? "bg-raise" : ""
             }`}
             onScroll={onScroll}
-            onKeyDown={onKeyDown}
+            onKeyDown={(event) => {
+              // Only the arrows move the row the keys act on: Escape or
+              // Delete leave nothing to show.
+              if (event.key.startsWith("Arrow")) setByKeys(true);
+              onKeyDown(event);
+            }}
+            onPointerDown={() => setByKeys(false)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setByKeys(false);
+              }
+            }}
             onDragLeave={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget as Node)) {
                 setDropFolder(null);
