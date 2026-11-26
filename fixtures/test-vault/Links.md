@@ -6,6 +6,7 @@
 - With an alias: [[Formatting|the formatting note]]
 - To a heading: [[Formatting#Tables]]
 - To a heading with an alias: [[Formatting#Code|code blocks]]
+- To a block, by its id: [[Embeds and blocks#^definition]]
 - To a note in a folder, by name only: [[Deep note]]
 - To a note by an alias in its frontmatter: [[Tag examples]]
 - To a note with a Cyrillic name: [[Заметка на русском]]
