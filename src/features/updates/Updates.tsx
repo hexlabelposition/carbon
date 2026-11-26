@@ -248,10 +248,10 @@ function CheckView({
               </p>
             </>
           )}
-          {dev ? (
+          {dev || !update.installable ? (
             <>
               <p className="mt-4 text-small text-faint">
-                {t("updates.devBuild")}
+                {dev ? t("updates.devBuild") : t("updates.packageBuild")}
               </p>
               <CloseRow onClose={onClose} />
             </>

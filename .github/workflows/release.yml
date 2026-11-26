@@ -3,9 +3,10 @@ name: Release
 # Builds the packages for a version tag, such as v0.1.0, and puts them on
 # a draft GitHub release (the one written by hand for the tag, or a new
 # one), to check and publish by hand: the deb and the AppImage for Linux
-# (C-604), the installer for Windows (C-608), and the latest.json the
-# updater reads (C-607, ADR-034). Linux and Windows are built at once; the
-# latest.json is written after both, from their signatures. Published as a regular release, not a
+# (C-604), the package for Arch Linux (packaging/arch), the installer for
+# Windows (C-608), and the latest.json the updater reads (C-607, ADR-034).
+# All three are built at once; the latest.json is written after Linux and
+# Windows, from their signatures. Published as a regular release, not a
 # pre-release: the app looks at releases/latest, which skips pre-releases.
 on:
   push:
@@ -33,6 +34,11 @@ jobs:
           version=$(jq -r .version package.json)
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
             echo "The tag $GITHUB_REF_NAME is not v$version, the version in package.json"
+            exit 1
+          fi
+          pkgver=$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)
+          if [ "$pkgver" != "$version" ]; then
+            echo "The PKGBUILD is for $pkgver, not $version: bun run release writes both"
             exit 1
           fi
       # The draft written by hand for this version, with its notes, gets
@@ -168,6 +174,46 @@ jobs:
           tagName: ${{ github.ref_name }}
           args: ${{ steps.sign.outputs.args }}
           includeUpdaterJson: false
+
+  arch:
+    name: Arch Linux package
+    # Built by makepkg from the PKGBUILD, as on Arch itself: from the
+    # source of the tag, against the libraries Arch has now, so a newer
+    # WebKitGTK does not break it as it can the deb. The app it builds
+    # has no bundle type, so it does not update itself: the latest.json
+    # has no entry for it, and the app tells to download the new package.
+    needs: draft
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      # What makepkg --syncdeps would install, which it cannot do without
+      # sudo: the builder below is not root, as makepkg wants.
+      - name: Install the dependencies of the PKGBUILD
+        run: |
+          source packaging/arch/PKGBUILD
+          pacman -Syu --noconfirm --needed "${depends[@]}" "${makedepends[@]}"
+          useradd --create-home builder
+          chown -R builder packaging/arch
+      # The source is the archive GitHub makes for the tag, as for anyone
+      # who builds the PKGBUILD.
+      - name: Build the package
+        working-directory: packaging/arch
+        run: runuser -u builder -- makepkg --noconfirm
+      - name: Attach the package to the draft
+        working-directory: packaging/arch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ needs.draft.outputs.id }}
+        run: |
+          for file in *.pkg.tar.zst; do
+            curl --fail-with-body -sS \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Content-Type: application/zstd" \
+              --data-binary "@$file" \
+              "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE/assets?name=$file"
+          done
 
   updater:
     name: Updater manifest

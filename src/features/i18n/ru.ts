@@ -501,6 +501,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "updates.later": "Позже",
   "updates.latest": "Последняя версия",
   "updates.notes": "Что нового",
+  "updates.packageBuild":
+    "Carbon установлен из пакета: скачайте новый в релизах на GitHub.",
   "updates.restarting": "Установлено. Перезапуск…",
   "updates.title": "Обновления",
   "updates.update": "Обновить",

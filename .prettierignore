@@ -9,6 +9,10 @@ tauri/gen/
 bun.lock
 tauri/Cargo.lock
 
+# What makepkg leaves next to the PKGBUILD (see its .gitignore)
+packaging/arch/src/
+packaging/arch/pkg/
+
 # Test data, kept exactly as written
 fixtures/
 

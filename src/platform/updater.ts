@@ -1,3 +1,4 @@
+import { getBundleType, type BundleType } from "@tauri-apps/api/app";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 
@@ -12,7 +13,10 @@ function asError(reason: unknown): Error {
  * Updates of the app from its GitHub releases (C-607, ADR-034): the
  * `updater` plugin reads `latest.json` of the latest release, picks the
  * package of this install (AppImage, deb or the Windows installer) and
- * checks its signature against the key in `tauri.conf.json`.
+ * checks its signature against the key in `tauri.conf.json`. A binary
+ * built without a bundle, as the Arch package is (`packaging/arch`), has
+ * no bundle type: the updater would replace it with the AppImage, so it
+ * only tells that there is a newer version and installs nothing.
  */
 export const tauriUpdater = {
   /** The newer version, if there is one; rejects when it cannot tell. */
@@ -21,9 +25,14 @@ export const tauriUpdater = {
       throw asError(reason);
     });
     if (update === null) return null;
+    // `null` at run time for a build without a bundle, whatever the type says.
+    const bundle = (await getBundleType().catch(
+      () => null,
+    )) as BundleType | null;
     return {
       version: update.version,
       notes: update.body?.trim() ?? "",
+      installable: bundle !== null,
       /**
        * Downloads and installs it. `onProgress` gets the part downloaded,
        * from 0 to 1, or `null` while the size is unknown. On Windows the

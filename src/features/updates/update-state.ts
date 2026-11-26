@@ -7,6 +7,12 @@ export interface AvailableUpdate {
   /** What is new, as the release says it; may be empty. */
   notes: string;
   /**
+   * Whether `install` can put it in place: not for an install made by a
+   * system package, such as the Arch one, which is updated by a new
+   * package.
+   */
+  installable: boolean;
+  /**
    * Downloads and installs it. `onProgress` gets the part downloaded,
    * from 0 to 1, or `null` while the size is unknown. On Windows the
    * installer closes the app before this resolves.

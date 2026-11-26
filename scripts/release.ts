@@ -6,7 +6,8 @@
  * 1. checks that the work is on main, committed, and level with origin;
  * 2. asks for the new version, unless it is given;
  * 3. writes it to `package.json` (the app reads it from there, see
- *    `tauri/tauri.conf.json`), `tauri/Cargo.toml` and `tauri/Cargo.lock`;
+ *    `tauri/tauri.conf.json`), `tauri/Cargo.toml`, `tauri/Cargo.lock` and
+ *    `packaging/arch/PKGBUILD` (its `pkgrel` back to 1);
  * 4. commits "chore: release vX.Y.Z", tags it with a signed annotated tag
  *    of the same message, and pushes both at once.
  *
@@ -25,6 +26,7 @@ const FILES = {
   package: join(ROOT, "package.json"),
   cargo: join(ROOT, "tauri", "Cargo.toml"),
   lock: join(ROOT, "tauri", "Cargo.lock"),
+  pkgbuild: join(ROOT, "packaging", "arch", "PKGBUILD"),
 };
 const BRANCH = "main";
 const REMOTE = "origin";
@@ -171,9 +173,16 @@ replaceIn(
   dry,
 );
 
+replaceIn(
+  FILES.pkgbuild,
+  /^pkgver=.*\npkgrel=.*$/m,
+  `pkgver=${next}\npkgrel=1`,
+  dry,
+);
+
 // 4. Commit, tag, push. One push for both: the tag never goes up without
 // its commit.
-git("add", FILES.package, FILES.cargo, FILES.lock);
+git("add", FILES.package, FILES.cargo, FILES.lock, FILES.pkgbuild);
 gitShown("commit", "--quiet", "-m", message);
 gitShown("tag", "-s", tag, "-m", message);
 gitShown("push", "--atomic", REMOTE, BRANCH, tag);

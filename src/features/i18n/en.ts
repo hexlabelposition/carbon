@@ -474,6 +474,8 @@ export const en = {
   "updates.later": "Later",
   "updates.latest": "Latest version",
   "updates.notes": "What is new",
+  "updates.packageBuild":
+    "Carbon was installed from a package: download the new one from the GitHub releases.",
   "updates.restarting": "Installed. Starting again…",
   "updates.title": "Updates",
   "updates.update": "Update",
