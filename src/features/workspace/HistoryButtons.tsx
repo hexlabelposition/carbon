@@ -40,8 +40,10 @@ export function HistoryButtons({
         <path d="M6 4l4 4-4 4" />
       </ArrowButton>
       {/* Parts the arrows from the name that follows them, the whole
-          height of the bar, in the color of its border below. */}
-      <span aria-hidden="true" className="ml-1.5 w-px self-stretch bg-line" />
+          height of the bar, in the color of its border below. As far
+          from the arrows as the edge of the bar is: 4px and the 2px gap
+          make the 6px the bar has on its left. */}
+      <span aria-hidden="true" className="ml-1 w-px self-stretch bg-line" />
     </div>
   );
 }
