@@ -100,7 +100,12 @@ import {
 } from "./use-panels";
 import { useSidePanel } from "./use-side-panel";
 import { useSidebar, type PanelWidth } from "./use-sidebar";
-import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
+import {
+  isExplorerView,
+  useSidebarView,
+  type SidebarViewState,
+} from "./use-sidebar-view";
+import { ExplorerTabs } from "./ExplorerTabs";
 import { DragStrip, WindowControls } from "./WindowControls";
 import {
   useFullscreenShortcut,
@@ -444,14 +449,15 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar: files, bookmarks, tags, drafts and trash, one at a time,
- * each shown by its button of the toolbar or from the palette; there is
- * no row of tabs. They stay mounted: switching keeps the open folders and
- * the open tags. Search is a dialog of its own (`SearchHost`).
+ * The views of the sidebar, one at a time: the file explorer, with a row
+ * of tabs for its files, bookmarks, drafts and trash, and the tags. Each
+ * is shown by its button of the toolbar or from the palette. They stay
+ * mounted: switching keeps the open folders and the open tags. Search is
+ * a dialog of its own (`SearchHost`).
  */
 function SidebarContent({
   vault,
-  view: { view, show },
+  view: { view, explorer, show },
   reveal,
   showInFileManager,
 }: {
@@ -479,6 +485,9 @@ function SidebarContent({
   }, [reveal, show]);
   return (
     <div className="flex h-full flex-col">
+      {isExplorerView(view) && (
+        <ExplorerTabs current={explorer} onShow={show} />
+      )}
       <div
         role="region"
         aria-label={t("shell.files")}
@@ -573,15 +582,15 @@ const SHOW_TIMING =
   !import.meta.env.DEV && import.meta.env.VITE_CARBON_TIMING === "1";
 
 /**
- * The toolbar at the left edge: files, tags and drafts, which show in the
- * sidebar and hide it when it shows them already, and a few commands, the
- * search dialog first; at the foot
- * the notifications, the settings and the menu of the vault.
+ * The toolbar at the left edge: the file explorer and the tags, which
+ * show in the sidebar and hide it when it shows them already, and a few
+ * commands, the search dialog among them; at the foot the notifications,
+ * the settings and the menu of the vault.
  */
 function ToolbarHost({
   open,
   sidebarOpen,
-  sidebarView: { view, show },
+  sidebarView: { view, explorer, show },
   revealSidebar,
   toggleSidebar,
 }: {
@@ -630,16 +639,30 @@ function ToolbarHost({
       },
     };
   };
+  // One button for the file explorer, whichever of its tabs it shows: it
+  // comes back to the tab shown last.
+  const explorerShown = sidebarOpen && isExplorerView(view);
+  const explorerItem: ToolbarItem = {
+    id: "sidebar.explorer",
+    label: t("shell.files"),
+    pressed: explorerShown,
+    icon: toolbarIcons.files,
+    run: () => {
+      if (explorerShown) {
+        toggleSidebar();
+        return;
+      }
+      revealSidebar();
+      show(explorer);
+    },
+  };
   return (
     <Toolbar
       open={open}
       items={[
-        sidebarItem("files", t("shell.files"), toolbarIcons.files),
-        sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
-        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
+        explorerItem,
         ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
-        sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
         ...command(TOGGLE_GRAPH, toolbarIcons.graph),
