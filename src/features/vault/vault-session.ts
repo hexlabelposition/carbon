@@ -24,11 +24,11 @@ export interface VaultSession {
   /** Opens the folder at `root`, closing the current vault on success. */
   open(root: string): Promise<void>;
   /**
-   * Makes a vault folder with `prepare`, which resolves with its path, and
-   * opens it. It is not put on the recent list: for a vault made again
-   * each time, such as the test vault of the dev build.
+   * Makes the sandbox afresh, sample notes to try the app in, and opens
+   * it. It is not put on the recent list, nor opened again at the next
+   * start: nothing done in it is kept.
    */
-  openPrepared(prepare: () => Promise<string>): Promise<void>;
+  openSandbox(): Promise<void>;
   close(): void;
   /** Forgets the last failure. */
   clearError(): void;

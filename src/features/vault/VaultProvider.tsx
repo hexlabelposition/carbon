@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { t } from "../i18n/i18n";
+import { currentLanguage, t } from "../i18n/i18n";
 import { useAppSettings } from "../settings/app-settings";
 import { newNoteText } from "../settings/note-style";
 import {
@@ -27,6 +27,8 @@ interface VaultProviderProps {
   platform: Platform;
   /** Asks the user for a folder. Resolves to `null` if they cancel. */
   pickFolder: (title?: string) => Promise<string | null>;
+  /** The app cache folder, where the sandbox is made. */
+  cacheFolder: () => Promise<string>;
   children: ReactNode;
 }
 
@@ -39,6 +41,7 @@ interface VaultProviderProps {
 export function VaultProvider({
   platform,
   pickFolder,
+  cacheFolder,
   children,
 }: VaultProviderProps) {
   const settings = useAppSettings();
@@ -76,7 +79,7 @@ export function VaultProvider({
         if (opened === null) return false;
         replace(opened);
         if (remember) void addRecentVault(opened.root);
-        // A vault made afresh each time, as the test vault, is not opened
+        // A vault made afresh each time, as the sandbox, is not opened
         // again at the next start: the start screen is.
         void setOpenVault(remember ? opened.root : null);
         return true;
@@ -145,12 +148,27 @@ export function VaultProvider({
     [attempt, pickFolder, platform],
   );
 
-  const openPrepared = useCallback(
-    async (prepare: () => Promise<string>) => {
-      await attempt(null, async () => openVault(await prepare()), false);
-    },
-    [attempt, openVault],
-  );
+  const openSandbox = useCallback(async () => {
+    // Made afresh in place, so not while it is open; and not remembered:
+    // the next start shows the start screen, not the sandbox.
+    const sandbox = current.current?.root.startsWith(
+      `${await cacheFolder()}/sandbox/`,
+    );
+    if (sandbox === true) replace(null);
+    await attempt(
+      null,
+      async () => {
+        const { prepareSandbox } = await import("../sandbox/sandbox");
+        const root = await prepareSandbox(
+          platform.fs,
+          await cacheFolder(),
+          currentLanguage(),
+        );
+        return openVault(root);
+      },
+      false,
+    );
+  }, [attempt, openVault, cacheFolder, platform, replace]);
 
   // The user left the vault: the next start shows the start screen.
   const close = useCallback(() => {
@@ -170,7 +188,7 @@ export function VaultProvider({
       pickAndOpen,
       pickAndCreate,
       open,
-      openPrepared,
+      openSandbox,
       close,
       clearError,
     }),
@@ -182,7 +200,7 @@ export function VaultProvider({
       pickAndOpen,
       pickAndCreate,
       open,
-      openPrepared,
+      openSandbox,
       close,
       clearError,
     ],

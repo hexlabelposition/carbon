@@ -7,7 +7,7 @@ export function toCorePath(path: string): string {
 
 /**
  * The app cache folder, in core form: for what can be made again, such as
- * the index, or the test vault of the dev build.
+ * the index, or the sandbox.
  */
 export async function appCacheFolder(): Promise<string> {
   return toCorePath(await appCacheDir());

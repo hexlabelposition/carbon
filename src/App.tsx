@@ -11,6 +11,7 @@ import {
   openLogFolder,
   openWebPage,
   pickVaultFolder,
+  appCacheFolder,
   setInterfaceZoom,
   showInFileManager,
   tauriClipboard,
@@ -33,7 +34,11 @@ function App() {
     <TooltipProvider>
       <ClipboardContext value={tauriClipboard}>
         <AppSettingsProvider store={tauriPlatform.settings}>
-          <VaultProvider platform={platform} pickFolder={pickVaultFolder}>
+          <VaultProvider
+            platform={platform}
+            pickFolder={pickVaultFolder}
+            cacheFolder={appCacheFolder}
+          >
             <CommandsProvider>
               <InterfaceZoom apply={setInterfaceZoom} />
               <ThemeSwitch />
