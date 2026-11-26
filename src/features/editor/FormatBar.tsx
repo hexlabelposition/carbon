@@ -177,7 +177,10 @@ export function FormatBar({ view }: { view: () => EditorView | null }) {
   );
 }
 
-/** The icon of the button that shows and hides the bar: a letter T. */
+/**
+ * The icon of the button that shows and hides the bar: a keyboard, two
+ * rows of keys over a space bar.
+ */
 export function FormatBarIcon({ className }: { className: string }) {
   return (
     <svg
@@ -190,7 +193,8 @@ export function FormatBarIcon({ className }: { className: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M3 4V2.75h10V4M8 2.75v10.5M6 13.25h4" />
+      <rect x="1.75" y="3.75" width="12.5" height="8.5" rx="1.5" />
+      <path d="M4.25 6.5h.01M6.75 6.5h.01M9.25 6.5h.01M11.75 6.5h.01M5.5 8.5h.01M8 8.5h.01M10.5 8.5h.01M5.75 10.25h4.5" />
     </svg>
   );
 }
