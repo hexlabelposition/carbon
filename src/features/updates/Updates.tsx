@@ -37,7 +37,9 @@ const primary =
  * in the palette shows it in the dialog. Installing writes the unsaved
  * edits first (`useBeforeUpdate`), then starts the app again. Mount it
  * once, inside the commands provider. A dev build (`dev`) is not
- * installed: it looks only when asked and installs nothing.
+ * installed: it looks only when asked, and the updates it finds are not
+ * `installable`. The test updates of the dev tools are: they go through
+ * the download, and the app is not started again after it.
  */
 export function Updates({
   updater,
@@ -129,6 +131,16 @@ export function Updates({
         setInstallStep({ kind: "installing", part }),
       );
       setInstallStep({ kind: "restarting" });
+      if (dev) {
+        // Only a test update of the dev tools is installed here: the app
+        // stays, and the dialog closes as if it had started again.
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        installing.current = false;
+        setInstallStep(null);
+        setCheckState({ kind: "idle" });
+        setOpen(false);
+        return;
+      }
       await updater.restart();
     } catch (reason) {
       installing.current = false;
@@ -248,7 +260,7 @@ function CheckView({
               </p>
             </>
           )}
-          {dev || !update.installable ? (
+          {!update.installable ? (
             <>
               <p className="mt-4 text-small text-faint">
                 {dev ? t("updates.devBuild") : t("updates.packageBuild")}

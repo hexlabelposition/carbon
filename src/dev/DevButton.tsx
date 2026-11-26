@@ -12,6 +12,11 @@ import {
 import { startupRows } from "../features/startup/startup-report";
 import { showStartup } from "../features/startup/show-startup";
 import { notify } from "../features/notifications/notifications";
+import {
+  setCheckState,
+  showUpdate,
+  type AvailableUpdate,
+} from "../features/updates/update-state";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { useVaultSession } from "../features/vault/vault-session";
 import { Tooltip } from "../features/ui/Tooltip";
@@ -175,6 +180,36 @@ function DevButton({
             </button>
           </Tooltip>
           <Tooltip
+            label="Offers a made-up update, as at start: it downloads in 3 s and installs"
+            side="left"
+          >
+            <button
+              type="button"
+              className={action}
+              onClick={() => {
+                setOpen(false);
+                offerTestUpdate(false);
+              }}
+            >
+              Test update
+            </button>
+          </Tooltip>
+          <Tooltip
+            label="Offers a made-up update whose download fails halfway"
+            side="left"
+          >
+            <button
+              type="button"
+              className={action}
+              onClick={() => {
+                setOpen(false);
+                offerTestUpdate(true);
+              }}
+            >
+              Test update that fails
+            </button>
+          </Tooltip>
+          <Tooltip
             label="Loads the app page afresh, as F5 in a browser"
             side="left"
           >
@@ -190,6 +225,36 @@ function DevButton({
       </AppDialog>
     </>
   );
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Shows the update dialog with a made-up version, as when one is found at
+ * start: nothing is downloaded or installed, and in a dev build the app is
+ * not started again (`Updates`). The download takes about 3 s, or fails
+ * halfway when `fails`.
+ */
+function offerTestUpdate(fails: boolean) {
+  const update: AvailableUpdate = {
+    version: "9.9.9",
+    notes:
+      "A test update from the dev tools.\n\n- Nothing is downloaded\n- Nothing is installed",
+    installable: true,
+    async install(onProgress) {
+      onProgress(null);
+      await wait(500);
+      for (let step = 1; step <= 10; step++) {
+        await wait(250);
+        if (fails && step === 6) {
+          throw new Error("The test update failed halfway, as asked");
+        }
+        onProgress(step / 10);
+      }
+    },
+  };
+  setCheckState({ kind: "available", update });
+  showUpdate();
 }
 
 /** How the open vault started (the log has it too: `StartupHost`). */
