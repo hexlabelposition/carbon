@@ -49,3 +49,19 @@ export function onWebImagesChange(listener: () => void): () => void {
 function changed(): void {
   for (const listener of listeners) listener();
 }
+
+/**
+ * What an image without alt text is called: its file name. An address on
+ * the web whose path names no file, as "images?q=…" of a search engine,
+ * is called by its site.
+ */
+export function imageName(target: string): string {
+  if (!isWebImage(target)) return target.slice(target.lastIndexOf("/") + 1);
+  try {
+    const url = new URL(webImageAddress(target));
+    const file = url.pathname.slice(url.pathname.lastIndexOf("/") + 1);
+    return /\.[a-z0-9]+$/i.test(file) ? decodeURIComponent(file) : url.host;
+  } catch {
+    return target;
+  }
+}

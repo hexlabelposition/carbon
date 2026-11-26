@@ -3,6 +3,7 @@ import { FittedImage } from "../image/FittedImage";
 import type { ShownImage } from "./live-preview-image";
 import { Tooltip } from "../ui/Tooltip";
 import { AppDialog } from "../dialogs/AppDialog";
+import { imageName } from "./web-images";
 
 /**
  * An image of a note on its own, over the window below its top row, fit
@@ -17,7 +18,7 @@ export function ImageViewer({
   onClose: () => void;
 }) {
   const t = useT();
-  const name = image.target.slice(image.target.lastIndexOf("/") + 1);
+  const name = imageName(image.target);
 
   return (
     // Below the top row, as every dialog: the window buttons stay in reach.
