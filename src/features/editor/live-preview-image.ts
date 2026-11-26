@@ -184,6 +184,7 @@ export const imagePreview = [
       constructor(view: EditorView) {
         this.edit = new ImageEdit(view);
         this.decorations = decorate(view, this.edit);
+        measureImages(view);
         this.stop = onWebImagesChange(() =>
           view.dispatch({ effects: imagesChanged.of(null) }),
         );
@@ -209,7 +210,10 @@ export const imagePreview = [
           update.focusChanged ||
           holdingChanged(update) ||
           syntaxTree(update.startState) !== syntaxTree(update.state);
-        if (changed) this.decorations = decorate(update.view, this.edit);
+        if (changed) {
+          this.decorations = decorate(update.view, this.edit);
+          measureImages(update.view);
+        }
       }
     },
     { decorations: (plugin) => plugin.decorations },
@@ -833,6 +837,128 @@ function imageSizes(view: EditorView): ImageSizes | null {
     ownSizes.set(host, sizes);
   }
   return sizes;
+}
+
+/** The addresses each host is finding the size of now. */
+const measuring = new WeakMap<ImageHost, Set<string>>();
+
+/**
+ * Finds the size of every image of the note not known yet, those out of
+ * sight too, which are drawn only once scrolled to: the editor then knows
+ * the height of their lines from the start, and the note and its scroll
+ * bar settle once, not again at each image that comes into sight.
+ */
+function measureImages(view: EditorView): void {
+  const host = view.state.facet(imageHost);
+  const sizes = imageSizes(view);
+  if (host === null || sizes === null) return;
+  let pending = measuring.get(host);
+  if (pending === undefined) {
+    pending = new Set();
+    measuring.set(host, pending);
+  }
+  const { state } = view;
+  for (const node of imageNodes(state)) {
+    if (node.url === null) continue;
+    const target = state.sliceDoc(node.url.from, node.url.to);
+    if (sizes.has(target) || pending.has(target)) continue;
+    const web = isWebImage(target);
+    // A web image is fetched only when the user allows it.
+    if (web ? !webImageAllowed(target) : !isLocal(target)) continue;
+    pending.add(target);
+    void measureImage(host, target).then((found) => {
+      pending.delete(target);
+      if (found === null) sizes.set(target, null);
+      else {
+        sizes.set(target, { width: found.width, height: found.height });
+        // The image is drawn at once from here, when it comes into sight.
+        if (!web) seenImages(view)?.set(target, found);
+      }
+      redrawSoon(view);
+    });
+  }
+}
+
+/**
+ * How much of a note `measureImagesOf` looks at: more than a screen of
+ * text, so the images in sight as it opens are among them.
+ */
+const OPENING_CHARS = 20_000;
+
+/** "![alt](address", for the address: a guess, before the note is parsed. */
+const WRITTEN_IMAGE = /!\[[^\]\n]*\]\(\s*(<[^>\n]*>|[^\s)]+)/g;
+
+/**
+ * Finds the sizes of the images at the start of `text`, the note about
+ * to open, into the host's `sizes`: shown once they are known, the images
+ * in sight take their place at once, and nothing below moves as they
+ * load. Images from the web are left out unless the user allows them.
+ */
+export async function measureImagesOf(
+  host: ImageHost,
+  text: string,
+): Promise<void> {
+  const sizes = host.sizes;
+  if (sizes === undefined) return;
+  const targets = new Set<string>();
+  for (const [, target] of text
+    .slice(0, OPENING_CHARS)
+    .matchAll(WRITTEN_IMAGE)) {
+    if (sizes.has(target)) continue;
+    if (isWebImage(target) ? webImageAllowed(target) : isLocal(target)) {
+      targets.add(target);
+    }
+  }
+  await Promise.all(
+    [...targets].map(async (target) => {
+      const found = await measureImage(host, target);
+      sizes.set(
+        target,
+        found === null ? null : { width: found.width, height: found.height },
+      );
+    }),
+  );
+}
+
+/** Loads the image at `target` to learn its size; `null` if none. */
+async function measureImage(
+  host: ImageHost,
+  target: string,
+): Promise<SeenImage | null> {
+  const url = isWebImage(target)
+    ? webImageAddress(target)
+    : await host.load(target).catch(() => null);
+  if (url === null) return null;
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.referrerPolicy = "no-referrer";
+    image.onload = () =>
+      resolve(
+        image.naturalWidth > 0 && image.naturalHeight > 0
+          ? { url, width: image.naturalWidth, height: image.naturalHeight }
+          : null,
+      );
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+/** Editors waiting for a frame to draw their images with new sizes. */
+const redrawing = new WeakSet<EditorView>();
+
+/**
+ * Draws the images of `view` again at the next frame, with the sizes
+ * found by then: many found together are one change, not one each.
+ */
+function redrawSoon(view: EditorView): void {
+  if (redrawing.has(view)) return;
+  redrawing.add(view);
+  requestAnimationFrame(() => {
+    redrawing.delete(view);
+    // The note may have been closed meanwhile.
+    if (!view.dom.isConnected) return;
+    view.dispatch({ effects: imagesChanged.of(null) });
+  });
 }
 
 /** An image of a note, where it is written, and its address. */

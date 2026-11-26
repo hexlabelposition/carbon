@@ -59,7 +59,11 @@ export function NoteEditor({
   const t = useT();
   const readingMode = mode === "reading";
   const [note, actions] = useNoteDocument(vault, path);
-  const images = useNoteImages(vault, path);
+  const images = useNoteImages(
+    vault,
+    path,
+    note.status === "ready" ? note.text : null,
+  );
   const links = useNoteLinks(vault, path);
   const tags = useNoteTags(vault, path);
   const title = useNoteTitle(vault, path);
@@ -80,7 +84,7 @@ export function NoteEditor({
   const editorView = useRef<EditorView | null>(null);
   const scroll = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
-  const ready = note.status === "ready";
+  const ready = note.status === "ready" && images.ready;
   // The scroll takes the focus, not the text: no cursor is put anywhere
   // until a click, and the keys scroll the note.
   useLayoutEffect(() => {
@@ -89,7 +93,10 @@ export function NoteEditor({
     if (focusAtOpen) scroll.current?.focus({ preventScroll: true });
   }, [ready, focusAtOpen]);
 
-  if (note.status === "loading") return null;
+  // Shown once its images in sight have their size (`useNoteImages`).
+  if (note.status === "loading" || (note.status === "ready" && !images.ready)) {
+    return null;
+  }
   if (note.status === "error") {
     return (
       <p

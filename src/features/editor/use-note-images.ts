@@ -2,7 +2,12 @@ import { attachmentLink, type NotePath, type Vault } from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n/i18n";
 import { imageEndingOf, imageTypeOf } from "../image/image-file";
-import type { ImageHost, ImageSizes, ShownImage } from "./live-preview-image";
+import {
+  measureImagesOf,
+  type ImageHost,
+  type ImageSizes,
+  type ShownImage,
+} from "./live-preview-image";
 import { errorText } from "../i18n/error-text";
 
 export interface NoteImages {
@@ -12,8 +17,16 @@ export interface NoteImages {
   dismissError(): void;
   /** The image shown on its own, over the whole window, if one is. */
   shown: ShownImage | null;
+  /**
+   * Whether the sizes of the images at the start of the note are known,
+   * or it took too long to wait for them: the note is shown from then.
+   */
+  ready: boolean;
   closeShown(): void;
 }
+
+/** How long a note waits for the sizes of its images to open, at most. */
+const IMAGES_WAIT = 200;
 
 /**
  * The sizes of the images of each note, kept while the vault is open: a
@@ -41,7 +54,12 @@ function sizesOf(vault: Vault, path: NotePath): ImageSizes {
  * The images of one note: reads the ones it shows from the vault, and
  * saves the ones pasted or dropped into it as attachments.
  */
-export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
+export function useNoteImages(
+  vault: Vault,
+  path: NotePath,
+  /** The text of the note once it is read, `null` before. */
+  text: string | null,
+): NoteImages {
   const [error, setError] = useState<string | null>(null);
   const [shown, setShown] = useState<ShownImage | null>(null);
 
@@ -105,8 +123,30 @@ export function useNoteImages(vault: Vault, path: NotePath): NoteImages {
     };
   }, [vault, path]);
 
+  // The note opens once the images in sight have their size, so they
+  // take their place at once; not later than `IMAGES_WAIT`.
+  const [readyFor, setReadyFor] = useState<NotePath | null>(null);
+  const firstText = useRef(text);
+  firstText.current ??= text;
+  const hasText = text !== null;
+  useEffect(() => {
+    const opening = firstText.current;
+    if (!hasText || opening === null) return;
+    let stale = false;
+    const done = () => {
+      if (!stale) setReadyFor(path);
+    };
+    const timer = setTimeout(done, IMAGES_WAIT);
+    void measureImagesOf(host, opening).then(done);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [host, path, hasText]);
+
   return {
     host,
+    ready: readyFor === path,
     error,
     dismissError: () => setError(null),
     shown,
