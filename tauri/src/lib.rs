@@ -158,6 +158,30 @@ async fn sql_batch(
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Tells the page when the pointer leaves the window, as the event
+/// `pointer-left-window`. WebKitGTK does not on Wayland: the button under
+/// the pointer as it leaves by the edge of the window, as those in its top
+/// right corner, would stay hovered, with its tooltip, until it comes back.
+#[cfg(target_os = "linux")]
+fn tell_when_pointer_leaves(app: &tauri::App) {
+    use gtk::prelude::*;
+    use tauri::{Emitter, Manager};
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let Ok(gtk_window) = window.gtk_window() else {
+        return;
+    };
+    let handle = app.handle().clone();
+    gtk_window.connect_leave_notify_event(move |_, event| {
+        // Into a part of the window itself is not out of it.
+        if event.detail() != gtk::gdk::NotifyType::Inferior {
+            let _ = handle.emit("pointer-left-window", ());
+        }
+        gtk::glib::Propagation::Proceed
+    });
+}
+
 pub fn run() {
     use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
@@ -206,6 +230,8 @@ pub fn run() {
                 #[cfg(debug_assertions)]
                 let _ = scope.allow_directory(cache.join("test-vault"), true);
             }
+            #[cfg(target_os = "linux")]
+            tell_when_pointer_leaves(app);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

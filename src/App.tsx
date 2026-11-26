@@ -12,6 +12,7 @@ import {
   openWebPage,
   pickVaultFolder,
   appCacheFolder,
+  forwardPointerLeaves,
   setInterfaceZoom,
   showInFileManager,
   tauriClipboard,
@@ -24,6 +25,10 @@ import { createWorkerParser } from "./workers/worker-parser";
 
 /** The Tauri platform, with notes parsed in a worker. */
 const platform = { ...tauriPlatform, parser: createWorkerParser() };
+
+// WebKitGTK does not tell the page on Wayland that the pointer left the
+// window: the window does (`usePointerLeavesWindow`).
+forwardPointerLeaves();
 
 /**
  * Wires the platform into the features and picks the shell. There is one

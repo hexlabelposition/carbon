@@ -14,6 +14,7 @@ export { openWebPage, showInFileManager } from "./opener";
 export { openLogFolder, writeLogLine } from "./log";
 export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
+export { forwardPointerLeaves } from "./pointer";
 export { tauriWindow } from "./window";
 export { tauriUpdater } from "./updater";
 export { tauriClipboard } from "./clipboard";

@@ -1,5 +1,11 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
-import { useState, type ReactElement, type ReactNode } from "react";
+import {
+  useCallback,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { pointerOutside, usePointerLeavesWindow } from "./pointer-outside";
 import { Shortcut } from "../commands/Shortcut";
 
 /**
@@ -45,11 +51,22 @@ export function Tooltip({
   children,
 }: TooltipProps) {
   const [open, setOpen] = useState(false);
+  // Shut as the pointer leaves the window: WebKitGTK does not tell the
+  // button under it that it left (`pointer-outside.ts`).
+  usePointerLeavesWindow(
+    useCallback(() => setOpen(false), []),
+    open,
+  );
   return (
     <Base.Root
       open={open}
       onOpenChange={(next, details) => {
         if (next && hoverOnly && details.reason === "trigger-focus") return;
+        // Its delay may run out after the pointer left the window by the
+        // edge, past the button: it stays shut (`pointerOutside`).
+        if (next && pointerOutside() && details.reason !== "trigger-focus") {
+          return;
+        }
         setOpen(next);
       }}
     >

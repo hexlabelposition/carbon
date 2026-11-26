@@ -19,6 +19,20 @@
 @custom-variant has-focus-ring (&:where(.cb-focus-rings *):has(button:focus-visible));
 
 /*
+ * `hover:` and the variants made of it, as `group-hover:`, as Tailwind
+ * has them, but not while the pointer is out of the window: WebKitGTK
+ * keeps the element it left by hovered on Wayland, as a button in the top
+ * row. The window says it left (`pointer-outside.ts`).
+ */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:where(:root:not([data-pointer-outside]) *):hover {
+      @slot;
+    }
+  }
+}
+
+/*
  * Map the tokens to Tailwind. `inline` keeps the var() reference, so the
  * utilities switch with the theme at runtime.
  */

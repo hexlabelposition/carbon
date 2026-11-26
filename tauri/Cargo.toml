@@ -37,6 +37,11 @@ tauri-plugin-process = "2"
 # cannot read the clipboard by itself.
 tauri-plugin-clipboard-manager = "2"
 
+# The version Tauri draws its window with: the window tells the page that
+# the pointer left it, which WebKitGTK does not on Wayland (lib.rs).
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
