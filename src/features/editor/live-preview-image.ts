@@ -79,7 +79,7 @@ const revealImage = StateEffect.define<number>();
  * Where the image starts whose Markdown the user asked to see, with its
  * button. Only that one shows its Markdown: a cursor put beside an image
  * by a click or the keys leaves it drawn. It is drawn again once the
- * cursor leaves its line.
+ * selection leaves its line.
  */
 const revealedImage = StateField.define<number | null>({
   create: () => null,
@@ -88,10 +88,15 @@ const revealedImage = StateField.define<number | null>({
       if (effect.is(revealImage)) return effect.value;
     }
     if (value === null) return null;
+    // Kept while the selection reaches into its line: one made from the
+    // Markdown out to the lines around it, as Ctrl+Shift+Left at the
+    // start of the line does, keeps the Markdown in sight.
     const at = tr.changes.mapPos(value);
     const line = tr.state.doc.lineAt(at);
-    const head = tr.state.selection.main.head;
-    return head >= line.from && head <= line.to ? at : null;
+    const touches = tr.state.selection.ranges.some(
+      (range) => range.from <= line.to && range.to >= line.from,
+    );
+    return touches ? at : null;
   },
 });
 
@@ -340,6 +345,9 @@ export const imagePreview = [
     ".cm-image-web-show:hover": { textDecoration: "underline" },
     // An image that is not there takes a size of its own, as one that is
     // would: the note keeps its shape while an address is fixed.
+    // What an image box says is a picture, not text of the note: a
+    // selection across it does not take it.
+    ".cm-image, .cm-image-web": { userSelect: "none" },
     ".cm-image.cm-image-missing": {
       display: "inline-flex",
       flexDirection: "column",
