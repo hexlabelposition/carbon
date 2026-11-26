@@ -107,6 +107,40 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
  */
 export const imagePreview = [
   revealedImage,
+  // A click beside a drawn image puts the cursor on the line above or
+  // below it, the nearer one, not beside the image.
+  EditorView.domEventHandlers({
+    mousedown(event, view) {
+      // In reading mode a click selects text as usual.
+      if (view.state.readOnly) return false;
+      if (event.button !== 0 || event.detail !== 1) return false;
+      if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+        return false;
+      }
+      if ((event.target as Element).closest?.(".cm-image") != null) {
+        return false;
+      }
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+      if (pos === null) return false;
+      const { doc } = view.state;
+      const line = doc.lineAt(pos);
+      if (!drawnImageLine(view.state, line.from, line.to)) return false;
+      const block = view.lineBlockAt(line.from);
+      const middle = view.documentTop + block.top + block.height / 2;
+      const above = event.clientY < middle;
+      let anchor: number;
+      if (above && line.number > 1) anchor = doc.line(line.number - 1).to;
+      else if (!above && line.number < doc.lines) {
+        anchor = doc.line(line.number + 1).from;
+      } else if (line.number > 1) anchor = doc.line(line.number - 1).to;
+      else if (line.number < doc.lines) anchor = doc.line(line.number + 1).from;
+      else return false;
+      event.preventDefault();
+      view.dispatch({ selection: { anchor }, scrollIntoView: true });
+      view.focus();
+      return true;
+    },
+  }),
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -441,6 +475,34 @@ function cursorBeside(dom: HTMLElement, pos: number): Rect {
     top: Math.max(rect.top, rect.bottom - height),
     bottom: rect.bottom,
   };
+}
+
+/**
+ * Whether the line from `from` to `to` is an image alone, drawn: one live
+ * preview shows as an image, not its Markdown (`revealedImage`).
+ */
+function drawnImageLine(state: EditorState, from: number, to: number): boolean {
+  const text = state.sliceDoc(from, to).trim();
+  if (text === "") return false;
+  let found = false;
+  syntaxTree(state).iterate({
+    from,
+    to,
+    enter({ name, node }) {
+      if (found) return false;
+      if (name !== "Image") return;
+      if (state.sliceDoc(node.from, node.to) !== text) return false;
+      const url = node.getChild("URL");
+      const target = url === null ? "" : state.sliceDoc(url.from, url.to);
+      const drawn =
+        url === null
+          ? /\]\(\s*\)$/.test(text)
+          : isWebImage(target) || isLocal(target);
+      found = drawn && !revealed(state, node.from);
+      return false;
+    },
+  });
+  return found;
 }
 
 /** Shows the Markdown of the image drawn in `box`, to edit. */
