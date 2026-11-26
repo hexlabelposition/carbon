@@ -7,7 +7,7 @@
 pkgname=carbon-desktop
 _appname=carbon
 pkgver=0.5.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Fast, local-first notes with links'
 arch=('x86_64' 'aarch64')
 url='https://github.com/hexlabelposition/carbon'
@@ -49,6 +49,15 @@ build() {
   export RUSTUP_TOOLCHAIN=stable
   # Runs `bun run build` (tsc + Vite) and then cargo in release mode.
   bun tauri build --no-bundle -- --frozen
+
+  # Tailwind skips the files a .gitignore names, also one in a folder
+  # above: under one that ignores this folder (such as packaging/arch/src
+  # of the repository) it writes no classes, and the app has no styles.
+  if ! grep -q 'items-center' dist/assets/index-*.css; then
+    echo 'The styles were built without the Tailwind classes: build this' >&2
+    echo 'PKGBUILD outside a folder a .gitignore ignores (BUILDDIR=/tmp/...).' >&2
+    return 1
+  fi
 }
 
 package() {

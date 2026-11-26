@@ -197,10 +197,15 @@ jobs:
           useradd --create-home builder
           chown -R builder packaging/arch
       # The source is the archive GitHub makes for the tag, as for anyone
-      # who builds the PKGBUILD.
+      # who builds the PKGBUILD. It is built outside the checkout: in
+      # packaging/arch/src it would sit under the .gitignore there, and
+      # Tailwind skips the files a .gitignore names, so the app would have
+      # no styles.
       - name: Build the package
         working-directory: packaging/arch
-        run: runuser -u builder -- makepkg --noconfirm
+        run: |
+          install -d -o builder /tmp/makepkg
+          runuser -u builder -- env BUILDDIR=/tmp/makepkg makepkg --noconfirm
       - name: Attach the package to the draft
         working-directory: packaging/arch
         env:
