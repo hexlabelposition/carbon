@@ -113,6 +113,36 @@ export const imagePreview = [
       maxWidth: "100%",
       borderRadius: "6px",
     },
+    // An image being edited: its line keeps its size, the image blurred
+    // behind the Markdown.
+    ".cm-line.cm-image-edited": {
+      position: "relative",
+      isolation: "isolate",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxSizing: "border-box",
+      width: "min(100%, var(--cm-image-width))",
+      aspectRatio: "var(--cm-image-ratio)",
+      padding: "8px 24px",
+      overflow: "hidden",
+      borderRadius: "6px",
+      textAlign: "center",
+      color: "#fff",
+      textShadow: "0 1px 3px rgb(0 0 0 / 0.6)",
+    },
+    ".cm-line.cm-image-edited::before": {
+      content: '""',
+      position: "absolute",
+      inset: "0",
+      zIndex: "-1",
+      backgroundImage: "var(--cm-image)",
+      backgroundSize: "100% 100%",
+      // Past the edges: a blur fades them out otherwise.
+      transform: "scale(1.15)",
+      filter: "blur(14px) brightness(0.5)",
+    },
+    ".cm-line.cm-image-edited > *": { minWidth: "0" },
     // The address of an image is one long word. Without this the line
     // would break before it, at the "(", and leave "![]" alone on a line.
     ".cm-image-source": { wordBreak: "break-all" },
@@ -266,6 +296,22 @@ function decorate(view: EditorView): DecorationSet {
           ? new WebImageWidget(target, alt?.[1] ?? "", webImageAllowed(target))
           : new ImageWidget(target, alt?.[1] ?? "");
         if (editing(node.from, node.to)) {
+          const line = state.doc.lineAt(node.from);
+          const alone =
+            node.to <= line.to &&
+            state.sliceDoc(line.from, line.to).trim() ===
+              state.sliceDoc(node.from, node.to);
+          const seen = alone ? seenImage(view, target) : undefined;
+          if (seen !== undefined) {
+            // Being edited, alone on its line: the line takes the place
+            // and the size of the image, blurred behind the Markdown, so
+            // nothing below moves.
+            ranges.push(
+              editedImageLine(seen).range(line.from),
+              imageSource.range(node.from, node.to),
+            );
+            return;
+          }
           // Being edited: the Markdown stays, the image follows it.
           ranges.push(
             imageSource.range(node.from, node.to),
@@ -278,6 +324,67 @@ function decorate(view: EditorView): DecorationSet {
     });
   }
   return Decoration.set(ranges, true);
+}
+
+/** An image that was shown: where it loads from, and its real size. */
+interface SeenImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * The images each editor has shown, by their address in the note: an
+ * image of the vault loads from a URL of its editor's host.
+ */
+const seen = new WeakMap<ImageHost, Map<string, SeenImage>>();
+
+function seenImages(view: EditorView): Map<string, SeenImage> | null {
+  const host = view.state.facet(imageHost);
+  if (host === null) return null;
+  let images = seen.get(host);
+  if (images === undefined) {
+    images = new Map();
+    seen.set(host, images);
+  }
+  return images;
+}
+
+function seenImage(view: EditorView, target: string): SeenImage | undefined {
+  return seenImages(view)?.get(target);
+}
+
+/** Remembers a loaded image, for the line that stands in for it. */
+function rememberImage(
+  view: EditorView,
+  target: string,
+  image: HTMLImageElement,
+) {
+  if (image.naturalWidth === 0 || image.naturalHeight === 0) return;
+  seenImages(view)?.set(target, {
+    url: image.src,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+  });
+}
+
+/**
+ * The line of an image being edited: as wide and as high as the image is
+ * drawn (never wider than the note, never bigger than it is), the image
+ * blurred and darkened behind its Markdown, which is centered on it.
+ */
+function editedImageLine(image: SeenImage): Decoration {
+  // A URL in CSS: quotes and backslashes would end it.
+  const url = image.url.replace(/["\\\n]/g, (c) => encodeURIComponent(c));
+  return Decoration.line({
+    class: "cm-image-edited",
+    attributes: {
+      style:
+        `--cm-image: url("${url}"); ` +
+        `--cm-image-width: ${image.width}px; ` +
+        `--cm-image-ratio: ${image.width} / ${image.height}`,
+    },
+  });
 }
 
 /** False for addresses on the web: "https:", "data:", "//host". */
@@ -335,7 +442,10 @@ class ImageWidget extends WidgetType {
       image.draggable = false;
       // The image has a height only once it is loaded; the editor must
       // measure its lines again then.
-      image.addEventListener("load", () => view.requestMeasure());
+      image.addEventListener("load", () => {
+        rememberImage(view, this.target, image);
+        view.requestMeasure();
+      });
       image.addEventListener("error", missing);
       image.src = url;
       box.append(image);
@@ -403,7 +513,10 @@ class WebImageWidget extends WidgetType {
     image.draggable = false;
     // The site is not told which page asked for the image.
     image.referrerPolicy = "no-referrer";
-    image.addEventListener("load", () => view.requestMeasure());
+    image.addEventListener("load", () => {
+      rememberImage(view, this.target, image);
+      view.requestMeasure();
+    });
     image.addEventListener("error", () => {
       box.className = "cm-image-missing";
       box.style.cursor = "";
