@@ -1,52 +1,66 @@
 name: Pages
 
-# Builds the landing page (website/, Astro) and publishes it on GitHub
-# Pages: when it changes, when a release is published (the page shows the
-# version and links to the files of the latest release, read at build
-# time), or by hand.
+# The landing page (website/, Astro): its own checks, which checks.yml
+# leaves to it, and its build, published on GitHub Pages when it changes on
+# main, when a release is published (the page shows the version and links
+# to the files of the latest release, read at build time), or by hand. A
+# pull request is checked and built, not published.
 on:
   push:
     branches: [main]
-    paths:
+    paths: &site
       - "website/**"
       - "src/styles/tokens.css"
+      - "eslint.config.ts"
       - "bun.lock"
       - ".github/workflows/pages.yml"
+  pull_request:
+    paths: *site
   release:
     types: [published]
   workflow_dispatch:
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build
+    name: Check and build
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
       - uses: ./.github/actions/bun
-      - name: Set up Pages
-        uses: actions/configure-pages@v6
+      - name: Check types
+        run: bun run --filter @carbon/website typecheck
+      - name: Lint
+        run: bun run lint website
+      - name: Check formatting
+        run: bun run --filter @carbon/website format:check
       - name: Build the site
         run: bun run --filter @carbon/website build
         env:
           # For the GitHub API, so the build stays clear of its rate limit.
           GITHUB_TOKEN: ${{ github.token }}
       - name: Upload the site
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
           path: website/dist
 
   deploy:
     name: Deploy
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
+    # One deploy at a time, none cancelled halfway.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

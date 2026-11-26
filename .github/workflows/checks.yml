@@ -1,11 +1,15 @@
 name: Checks
 
 # The quick checks of every change. The app is compiled in build.yml, and
-# tried in e2e.yml.
+# tried in e2e.yml. A change to the landing page alone is checked in
+# pages.yml.
 on:
   push:
     branches: [main]
+    paths-ignore: &site
+      - "website/**"
   pull_request:
+    paths-ignore: *site
 
 concurrency:
   group: checks-${{ github.ref }}

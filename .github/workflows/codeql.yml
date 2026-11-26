@@ -17,7 +17,6 @@ on:
       - "*.js"
       - "package.json"
       - "bun.lock"
-      - "website/**"
       - ".github/**"
   pull_request:
     paths: *code
