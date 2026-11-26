@@ -1,0 +1,6 @@
+# What makepkg leaves next to the PKGBUILD: the sources it unpacked and
+# built, the tree of the package, the downloaded archive and the package.
+src/
+pkg/
+*.tar.*
+*.log

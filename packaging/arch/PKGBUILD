@@ -1,0 +1,88 @@
+# Maintainer: Vladyslav Kudriashov
+#
+# Builds Carbon from the source of a release tag. The app is built with
+# `tauri build --no-bundle`: makepkg makes the package, so neither the deb
+# nor the AppImage is needed, only the binary, the icons and a desktop file.
+
+pkgname=carbon-desktop
+_appname=carbon
+pkgver=0.4.0
+pkgrel=1
+pkgdesc='Fast, local-first notes with links'
+arch=('x86_64' 'aarch64')
+url='https://github.com/hexlabelposition/carbon'
+license=('MIT')
+depends=(
+  'gcc-libs'
+  'glib2'
+  'glibc'
+  'gtk3'
+  'hicolor-icon-theme'
+  'libsoup3'
+  'sqlite'
+  'webkit2gtk-4.1'
+)
+makedepends=(
+  'bun'
+  'cargo'
+  'nodejs'
+)
+# LTO from makepkg.conf breaks the link of Rust crates with C code.
+options=('!lto' '!debug')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$_appname-$pkgver"
+
+  # Everything from the network is fetched here, so build() works offline.
+  bun install --frozen-lockfile
+
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --manifest-path tauri/Cargo.toml \
+    --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$_appname-$pkgver"
+
+  export RUSTUP_TOOLCHAIN=stable
+  # Runs `bun run build` (tsc + Vite) and then cargo in release mode.
+  bun tauri build --no-bundle -- --frozen
+}
+
+package() {
+  cd "$_appname-$pkgver"
+
+  # Cargo names the binary `carbon`; it is installed under the name of
+  # the package, as are its icons and desktop file.
+  install -Dm755 "tauri/target/release/$_appname" "$pkgdir/usr/bin/$pkgname"
+
+  install -Dm644 tauri/icons/32x32.png \
+    "$pkgdir/usr/share/icons/hicolor/32x32/apps/$pkgname.png"
+  install -Dm644 tauri/icons/64x64.png \
+    "$pkgdir/usr/share/icons/hicolor/64x64/apps/$pkgname.png"
+  install -Dm644 tauri/icons/128x128.png \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/$pkgname.png"
+  install -Dm644 tauri/icons/128x128@2x.png \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/$pkgname.png"
+  install -Dm644 tauri/icons/icon.png \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/$pkgname.png"
+  install -Dm644 tauri/app-icon.svg \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/$pkgname.svg"
+
+  # The same entry as the deb that Tauri makes.
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/$pkgname.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Carbon
+Comment=$pkgdesc
+Exec=$pkgname
+Icon=$pkgname
+StartupWMClass=$pkgname
+Categories=Office;
+Terminal=false
+EOF
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
