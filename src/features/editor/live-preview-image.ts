@@ -528,9 +528,9 @@ function drawnImageLine(state: EditorState, from: number, to: number): boolean {
 /**
  * Moves the cursor as the arrow key would; if it comes to the line of a
  * drawn image, that image shows its Markdown (`revealedImage`), with the
- * cursor at its start coming from above or the left, at its end coming
- * from below or the right. So the keys go through an image as through
- * text, and Enter at its end puts a line under it. `false`, for the usual
+ * cursor at its start coming from the left, at its end coming from above,
+ * below or the right. So the keys go through an image as through text,
+ * and Enter at its end puts a line under it. `false`, for the usual
  * move, when no image is in the way.
  */
 function enterImage(
@@ -552,7 +552,10 @@ function enterImage(
   const start = line.from + (line.text.length - line.text.trimStart().length);
   const end = line.from + line.text.trimEnd().length;
   view.dispatch({
-    selection: { anchor: forward ? start : end },
+    // Up or down, the cursor goes to the end of the address, where it is
+    // edited, as with the Markdown button. Right comes in at the start,
+    // as along any text, and left at the end.
+    selection: { anchor: forward && !vertical ? start : end },
     effects: revealImage.of(start),
     scrollIntoView: true,
     userEvent: "select",
