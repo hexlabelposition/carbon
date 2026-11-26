@@ -45,6 +45,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "conflict.useDisk": "Взять версию с диска",
   "editor.addProperty": "Добавить свойство",
   "editor.copy": "Копировать",
+  "editor.copyCode": "Копировать код",
   "editor.cut": "Вырезать",
   "editor.editYaml": "Править YAML",
   "editor.frontmatter": "Frontmatter",

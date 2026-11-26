@@ -8,6 +8,7 @@ import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
 import { useClipboard } from "./clipboard";
+import { codeAt } from "./code-at";
 import { scrollParentOf } from "./glide";
 import { holdSelection } from "./held-selection";
 
@@ -26,7 +27,9 @@ const separator = "mx-1 my-1 h-px bg-line";
 
 /**
  * The menu of the right button in a note: undo and redo, cut, copy,
- * paste and select all, as the one of a text field in other apps. It
+ * paste and select all, as the one of a text field in other apps. On
+ * inline code or a code block it also copies that code alone, without
+ * its backticks or fences (`codeAt`). It
  * takes the place of the menu of the WebView, which the app shuts
  * (`useContextMenuGuard`).
  */
@@ -39,6 +42,8 @@ export function EditorContextMenu({
   const clipboard = useClipboard();
   /** Whether text was selected when the menu opened. */
   const [selected, setSelected] = useState(false);
+  /** The code the menu was opened on, if it was. */
+  const [code, setCode] = useState<string | null>(null);
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
   /** Whether the text had the focus when the menu was asked for. */
@@ -66,6 +71,7 @@ export function EditorContextMenu({
       editor.dispatch({ selection: EditorSelection.cursor(at) });
     }
     setSelected(editor.state.selection.ranges.some((r) => !r.empty));
+    setCode(at === null ? null : (codeAt(editor.state, at)?.text ?? null));
     setSteps({
       undo: undoDepth(editor.state) > 0,
       redo: redoDepth(editor.state) > 0,
@@ -96,6 +102,15 @@ export function EditorContextMenu({
       },
       (reason: unknown) => log.error("Could not copy to the clipboard", reason),
     );
+  }
+
+  function copyCode() {
+    if (code === null) return;
+    clipboard
+      .writeText(code)
+      .catch((reason: unknown) =>
+        log.error("Could not copy to the clipboard", reason),
+      );
   }
 
   function paste() {
@@ -165,6 +180,15 @@ export function EditorContextMenu({
             }}
             className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
           >
+            {/* First: it is there only on code, so it is seen at once. */}
+            {code !== null && (
+              <>
+                <ContextMenu.Item className={item} onClick={copyCode}>
+                  {t("editor.copyCode")}
+                </ContextMenu.Item>
+                <ContextMenu.Separator className={separator} />
+              </>
+            )}
             <ContextMenu.Item
               className={item}
               disabled={readOnly || !steps.undo}

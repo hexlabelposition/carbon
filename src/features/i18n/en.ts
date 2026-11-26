@@ -54,6 +54,7 @@ export const en = {
   "conflict.useDisk": "Use the version on disk",
   "editor.addProperty": "Add property",
   "editor.copy": "Copy",
+  "editor.copyCode": "Copy code",
   "editor.cut": "Cut",
   "editor.editYaml": "Edit YAML",
   "editor.frontmatter": "Frontmatter",
