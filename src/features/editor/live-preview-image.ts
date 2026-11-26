@@ -1,9 +1,12 @@
 import { syntaxTree } from "@codemirror/language";
 import type { SyntaxNode } from "@lezer/common";
 import {
+  EditorSelection,
   Facet,
+  Prec,
   StateEffect,
   StateField,
+  type SelectionRange,
   type ChangeDesc,
   type EditorState,
   type Range,
@@ -16,6 +19,7 @@ import {
   type DecorationSet,
   type Rect,
   type ViewUpdate,
+  keymap,
 } from "@codemirror/view";
 import { t } from "../i18n/i18n";
 import { imageTypeOf } from "../image/image-file";
@@ -107,6 +111,15 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
  */
 export const imagePreview = [
   revealedImage,
+  // The arrow keys pass over a drawn image, as over one tall line.
+  Prec.high(
+    keymap.of([
+      { key: "ArrowDown", run: (view) => passImages(view, true, true) },
+      { key: "ArrowUp", run: (view) => passImages(view, false, true) },
+      { key: "ArrowRight", run: (view) => passImages(view, true, false) },
+      { key: "ArrowLeft", run: (view) => passImages(view, false, false) },
+    ]),
+  ),
   // A click beside a drawn image puts the cursor on the line above or
   // below it, the nearer one, not beside the image.
   EditorView.domEventHandlers({
@@ -503,6 +516,66 @@ function drawnImageLine(state: EditorState, from: number, to: number): boolean {
     },
   });
   return found;
+}
+
+/**
+ * Moves the cursor as the arrow key would, and on past the lines of drawn
+ * images it lands on: up and down to the line beyond, keeping the column,
+ * left and right to the end of the line before or the start of the one
+ * after. `false`, for the usual move, when no image is in the way, or
+ * when the image is the first or the last line and there is nowhere to go.
+ */
+function passImages(
+  view: EditorView,
+  forward: boolean,
+  vertical: boolean,
+): boolean {
+  const { state } = view;
+  if (state.readOnly) return false;
+  const { selection, doc } = state;
+  if (selection.ranges.length !== 1 || !selection.main.empty) return false;
+  const start = selection.main;
+  const imageAt = (number: number) => {
+    const line = doc.line(number);
+    return drawnImageLine(state, line.from, line.to);
+  };
+  const moved = vertical
+    ? view.moveVertically(start, forward)
+    : view.moveByChar(start, forward);
+  let number = doc.lineAt(moved.head).number;
+  if (!imageAt(number)) return false;
+  // A few images one under another are passed together.
+  while (imageAt(number)) {
+    number += forward ? 1 : -1;
+    if (number < 1 || number > doc.lines) return false;
+  }
+  const line = doc.line(number);
+  let range: SelectionRange;
+  if (!vertical) {
+    range = EditorSelection.cursor(forward ? line.from : line.to);
+  } else {
+    // In the column the cursor keeps while it goes up and down, on the
+    // nearest row of the line: its first going down, its last going up.
+    const content = view.contentDOM.getBoundingClientRect();
+    const goal =
+      start.goalColumn ??
+      (view.coordsAtPos(start.head)?.left ?? content.left) - content.left;
+    const block = view.lineBlockAt(line.from);
+    const y = view.documentTop + (forward ? block.top + 2 : block.bottom - 2);
+    const at = view.posAtCoords({ x: content.left + goal, y }, false);
+    range = EditorSelection.cursor(
+      Math.min(Math.max(at, line.from), line.to),
+      0,
+      undefined,
+      goal,
+    );
+  }
+  view.dispatch({
+    selection: range,
+    scrollIntoView: true,
+    userEvent: "select",
+  });
+  return true;
 }
 
 /** Shows the Markdown of the image drawn in `box`, to edit. */
