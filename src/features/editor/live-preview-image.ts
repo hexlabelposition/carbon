@@ -812,6 +812,16 @@ function editedImageLine(image: SeenImage, missing: boolean): Decoration {
   });
 }
 
+/**
+ * Gives an image that is still loading the size it was shown at before,
+ * so its line keeps its height until it is loaded: as wide as it is
+ * (never wider than the note, `max-width`), as high as its shape makes it.
+ */
+function keepSize(image: HTMLImageElement, seen: SeenImage): void {
+  image.width = seen.width;
+  image.style.aspectRatio = `${seen.width} / ${seen.height}`;
+}
+
 /** False for addresses on the web: "https:", "data:", "//host". */
 function isLocal(target: string): boolean {
   return !/^<?([a-z][a-z0-9+.-]*:|\/\/)/i.test(target);
@@ -867,26 +877,43 @@ class ImageWidget extends WidgetType {
       missing();
       return box;
     }
-    host.load(this.target).then((url) => {
-      if (url === null) {
-        missing();
+    let image: HTMLImageElement | null = null;
+    const draw = (url: string) => {
+      if (image !== null) {
+        // Drawn already from the image shown before: the host may have
+        // a newer address for it.
+        if (image.src !== url) image.src = url;
         return;
       }
-      const image = document.createElement("img");
-      image.alt = this.alt;
-      image.draggable = false;
+      const drawn = document.createElement("img");
+      image = drawn;
+      drawn.alt = this.alt;
+      drawn.draggable = false;
       // The image has a height only once it is loaded; the editor must
       // measure its lines again then.
-      image.addEventListener("load", () => {
-        rememberImage(view, this.target, image);
+      drawn.addEventListener("load", () => {
+        rememberImage(view, this.target, drawn);
         view.requestMeasure();
       });
-      image.addEventListener("error", missing);
-      image.src = url;
+      drawn.addEventListener("error", missing);
+      drawn.src = url;
       box.append(
-        image,
-        imageTools(view, box, () => this.show(view, image)),
+        drawn,
+        imageTools(view, box, () => this.show(view, drawn)),
       );
+    };
+    // An image shown before is drawn at once, at its size: the host
+    // answers a moment later, and the line would shrink to a line of
+    // text meanwhile, as when the cursor leaves an image it showed the
+    // Markdown of, then grow back.
+    const known = seenImage(view, this.target);
+    if (known !== undefined) {
+      draw(known.url);
+      if (image !== null) keepSize(image, known);
+    }
+    host.load(this.target).then((url) => {
+      if (url === null) missing();
+      else draw(url);
     }, missing);
     return box;
   }
@@ -966,6 +993,9 @@ class WebImageWidget extends WidgetType {
       ),
     );
     image.src = address;
+    // Its size known from before, the line does not shrink while it loads.
+    const known = seenImage(view, this.target);
+    if (known !== undefined) keepSize(image, known);
     const open = () =>
       view.state
         .facet(imageHost)
