@@ -136,8 +136,10 @@ export function FormatBar({ view }: { view: () => EditorView | null }) {
     editor.focus();
   }
 
+  // Centered by its margins, not by a transform: a shift of half its width
+  // can land between pixels, and WebKitGTK then draws the icons blurred.
   return (
-    <div className="absolute bottom-3 left-1/2 z-10 flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-bg p-1 shadow-dialog">
+    <div className="absolute inset-x-3 bottom-3 z-10 mx-auto flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-bg p-1 shadow-dialog">
       {GROUPS.map((group, index) => (
         <Fragment key={index}>
           {index > 0 && (
