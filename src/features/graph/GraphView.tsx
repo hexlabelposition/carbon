@@ -495,6 +495,16 @@ function GraphCanvas({
       event.preventDefault();
     };
 
+    // A press on the graph starts no selection: the stage is `select-none`,
+    // yet WebKit starts one from the nearest text it can select, the note
+    // beside the panel, and drags it along with the pointer. The press does
+    // not focus the stage either then, so it is focused here, for the keys.
+    const noSelect = (event: MouseEvent) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      container.focus({ preventScroll: true });
+    };
+    container.addEventListener("mousedown", noSelect);
     container.addEventListener("pointerdown", down);
     container.addEventListener("pointermove", move);
     container.addEventListener("pointerup", up);
@@ -505,6 +515,7 @@ function GraphCanvas({
     return () => {
       motion.stop();
       cancelAnimationFrame(pickFrame);
+      container.removeEventListener("mousedown", noSelect);
       container.removeEventListener("pointerdown", down);
       container.removeEventListener("pointermove", move);
       container.removeEventListener("pointerup", up);
