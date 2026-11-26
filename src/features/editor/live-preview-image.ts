@@ -1,5 +1,10 @@
 import { syntaxTree } from "@codemirror/language";
-import { Facet, StateEffect, type Range } from "@codemirror/state";
+import {
+  Facet,
+  StateEffect,
+  type ChangeDesc,
+  type Range,
+} from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -72,22 +77,26 @@ export const imagePreview = [
     class {
       decorations: DecorationSet;
       private readonly stop: () => void;
+      private readonly edit: ImageEdit;
 
       constructor(view: EditorView) {
-        this.decorations = decorate(view);
+        this.edit = new ImageEdit(view);
+        this.decorations = decorate(view, this.edit);
         this.stop = onWebImagesChange(() =>
-          view.dispatch({ effects: webImagesChanged.of(null) }),
+          view.dispatch({ effects: imagesChanged.of(null) }),
         );
       }
 
       destroy() {
         this.stop();
+        this.edit.destroy();
       }
 
       update(update: ViewUpdate) {
+        if (update.docChanged) this.edit.map(update.changes);
         const changed =
           update.transactions.some((tr) =>
-            tr.effects.some((effect) => effect.is(webImagesChanged)),
+            tr.effects.some((effect) => effect.is(imagesChanged)),
           ) ||
           update.docChanged ||
           update.viewportChanged ||
@@ -95,7 +104,7 @@ export const imagePreview = [
           update.focusChanged ||
           holdingChanged(update) ||
           syntaxTree(update.startState) !== syntaxTree(update.state);
-        if (changed) this.decorations = decorate(update.view);
+        if (changed) this.decorations = decorate(update.view, this.edit);
       }
     },
     { decorations: (plugin) => plugin.decorations },
@@ -214,6 +223,18 @@ export const imagePreview = [
       zIndex: "-1",
       background:
         "radial-gradient(ellipse 70% 45% at center, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.15) 100%)",
+    },
+    // The address being typed shows no image: the size stays, the image
+    // goes, as a missing image is drawn.
+    ".cm-line.cm-image-edited-missing": {
+      outline: "1px dashed var(--cb-line-strong)",
+      outlineOffset: "-1px",
+    },
+    ".cm-line.cm-image-edited-missing::before, .cm-line.cm-image-edited-missing::after":
+      { display: "none" },
+    ".cm-line.cm-image-edited.cm-image-edited-missing *": {
+      color: "var(--cb-faint) !important",
+      textShadow: "none",
     },
     ".cm-line.cm-image-edited > *": { minWidth: "0" },
     // White on the darkened image in either theme: the highlighting gives
@@ -342,10 +363,85 @@ export const imageInput = [
 
 const imageSource = Decoration.mark({ class: "cm-image-source" });
 
-/** A web image may now be loaded, or no longer: draw them again. */
-const webImagesChanged = StateEffect.define<null>();
+/**
+ * An image may now be shown that could not, or the other way round: a web
+ * image was allowed, or the address being edited was looked up. Draw
+ * them again.
+ */
+const imagesChanged = StateEffect.define<null>();
 
-function decorate(view: EditorView): DecorationSet {
+/** How long typing in an image address must stop before it is looked up. */
+const LOOKUP_DELAY_MS = 300;
+
+/**
+ * The image line being edited, so it keeps its size while its address is
+ * typed: the last image it showed, where that line is now, and what the
+ * addresses typed since turned out to be. A new address is looked up a
+ * moment after typing stops; once found, the line takes its size.
+ */
+class ImageEdit {
+  /** The start of the line, and the image it showed last. */
+  line: { from: number; image: SeenImage } | null = null;
+  /** Addresses looked up that show no image. */
+  private readonly missing = new Set<string>();
+  private wanted: string | null = null;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private destroyed = false;
+
+  constructor(private readonly view: EditorView) {}
+
+  map(changes: ChangeDesc): void {
+    if (this.line !== null) {
+      this.line = { ...this.line, from: changes.mapPos(this.line.from) };
+    }
+  }
+
+  isMissing(target: string): boolean {
+    return this.missing.has(target);
+  }
+
+  /** Looks `target` up a moment from now, unless another comes first. */
+  lookUp(target: string): void {
+    if (this.wanted === target) return;
+    this.wanted = target;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => void this.load(target), LOOKUP_DELAY_MS);
+  }
+
+  private async load(target: string): Promise<void> {
+    const view = this.view;
+    const host = view.state.facet(imageHost);
+    let url: string | null = null;
+    if (isWebImage(target)) {
+      // A web image is fetched only when the user allows it.
+      if (webImageAllowed(target)) url = webImageAddress(target);
+    } else if (host !== null) {
+      url = await host.load(target).catch(() => null);
+    }
+    const found =
+      url === null
+        ? null
+        : await new Promise<HTMLImageElement | null>((resolve) => {
+            const image = new Image();
+            image.referrerPolicy = "no-referrer";
+            image.onload = () => resolve(image);
+            image.onerror = () => resolve(null);
+            image.src = url;
+          });
+    if (this.destroyed || this.wanted !== target) return;
+    this.wanted = null;
+    if (found === null) this.missing.add(target);
+    else rememberImage(view, target, found);
+    view.dispatch({ effects: imagesChanged.of(null) });
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    clearTimeout(this.timer);
+  }
+}
+
+function decorate(view: EditorView, edit: ImageEdit): DecorationSet {
   const { state } = view;
   if (state.facet(imageHost) === null) return Decoration.none;
   const ranges: Range<Decoration>[] = [];
@@ -354,6 +450,7 @@ function decorate(view: EditorView): DecorationSet {
     state.selection.ranges.some(
       (range) => range.from <= to && range.to >= from,
     );
+  let editedLine = false;
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -378,12 +475,22 @@ function decorate(view: EditorView): DecorationSet {
             state.sliceDoc(line.from, line.to).trim() ===
               state.sliceDoc(node.from, node.to);
           const seen = alone ? seenImage(view, target) : undefined;
-          if (seen !== undefined) {
-            // Being edited, alone on its line: the line takes the place
-            // and the size of the image, blurred behind the Markdown, so
-            // nothing below moves.
+          // Being edited, alone on its line: the line takes the place and
+          // the size of the image, blurred behind the Markdown, so nothing
+          // below moves. While another address is typed, it keeps the
+          // last image it showed, or its size with no image once the
+          // address shows none.
+          const last = edit.line?.from === line.from ? edit.line.image : null;
+          if (alone && (seen !== undefined || last !== null)) {
+            editedLine = true;
+            if (seen !== undefined) {
+              edit.line = { from: line.from, image: seen };
+            } else if (!edit.isMissing(target)) {
+              edit.lookUp(target);
+            }
+            const missing = seen === undefined && edit.isMissing(target);
             ranges.push(
-              editedImageLine(seen).range(line.from),
+              editedImageLine(seen ?? last!, missing).range(line.from),
               imageSource.range(node.from, node.to),
             );
             return;
@@ -399,6 +506,8 @@ function decorate(view: EditorView): DecorationSet {
       },
     });
   }
+  // No image line is edited any more: the next one starts afresh.
+  if (!editedLine) edit.line = null;
   return Decoration.set(ranges, true);
 }
 
@@ -449,11 +558,13 @@ function rememberImage(
  * drawn (never wider than the note, never bigger than it is), the image
  * blurred and darkened behind its Markdown, which is centered on it.
  */
-function editedImageLine(image: SeenImage): Decoration {
+function editedImageLine(image: SeenImage, missing: boolean): Decoration {
   // A URL in CSS: quotes and backslashes would end it.
   const url = image.url.replace(/["\\\n]/g, (c) => encodeURIComponent(c));
   return Decoration.line({
-    class: "cm-image-edited",
+    class: missing
+      ? "cm-image-edited cm-image-edited-missing"
+      : "cm-image-edited",
     attributes: {
       style:
         `--cm-image: url("${url}"); ` +
