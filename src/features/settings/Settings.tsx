@@ -70,6 +70,7 @@ import {
   inlineTitlePreference,
   listGuidesPreference,
   nameHeadingPreference,
+  webImagesPreference,
 } from "./note-style";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
@@ -757,6 +758,7 @@ function NoteSettings() {
   const inlineTitle = inlineTitlePreference.use();
   const listGuides = listGuidesPreference.use();
   const nameHeading = nameHeadingPreference.use();
+  const webImages = webImagesPreference.use();
   return (
     <>
       <Rows>
@@ -779,6 +781,13 @@ function NoteSettings() {
             label={t("settings.nameHeading")}
             checked={nameHeading}
             onChange={nameHeadingPreference.set}
+          />
+        </Row>
+        <Row label={t("settings.webImages")}>
+          <SettingSwitch
+            label={t("settings.webImages")}
+            checked={webImages}
+            onChange={webImagesPreference.set}
           />
         </Row>
       </Rows>

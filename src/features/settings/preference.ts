@@ -10,6 +10,11 @@ export interface Preference<T> {
   set(value: T): void;
   /** The value, kept up to date in a component. */
   use(): T;
+  /**
+   * Calls `listener` whenever the value changes, for code outside React.
+   * Returns a function that stops it.
+   */
+  subscribe(listener: () => void): () => void;
   /** Back to the value it has until the user picks another. */
   reset(): void;
 }
@@ -68,6 +73,7 @@ export function preference<T>(
       changed();
     },
     use: () => useSyncExternalStore(subscribe, get),
+    subscribe,
     reset() {
       // Nothing stored: a later version may give it another default.
       try {

@@ -123,6 +123,18 @@ export function newNoteText(path: string): string {
   return `# ${name}\n\n`;
 }
 
+/**
+ * Whether images from the web are loaded in notes. Off until turned on:
+ * loading one tells its server that the note was opened, so each is
+ * shown only when asked for (`web-images.ts`).
+ */
+export const webImagesPreference = preference<boolean>(
+  "carbon.note.webImages",
+  false,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
 export const noteWidthPreference = preference<NoteWidth>(
   "carbon.note.width",
   "normal",

@@ -44,6 +44,10 @@ A file that is not there:
 
 ![Missing](attachments/missing.png)
 
-From the web, which is not loaded:
+From the web: a line with the site and "Show" stands in for each, until it is clicked or "Load images from the web" is on in the settings.
+
+![A real one](https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png)
+
+One that is not there, which shows as missing once loaded:
 
 ![Web](https://example.com/image.png)

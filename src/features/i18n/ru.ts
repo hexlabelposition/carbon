@@ -155,6 +155,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "images.onlyImages": "В заметку можно перетаскивать только картинки.",
   "images.saveFailed": "Не удалось сохранить картинку: {reason}",
   "images.unreadable": "Не удалось прочитать перетащенный файл.",
+  "images.web": "Картинка из интернета: {site}",
+  "images.webShow": "Показать",
   "linkPreview.empty": "Пустая заметка",
   "linkPreview.missing":
     "Такой заметки пока нет. Нажмите на ссылку, чтобы создать её.",
@@ -266,6 +268,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.theme.system": "Системная",
   "settings.title": "Настройки",
   "settings.version": "Carbon {version}",
+  "settings.webImages": "Загружать картинки из интернета",
   "settings.wheelSize":
     "{key} + колёсико меняет размер текста, нажатие сбрасывает",
   "settings.width": "Ширина содержимого",

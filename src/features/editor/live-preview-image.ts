@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { Facet, type Range } from "@codemirror/state";
+import { Facet, StateEffect, type Range } from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -11,6 +11,13 @@ import {
 import { t } from "../i18n/i18n";
 import { imageTypeOf } from "../image/image-file";
 import { holdingChanged, keepsFocus } from "./held-selection";
+import {
+  allowWebImage,
+  isWebImage,
+  onWebImagesChange,
+  webImageAddress,
+  webImageAllowed,
+} from "./web-images";
 
 /** What the editor needs from outside to show and to take in images. */
 export interface ImageHost {
@@ -56,20 +63,32 @@ export const imageHost = Facet.define<ImageHost, ImageHost | null>({
  * vault is shown as the image. While the cursor is in it, its Markdown is
  * shown as well.
  *
- * Images from the web are not loaded: the note stays local, and opening it
- * tells nobody that it was opened.
+ * Images from the web are loaded only when the settings say so, or once
+ * the user clicks "Show" on the line that stands in for one: opening a
+ * note tells nobody that it was opened (`web-images.ts`).
  */
 export const imagePreview = [
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
+      private readonly stop: () => void;
 
       constructor(view: EditorView) {
         this.decorations = decorate(view);
+        this.stop = onWebImagesChange(() =>
+          view.dispatch({ effects: webImagesChanged.of(null) }),
+        );
+      }
+
+      destroy() {
+        this.stop();
       }
 
       update(update: ViewUpdate) {
         const changed =
+          update.transactions.some((tr) =>
+            tr.effects.some((effect) => effect.is(webImagesChanged)),
+          ) ||
           update.docChanged ||
           update.viewportChanged ||
           update.selectionSet ||
@@ -97,6 +116,20 @@ export const imagePreview = [
     // The address of an image is one long word. Without this the line
     // would break before it, at the "(", and leave "![]" alone on a line.
     ".cm-image-source": { wordBreak: "break-all" },
+    ".cm-image-web": {
+      display: "inline-flex",
+      gap: "6px",
+      padding: "1px 6px",
+      border: "1px dashed var(--cb-line-strong)",
+      borderRadius: "4px",
+      fontSize: "13px",
+      color: "var(--cb-faint)",
+    },
+    ".cm-image-web-show": {
+      color: "var(--cb-link)",
+      cursor: "pointer",
+    },
+    ".cm-image-web-show:hover": { textDecoration: "underline" },
     ".cm-image-missing": {
       padding: "1px 6px",
       border: "1px dashed var(--cb-line-strong)",
@@ -203,6 +236,9 @@ export const imageInput = [
 
 const imageSource = Decoration.mark({ class: "cm-image-source" });
 
+/** A web image may now be loaded, or no longer: draw them again. */
+const webImagesChanged = StateEffect.define<null>();
+
 function decorate(view: EditorView): DecorationSet {
   const { state } = view;
   if (state.facet(imageHost) === null) return Decoration.none;
@@ -222,10 +258,13 @@ function decorate(view: EditorView): DecorationSet {
         const url = node.getChild("URL");
         if (url === null) return;
         const target = state.sliceDoc(url.from, url.to);
-        if (!isLocal(target)) return;
+        const web = isWebImage(target);
+        if (!web && !isLocal(target)) return;
         // What stands between "![" and "]".
         const alt = /^!\[(.*?)\]/s.exec(state.sliceDoc(node.from, node.to));
-        const widget = new ImageWidget(target, alt?.[1] ?? "");
+        const widget = web
+          ? new WebImageWidget(target, alt?.[1] ?? "", webImageAllowed(target))
+          : new ImageWidget(target, alt?.[1] ?? "");
         if (editing(node.from, node.to)) {
           // Being edited: the Markdown stays, the image follows it.
           ranges.push(
@@ -306,6 +345,98 @@ class ImageWidget extends WidgetType {
 
   ignoreEvent(): boolean {
     return true;
+  }
+}
+
+/**
+ * An image from the web. Until it may be loaded, a line stands in for it
+ * with the site it comes from and "Show", which loads it.
+ */
+class WebImageWidget extends WidgetType {
+  constructor(
+    private readonly target: string,
+    private readonly alt: string,
+    private readonly allowed: boolean,
+  ) {
+    super();
+  }
+
+  eq(other: WebImageWidget): boolean {
+    return (
+      other.target === this.target &&
+      other.alt === this.alt &&
+      other.allowed === this.allowed
+    );
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const box = document.createElement("span");
+    const address = webImageAddress(this.target);
+    if (!this.allowed) {
+      box.className = "cm-image-web";
+      const label = document.createElement("span");
+      label.textContent = t("images.web", { site: siteOf(address) });
+      const show = document.createElement("span");
+      show.className = "cm-image-web-show";
+      show.textContent = t("images.webShow");
+      box.append(label, show);
+      box.title = address;
+      box.addEventListener("mousedown", (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        if ((event.target as Element).closest(".cm-image-web-show")) {
+          allowWebImage(address);
+          return;
+        }
+        // Beside "Show": the Markdown of the image, as for a missing one.
+        if (view.state.readOnly) return;
+        view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
+        view.focus();
+      });
+      return box;
+    }
+
+    box.className = "cm-image";
+    box.style.cursor = "pointer";
+    const image = document.createElement("img");
+    image.alt = this.alt;
+    image.draggable = false;
+    // The site is not told which page asked for the image.
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("load", () => view.requestMeasure());
+    image.addEventListener("error", () => {
+      box.className = "cm-image-missing";
+      box.style.cursor = "";
+      box.textContent = t("images.notFound", { name: this.alt || address });
+    });
+    image.src = address;
+    box.append(image);
+    box.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      const host = view.state.facet(imageHost);
+      if (box.contains(image) && host !== null) {
+        host.open({ url: address, target: this.target, alt: this.alt });
+        return;
+      }
+      if (view.state.readOnly) return;
+      view.dispatch({ selection: { anchor: view.posAtDOM(box) } });
+      view.focus();
+    });
+    return box;
+  }
+
+  ignoreEvent(): boolean {
+    return true;
+  }
+}
+
+/** The site of an address, for the line that stands in for its image. */
+function siteOf(address: string): string {
+  try {
+    return new URL(address).host;
+  } catch {
+    return address;
   }
 }
 

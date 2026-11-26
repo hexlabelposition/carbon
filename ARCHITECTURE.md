@@ -527,7 +527,7 @@ Measured on 2026-11-17 in the app (`bun tauri dev`, WebKitGTK) on the author's L
 - Android would need three things the desktop does not: a mobile shell, a `FileSystem` adapter for the app sandbox, and sync.
 - The one network access is the update check at start (ADR-034), which a setting turns off. No telemetry, no account.
 - Tauri capabilities are limited to the plugins listed above. File access is scoped to the opened vault and the app's own config and cache directories.
-- Strict Content Security Policy. Remote content in notes (images from the web) is off by default.
+- Strict Content Security Policy. Remote content in notes (images from the web) is off by default: a line with the site and "Show" stands in for each image, a click loads that one for the rest of the run, and a setting loads them all. A loaded one is fetched without a referrer.
 
 ### Known limitations
 

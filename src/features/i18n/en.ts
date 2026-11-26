@@ -159,6 +159,8 @@ export const en = {
   "images.onlyImages": "Only images can be dropped into a note.",
   "images.saveFailed": "The image could not be saved: {reason}",
   "images.unreadable": "The dropped file could not be read.",
+  "images.web": "Image from the web: {site}",
+  "images.webShow": "Show",
   "linkPreview.empty": "Empty note",
   "linkPreview.missing": "No such note yet. Click the link to create it.",
   "linkPreview.notNote": "Not a note: no note is made for this link.",
@@ -266,6 +268,7 @@ export const en = {
   "settings.theme.system": "System",
   "settings.title": "Settings",
   "settings.version": "Carbon {version}",
+  "settings.webImages": "Load images from the web",
   "settings.wheelSize":
     "{key} + wheel changes the text size, a press of it resets it",
   "settings.width": "Content width",
