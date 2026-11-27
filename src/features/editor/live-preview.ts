@@ -475,6 +475,11 @@ function decorate(view: EditorView): DecorationSet {
             decorateWikiLink(state, node, ranges);
           }
           return false;
+        } else if (name === "Escape") {
+          // "\-" reads as "-": the backslash is shown only to edit.
+          if (!editing(node.from, node.to)) {
+            ranges.push(hide.range(node.from, node.from + 1));
+          }
         } else if (name in INLINE_MARKS && !editing(node.from, node.to)) {
           // The backticks of inline code stay in place, only unseen: the
           // box keeps its width when the cursor comes in and shows them.
