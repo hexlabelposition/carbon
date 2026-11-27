@@ -21,6 +21,8 @@ export const en = {
   "bookmarks.empty":
     "No bookmarks yet. Add notes from the menu of the file tree.",
   "bookmarks.remove": "Remove from bookmarks",
+  "bookmarks.sortAddedAsc": "Date added (oldest first)",
+  "bookmarks.sortAddedDesc": "Date added (newest first)",
   "browser.startWith": "Start it with",
   "browser.title": "Carbon runs as a desktop app",
   "browser.why":
@@ -425,6 +427,8 @@ export const en = {
     other:
       "#{tag} was not renamed in {count} notes: they changed meanwhile or could not be written.",
   },
+  "tags.sortCountAsc": "Number of notes (fewest first)",
+  "tags.sortCountDesc": "Number of notes (most first)",
   "tags.toggle": "Show or hide the tags in #{tag}",
   "theme.dark": "Theme: Dark",
   "theme.light": "Theme: Light",
@@ -447,6 +451,10 @@ export const en = {
   "trash.readOnly": "Read only",
   "trash.restore": "Restore",
   "trash.root": "Vault root",
+  "trash.sortDeletedAsc": "Date deleted (oldest first)",
+  "trash.sortDeletedDesc": "Date deleted (newest first)",
+  "trash.sortPlaceAsc": "Location (A to Z)",
+  "trash.sortPlaceDesc": "Location (Z to A)",
   "trash.toSystem": "To the system trash",
   "tree.badName": "A name cannot contain / or \\",
   "tree.copy": "Copy",

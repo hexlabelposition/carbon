@@ -3,7 +3,7 @@ import { useT } from "../i18n/i18n";
 import { menuIcons } from "../ui/menu-icons";
 import { Tooltip } from "../ui/Tooltip";
 import { treeControls } from "./tree-controls";
-import { treeToolButton } from "./tree-tool-button";
+import { toolButton } from "../ui/tool-button";
 import type { TreeScope } from "./use-file-tree";
 
 /**
@@ -44,7 +44,7 @@ function ToolButton({
       <button
         type="button"
         aria-label={label}
-        className={treeToolButton}
+        className={toolButton}
         onClick={onClick}
       >
         <svg

@@ -1,5 +1,6 @@
 import type { FileTimes, TreeNode } from "@carbon/core";
 import { oneOf, preference } from "../settings/preference";
+import { byName } from "../vault/by-name";
 
 /** How the file tree orders the files of a folder, and which way. */
 export type TreeSort =
@@ -29,12 +30,6 @@ export const treeSortPreference = preference<TreeSort>(
   "name-asc",
   oneOf(TREE_SORTS),
 );
-
-/** "Note 2" before "Note 10", and case does not matter, as the core sorts. */
-const byName = new Intl.Collator(undefined, {
-  numeric: true,
-  sensitivity: "base",
-});
 
 /**
  * `nodes` in the order of `sort`, folders always before files. By name,

@@ -1,11 +1,12 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { NotePath, TagNode } from "@carbon/core";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { NameInput } from "../file-tree/NameInput";
 import { useT } from "../i18n/i18n";
 import type { TagsView } from "./use-tags";
 import { Tooltip } from "../ui/Tooltip";
 import { MenuItemBody } from "../ui/MenuItemBody";
+import { sortTags, tagSortPreference } from "./tag-sort";
 
 interface TagsPanelProps {
   tags: TagsView;
@@ -20,7 +21,8 @@ const menuItem =
   "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
 
 /**
- * The tags of the vault as a tree, each with the number of its notes. A
+ * The tags of the vault as a tree, each with the number of its notes, in
+ * the order picked (`tagSortPreference`). A
  * click on a tag lists its notes below the tree, those of the tags nested
  * in it too; a click on the arrow shows or hides the nested tags. The
  * right button, or F2, renames a tag in every note.
@@ -33,6 +35,11 @@ export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
   /** Rename from the menu: started once the menu is shut and gives up
    * the focus, or the field would lose it at once. */
   const pendingRename = useRef<string | null>(null);
+  const sort = tagSortPreference.use();
+  const sorted = useMemo(
+    () => (tree.status === "ready" ? sortTags(tree.tags, sort) : []),
+    [tree, sort],
+  );
   if (tree.status === "loading") return null;
   if (tree.status === "error") {
     return (
@@ -84,11 +91,11 @@ export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
               {t("tags.partial")}
             </p>
           )}
-          {tree.tags.length === 0 ? (
+          {sorted.length === 0 ? (
             <p className="px-3 py-1 text-small text-faint">{t("tags.empty")}</p>
           ) : (
             <ul role="tree" aria-label={t("shell.tags")}>
-              {tree.tags.map((node) => (
+              {sorted.map((node) => (
                 <TagRow
                   key={node.tag.toLowerCase()}
                   node={node}

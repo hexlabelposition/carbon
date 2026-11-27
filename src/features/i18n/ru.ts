@@ -11,6 +11,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "bookmarks.empty":
     "Закладок пока нет. Добавьте заметки из меню дерева файлов.",
   "bookmarks.remove": "Убрать из закладок",
+  "bookmarks.sortAddedAsc": "Дата добавления (сначала старые)",
+  "bookmarks.sortAddedDesc": "Дата добавления (сначала новые)",
   "browser.startWith": "Запустите его командой",
   "browser.title": "Carbon работает как приложение для компьютера",
   "browser.why":
@@ -450,6 +452,8 @@ export const ru: Record<keyof typeof en, Message> = {
     other:
       "#{tag} не переименован в {count} заметки: они изменились за это время или их не удалось записать.",
   },
+  "tags.sortCountAsc": "Число заметок (сначала меньше)",
+  "tags.sortCountDesc": "Число заметок (сначала больше)",
   "tags.toggle": "Показать или скрыть теги внутри #{tag}",
   "theme.dark": "Тема: тёмная",
   "theme.light": "Тема: светлая",
@@ -474,6 +478,10 @@ export const ru: Record<keyof typeof en, Message> = {
   "trash.readOnly": "Только чтение",
   "trash.restore": "Восстановить",
   "trash.root": "Корень хранилища",
+  "trash.sortDeletedAsc": "Дата удаления (сначала старые)",
+  "trash.sortDeletedDesc": "Дата удаления (сначала новые)",
+  "trash.sortPlaceAsc": "Расположение (А → Я)",
+  "trash.sortPlaceDesc": "Расположение (Я → А)",
   "trash.toSystem": "В системную корзину",
   "tree.badName": "Название не может содержать / или \\",
   "tree.copy": "Копировать",

@@ -28,6 +28,9 @@ import { imageTypeOf } from "../../features/image/image-file";
 import { useNoteMode } from "../../features/editor/use-note-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { TreeSortMenu } from "../../features/file-tree/TreeSortMenu";
+import { BookmarkSortMenu } from "../../features/bookmarks/BookmarkSortMenu";
+import { TagSortMenu } from "../../features/tags/TagSortMenu";
+import { TrashSortMenu } from "../../features/trash/TrashSortMenu";
 import { TreeFoldButton } from "../../features/file-tree/TreeFoldButton";
 import { TreeNewButtons } from "../../features/file-tree/TreeNewButtons";
 import type { TreeScope } from "../../features/file-tree/use-file-tree";
@@ -483,6 +486,16 @@ function SidebarContent({
       {/* The two trees, with the same buttons. */}
       {view === "files" && <SidebarToolRow groups={treeTools("vault")} />}
       {view === "drafts" && <SidebarToolRow groups={treeTools("drafts")} />}
+      {/* The lists, each with its own orders. */}
+      {view === "bookmarks" && (
+        <SidebarToolRow groups={[<BookmarkSortMenu key="sort" />]} />
+      )}
+      {view === "tags" && (
+        <SidebarToolRow groups={[<TagSortMenu key="sort" />]} />
+      )}
+      {view === "trash" && (
+        <SidebarToolRow groups={[<TrashSortMenu key="sort" />]} />
+      )}
       <div
         role="region"
         aria-label={t("shell.files")}
@@ -501,6 +514,7 @@ function SidebarContent({
         className={view === "bookmarks" ? "min-h-0 flex-1" : "hidden"}
       >
         <BookmarksPanel
+          vault={vault}
           bookmarks={bookmarks}
           activePath={activePath}
           onOpen={(path, newTab) =>

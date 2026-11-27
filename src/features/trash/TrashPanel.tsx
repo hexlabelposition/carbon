@@ -7,9 +7,11 @@ import { placeOf } from "../vault/place";
 import { canPreview, type TrashConfirm, type TrashView } from "./use-trash";
 import { AppDialog } from "../dialogs/AppDialog";
 import { TrashPreview } from "./TrashPreview";
+import { sortTrash, trashSortPreference } from "./trash-sort";
 
 /**
- * The trash of the vault: what was deleted, the latest first, each with
+ * The trash of the vault: what was deleted, in the order picked
+ * (`trashSortPreference`, the latest first at first), each with
  * where it was and when it went. An item can be put back where it was or
  * taken out of the trash, and the whole trash emptied: what is taken out
  * goes to the system trash or is deleted for good, as asked each time.
@@ -33,6 +35,11 @@ export function TrashPanel({
     [language],
   );
   const { list } = trash;
+  const sort = trashSortPreference.use();
+  const items = useMemo(
+    () => (list.status === "ready" ? sortTrash(list.items, sort) : []),
+    [list, sort],
+  );
   if (list.status === "loading") return null;
   if (list.status === "error") {
     return (
@@ -78,7 +85,7 @@ export function TrashPanel({
             aria-label={t("shell.trash")}
             className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto px-2 pb-2"
           >
-            {list.items.map((item) => (
+            {items.map((item) => (
               <li
                 key={item.id}
                 className="group flex items-center gap-1 rounded-md py-1 pr-1 pl-2 hover:bg-raise"

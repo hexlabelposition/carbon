@@ -1,7 +1,7 @@
 import { useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { treeControls } from "./tree-controls";
-import { treeToolButton } from "./tree-tool-button";
+import { toolButton } from "../ui/tool-button";
 import type { TreeScope } from "./use-file-tree";
 
 /** Two chevrons, drawn on 16 by 16: apart to open, together to close. */
@@ -23,7 +23,7 @@ export function TreeFoldButton({ scope }: { scope: TreeScope }) {
         type="button"
         aria-label={label}
         disabled={!hasFolders}
-        className={treeToolButton}
+        className={toolButton}
         onClick={() => treeControls.actions(scope)?.setAllExpanded(!anyOpen)}
       >
         <svg

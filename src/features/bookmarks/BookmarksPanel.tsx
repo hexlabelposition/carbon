@@ -1,10 +1,13 @@
+import type { Vault } from "@carbon/core";
 import { useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { entryLabel, placeOf } from "../vault/place";
 import type { BookmarksView } from "./use-bookmarks";
 import { BOOKMARK } from "./bookmark-icon";
+import { useBookmarkOrder } from "./use-bookmark-order";
 
 interface BookmarksPanelProps {
+  vault: Vault;
   bookmarks: BookmarksView;
   /** The note open now, marked in the list. */
   activePath: string | null;
@@ -13,17 +16,19 @@ interface BookmarksPanelProps {
 }
 
 /**
- * The bookmarks, in the order they were added, each with where it is. A
+ * The bookmarks, in the order picked (`bookmarkSortPreference`), each
+ * with where it is. A
  * click opens one; Ctrl+click and the middle button in a new tab. The
  * bookmark of a row takes it off the list.
  */
 export function BookmarksPanel({
+  vault,
   bookmarks,
   activePath,
   onOpen,
 }: BookmarksPanelProps) {
   const t = useT();
-  const { paths } = bookmarks;
+  const paths = useBookmarkOrder(vault, bookmarks.paths);
   if (paths === null) return null;
   return (
     <div className="flex h-full flex-col">
