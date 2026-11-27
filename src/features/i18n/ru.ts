@@ -50,6 +50,12 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.copyAllCode": "Копировать весь код",
   "editor.copyCode": "Копировать код",
   "editor.copyCodeLine": "Копировать эту строку кода",
+  "editor.copyCodeLines": {
+    one: "Копировать {count} строку кода",
+    few: "Копировать {count} строки кода",
+    many: "Копировать {count} строк кода",
+    other: "Копировать {count} строки кода",
+  },
   "editor.copyEmail": "Копировать адрес почты",
   "editor.copyLink": "Копировать ссылку",
   "editor.cut": "Вырезать",

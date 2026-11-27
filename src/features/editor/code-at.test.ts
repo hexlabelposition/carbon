@@ -13,12 +13,24 @@ function code(doc: string) {
   return codeAt(state, pos);
 }
 
+/** The lines selected between `[` and `]` in `doc`, the menu opened at `[`. */
+function selectedLines(doc: string) {
+  const from = doc.indexOf("[");
+  const to = doc.indexOf("]") - 1;
+  const state = EditorState.create({
+    doc: doc.replace("[", "").replace("]", ""),
+    extensions: [markdown({ base: markdownLanguage })],
+  });
+  return codeAt(state, from, { from, to })?.lines ?? null;
+}
+
 describe("codeAt", () => {
   test("inline code, without its backticks", () => {
     expect(code("Run `bun |test` now")).toEqual({
       text: "bun test",
       block: false,
       line: null,
+      lines: null,
     });
     expect(code("Run `|x`")?.text).toBe("x");
     expect(code("A `` a ` b| `` c")?.text).toBe("a ` b");
@@ -29,6 +41,7 @@ describe("codeAt", () => {
       text: "const a = 1;\nconst b = 2;",
       block: true,
       line: "const a = 1;",
+      lines: null,
     });
     // On the fence itself too, and in a block that is not closed.
     expect(code("|```\nx\n```")?.text).toBe("x");
@@ -66,5 +79,49 @@ describe("codeAt", () => {
     expect(code("|```\nx\n```")?.line).toBeNull();
     expect(code("```\nx\n|```")?.line).toBeNull();
     expect(code("```\nx\n|\ny\n```")?.line).toBeNull();
+  });
+
+  test("the whole lines a selection runs over, two or more, by number", () => {
+    expect(selectedLines("```\na\nb[c\nd]e\nf\n```")).toMatchObject({
+      text: "bc\nde",
+      count: 2,
+    });
+  });
+
+  test("none for a selection of one line or none", () => {
+    expect(selectedLines("```\na[b]c\nd\n```")).toBeNull();
+    expect(selectedLines("```\na[]\nb\n```")).toBeNull();
+  });
+
+  test("a selection ending at the start of a line leaves it out", () => {
+    expect(selectedLines("```\n[a\nb\n]c\n```")).toMatchObject({
+      text: "a\nb",
+      count: 2,
+    });
+    expect(selectedLines("```\n[a\n]b\n```")).toBeNull();
+  });
+
+  test("less the indent the lines share, the rest of it kept", () => {
+    expect(
+      selectedLines("```\nfn() {\n  [if (x) {\n    y();\n  }]\n}\n```"),
+    ).toEqual({ text: "if (x) {\n  y();\n}", count: 3, first: 3, last: 5 });
+  });
+
+  test("without the fences or the blank lines at the ends", () => {
+    expect(selectedLines("[```\n\na\nb\n```]")).toMatchObject({
+      text: "a\nb",
+      count: 2,
+    });
+  });
+
+  test("in a list or a quote, without its indent and marks", () => {
+    expect(selectedLines("> ```\n> [one\n> two]\n> ```")).toMatchObject({
+      text: "one\ntwo",
+      count: 2,
+    });
+    expect(selectedLines("- x\n\n  ```\n  [a\n    b]\n  ```")).toMatchObject({
+      text: "a\n  b",
+      count: 2,
+    });
   });
 });

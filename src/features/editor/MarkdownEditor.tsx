@@ -24,6 +24,7 @@ import { scrollParentOf } from "./glide";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { heldSelection } from "./held-selection";
+import { codeLinesSelected } from "./code-lines-selected";
 import { markdownInput } from "./markdown-input";
 import { noteTextStats, textStats, type NoteStats } from "./note-stats";
 import { findReplace, openReplace } from "./find-replace";
@@ -353,6 +354,7 @@ export function MarkdownEditor({
           layoutIndependentKeys,
           editorTheme,
           heldSelection,
+          codeLinesSelected,
           // Tab indents, as a notes editor should. It never moves the focus
           // out: the app turns that off (useTabFocusGuard).
           keymap.of([

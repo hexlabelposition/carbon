@@ -59,6 +59,10 @@ export const en = {
   "editor.copyAllCode": "Copy all code",
   "editor.copyCode": "Copy code",
   "editor.copyCodeLine": "Copy this line of code",
+  "editor.copyCodeLines": {
+    one: "Copy {count} line of code",
+    other: "Copy {count} lines of code",
+  },
   "editor.copyEmail": "Copy email address",
   "editor.copyLink": "Copy link",
   "editor.cut": "Cut",

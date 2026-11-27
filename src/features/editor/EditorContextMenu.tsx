@@ -112,7 +112,8 @@ export function EditorContextMenu({
       editor.dispatch({ selection: EditorSelection.cursor(at) });
     }
     setSelected(editor.state.selection.ranges.some((r) => !r.empty));
-    setCode(at === null ? null : codeAt(editor.state, at));
+    const { main } = editor.state.selection;
+    setCode(at === null ? null : codeAt(editor.state, at, main));
     setWebLink(at === null ? null : webLinkAt(editor.state, at));
     setSteps({
       undo: undoDepth(editor.state) > 0,
@@ -271,15 +272,27 @@ export function EditorContextMenu({
                     {t(code.block ? "editor.copyAllCode" : "editor.copyCode")}
                   </MenuItemBody>
                 </ContextMenu.Item>
-                {code.line !== null && (
+                {code.lines !== null ? (
+                  // Lines selected: they, in place of the line clicked.
                   <ContextMenu.Item
                     className={item}
-                    onClick={() => copyText(code.line!)}
+                    onClick={() => copyText(code.lines!.text)}
                   >
                     <MenuItemBody icon="codeLine">
-                      {t("editor.copyCodeLine")}
+                      {t("editor.copyCodeLines", { count: code.lines.count })}
                     </MenuItemBody>
                   </ContextMenu.Item>
+                ) : (
+                  code.line !== null && (
+                    <ContextMenu.Item
+                      className={item}
+                      onClick={() => copyText(code.line!)}
+                    >
+                      <MenuItemBody icon="codeLine">
+                        {t("editor.copyCodeLine")}
+                      </MenuItemBody>
+                    </ContextMenu.Item>
+                  )
                 )}
                 <ContextMenu.Separator className={separator} />
               </>

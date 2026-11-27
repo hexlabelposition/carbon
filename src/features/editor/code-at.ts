@@ -14,16 +14,42 @@ export interface CodeAt {
    * fence and on a blank line.
    */
   line: string | null;
+  /**
+   * The lines of a code block the selection runs over, when it runs over
+   * two or more: whole lines, wherever in them it starts and ends, less
+   * the indent they all share, so they read as they would on their own.
+   * `null` for inline code and for a selection of one line or none.
+   */
+  lines: SelectedLines | null;
+}
+
+/** The lines of a code block a selection runs over, as they are copied. */
+export interface SelectedLines {
+  text: string;
+  count: number;
+  /** The numbers of the first and the last of them in the note. */
+  first: number;
+  last: number;
+}
+
+/** A selection, as the menu was opened on it. */
+interface Selected {
+  from: number;
+  to: number;
 }
 
 /**
  * The code at `pos`: the text of inline code without its backticks, or
  * the lines of a code block without its fences. A block inside a list or
  * a quote loses the indent and the ">" marks those add to its lines, so
- * it reads as it would on its own; so does the line at `pos`. `null`
- * outside code.
+ * it reads as it would on its own; so does the line at `pos`, and so do
+ * the lines `selected` runs over in the block. `null` outside code.
  */
-export function codeAt(state: EditorState, pos: number): CodeAt | null {
+export function codeAt(
+  state: EditorState,
+  pos: number,
+  selected: Selected | null = null,
+): CodeAt | null {
   const tree = ensureSyntaxTree(state, pos, 50) ?? syntaxTree(state);
   for (const side of [1, -1] as const) {
     for (
@@ -32,7 +58,12 @@ export function codeAt(state: EditorState, pos: number): CodeAt | null {
       node = node.parent
     ) {
       if (node.name === "InlineCode") {
-        return { text: inlineCode(state, node), block: false, line: null };
+        return {
+          text: inlineCode(state, node),
+          block: false,
+          line: null,
+          lines: null,
+        };
       }
       if (node.name === "FencedCode" || node.name === "CodeBlock") {
         const code =
@@ -44,11 +75,47 @@ export function codeAt(state: EditorState, pos: number): CodeAt | null {
           text: code.lines.join("\n"),
           block: true,
           line: line === undefined || line.trim() === "" ? null : line.trim(),
+          lines: selectedLines(state, code, selected),
         };
       }
     }
   }
   return null;
+}
+
+/**
+ * The lines of `code` that `selected` runs over, if two or more: a
+ * selection that ends at the very start of a line leaves that line out,
+ * the fences and the blank lines at either end do not count, and the
+ * indent all of them share goes.
+ */
+function selectedLines(
+  state: EditorState,
+  code: BlockLines,
+  selected: Selected | null,
+): SelectedLines | null {
+  if (selected === null || selected.from === selected.to) return null;
+  const start = state.doc.lineAt(selected.from);
+  let end = state.doc.lineAt(selected.to);
+  if (selected.to === end.from && end.number > start.number) {
+    end = state.doc.line(end.number - 1);
+  }
+  let first = Math.max(0, start.number - code.first);
+  let last = Math.min(code.lines.length - 1, end.number - code.first);
+  const blank = (index: number) => code.lines[index]!.trim() === "";
+  while (first <= last && blank(first)) first++;
+  while (last >= first && blank(last)) last--;
+  if (last - first < 1) return null;
+  const picked = code.lines.slice(first, last + 1).map((l) => l.trimEnd());
+  const indent = Math.min(
+    ...picked.filter((l) => l !== "").map((l) => /^[ \t]*/.exec(l)![0].length),
+  );
+  return {
+    text: picked.map((l) => l.slice(indent)).join("\n"),
+    count: picked.length,
+    first: code.first + first,
+    last: code.first + last,
+  };
 }
 
 /** "`` `a` ``" reads as "`a`": the marks and one space inside each. */
