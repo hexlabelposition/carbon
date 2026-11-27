@@ -185,6 +185,16 @@
   }
 
   /*
+   * While the edge of a side panel is dragged, the pointer keeps its look
+   * wherever it goes (`ResizeHandle`): the panel can lag behind it, as it
+   * is drawn to its usual width, and the pointer leaves the edge.
+   */
+  html[data-panel-resizing],
+  html[data-panel-resizing] * {
+    cursor: col-resize !important;
+  }
+
+  /*
    * A new width of the note glides (`useNoteStyle`): its text, its name
    * and its borders, as the side panels slide. Only while it changes, so a
    * note never glides to its width as the app starts.
