@@ -326,6 +326,7 @@ export const en = {
   "shell.openAnotherVault": "Open another vault…",
   "shell.outline": "Outline",
   "shell.pane": "Pane {number}",
+  "shell.resetPanelWidths": "Reset side panel widths",
   "shell.resizeLeftPanel": "Resize sidebar",
   "shell.resizeRightPanel": "Resize right panel",
   "shell.rightPanel": "Right panel",

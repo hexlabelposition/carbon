@@ -43,7 +43,7 @@ interface ResizeHandleProps {
  * width it can be used at. An arrow key that would make it that narrow
  * closes it too. Near its usual width it stops at that width
  * (`panelSnapFraction`), unless Alt is held, and the edge is lit
- * meanwhile, so it shows.
+ * meanwhile, so it shows. A double click puts it back at that width.
  */
 export function ResizeHandle({
   side,
@@ -154,6 +154,7 @@ export function ResizeHandle({
         setSnapped(false);
         endDrag();
       }}
+      onDoubleClick={() => onResize(Math.min(usual, room()))}
       onKeyDown={onKeyDown}
     />
   );

@@ -171,6 +171,13 @@ export function DesktopShell({
   }, [collapsed, toggleSidebar]);
   const rightPanel = useRightPanel();
   const { toggle: toggleRightPanel } = rightPanel;
+  const { resize: resizeSidebar, usual: sidebarUsual } = sidebar;
+  const { resize: resizeRightPanel, usual: rightUsual } = rightPanel.width;
+  /** Both side panels back at their usual widths, open or shut. */
+  const resetPanelWidths = useCallback(() => {
+    resizeSidebar(sidebarUsual);
+    resizeRightPanel(rightUsual);
+  }, [resizeSidebar, sidebarUsual, resizeRightPanel, rightUsual]);
   // Shown or hidden here, in the settings and by its shortcut alike.
   const toolbarOpen = toolbarPreference.use();
   // The two side panels never cover each other: each is at most as wide
@@ -252,6 +259,11 @@ export function DesktopShell({
           run: toggleToolbar,
         },
         {
+          id: "shell.resetPanelWidths",
+          title: t("shell.resetPanelWidths"),
+          run: resetPanelWidths,
+        },
+        {
           id: "shell.outline",
           title: t("shell.toggleOutline"),
           run: () => toggleRightView("outline"),
@@ -314,6 +326,7 @@ export function DesktopShell({
       toggleSidebar,
       toggleRightPanel,
       toggleRightView,
+      resetPanelWidths,
       revealSidebar,
       showSidebarView,
       close,

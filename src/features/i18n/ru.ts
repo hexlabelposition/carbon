@@ -328,6 +328,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "shell.openAnotherVault": "Открыть другое хранилище…",
   "shell.outline": "Оглавление",
   "shell.pane": "Панель {number}",
+  "shell.resetPanelWidths": "Сбросить ширину боковых панелей",
   "shell.resizeLeftPanel": "Изменить ширину левой панели",
   "shell.resizeRightPanel": "Изменить ширину правой панели",
   "shell.rightPanel": "Правая панель",
