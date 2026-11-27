@@ -229,3 +229,53 @@ export function useFonts(): void {
     );
   }, [ui, mono]);
 }
+
+/** How many fonts are laid out at a time while they warm up. */
+const WARM_BATCH = 6;
+
+/**
+ * Loads the fonts of `fonts` ahead, while the list of them may be
+ * opened: their names, each in its font, are laid out a few at a time
+ * out of sight, between frames, so the list, which lays out every row
+ * as it opens, does not wait for hundreds of font files at once. The
+ * names stay laid out until the component goes, so WebKit keeps the
+ * fonts in use and does not let them go from its cache.
+ * `document.fonts.load` would not do: it loads only `@font-face` fonts.
+ */
+export function useWarmFonts(fonts: readonly SystemFont[] | null): void {
+  useEffect(() => {
+    if (fonts === null || fonts.length === 0) return;
+    const host = document.createElement("div");
+    host.setAttribute("aria-hidden", "true");
+    // The size and weights of the list, so the same faces are loaded.
+    host.className = "text-ui";
+    Object.assign(host.style, {
+      position: "fixed",
+      top: "0",
+      left: "-10000px",
+      width: "1000px",
+      visibility: "hidden",
+      pointerEvents: "none",
+    });
+    document.body.append(host);
+    let next = 0;
+    let timer = 0;
+    const warm = () => {
+      const end = Math.min(next + WARM_BATCH, fonts.length);
+      for (; next < end; next++) {
+        const name = document.createElement("div");
+        name.textContent = fonts[next].family;
+        name.style.fontFamily = cssFamily(fonts[next].family);
+        host.append(name);
+      }
+      // Laid out now, in this task, not in the frame of a scroll.
+      void host.offsetHeight;
+      if (next < fonts.length) timer = window.setTimeout(warm, 16);
+    };
+    timer = window.setTimeout(warm, 0);
+    return () => {
+      window.clearTimeout(timer);
+      host.remove();
+    };
+  }, [fonts]);
+}

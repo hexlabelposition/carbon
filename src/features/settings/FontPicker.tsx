@@ -139,9 +139,11 @@ export function FontPicker({
                       <Combobox.Item
                         key={font.value}
                         value={font}
-                        // A long list of fonts: one out of sight is not laid
-                        // out, so its font is not loaded until it scrolls in.
-                        className="grid h-7 cursor-default grid-cols-[14px_1fr] items-center gap-2 rounded-sm pr-3 pl-2 outline-none select-none [contain-intrinsic-size:auto_1.75rem] [content-visibility:auto] data-highlighted:bg-raise"
+                        // Every row is laid out as the list opens, not as it
+                        // scrolls in (`content-visibility`): WebKit drew rows
+                        // of a quick scroll blank. The fonts are loaded ahead
+                        // (`useWarmFonts`), so that is quick.
+                        className="grid h-7 cursor-default grid-cols-[14px_1fr] items-center gap-2 rounded-sm pr-3 pl-2 outline-none select-none data-highlighted:bg-raise"
                       >
                         <Combobox.ItemIndicator className="col-start-1">
                           <svg

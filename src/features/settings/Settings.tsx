@@ -53,6 +53,7 @@ import {
   uiFontPreference,
   useFonts,
   useSystemFonts,
+  useWarmFonts,
   type FontChoice,
   type SystemFont,
 } from "./fonts";
@@ -930,6 +931,8 @@ function FontSettings({
   const mono = monoFontPreference.use();
   // Listed as the group opens: it takes a moment, and only once a run.
   const system = useSystemFonts(listFonts);
+  // Loaded ahead, so a quick scroll of a list finds them ready.
+  useWarmFonts(system);
   /** The installed choices, and the one chosen even if it is gone since. */
   const choices = (fonts: readonly FontChoice[], chosen: string) => {
     const available = availableFonts(fonts);
