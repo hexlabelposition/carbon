@@ -25,7 +25,7 @@ export function NoteTitleField({
   // shrink to its text and move to the middle. The width and padding are
   // those of the text below, so both start at one edge.
   return (
-    <div className="mx-auto box-border w-full max-w-(--cb-note-width) px-8 pt-12 pb-4">
+    <div className="cb-note-column mx-auto box-border w-full max-w-(--cb-note-width) px-8 pt-12 pb-4">
       {/* As tall as its lines, whatever changes them: the text, the width,
           the size of the note text or the zoom. A copy of the text, unseen,
           takes the height in the same cell of a grid, and the field fills

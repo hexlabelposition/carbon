@@ -225,7 +225,7 @@ export function NoteEditor({
           {borders && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-1/2 w-full max-w-(--cb-note-width) -translate-x-1/2 border-x border-line"
+              className="cb-note-column pointer-events-none absolute inset-y-0 left-1/2 w-full max-w-(--cb-note-width) -translate-x-1/2 border-x border-line"
             />
           )}
           {inlineTitle ? (

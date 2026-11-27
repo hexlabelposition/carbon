@@ -179,8 +179,22 @@
    * frame after the text, so it would jump about: it is hidden until the
    * layout stops (`startLayoutMotion`).
    */
-  html[data-layout-moving] .cm-cursorLayer {
+  html[data-layout-moving] .cm-cursorLayer,
+  html[data-note-resizing] .cm-cursorLayer {
     visibility: hidden;
+  }
+
+  /*
+   * A new width of the note glides (`useNoteStyle`): its text, its name
+   * and its borders, as the side panels slide. Only while it changes, so a
+   * note never glides to its width as the app starts.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-note-resizing] .cm-content,
+    html[data-note-resizing] .cb-note-column {
+      transition: max-width var(--cb-slide-open-duration)
+        var(--cb-slide-open-ease);
+    }
   }
 
   /*

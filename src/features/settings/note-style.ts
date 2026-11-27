@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { MessageKey } from "../i18n/i18n";
 import { cssFamily, familyOf, fontValue } from "./fonts";
 import { oneOf, preference } from "./preference";
@@ -43,13 +43,22 @@ export const NOTE_FONTS: readonly { value: NoteFont; label: MessageKey }[] = [
   { value: "mono", label: "settings.font.mono" },
 ];
 
-/** The most the content of a note takes, its side padding included. */
+/**
+ * The most the content of a note takes, its side padding included. Full
+ * width as a share, not `none`, so a change of width can glide to it.
+ */
 const WIDTH: Record<NoteWidth, string> = {
   narrow: "640px",
   normal: "784px",
   wide: "1024px",
-  full: "none",
+  full: "100%",
 };
+
+/**
+ * How long the note glides to a new width, in milliseconds: as the side
+ * panels slide (`--cb-slide-open-duration`), with some time to spare.
+ */
+const RESIZE_MS = 250 + 50;
 
 const FONT: Record<NoteFont, string> = {
   inter: "var(--font-sans)",
@@ -202,13 +211,28 @@ function noteFont(value: string): string {
  * Applies the note settings as CSS variables on the root element, which
  * the editor and the note name read: `--cb-note-size`, `--cb-note-width`,
  * `--cb-note-font` and `--cb-note-line-height`. Their defaults are in
- * index.css.
+ * index.css. A new width glides: `data-note-resizing` on the root while
+ * it does (`index.css`), never at start, when the width is first set.
  */
 export function useNoteStyle(): void {
   const size = noteSizePreference.use();
   const width = noteWidthPreference.use();
   const font = noteFontPreference.use();
   const lineHeight = lineHeightPreference.use();
+  const shownWidth = useRef<NoteWidth | null>(null);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const before = shownWidth.current;
+    shownWidth.current = width;
+    if (before === null || before === width) return;
+    root.dataset.noteResizing = "";
+    const timer = setTimeout(() => delete root.dataset.noteResizing, RESIZE_MS);
+    return () => {
+      clearTimeout(timer);
+      delete root.dataset.noteResizing;
+    };
+  }, [width]);
 
   // Before the paint, so a note never shows in the default style first.
   useLayoutEffect(() => {
