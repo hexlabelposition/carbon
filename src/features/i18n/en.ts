@@ -288,6 +288,7 @@ export const en = {
   "settings.theme.light": "Light",
   "settings.theme.system": "System",
   "settings.title": "Settings",
+  "settings.toolbarButtons": "Toolbar buttons",
   "settings.version": "Carbon {version}",
   "settings.webImages": "Load images from the web",
   "settings.wheelSize":

@@ -80,7 +80,12 @@ import { newIssueUrl } from "../help/report-bug";
 import { StartupOverSettings } from "../startup/StartupHost";
 import { slowStartNoticePreference } from "../startup/slow-start";
 import { resetPreferences } from "./preference";
-import { toolbarPreference } from "./toolbar";
+import {
+  hiddenToolsPreference,
+  setToolShown,
+  TOOLBAR_TOOLS,
+  toolbarPreference,
+} from "./toolbar";
 import {
   checkAtStartPreference,
   checkForUpdates,
@@ -714,38 +719,53 @@ function AppearanceSettings() {
   const theme = themePreference.use();
   const zoom = zoomPreference.use();
   const toolbar = toolbarPreference.use();
+  const hiddenTools = hiddenToolsPreference.use();
   return (
-    <Rows>
-      <Row label={t("settings.theme")}>
-        <SettingSelect
-          label={t("settings.theme")}
-          value={theme}
-          items={THEMES.map((value) => ({
-            value,
-            label: t(THEME_LABELS[value]),
-          }))}
-          onChange={themePreference.set}
-        />
-      </Row>
-      <Row label={t("settings.zoom")}>
-        <SettingSelect
-          label={t("settings.zoom")}
-          value={zoom}
-          items={ZOOM_LEVELS.map((level) => ({
-            value: level,
-            label: `${Math.round(level * 100)}%`,
-          }))}
-          onChange={zoomPreference.set}
-        />
-      </Row>
-      <Row label={t("shell.toolbar")}>
-        <SettingSwitch
-          label={t("shell.toolbar")}
-          checked={toolbar}
-          onChange={toolbarPreference.set}
-        />
-      </Row>
-    </Rows>
+    <>
+      <Rows>
+        <Row label={t("settings.theme")}>
+          <SettingSelect
+            label={t("settings.theme")}
+            value={theme}
+            items={THEMES.map((value) => ({
+              value,
+              label: t(THEME_LABELS[value]),
+            }))}
+            onChange={themePreference.set}
+          />
+        </Row>
+        <Row label={t("settings.zoom")}>
+          <SettingSelect
+            label={t("settings.zoom")}
+            value={zoom}
+            items={ZOOM_LEVELS.map((level) => ({
+              value: level,
+              label: `${Math.round(level * 100)}%`,
+            }))}
+            onChange={zoomPreference.set}
+          />
+        </Row>
+        <Row label={t("shell.toolbar")}>
+          <SettingSwitch
+            label={t("shell.toolbar")}
+            checked={toolbar}
+            onChange={toolbarPreference.set}
+          />
+        </Row>
+      </Rows>
+      {/* The same as the right-click menu of the toolbar. */}
+      <Rows title={t("settings.toolbarButtons")}>
+        {TOOLBAR_TOOLS.map((tool) => (
+          <Row key={tool.id} label={t(tool.label)}>
+            <SettingSwitch
+              label={t(tool.label)}
+              checked={!hiddenTools.includes(tool.id)}
+              onChange={(shown) => setToolShown(tool.id, shown)}
+            />
+          </Row>
+        ))}
+      </Rows>
+    </>
   );
 }
 

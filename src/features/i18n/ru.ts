@@ -288,6 +288,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.theme.light": "Светлая",
   "settings.theme.system": "Системная",
   "settings.title": "Настройки",
+  "settings.toolbarButtons": "Кнопки панели инструментов",
   "settings.version": "Carbon {version}",
   "settings.webImages": "Загружать картинки из интернета",
   "settings.wheelSize":

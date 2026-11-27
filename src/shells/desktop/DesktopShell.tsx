@@ -54,6 +54,8 @@ import {
 import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
 import {
+  hiddenToolsPreference,
+  setToolShown,
   toggleToolbar,
   toolbarPreference,
 } from "../../features/settings/toolbar";
@@ -584,8 +586,9 @@ const SHOW_TIMING =
 /**
  * The toolbar at the left edge: the file explorer and the tags, which
  * show in the sidebar and hide it when it shows them already, and a few
- * commands, the search dialog among them; at the foot the notifications,
- * the settings and the menu of the vault.
+ * commands, the search dialog among them, each of which can be hidden
+ * (`hiddenToolsPreference`); at the foot the notifications, the settings
+ * and the menu of the vault.
  */
 function ToolbarHost({
   open,
@@ -656,9 +659,12 @@ function ToolbarHost({
       show(explorer);
     },
   };
+  const hidden = hiddenToolsPreference.use();
   return (
     <Toolbar
       open={open}
+      hidden={new Set(hidden)}
+      onShowItem={setToolShown}
       items={[
         explorerItem,
         ...command(OPEN_SEARCH, toolbarIcons.search),

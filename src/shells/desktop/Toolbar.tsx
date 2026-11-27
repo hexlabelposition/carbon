@@ -1,3 +1,4 @@
+import { ContextMenu } from "@base-ui/react/context-menu";
 import type { ComponentProps, ReactNode } from "react";
 import { useT } from "../../features/i18n/i18n";
 import { SlidePanel } from "./SlidePanel";
@@ -21,8 +22,12 @@ export interface ToolbarItem {
 interface ToolbarProps {
   /** Shown, or slid shut to the left edge. */
   open: boolean;
-  /** The buttons from the top. */
+  /** The buttons from the top, the hidden ones too. */
   items: readonly ToolbarItem[];
+  /** The ids of the buttons at the top that are hidden. */
+  hidden: ReadonlySet<string>;
+  /** Shows a button at the top, or hides it: from the right-click menu. */
+  onShowItem: (id: string, shown: boolean) => void;
   /**
    * The buttons at the foot, such as the settings, parted from those above
    * by a line across the whole toolbar.
@@ -38,11 +43,14 @@ interface ToolbarProps {
  * The strip at the left edge of the window with small buttons, one above
  * the other, below the top row: as wide as that row is tall, so it stands
  * right under the mark in the corner. Layout only: what the buttons do
- * comes from outside.
+ * comes from outside. The right button opens a menu that shows or hides
+ * each button at the top.
  */
 export function Toolbar({
   open,
   items,
+  hidden,
+  onShowItem,
   footer,
   footerStart,
   footerEnd,
@@ -50,20 +58,74 @@ export function Toolbar({
   const t = useT();
   return (
     <SlidePanel open={open} width={TOOLBAR_WIDTH}>
-      <nav
-        aria-label={t("shell.toolbar")}
-        className="flex h-full flex-col border-r border-line bg-panel"
-      >
-        <ToolbarGroup items={items} />
-        <div data-tauri-drag-region className="min-h-0 flex-1" />
-        <ToolbarGroup
-          items={footer}
-          start={footerStart}
-          end={footerEnd}
-          className="border-t border-line"
-        />
-      </nav>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger
+          render={
+            <nav
+              aria-label={t("shell.toolbar")}
+              className="flex h-full flex-col border-r border-line bg-panel"
+            />
+          }
+        >
+          <ToolbarGroup items={items.filter((item) => !hidden.has(item.id))} />
+          <div data-tauri-drag-region className="min-h-0 flex-1" />
+          <ToolbarGroup
+            items={footer}
+            start={footerStart}
+            end={footerEnd}
+            className="border-t border-line"
+          />
+        </ContextMenu.Trigger>
+        <ContextMenu.Portal>
+          <ContextMenu.Positioner className="z-50 outline-none">
+            <ContextMenu.Popup className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none">
+              {items.map((item) => (
+                <ContextMenu.CheckboxItem
+                  key={item.id}
+                  className="flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise"
+                  checked={!hidden.has(item.id)}
+                  onCheckedChange={(checked) => onShowItem(item.id, checked)}
+                >
+                  <span className="flex size-4 shrink-0 items-center justify-center">
+                    <ContextMenu.CheckboxItemIndicator
+                      render={<MenuIcon>{CHECK}</MenuIcon>}
+                    />
+                  </span>
+                  <MenuIcon className="opacity-80">{item.icon}</MenuIcon>
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                </ContextMenu.CheckboxItem>
+              ))}
+            </ContextMenu.Popup>
+          </ContextMenu.Positioner>
+        </ContextMenu.Portal>
+      </ContextMenu.Root>
     </SlidePanel>
+  );
+}
+
+/** A check mark, before a shown button in the menu. */
+const CHECK = <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />;
+
+/** An icon of 16 by 16 in the menu, drawn with lines as on the toolbar. */
+function MenuIcon({
+  className = "",
+  children,
+  ...props
+}: { className?: string; children: ReactNode } & ComponentProps<"svg">) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+      className={`size-4 shrink-0 ${className}`}
+    >
+      {children}
+    </svg>
   );
 }
 
