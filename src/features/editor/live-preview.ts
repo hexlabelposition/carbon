@@ -437,6 +437,12 @@ function decorate(view: EditorView): DecorationSet {
           });
           return;
         }
+        if (name === "Table") {
+          // Drawn by `tablePreview`, or shown as its Markdown while it is
+          // edited: then as it is, every mark in sight and no box around
+          // code, so the columns laid out by the formatter stand in line.
+          return false;
+        }
         if (name === "FencedCode") {
           decorateCodeBlock(state, node, ranges, editing, eachLineInView);
           // Go on into the block: its code is highlighted by its language.

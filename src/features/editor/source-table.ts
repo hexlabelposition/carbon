@@ -15,7 +15,8 @@ const FADE = 32;
 const TABLE_LINE = "cm-source-table";
 
 /**
- * The tables of a note in source mode, shown whole: each row on one line,
+ * The tables of a note shown as Markdown, in source mode or while one is
+ * edited in live preview (`tablePreview` draws the others), shown whole: each row on one line,
  * never wrapped, in the monospace font, so the pipes laid out by the
  * formatter stand in line. A table wider than the note scrolls sideways,
  * all its rows together, and fades out on the side with more of it out

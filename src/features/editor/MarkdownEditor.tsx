@@ -138,6 +138,8 @@ const livePreviewExtensions: Extension = [
   livePreview,
   frontmatterPreview,
   tablePreview,
+  // A table being edited shows its Markdown, whole, as in source mode.
+  sourceTables,
   imagePreview,
   embedPreview,
   followOnClick,
