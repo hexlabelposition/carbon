@@ -178,6 +178,7 @@ export const en = {
   "header.showFormatBar": "Formatting bar button",
   "header.showHistory": "Back and forward",
   "header.showMode": "Mode menu",
+  "header.showName": "Note name",
   "header.showPath": "Folder path",
   "images.noAddress": "No address for the image yet",
   "images.notFound": "Image not found: {name}",

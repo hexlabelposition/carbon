@@ -57,24 +57,26 @@ export const hiddenStatsPreference = hiddenParts(
 );
 
 /**
- * What the bar above a note can show besides its name, each of which can
- * be hidden: back and forward, the folder before the name, the format
- * button, the button of the formatting bar and the menu of the mode.
+ * What the bar above a note can show, each of which can be hidden: back
+ * and forward, the folder of the note, its name, the format button, the
+ * button of the formatting bar and the menu of the mode.
  */
-export type HeaderPart = "history" | "path" | "format" | "formatBar" | "mode";
+export type HeaderPart =
+  "history" | "path" | "name" | "format" | "formatBar" | "mode";
 
 /** In the order the bar and its menu show them. */
 export const HEADER_PARTS: readonly HeaderPart[] = [
   "history",
   "path",
+  "name",
   "format",
   "formatBar",
   "mode",
 ];
 
 /**
- * The parts hidden from the bar above a note. The name stays: it is
- * where the note is renamed.
+ * The parts hidden from the bar above a note. With the name hidden, the
+ * note is renamed in its title or from the file tree.
  */
 export const hiddenHeaderPreference = hiddenParts(
   "carbon.note.hiddenHeader",

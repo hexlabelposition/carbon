@@ -174,6 +174,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "header.showFormatBar": "Кнопка панели форматирования",
   "header.showHistory": "Назад и вперёд",
   "header.showMode": "Смена режима",
+  "header.showName": "Имя заметки",
   "header.showPath": "Путь к папке",
   "images.noAddress": "У картинки пока нет адреса",
   "images.notFound": "Картинка не найдена: {name}",

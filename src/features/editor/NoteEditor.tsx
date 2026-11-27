@@ -162,6 +162,7 @@ export function NoteEditor({
             title={title}
             readOnly={readingMode}
             showFolder={shows("path")}
+            showName={shows("name")}
           />
           {/* Nothing is formatted while reading: the buttons wait for
             editing. */}
@@ -350,6 +351,7 @@ const HEADER_ITEMS: Record<HeaderPart, { label: MessageKey; icon: MenuIcon }> =
   {
     history: { label: "header.showHistory", icon: "history" },
     path: { label: "header.showPath", icon: "folderPath" },
+    name: { label: "header.showName", icon: "noteName" },
     format: { label: "header.showFormat", icon: "formatNote" },
     formatBar: { label: "header.showFormatBar", icon: "formatBar" },
     mode: { label: "header.showMode", icon: "noteMode" },

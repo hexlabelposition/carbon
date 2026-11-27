@@ -116,6 +116,10 @@ export const menuIcons = {
   folderPath: (
     <path d="M1.5 5a1 1 0 0 1 1-1h2.75l1.25 1.25H10a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1zM13 6.5l1.5 1.75L13 10" />
   ),
+  // A page with its name on top.
+  noteName: (
+    <path d="M4 1.5h5.5L13 5v8.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zM5.5 7.5h5M5.5 10h3" />
+  ),
   // A wand, with sparks by its tip, as the format button.
   formatNote: (
     <path d="M2.5 13.5l7.25-7.25M8.5 5l2.5 2.5M11.5 1.75v2M10.5 2.75h2M13.75 5.5v2M12.75 6.5h2M5 2v1.5M4.25 2.75h1.5" />

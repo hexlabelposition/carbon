@@ -15,12 +15,15 @@ export function NoteNameField({
   title,
   readOnly = false,
   showFolder = true,
+  showName = true,
 }: {
   path: string;
   title: NoteTitle;
   readOnly?: boolean;
   /** The folder before the name, faint; hidden from the menu of the bar. */
   showFolder?: boolean;
+  /** The name; hidden from the menu of the bar, the room stays. */
+  showName?: boolean;
 }) {
   const t = useT();
   const ref = useRef<HTMLInputElement>(null);
@@ -41,29 +44,31 @@ export function NoteNameField({
       {/* As wide as the name: an unseen copy takes the width in the same
           cell of a grid, and the field fills it. Narrower than the room
           left, the rest of the bar stays free to drag the window. */}
-      <div className="grid min-w-0">
-        <span
-          aria-hidden="true"
-          className={`invisible [grid-area:1/1] whitespace-pre ${FIELD_TEXT}`}
-        >
-          {field.text}{" "}
-        </span>
-        <input
-          ref={ref}
-          aria-label={t("editor.noteName")}
-          readOnly={readOnly}
-          // Not a stop of the Tab key while it cannot be edited.
-          tabIndex={readOnly ? -1 : undefined}
-          spellCheck={false}
-          value={field.text}
-          onChange={(event) => field.edit(event.target.value)}
-          onKeyDown={field.onKeyDown}
-          onBlur={field.onBlur}
-          className={`w-full min-w-0 [grid-area:1/1] bg-transparent text-muted outline-none ${FIELD_TEXT} ${
-            readOnly ? "cursor-default" : ""
-          }`}
-        />
-      </div>
+      {showName && (
+        <div className="grid min-w-0">
+          <span
+            aria-hidden="true"
+            className={`invisible [grid-area:1/1] whitespace-pre ${FIELD_TEXT}`}
+          >
+            {field.text}{" "}
+          </span>
+          <input
+            ref={ref}
+            aria-label={t("editor.noteName")}
+            readOnly={readOnly}
+            // Not a stop of the Tab key while it cannot be edited.
+            tabIndex={readOnly ? -1 : undefined}
+            spellCheck={false}
+            value={field.text}
+            onChange={(event) => field.edit(event.target.value)}
+            onKeyDown={field.onKeyDown}
+            onBlur={field.onBlur}
+            className={`w-full min-w-0 [grid-area:1/1] bg-transparent text-muted outline-none ${FIELD_TEXT} ${
+              readOnly ? "cursor-default" : ""
+            }`}
+          />
+        </div>
+      )}
     </div>
   );
 }
