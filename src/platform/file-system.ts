@@ -76,6 +76,7 @@ export const tauriFileSystem: FileSystem = {
       kind: info.isDirectory ? "dir" : "file",
       size: info.size,
       mtime: info.mtime?.getTime() ?? 0,
+      birthtime: info.birthtime?.getTime(),
     };
   },
 

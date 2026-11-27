@@ -19,6 +19,7 @@ import {
   DRAFTS_FOLDER,
   isVaultPath,
   normalizeRoot,
+  resolveInVault,
 } from "./path";
 import { Bookmarks } from "./bookmarks";
 import { vaultId } from "./config";
@@ -26,6 +27,16 @@ import { VaultTrash } from "./trash";
 import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
 import { VaultError } from "../errors";
+
+/** A file or folder of the vault, as `Vault.info` tells of it. */
+export interface EntryInfo {
+  kind: "file" | "dir";
+  /** Size in bytes. */
+  size: number;
+  /** When it was last changed and made, milliseconds since the epoch. */
+  modified: number;
+  created: number | null;
+}
 
 /** Where the index of an open vault is; see `Vault.indexStatus`. */
 export type IndexStatus =
@@ -334,6 +345,25 @@ export class Vault {
     if (!this.isWatching) return scanTree(fs, this.root);
     this.cachedTree ??= scanTree(fs, this.root);
     return this.cachedTree;
+  }
+
+  /**
+   * What the file system tells of a file or folder of the vault, as the
+   * tooltip of its row shows: its size, and when it was changed and made.
+   * `created` is as the system keeps it, `null` for a folder and where it
+   * keeps none. A save writes a new file over the note (`writeTextAtomic`),
+   * so for a note saved since it is made it is the time of the last save,
+   * as other apps that save that way show it too. Rejects if nothing is at
+   * `path`.
+   */
+  async info(path: NotePath): Promise<EntryInfo> {
+    const stat = await this.platform.fs.stat(resolveInVault(this.root, path));
+    return {
+      kind: stat.kind,
+      size: stat.size,
+      modified: stat.mtime,
+      created: stat.kind === "file" ? (stat.birthtime ?? null) : null,
+    };
   }
 
   /**

@@ -1,6 +1,7 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { TreeNode, Vault } from "@carbon/core";
 import {
+  Fragment,
   useEffect,
   useMemo,
   useRef,
@@ -22,6 +23,7 @@ import { useVirtualRows } from "./use-virtual-rows";
 import { useTreeMotion } from "./use-tree-motion";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NameInput } from "./NameInput";
+import { RowTooltip } from "./RowTooltip";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
@@ -243,9 +245,8 @@ export function FileTree({
       dropFolder !== null &&
       dropFolder !== tree.root &&
       isWithin(node.path, dropFolder);
-    return (
+    const element = (
       <div
-        key={node.path}
         id={rowId(node.path)}
         data-path={node.path}
         role="treeitem"
@@ -297,6 +298,13 @@ export function FileTree({
           <span className="truncate">{labelOf(node)}</span>
         )}
       </div>
+    );
+    // No tooltip over the field of a new name.
+    if (renaming) return <Fragment key={node.path}>{element}</Fragment>;
+    return (
+      <RowTooltip key={node.path} vault={vault} node={node}>
+        {element}
+      </RowTooltip>
     );
   };
 

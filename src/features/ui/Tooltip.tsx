@@ -33,6 +33,8 @@ interface TooltipProps {
    * focus to be typed in, not to be explained.
    */
   hoverOnly?: boolean;
+  /** Told as it opens and shuts: to fetch what it says, as it opens. */
+  onOpenChange?: (open: boolean) => void;
   /** The element it is about, which takes its props and its ref. */
   children: ReactElement;
 }
@@ -48,13 +50,21 @@ export function Tooltip({
   shortcut,
   side = "bottom",
   hoverOnly = false,
+  onOpenChange,
   children,
 }: TooltipProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const setOpen = useCallback(
+    (next: boolean) => {
+      setOpenState(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange],
+  );
   // Shut as the pointer leaves the window: WebKitGTK does not tell the
   // button under it that it left (`pointer-outside.ts`).
   usePointerLeavesWindow(
-    useCallback(() => setOpen(false), []),
+    useCallback(() => setOpen(false), [setOpen]),
     open,
   );
   return (

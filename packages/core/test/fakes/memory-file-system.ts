@@ -116,6 +116,9 @@ export class MemoryFileSystem implements FileSystem {
       kind: "file",
       size: toBytes(file.content).length,
       mtime: file.mtime,
+      // Every write here makes a new file, as an atomic write on disk does:
+      // it was made when it was last written. A rename keeps it.
+      birthtime: file.mtime,
     };
   }
 

@@ -9,7 +9,12 @@ export type { VaultErrorCode } from "./errors";
 export { checkVaultName, DRAFTS_FOLDER, TRASH_FOLDER } from "./vault/path";
 export type { DiscardOptions, TrashItem, VaultTrash } from "./vault/trash";
 export type { Bookmarks } from "./vault/bookmarks";
-export type { IndexStatus, VaultEvents, VaultOptions } from "./vault/vault";
+export type {
+  EntryInfo,
+  IndexStatus,
+  VaultEvents,
+  VaultOptions,
+} from "./vault/vault";
 export type { VaultChange } from "./vault/watch";
 export type { DeleteOptions } from "./vault/entries";
 export type { Folders } from "./vault/folders";

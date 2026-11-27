@@ -261,3 +261,25 @@ describe("vault.on", () => {
     off();
   });
 });
+
+describe("Vault.info", () => {
+  test("tells the size and times of a note and a folder", async () => {
+    const vault = await Vault.open("/vault", createMemoryPlatform(files));
+    const note = await vault.info("Inbox.md");
+    expect(note.kind).toBe("file");
+    expect(note.size).toBe("# Inbox".length);
+    expect(note.modified).toBeGreaterThan(0);
+    // The memory file system makes a new file on each write, as an
+    // atomic write does: it was made as it was last written.
+    expect(note.created).toBe(note.modified);
+    const folder = await vault.info("projects");
+    expect(folder.kind).toBe("dir");
+    expect(folder.created).toBeNull();
+  });
+
+  test("rejects a path outside the vault or with nothing there", async () => {
+    const vault = await Vault.open("/vault", createMemoryPlatform(files));
+    await expect(vault.info("../outside/secret.md")).rejects.toThrow();
+    await expect(vault.info("Missing.md")).rejects.toThrow();
+  });
+});

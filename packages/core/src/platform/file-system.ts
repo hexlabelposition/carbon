@@ -72,4 +72,9 @@ export interface Stat {
   size: number;
   /** Last modification time, milliseconds since the Unix epoch. */
   mtime: number;
+  /**
+   * When it was made, milliseconds since the Unix epoch; `undefined` where
+   * the platform or the file system does not keep it.
+   */
+  birthtime?: number;
 }
