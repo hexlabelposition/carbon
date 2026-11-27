@@ -121,10 +121,12 @@ describe("Carbon", () => {
   });
 
   flow("creates a note and saves what is typed", async () => {
-    await app.press(Key.Control, "n");
-    const name = await app.find('input[aria-label="Name of the new note"]');
+    // Notes are made from the quick switcher: Shift+Enter makes one by the
+    // name typed, whatever notes it matches.
+    await app.press(Key.Control, "o");
+    const name = await app.find('input[aria-label="Find or create a note"]');
     await name.type("E2E note");
-    await app.press(Key.Enter);
+    await app.press(Key.Shift, Key.Enter);
     await waitForNote("E2E note");
     await waitForFile("E2E note.md", "");
     await (await app.find(".cm-content")).click();

@@ -132,7 +132,7 @@ export class Session {
   }
 
   /**
-   * Presses keys together, as Ctrl+N: every key down in order, then up.
+   * Presses keys together, as Ctrl+O: every key down in order, then up.
    * Characters are typed one by one when given alone.
    */
   async press(...keys: string[]): Promise<void> {
