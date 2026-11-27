@@ -36,6 +36,7 @@ export {
 } from "./parser/blocks";
 export type { FragmentRange, NoteBlock } from "./parser/blocks";
 export { readFrontmatter } from "./parser/frontmatter";
+export { applyChanges, formatNote } from "./parser/format-note";
 export type { FrontmatterEntry } from "./parser/frontmatter";
 export { editFrontmatter, propertyValue } from "./parser/frontmatter-edit";
 export type { PropertyEdit, TextChange } from "./parser/frontmatter-edit";

@@ -19,6 +19,11 @@ export const SHORTCUTS = [
     fallback: "Mod+E",
   },
   { id: "editor.sourceMode", label: "editor.toggleSource", fallback: "" },
+  {
+    id: "editor.formatNote",
+    label: "editor.formatNote",
+    fallback: "Alt+Shift+F",
+  },
   { id: "shell.sidebar", label: "shell.toggleLeftPanel", fallback: "Mod+B" },
   {
     id: "shell.rightPanel",

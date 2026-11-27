@@ -1,5 +1,11 @@
 import type { NotePath, SaveState, Vault } from "@carbon/core";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useT } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { ConflictDialog } from "./ConflictDialog";
@@ -27,6 +33,7 @@ import type { EditorView } from "@codemirror/view";
 import { FormatBar, FormatBarIcon } from "./FormatBar";
 import { NoteModeMenu } from "./NoteModeMenu";
 import type { NoteMode } from "./use-note-mode";
+import { useFormatNote } from "./use-format-note";
 
 interface NoteEditorProps {
   vault: Vault;
@@ -82,6 +89,11 @@ export function NoteEditor({
   const formatBar = formatBarPreference.use();
   /** The CodeMirror view, for the formatting bar. */
   const editorView = useRef<EditorView | null>(null);
+  const formatNote = useFormatNote(
+    useCallback(() => editorView.current, []),
+    active,
+    readingMode,
+  );
   const scroll = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
   const ready = note.status === "ready" && images.ready;
@@ -121,7 +133,31 @@ export function NoteEditor({
       <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
         {history}
         <NoteNameField path={path} title={title} readOnly={readingMode} />
-        {/* Nothing is formatted while reading: the bar waits for editing. */}
+        {/* Nothing is formatted while reading: the buttons wait for
+            editing. */}
+        <Tooltip label={t("editor.formatNote")} shortcut={formatNote.shortcut}>
+          <button
+            type="button"
+            aria-label={t("editor.formatNote")}
+            disabled={readingMode}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40"
+            onClick={formatNote.run}
+          >
+            <svg
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* A wand, with sparks by its tip. */}
+              <path d="M2.5 13.5l7.25-7.25M8.5 5l2.5 2.5M11.5 1.75v2M10.5 2.75h2M13.75 5.5v2M12.75 6.5h2M5 2v1.5M4.25 2.75h1.5" />
+            </svg>
+          </button>
+        </Tooltip>
         <Tooltip label={t("format.bar")}>
           <button
             type="button"

@@ -52,6 +52,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.copyLink": "Копировать ссылку",
   "editor.cut": "Вырезать",
   "editor.editYaml": "Править YAML",
+  "editor.formatNote": "Отформатировать заметку",
   "editor.frontmatter": "Frontmatter",
   "editor.frontmatterEmpty": "Пустой frontmatter",
   "editor.live": "Динамический",

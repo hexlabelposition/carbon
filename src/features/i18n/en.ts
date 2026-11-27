@@ -61,6 +61,7 @@ export const en = {
   "editor.copyLink": "Copy link",
   "editor.cut": "Cut",
   "editor.editYaml": "Edit YAML",
+  "editor.formatNote": "Format note",
   "editor.frontmatter": "Frontmatter",
   "editor.frontmatterEmpty": "Empty frontmatter",
   "editor.live": "Live preview",
