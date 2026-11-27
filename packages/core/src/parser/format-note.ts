@@ -1,5 +1,6 @@
 import { findFrontmatter } from "./frontmatter";
 import type { TextChange } from "./frontmatter-edit";
+import { formatTable } from "./format-table";
 import { markdownParser } from "./parse-note";
 
 /** A line of only spaces and tabs, or of nothing. */
@@ -14,10 +15,12 @@ const BLANK = /^[ \t]*$/;
  *   start; more blank lines there become one.
  * - It ends in one line break: blank lines at the end go, and a note
  *   without a line break at its end gets one. An empty note stays empty.
+ * - Every table is laid out as Prettier lays it out (`formatTable`): its
+ *   pipes in line, each column as wide as its widest cell.
  *
- * Only the headings of the note itself count, not those in a list or a
- * quote: a blank line there would change the list or need the quote
- * mark. Code blocks are never touched, as the grammar of the editor
+ * Only the headings and tables of the note itself count, not those in a
+ * list or a quote: a blank line there would change the list or need the
+ * quote mark, and the rows of a table there start with its marks. Code blocks are never touched, as the grammar of the editor
  * finds them (ADR-012). Changes go by whole lines, so a cursor or a
  * selection away from them keeps its place. Line breaks are kept as the
  * note writes them, `\r\n` too.
@@ -34,21 +37,46 @@ export function formatNote(text: string): TextChange[] {
     return body === "" ? [] : [{ from: start, to: text.length, insert: "" }];
   }
 
-  // The headings of the note itself, by the lines they take.
+  // The headings and tables of the note itself, by the lines they take.
   const headingStarts = new Set<number>();
   const headingEnds = new Set<number>();
-  const tree = markdownParser.parse(body);
+  const tables: { first: number; last: number }[] = [];
+  // Parsed with "\n" for "\r\n": a "\r" at its end keeps a line from
+  // being the delimiter row of a table. Found by line, which the two
+  // texts have alike.
+  const plain = body.replace(/\r\n/g, "\n");
+  const plainLines = plain === body ? lines : splitLines(plain);
+  const tree = markdownParser.parse(plain);
   for (
     let node = tree.topNode.firstChild;
     node !== null;
     node = node.nextSibling
   ) {
+    const first = lineAt(plainLines, node.from);
+    const last = lineAt(plainLines, Math.max(node.from, node.to - 1));
+    if (node.name === "Table") tables.push({ first, last });
     if (!/^(ATX|Setext)Heading\d$/.test(node.name)) continue;
-    headingStarts.add(lineAt(lines, node.from));
-    headingEnds.add(lineAt(lines, Math.max(node.from, node.to - 1)));
+    headingStarts.add(first);
+    headingEnds.add(last);
   }
 
   const changes: TextChange[] = [];
+  // Each table, as a whole, if its layout changes. Only the text of its
+  // lines: the breaks between them stay.
+  for (const { first, last } of tables) {
+    const rows = lines.slice(first, last + 1);
+    const laidOut = formatTable(rows.map((line) => line.text));
+    if (laidOut === null) continue;
+    if (laidOut.every((text, i) => text === rows[i].text)) continue;
+    const insert = laidOut
+      .map((text, i) => (i === 0 ? "" : rows[i].breakBefore) + text)
+      .join("");
+    changes.push({
+      from: start + rows[0].from,
+      to: start + rows[rows.length - 1].end,
+      insert,
+    });
+  }
   const first = lines.findIndex((line) => !BLANK.test(line.text));
   let last = lines.length - 1;
   while (BLANK.test(lines[last].text)) last--;
@@ -78,7 +106,8 @@ export function formatNote(text: string): TextChange[] {
   if (tail !== lineBreak) {
     changes.push({ from: end, to: text.length, insert: lineBreak });
   }
-  return changes;
+  // In order: a table ends where the blank lines after it start.
+  return changes.sort((a, b) => a.from - b.from || a.to - b.to);
 }
 
 /** Applies the changes of `formatNote`, which come in order. */

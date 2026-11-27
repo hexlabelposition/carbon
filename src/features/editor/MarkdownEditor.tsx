@@ -69,6 +69,7 @@ import { formatNoteText } from "./format-note";
 import { t as translate, useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
+import { sourceTables } from "./source-table";
 import { embedPreview } from "./live-preview-embed";
 import { addProperty, frontmatterPreview } from "./live-preview-frontmatter";
 import {
@@ -142,7 +143,11 @@ const livePreviewExtensions: Extension = [
   followOnClick,
   webLinkStyle,
 ];
-const noPreview: Extension = [syntaxHighlighting(sourceHighlight)];
+/** Source mode: the Markdown as it is, its tables whole (`sourceTables`). */
+const noPreview: Extension = [
+  syntaxHighlighting(sourceHighlight),
+  sourceTables,
+];
 
 /** A CodeMirror 6 editor for one Markdown text. */
 export function MarkdownEditor({
