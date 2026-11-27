@@ -4,6 +4,7 @@ import {
   useState,
   type ReactElement,
   type ReactNode,
+  type SyntheticEvent,
 } from "react";
 import { pointerOutside, usePointerLeavesWindow } from "./pointer-outside";
 import { Shortcut } from "../commands/Shortcut";
@@ -19,6 +20,20 @@ export function TooltipProvider({ children }: { children: ReactNode }) {
       {children}
     </Base.Provider>
   );
+}
+
+/** Handlers that keep the events of the pointer to the tooltip. */
+const keepEvents = {
+  onClick: stop,
+  onDoubleClick: stop,
+  onAuxClick: stop,
+  onMouseDown: stop,
+  onPointerDown: stop,
+  onPointerUp: stop,
+};
+
+function stop(event: SyntheticEvent): void {
+  event.stopPropagation();
 }
 
 interface TooltipProps {
@@ -93,6 +108,16 @@ export function Tooltip({
           className="z-60"
         >
           <Base.Popup
+            // Drawn in a portal, but React passes its events up to where
+            // the tooltip is written, as a row of the file tree: a click on
+            // it, the right button too, must not reach that row or its
+            // menu. A right click only shuts it.
+            {...keepEvents}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpen(false);
+            }}
             // One line, as wide as its text: placed by the side of the
             // window, it would else be squeezed into the room left there
             // and wrap. Only a text wider than the window is cut short.
