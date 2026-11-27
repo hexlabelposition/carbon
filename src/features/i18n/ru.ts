@@ -420,6 +420,10 @@ export const ru: Record<keyof typeof en, Message> = {
     other: "{count} символа без пробелов",
   },
   "stats.selected": "Выделено:",
+  "stats.showCharacters": "Число символов",
+  "stats.showMinutes": "Время чтения",
+  "stats.showSave": "Статус сохранения",
+  "stats.showWords": "Число слов",
   "stats.words": {
     one: "{count} слово",
     few: "{count} слова",

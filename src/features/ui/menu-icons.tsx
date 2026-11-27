@@ -99,6 +99,24 @@ export const menuIcons = {
     <path d="M2.5 3.5h1v4M2.5 7.5h2M2.5 10h2l-2 3h2M7 4.5h6.5M7 8h6.5M7 11.5h6.5" />
   ),
   inlineTitle: <path d="M3.5 3.5h9M8 3.5v9M5.5 12.5h5" />,
+  // A tick in a circle: saved.
+  saveStatus: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M5.5 8.25 7.25 10l3.25-3.75" />
+    </>
+  ),
+  // Words as dashes of their lengths, on two lines.
+  wordCount: <path d="M2 5.5h4M8 5.5h6M2 10.5h7M11 10.5h3" />,
+  // A letter and the cursor after it.
+  characterCount: <path d="M2.5 13 6 3.5 9.5 13M3.75 9.5h4.5M12.5 3v10" />,
+  // A clock.
+  readingTime: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 4.75V8l2.25 1.5" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type MenuIcon = keyof typeof menuIcons;

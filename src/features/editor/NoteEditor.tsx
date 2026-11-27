@@ -23,6 +23,7 @@ import { useNoteTitle } from "./use-note-title";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
+import { hiddenStatsPreference } from "./stats-parts";
 import type { NoteStats } from "./note-stats";
 import { focusOnOpenPreference } from "../settings/editor-options";
 import {
@@ -318,11 +319,16 @@ const indicatorButton =
 
 /**
  * Tells whether the edits are on disk, at the start of the bar below the
- * note (`NoteStatsBar`). Never by color alone.
+ * note (`NoteStatsBar`). Never by color alone. That they are, or are
+ * being saved, can be hidden from the menu of the bar.
  */
 function SaveIndicator({ save, onRetry, onResolve }: SaveIndicatorProps) {
   const t = useT();
+  // Hidden from the menu of the bar: only that all is well. A save that
+  // failed and a conflict are told all the same.
+  const showSaved = !hiddenStatsPreference.use().includes("save");
   if (save.status === "saved" || save.status === "unsaved") {
+    if (!showSaved) return null;
     const saved = save.status === "saved";
     const label = t(saved ? "save.saved" : "save.unsaved");
     // A mark and a word, the mark told apart by its shape: a dot while
