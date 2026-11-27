@@ -4,9 +4,9 @@ import { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { keys } from "../commands/commands";
-import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
+import { MenuItemBody } from "../ui/MenuItemBody";
 import { useClipboard } from "./clipboard";
 import { codeAt, type CodeAt } from "./code-at";
 import { scrollParentOf } from "./glide";
@@ -23,7 +23,7 @@ interface EditorContextMenuProps {
 }
 
 const item =
-  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
+  "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
 const separator = "mx-1 my-1 h-px bg-line";
 
 /**
@@ -199,7 +199,11 @@ export function EditorContextMenu({
                       )
                     }
                   >
-                    {t(webLink.email ? "editor.writeEmail" : "editor.openLink")}
+                    <MenuItemBody icon={webLink.email ? "email" : "openLink"}>
+                      {t(
+                        webLink.email ? "editor.writeEmail" : "editor.openLink",
+                      )}
+                    </MenuItemBody>
                   </ContextMenu.Item>
                 )}
                 <ContextMenu.Item
@@ -212,7 +216,9 @@ export function EditorContextMenu({
                     )
                   }
                 >
-                  {t(webLink.email ? "editor.copyEmail" : "editor.copyLink")}
+                  <MenuItemBody icon={webLink.email ? "copy" : "link"}>
+                    {t(webLink.email ? "editor.copyEmail" : "editor.copyLink")}
+                  </MenuItemBody>
                 </ContextMenu.Item>
                 <ContextMenu.Separator className={separator} />
               </>
@@ -224,14 +230,18 @@ export function EditorContextMenu({
                   onClick={() => copyText(code.text)}
                 >
                   {/* "All" sets it apart from the line, in a block. */}
-                  {t(code.block ? "editor.copyAllCode" : "editor.copyCode")}
+                  <MenuItemBody icon="code">
+                    {t(code.block ? "editor.copyAllCode" : "editor.copyCode")}
+                  </MenuItemBody>
                 </ContextMenu.Item>
                 {code.line !== null && (
                   <ContextMenu.Item
                     className={item}
                     onClick={() => copyText(code.line!)}
                   >
-                    {t("editor.copyCodeLine")}
+                    <MenuItemBody icon="codeLine">
+                      {t("editor.copyCodeLine")}
+                    </MenuItemBody>
                   </ContextMenu.Item>
                 )}
                 <ContextMenu.Separator className={separator} />
@@ -242,16 +252,18 @@ export function EditorContextMenu({
               disabled={readOnly || !steps.undo}
               onClick={() => run(undo)}
             >
-              {t("editor.undo")}
-              <Shortcut text={keys("Mod+Z")} />
+              <MenuItemBody icon="undo" keys={keys("Mod+Z")}>
+                {t("editor.undo")}
+              </MenuItemBody>
             </ContextMenu.Item>
             <ContextMenu.Item
               className={item}
               disabled={readOnly || !steps.redo}
               onClick={() => run(redo)}
             >
-              {t("editor.redo")}
-              <Shortcut text={keys("Mod+Shift+Z")} />
+              <MenuItemBody icon="redo" keys={keys("Mod+Shift+Z")}>
+                {t("editor.redo")}
+              </MenuItemBody>
             </ContextMenu.Item>
             <ContextMenu.Separator className={separator} />
             <ContextMenu.Item
@@ -259,29 +271,33 @@ export function EditorContextMenu({
               disabled={readOnly || !selected}
               onClick={() => copy(true)}
             >
-              {t("editor.cut")}
-              <Shortcut text={keys("Mod+X")} />
+              <MenuItemBody icon="cut" keys={keys("Mod+X")}>
+                {t("editor.cut")}
+              </MenuItemBody>
             </ContextMenu.Item>
             <ContextMenu.Item
               className={item}
               disabled={!selected}
               onClick={() => copy(false)}
             >
-              {t("editor.copy")}
-              <Shortcut text={keys("Mod+C")} />
+              <MenuItemBody icon="copy" keys={keys("Mod+C")}>
+                {t("editor.copy")}
+              </MenuItemBody>
             </ContextMenu.Item>
             <ContextMenu.Item
               className={item}
               disabled={readOnly}
               onClick={paste}
             >
-              {t("editor.paste")}
-              <Shortcut text={keys("Mod+V")} />
+              <MenuItemBody icon="paste" keys={keys("Mod+V")}>
+                {t("editor.paste")}
+              </MenuItemBody>
             </ContextMenu.Item>
             <ContextMenu.Separator className={separator} />
             <ContextMenu.Item className={item} onClick={selectAll}>
-              {t("editor.selectAll")}
-              <Shortcut text={keys("Mod+A")} />
+              <MenuItemBody icon="selectAll" keys={keys("Mod+A")}>
+                {t("editor.selectAll")}
+              </MenuItemBody>
             </ContextMenu.Item>
           </ContextMenu.Popup>
         </ContextMenu.Positioner>

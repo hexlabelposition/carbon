@@ -24,11 +24,11 @@ import { ScrollArea } from "../ui/ScrollArea";
 import { NameInput } from "./NameInput";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
-import { Shortcut } from "../commands/Shortcut";
 import { useT } from "../i18n/i18n";
 import { canBookmark, type BookmarksView } from "../bookmarks/use-bookmarks";
 import { log } from "../log/log";
 import { imageTypeOf } from "../image/image-file";
+import { MenuItemBody } from "../ui/MenuItemBody";
 
 /**
  * Room for the scrollbar at the right of the rows, as `SCROLLBAR_ROOM`,
@@ -520,17 +520,9 @@ interface TreeMenuProps {
 }
 
 const menuItem =
-  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
+  "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
 
 const separator = "mx-1 my-1 h-px bg-line";
-
-/**
- * The keys of a menu item, at its right: each in a box, as in the command
- * palette and the tooltips.
- */
-function MenuKeys({ text }: { text: string }) {
-  return <Shortcut text={text} />;
-}
 
 /**
  * The menu of the right button: new things in the folder of the row, or
@@ -571,27 +563,31 @@ function TreeMenu({
           {onOpenInNewTab !== undefined && (
             <>
               <ContextMenu.Item className={menuItem} onClick={onOpenInNewTab}>
-                {t("tree.openInNewTab")}
+                <MenuItemBody icon="newTab">
+                  {t("tree.openInNewTab")}
+                </MenuItemBody>
               </ContextMenu.Item>
               <ContextMenu.Separator className={separator} />
             </>
           )}
           <ContextMenu.Item className={menuItem} onClick={onNewNote}>
-            {t("tree.newNote")}
+            <MenuItemBody icon="newNote">{t("tree.newNote")}</MenuItemBody>
           </ContextMenu.Item>
           <ContextMenu.Item className={menuItem} onClick={onNewFolder}>
-            {t("tree.newFolder")}
+            <MenuItemBody icon="newFolder">{t("tree.newFolder")}</MenuItemBody>
           </ContextMenu.Item>
           <ContextMenu.Separator className={separator} />
           {target !== null && (
             <>
               <ContextMenu.Item className={menuItem} onClick={onCut}>
-                {t("tree.cut")}
-                <MenuKeys text={keys("Mod+X")} />
+                <MenuItemBody icon="cut" keys={keys("Mod+X")}>
+                  {t("tree.cut")}
+                </MenuItemBody>
               </ContextMenu.Item>
               <ContextMenu.Item className={menuItem} onClick={onCopy}>
-                {t("tree.copy")}
-                <MenuKeys text={keys("Mod+C")} />
+                <MenuItemBody icon="copy" keys={keys("Mod+C")}>
+                  {t("tree.copy")}
+                </MenuItemBody>
               </ContextMenu.Item>
             </>
           )}
@@ -600,41 +596,46 @@ function TreeMenu({
             disabled={!canPaste}
             onClick={onPaste}
           >
-            {t("tree.paste")}
-            <MenuKeys text={keys("Mod+V")} />
+            <MenuItemBody icon="paste" keys={keys("Mod+V")}>
+              {t("tree.paste")}
+            </MenuItemBody>
           </ContextMenu.Item>
           <ContextMenu.Item
             className={menuItem}
             disabled={!canUndo}
             onClick={onUndo}
           >
-            {t("tree.undo")}
-            <MenuKeys text={keys("Mod+Z")} />
+            <MenuItemBody icon="undo" keys={keys("Mod+Z")}>
+              {t("tree.undo")}
+            </MenuItemBody>
           </ContextMenu.Item>
           <ContextMenu.Item
             className={menuItem}
             disabled={!canRedo}
             onClick={onRedo}
           >
-            {t("tree.redo")}
-            <MenuKeys text={keys("Mod+Shift+Z")} />
+            <MenuItemBody icon="redo" keys={keys("Mod+Shift+Z")}>
+              {t("tree.redo")}
+            </MenuItemBody>
           </ContextMenu.Item>
           {(target !== null || onShowInFileManager !== undefined) && (
             <ContextMenu.Separator className={separator} />
           )}
           {target !== null && bookmark !== undefined && (
             <ContextMenu.Item className={menuItem} onClick={bookmark.toggle}>
-              {t(bookmark.on ? "bookmarks.remove" : "bookmarks.add")}
+              <MenuItemBody icon="bookmark">
+                {t(bookmark.on ? "bookmarks.remove" : "bookmarks.add")}
+              </MenuItemBody>
             </ContextMenu.Item>
           )}
           {target !== null && onMoveToRoot !== undefined && (
             <ContextMenu.Item className={menuItem} onClick={onMoveToRoot}>
-              {moveToRootLabel}
+              <MenuItemBody icon="moveToRoot">{moveToRootLabel}</MenuItemBody>
             </ContextMenu.Item>
           )}
           {target !== null && (
             <ContextMenu.Item className={menuItem} onClick={onMoveAcross}>
-              {moveAcrossLabel}
+              <MenuItemBody icon="moveAcross">{moveAcrossLabel}</MenuItemBody>
             </ContextMenu.Item>
           )}
           {onShowInFileManager !== undefined && (
@@ -642,22 +643,26 @@ function TreeMenu({
               className={menuItem}
               onClick={onShowInFileManager}
             >
-              {t("tree.showInFileManager")}
+              <MenuItemBody icon="fileManager">
+                {t("tree.showInFileManager")}
+              </MenuItemBody>
             </ContextMenu.Item>
           )}
           {target !== null && (
             <>
               <ContextMenu.Separator className={separator} />
               <ContextMenu.Item className={menuItem} onClick={onRename}>
-                {t("tree.rename")}
-                <MenuKeys text="F2" />
+                <MenuItemBody icon="rename" keys="F2">
+                  {t("tree.rename")}
+                </MenuItemBody>
               </ContextMenu.Item>
               <ContextMenu.Item
                 className={`${menuItem} text-danger`}
                 onClick={onDelete}
               >
-                {t("tree.delete")}
-                <MenuKeys text="Del" />
+                <MenuItemBody icon="delete" keys="Del">
+                  {t("tree.delete")}
+                </MenuItemBody>
               </ContextMenu.Item>
             </>
           )}

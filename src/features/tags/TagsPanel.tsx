@@ -5,6 +5,7 @@ import { NameInput } from "../file-tree/NameInput";
 import { useT } from "../i18n/i18n";
 import type { TagsView } from "./use-tags";
 import { Tooltip } from "../ui/Tooltip";
+import { MenuItemBody } from "../ui/MenuItemBody";
 
 interface TagsPanelProps {
   tags: TagsView;
@@ -16,7 +17,7 @@ interface TagsPanelProps {
 const INDENT = 14;
 
 const menuItem =
-  "flex h-7 cursor-default items-center justify-between gap-6 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
+  "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise";
 
 /**
  * The tags of the vault as a tree, each with the number of its notes. A
@@ -111,8 +112,9 @@ export function TagsPanel({ tags, onOpen }: TagsPanelProps) {
                     pendingRename.current = menuTag;
                   }}
                 >
-                  {t("tags.rename")}
-                  <span className="text-small text-faint">F2</span>
+                  <MenuItemBody icon="rename" keys="F2">
+                    {t("tags.rename")}
+                  </MenuItemBody>
                 </ContextMenu.Item>
               </ContextMenu.Popup>
             </ContextMenu.Positioner>
