@@ -15,6 +15,7 @@ import {
 import type { SyntaxNode } from "@lezer/common";
 import { wikiLinkLabel } from "./wiki-link";
 import { noteSize } from "./editor-theme";
+import { fadeBase, fadeStyles } from "./table-fade";
 
 /**
  * Live preview of tables: a table is drawn as a table, except while the
@@ -56,22 +57,20 @@ export const tablePreview = [
   ),
   EditorView.baseTheme({
     // A table wider than the note scrolls sideways in its box, the side
-    // with more of it fading out (`--cm-fade-left`, `--cm-fade-right`).
+    // with more of it fading out (`fadeStyles`).
     ".cm-table-scroll": {
       width: "fit-content",
       maxWidth: "100%",
       overflowX: "auto",
       overflowY: "hidden",
       scrollbarWidth: "thin",
-      "--cm-fade-left": "0px",
-      "--cm-fade-right": "0px",
-      maskImage:
-        "linear-gradient(to right, transparent, #000 var(--cm-fade-left), #000 calc(100% - var(--cm-fade-right)), transparent)",
-      WebkitMaskImage:
-        "linear-gradient(to right, transparent, #000 var(--cm-fade-left), #000 calc(100% - var(--cm-fade-right)), transparent)",
+      ...fadeBase(),
     },
-    ".cm-table-scroll.cm-table-more-left": { "--cm-fade-left": "32px" },
-    ".cm-table-scroll.cm-table-more-right": { "--cm-fade-right": "32px" },
+    ...fadeStyles(
+      ".cm-table-scroll",
+      ".cm-table-more-left",
+      ".cm-table-more-right",
+    ),
     // As wide as its text; a long cell wraps between its words, never
     // inside one: the editor breaks long words anywhere, which squeezed a
     // narrow column down to a letter or two a line. A short cell keeps
