@@ -22,12 +22,13 @@ export const toolbarIcons = {
     </>
   ),
   bookmarks: <path d={BOOKMARK} />,
-  // A page with a pencil across its corner.
+  // A folder with a pencil across its corner: Lucide's "folder-pen",
+  // drawn on 24 by 24, brought to 16 by 16 with lines as thin as the rest.
   drafts: (
-    <>
-      <path d="M8.5 14.5H4a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5h5l3.5 3.5v2" />
-      <path d="M9 1.5V5h3.5M13.25 8.75l1 1-4.5 4.5-1.5.5.5-1.5z" />
-    </>
+    <g transform="scale(0.6667)" strokeWidth="1.875">
+      <path d="M2 11.5V5a2 2 0 0 1 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-9.5" />
+      <path d="M11.378 13.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+    </g>
   ),
   trash: (
     <>

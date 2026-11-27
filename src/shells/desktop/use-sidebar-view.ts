@@ -10,7 +10,6 @@ export type SidebarView = "files" | "bookmarks" | "tags" | "drafts" | "trash";
 export const EXPLORER_VIEWS = [
   "files",
   "bookmarks",
-  "drafts",
   "trash",
 ] as const satisfies readonly SidebarView[];
 

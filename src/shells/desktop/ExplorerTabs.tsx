@@ -8,7 +8,6 @@ import { EXPLORER_VIEWS, type ExplorerView } from "./use-sidebar-view";
 const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
   files: { label: "shell.files", icon: toolbarIcons.fileTree },
   bookmarks: { label: "shell.bookmarks", icon: toolbarIcons.bookmarks },
-  drafts: { label: "shell.drafts", icon: toolbarIcons.drafts },
   trash: { label: "shell.trash", icon: toolbarIcons.trash },
 };
 
@@ -16,12 +15,29 @@ const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
 const group = "flex items-center gap-0.5 border-r border-line px-1.5";
 
 /**
- * The row of tabs at the top of the file explorer: the files, the
- * bookmarks, the drafts and the trash, one shown at a time below it. Drawn
- * as the buttons of the toolbar, side by side, and as tall as the bar
- * above a note, so their lines meet. The tabs and the buttons after them
- * are groups, each closed by a line at its right that runs the height of
- * the row: two groups side by side share one line.
+ * A row of groups of buttons at the top of a view of the sidebar, as tall
+ * as the bar above a note, so their lines meet. Each group is closed by a
+ * line at its right that runs the height of the row: two groups side by
+ * side share one line.
+ */
+export function SidebarToolRow({ groups }: { groups: readonly ReactNode[] }) {
+  return (
+    <div className="flex h-11 shrink-0 border-b border-line">
+      {groups.map((items, index) => (
+        // The groups of a view are always the same ones, in the same order.
+        <div key={index} className={group}>
+          {items}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The row at the top of the file explorer (`SidebarToolRow`): first its
+ * tabs, the files, the bookmarks and the trash, one shown at a time below
+ * it, drawn as the buttons of the toolbar, side by side; then the buttons
+ * for the tab shown.
  */
 export function ExplorerTabs({
   current,
@@ -37,46 +53,35 @@ export function ExplorerTabs({
   tools?: readonly ReactNode[];
 }) {
   const t = useT();
-  return (
-    <div className="flex h-11 shrink-0 border-b border-line">
-      <div className={group}>
-        {EXPLORER_VIEWS.map((view) => {
-          const label = t(TABS[view].label);
-          const shown = view === current;
-          return (
-            <Tooltip key={view} label={label}>
-              <button
-                type="button"
-                aria-label={label}
-                aria-pressed={shown}
-                className={`flex size-8 shrink-0 items-center justify-center rounded-md outline-none transition-colors duration-100 hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
-                  shown ? "bg-selected text-fg" : "text-muted"
-                }`}
-                onClick={() => onShow(view)}
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                  className="size-4.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  {TABS[view].icon}
-                </svg>
-              </button>
-            </Tooltip>
-          );
-        })}
-      </div>
-      {tools.map((tool, index) => (
-        // The groups are always the same ones, in the same order.
-        <div key={index} className={group}>
-          {tool}
-        </div>
-      ))}
-    </div>
-  );
+  const tabs = EXPLORER_VIEWS.map((view) => {
+    const label = t(TABS[view].label);
+    const shown = view === current;
+    return (
+      <Tooltip key={view} label={label}>
+        <button
+          type="button"
+          aria-label={label}
+          aria-pressed={shown}
+          className={`flex size-8 shrink-0 items-center justify-center rounded-md outline-none transition-colors duration-100 hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong ${
+            shown ? "bg-selected text-fg" : "text-muted"
+          }`}
+          onClick={() => onShow(view)}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            className="size-4.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {TABS[view].icon}
+          </svg>
+        </button>
+      </Tooltip>
+    );
+  });
+  return <SidebarToolRow groups={[tabs, ...tools]} />;
 }

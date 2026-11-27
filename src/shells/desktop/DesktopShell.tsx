@@ -110,7 +110,7 @@ import {
   useSidebarView,
   type SidebarViewState,
 } from "./use-sidebar-view";
-import { ExplorerTabs } from "./ExplorerTabs";
+import { ExplorerTabs, SidebarToolRow } from "./ExplorerTabs";
 import { DragStrip, WindowControls } from "./WindowControls";
 import {
   useFullscreenShortcut,
@@ -449,7 +449,7 @@ export function DesktopShell({
 
 /**
  * The views of the sidebar, one at a time: the file explorer, with a row
- * of tabs for its files, bookmarks, drafts and trash, and the tags. Each
+ * of tabs for its files, bookmarks and trash, the tags and the drafts. Each
  * is shown by its button of the toolbar or from the palette. They stay
  * mounted: switching keeps the open folders and the open tags. Search is
  * a dialog of its own (`SearchHost`).
@@ -488,16 +488,11 @@ function SidebarContent({
         <ExplorerTabs
           current={explorer}
           onShow={show}
-          tools={
-            // The files and the drafts are trees, with the same buttons: to
-            // make a note or a folder, and to sort them and to open or
-            // close all their folders.
-            explorer === "files" || explorer === "drafts"
-              ? treeTools(explorer === "drafts" ? "drafts" : "vault")
-              : undefined
-          }
+          tools={explorer === "files" ? treeTools("vault") : undefined}
         />
       )}
+      {/* A view of its own, with the same buttons as the files. */}
+      {view === "drafts" && <SidebarToolRow groups={treeTools("drafts")} />}
       <div
         role="region"
         aria-label={t("shell.files")}
@@ -560,7 +555,11 @@ function SidebarContent({
   );
 }
 
-/** The groups of buttons above a tree of `scope`, for `ExplorerTabs`. */
+/**
+ * The groups of buttons above a tree of `scope`: to make a note or a
+ * folder, and to sort it and open or close all its folders. The files and
+ * the drafts are trees, with the same buttons.
+ */
 function treeTools(scope: TreeScope) {
   return [
     <TreeNewButtons key="new" scope={scope} />,
@@ -687,6 +686,7 @@ function ToolbarHost({
       items={[
         explorerItem,
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
+        sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
         ...command(TOGGLE_GRAPH, toolbarIcons.graph),
