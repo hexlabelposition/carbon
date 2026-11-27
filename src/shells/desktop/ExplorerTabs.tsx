@@ -26,12 +26,15 @@ const group = "flex items-center gap-0.5 border-r border-line px-1.5";
 export function ExplorerTabs({
   current,
   onShow,
-  end,
+  tools = [],
 }: {
   current: ExplorerView;
   onShow: (view: ExplorerView) => void;
-  /** After the tabs, a group of its own: buttons for the tab shown, as sorting. */
-  end?: ReactNode;
+  /**
+   * After the tabs, groups of buttons for the tab shown, each set apart
+   * by its line: one to make things, one to sort.
+   */
+  tools?: readonly ReactNode[];
 }) {
   const t = useT();
   return (
@@ -68,7 +71,12 @@ export function ExplorerTabs({
           );
         })}
       </div>
-      {end !== undefined && <div className={group}>{end}</div>}
+      {tools.map((tool, index) => (
+        // The groups are always the same ones, in the same order.
+        <div key={index} className={group}>
+          {tool}
+        </div>
+      ))}
     </div>
   );
 }

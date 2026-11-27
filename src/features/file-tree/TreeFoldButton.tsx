@@ -1,6 +1,6 @@
 import { useT } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
-import { treeFolds } from "./tree-folds";
+import { treeControls } from "./tree-controls";
 import { treeToolButton } from "./tree-tool-button";
 import type { TreeScope } from "./use-file-tree";
 
@@ -15,7 +15,7 @@ const CHEVRONS_TOGETHER = "M5 3l3 3 3-3M5 13l3-3 3 3";
  */
 export function TreeFoldButton({ scope }: { scope: TreeScope }) {
   const t = useT();
-  const { hasFolders, anyOpen } = treeFolds.use(scope);
+  const { hasFolders, anyOpen } = treeControls.use(scope);
   const label = t(anyOpen ? "tree.collapseAll" : "tree.expandAll");
   return (
     <Tooltip label={label}>
@@ -24,7 +24,7 @@ export function TreeFoldButton({ scope }: { scope: TreeScope }) {
         aria-label={label}
         disabled={!hasFolders}
         className={treeToolButton}
-        onClick={() => treeFolds.setAll(scope, !anyOpen)}
+        onClick={() => treeControls.actions(scope)?.setAllExpanded(!anyOpen)}
       >
         <svg
           viewBox="0 0 16 16"

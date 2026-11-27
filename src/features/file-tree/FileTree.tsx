@@ -26,7 +26,7 @@ import { NameInput } from "./NameInput";
 import { RowTooltip } from "./RowTooltip";
 import { shortcutLetter } from "../workspace/shortcut-letter";
 import { keys, useCommands } from "../commands/commands";
-import { treeFolds } from "./tree-folds";
+import { treeControls } from "./tree-controls";
 import { useT } from "../i18n/i18n";
 import { canBookmark, type BookmarksView } from "../bookmarks/use-bookmarks";
 import { log } from "../log/log";
@@ -83,15 +83,16 @@ export function FileTree({
 }) {
   const t = useT();
   const tree = useFileTree(vault, scope);
-  // For the button above the tree that opens or closes all its folders.
+  // For the buttons above the tree, which make new things in it and open
+  // or close all its folders.
   useEffect(() => {
-    treeFolds.publish(
+    treeControls.publish(
       scope,
       { hasFolders: tree.hasFolders, anyOpen: tree.anyExpanded },
-      tree.setAllExpanded,
+      { setAllExpanded: tree.setAllExpanded, startNew: tree.startNew },
     );
   });
-  useEffect(() => () => treeFolds.withdraw(scope), [scope]);
+  useEffect(() => () => treeControls.withdraw(scope), [scope]);
   // The latest, so the commands stay the same while the tree changes.
   const startNewRef = useRef(tree.startNew);
   useEffect(() => {

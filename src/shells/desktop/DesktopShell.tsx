@@ -1,5 +1,6 @@
 import type { Vault } from "@carbon/core";
 import {
+  Fragment,
   lazy,
   Suspense,
   useCallback,
@@ -28,6 +29,8 @@ import { useNoteMode } from "../../features/editor/use-note-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { TreeSortMenu } from "../../features/file-tree/TreeSortMenu";
 import { TreeFoldButton } from "../../features/file-tree/TreeFoldButton";
+import { TreeNewButtons } from "../../features/file-tree/TreeNewButtons";
+import type { TreeScope } from "../../features/file-tree/use-file-tree";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
@@ -471,17 +474,13 @@ function SidebarContent({
         <ExplorerTabs
           current={explorer}
           onShow={show}
-          end={
-            // The files and the drafts are trees, sorted the same way, with
-            // a button each that opens or closes all their folders.
-            explorer === "files" || explorer === "drafts" ? (
-              <>
-                <TreeSortMenu />
-                <TreeFoldButton
-                  scope={explorer === "drafts" ? "drafts" : "vault"}
-                />
-              </>
-            ) : undefined
+          tools={
+            // The files and the drafts are trees, with the same buttons: to
+            // make a note or a folder, and to sort them and to open or
+            // close all their folders.
+            explorer === "files" || explorer === "drafts"
+              ? treeTools(explorer === "drafts" ? "drafts" : "vault")
+              : undefined
           }
         />
       )}
@@ -545,6 +544,17 @@ function SidebarContent({
       <VaultStatus vault={vault} />
     </div>
   );
+}
+
+/** The groups of buttons above a tree of `scope`, for `ExplorerTabs`. */
+function treeTools(scope: TreeScope) {
+  return [
+    <TreeNewButtons key="new" scope={scope} />,
+    <Fragment key="order">
+      <TreeSortMenu />
+      <TreeFoldButton scope={scope} />
+    </Fragment>,
+  ];
 }
 
 /**
