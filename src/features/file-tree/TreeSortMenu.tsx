@@ -2,6 +2,7 @@ import { Menu } from "@base-ui/react/menu";
 import type { ReactNode } from "react";
 import { useT, type MessageKey } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
+import { treeToolButton } from "./tree-tool-button";
 import { TREE_SORTS, treeSortPreference, type TreeSort } from "./tree-sort";
 
 const labels: Record<TreeSort, MessageKey> = {
@@ -68,7 +69,7 @@ export function TreeSortMenu() {
       <Tooltip label={t("tree.sort")}>
         <Menu.Trigger
           aria-label={`${t("tree.sort")}: ${t(labels[sort])}`}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted outline-none transition-colors duration-100 hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong data-popup-open:bg-selected data-popup-open:text-fg"
+          className={`${treeToolButton} data-popup-open:bg-selected data-popup-open:text-fg`}
         >
           <SortIcon sort={sort} className="size-4.5" />
         </Menu.Trigger>

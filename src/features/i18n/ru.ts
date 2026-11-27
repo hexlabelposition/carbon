@@ -509,6 +509,8 @@ export const ru: Record<keyof typeof en, Message> = {
   "tree.rename": "Переименовать",
   "tree.showInFileManager": "Показать в файловом менеджере",
   "tree.sort": "Сортировка",
+  "tree.expandAll": "Развернуть все папки",
+  "tree.collapseAll": "Свернуть все папки",
   "tree.sortCreatedAsc": "Дата создания (сначала старые)",
   "tree.sortCreatedDesc": "Дата создания (сначала новые)",
   "tree.sortModifiedAsc": "Дата изменения (сначала старые)",

@@ -472,6 +472,8 @@ export const en = {
   "tree.rename": "Rename",
   "tree.showInFileManager": "Show in the file manager",
   "tree.sort": "Sort",
+  "tree.expandAll": "Expand all folders",
+  "tree.collapseAll": "Collapse all folders",
   "tree.sortCreatedAsc": "Date created (oldest first)",
   "tree.sortCreatedDesc": "Date created (newest first)",
   "tree.sortModifiedAsc": "Date modified (oldest first)",

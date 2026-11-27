@@ -13,7 +13,7 @@ const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
 };
 
 /** A group of buttons in the row, with the line at its right. */
-const group = "flex items-center border-r border-line px-1.5";
+const group = "flex items-center gap-0.5 border-r border-line px-1.5";
 
 /**
  * The row of tabs at the top of the file explorer: the files, the
@@ -36,7 +36,7 @@ export function ExplorerTabs({
   const t = useT();
   return (
     <div className="flex h-11 shrink-0 border-b border-line">
-      <div className={`${group} gap-0.5`}>
+      <div className={group}>
         {EXPLORER_VIEWS.map((view) => {
           const label = t(TABS[view].label);
           const shown = view === current;

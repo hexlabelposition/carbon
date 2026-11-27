@@ -27,6 +27,7 @@ import { imageTypeOf } from "../../features/image/image-file";
 import { useNoteMode } from "../../features/editor/use-note-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
 import { TreeSortMenu } from "../../features/file-tree/TreeSortMenu";
+import { TreeFoldButton } from "../../features/file-tree/TreeFoldButton";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
@@ -471,9 +472,15 @@ function SidebarContent({
           current={explorer}
           onShow={show}
           end={
-            // The files and the drafts are trees, sorted the same way.
+            // The files and the drafts are trees, sorted the same way, with
+            // a button each that opens or closes all their folders.
             explorer === "files" || explorer === "drafts" ? (
-              <TreeSortMenu />
+              <>
+                <TreeSortMenu />
+                <TreeFoldButton
+                  scope={explorer === "drafts" ? "drafts" : "vault"}
+                />
+              </>
             ) : undefined
           }
         />

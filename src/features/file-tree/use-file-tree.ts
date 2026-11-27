@@ -79,6 +79,12 @@ export interface FileTree {
   trashFailure: { path: string; message: string } | null;
 
   isExpanded(path: string): boolean;
+  /** Whether the tree has a folder that could be opened. */
+  hasFolders: boolean;
+  /** Whether a folder of the tree is open. */
+  anyExpanded: boolean;
+  /** Opens every folder of the tree (`true`), or closes them all. */
+  setAllExpanded(open: boolean): void;
   /** Selects `path`; `null` selects nothing, so new things go to the root. */
   select(path: string | null): void;
   /**
@@ -272,6 +278,8 @@ export function useFileTree(
     () => flatten(tree ?? [], expanded, edit, scopeRoot(scope)),
     [tree, expanded, edit, scope],
   );
+  /** Every folder of the tree, at any depth. */
+  const folders = useMemo(() => foldersOf(tree ?? []), [tree]);
   const selectedIndex = rows.findIndex(
     (row) => row.kind === "node" && row.node.path === selected,
   );
@@ -506,6 +514,12 @@ export function useFileTree(
     trashFailure,
 
     isExpanded: (path) => expanded.has(path),
+    hasFolders: folders.length > 0,
+    // Not `expanded.size`: it may still hold a folder that is gone.
+    anyExpanded: folders.some((path) => expanded.has(path)),
+    setAllExpanded(open) {
+      setExpanded(open ? new Set(folders) : new Set());
+    },
     select: setSelected,
     activate(node, newTab = false) {
       setSelected(node.path);
@@ -634,6 +648,20 @@ function flatten(
   };
   add(tree, root, 0);
   return rows;
+}
+
+/** The paths of every folder in `tree`, at any depth. */
+function foldersOf(tree: readonly TreeNode[]): string[] {
+  const paths: string[] = [];
+  const add = (nodes: readonly TreeNode[]) => {
+    for (const node of nodes) {
+      if (node.kind !== "folder") continue;
+      paths.push(node.path);
+      add(node.children);
+    }
+  };
+  add(tree);
+  return paths;
 }
 
 /** `expanded` plus every folder above `path`, below the tree's `root`. */
