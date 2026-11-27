@@ -94,6 +94,9 @@ export const menuIcons = {
   noteWidth: (
     <path d="M2 3v10M14 3v10M4.5 8h7M6 6.5 4.5 8 6 9.5M10 6.5 11.5 8 10 9.5" />
   ),
+  lineNumbers: (
+    <path d="M2.5 3.5h1v4M2.5 7.5h2M2.5 10h2l-2 3h2M7 4.5h6.5M7 8h6.5M7 11.5h6.5" />
+  ),
   inlineTitle: <path d="M3.5 3.5h9M8 3.5v9M5.5 12.5h5" />,
 } satisfies Record<string, ReactNode>;
 

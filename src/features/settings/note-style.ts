@@ -95,6 +95,18 @@ export const inlineTitlePreference = preference<boolean>(
 );
 
 /**
+ * Whether numbers stand at the left of the text, one for each line as it
+ * is shown, a wrapped one counted as many (`lineNumbers`). Off until
+ * turned on.
+ */
+export const lineNumbersPreference = preference<boolean>(
+  "carbon.note.lineNumbers",
+  false,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
+/**
  * Whether nested lists show lines from an item down along the items
  * under it (`listGuides`). On until turned off.
  */

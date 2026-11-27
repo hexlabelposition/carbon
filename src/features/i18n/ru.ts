@@ -262,6 +262,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.lineHeight.compact": "Плотный",
   "settings.lineHeight.normal": "Обычный",
   "settings.lineHeight.relaxed": "Свободный",
+  "settings.lineNumbers": "Номера строк",
   "settings.listGuides": "Линии вложенных списков",
   "settings.nameHeading": "Имя как заголовок новой заметки",
   "settings.notes": "Заметки",

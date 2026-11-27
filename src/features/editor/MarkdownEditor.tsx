@@ -32,10 +32,14 @@ import { isMac, keys, useCommands } from "../commands/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { livePreview } from "./live-preview";
 import { listGuides } from "./list-guides";
+import { lineNumbers } from "./line-numbers";
 import { listHangingIndent } from "./list-hanging-indent";
 import { listContinueKeymap } from "./list-continue";
 import { listPaste } from "./list-paste";
-import { listGuidesPreference } from "../settings/note-style";
+import {
+  lineNumbersPreference,
+  listGuidesPreference,
+} from "../settings/note-style";
 import { codeLanguage } from "./code-languages";
 import {
   imageHost,
@@ -168,6 +172,9 @@ export function MarkdownEditor({
   /** Holds the lines along nested lists, while the settings show them. */
   const guides = useRef(new Compartment());
   const showGuides = listGuidesPreference.use();
+  /** Holds the line numbers, while the settings show them. */
+  const numbers = useRef(new Compartment());
+  const showNumbers = lineNumbersPreference.use();
   /** How web links and email addresses open, from the app. */
   const openWebLink = useOpenWebLink();
   // The latest values, so new ones do not rebuild the editor.
@@ -267,6 +274,7 @@ export function MarkdownEditor({
           editing.current.of(editable(!latest.current.readOnly)),
           options.current.of(editorOptions(indentPreference.get())),
           guides.current.of(listGuidesPreference.get() ? listGuides : []),
+          numbers.current.of(lineNumbersPreference.get() ? lineNumbers : []),
           listHangingIndent,
           imageInput,
           imageHost.of({
@@ -450,6 +458,12 @@ export function MarkdownEditor({
       effects: guides.current.reconfigure(showGuides ? listGuides : []),
     });
   }, [showGuides]);
+
+  useEffect(() => {
+    editor.current?.dispatch({
+      effects: numbers.current.reconfigure(showNumbers ? lineNumbers : []),
+    });
+  }, [showNumbers]);
 
   useEffect(() => {
     const view = editor.current;

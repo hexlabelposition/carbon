@@ -72,6 +72,7 @@ import {
   useNoteStyle,
   wheelTextSizePreference,
   inlineTitlePreference,
+  lineNumbersPreference,
   listGuidesPreference,
   nameHeadingPreference,
   webImagesPreference,
@@ -783,6 +784,7 @@ function NoteSettings() {
   const wheelSize = wheelTextSizePreference.use();
   const lineHeight = lineHeightPreference.use();
   const inlineTitle = inlineTitlePreference.use();
+  const lineNumbers = lineNumbersPreference.use();
   const listGuides = listGuidesPreference.use();
   const nameHeading = nameHeadingPreference.use();
   const webImages = webImagesPreference.use();
@@ -794,6 +796,13 @@ function NoteSettings() {
             label={t("settings.inlineTitle")}
             checked={inlineTitle}
             onChange={inlineTitlePreference.set}
+          />
+        </Row>
+        <Row label={t("settings.lineNumbers")}>
+          <SettingSwitch
+            label={t("settings.lineNumbers")}
+            checked={lineNumbers}
+            onChange={lineNumbersPreference.set}
           />
         </Row>
         <Row label={t("settings.listGuides")}>
