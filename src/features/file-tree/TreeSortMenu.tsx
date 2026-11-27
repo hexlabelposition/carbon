@@ -16,18 +16,16 @@ const labels: Record<TreeSort, MessageKey> = {
 /**
  * The icon of each order, drawn on 16 by 16: an arrow at the left, up for
  * the first order of a pair (A to Z, the newest first) and down for the
- * other; at the right what is sorted by: lines for the name, a plus in a
- * circle for the time a file was made, a pencil for the time it changed.
+ * other; at the right what is sorted by: lines for the name, a spark for
+ * the time a file was made, a pencil for the time it changed.
  */
 const ARROW_UP = "M4.5 13.5v-11M2 5l2.5-2.5L7 5";
 const ARROW_DOWN = "M4.5 2.5v11M2 11l2.5 2.5L7 11";
 const BY: Record<"name" | "created" | "modified", ReactNode> = {
   name: <path d="M9.5 4h5M9.5 8h3.75M9.5 12h2.5" />,
+  // A spark, four points: something new.
   created: (
-    <>
-      <circle cx="12" cy="8" r="3" />
-      <path d="M12 6.5v3M10.5 8h3" />
-    </>
+    <path d="M12 4.5c.3 2 1.2 3.2 3 3.5-1.8.3-2.7 1.5-3 3.5-.3-2-1.2-3.2-3-3.5 1.8-.3 2.7-1.5 3-3.5z" />
   ),
   modified: <path d="M13.25 3.5l1.5 1.5-5 5-2.25.5.5-2.25z" />,
 };
