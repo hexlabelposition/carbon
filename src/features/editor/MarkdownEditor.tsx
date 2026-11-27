@@ -38,6 +38,7 @@ import { listContinueKeymap } from "./list-continue";
 import { listPaste } from "./list-paste";
 import {
   inlineTitlePreference,
+  formatOnSavePreference,
   lineNumbersPreference,
   listGuidesPreference,
 } from "../settings/note-style";
@@ -64,6 +65,7 @@ import {
 } from "./web-link";
 import { linkPreview } from "./link-preview";
 import { formatPlaceholder } from "./formatting";
+import { formatNoteText } from "./format-note";
 import { t as translate, useT } from "../i18n/i18n";
 import { missingLinks } from "./missing-links";
 import { tablePreview } from "./live-preview-table";
@@ -350,7 +352,10 @@ export function MarkdownEditor({
             {
               key: "Mod-s",
               preventDefault: true,
-              run: () => {
+              // Tidied up first, if the setting says so: the save then
+              // writes the note as it is formatted.
+              run: (view) => {
+                if (formatOnSavePreference.get()) formatNoteText(view);
                 latest.current.onSave?.();
                 return true;
               },

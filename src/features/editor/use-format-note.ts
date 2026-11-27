@@ -1,14 +1,16 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useMemo } from "react";
-import { useCommands } from "../commands/commands";
+import { useCallback, useMemo } from "react";
+import { keys, useCommands } from "../commands/commands";
 import { useT } from "../i18n/i18n";
-import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
+import { formatOnSavePreference } from "../settings/note-style";
 import { formatNoteText } from "./format-note";
 
 /**
- * Formatting the note of an editor: the button above it, a command of
- * the palette and its shortcut, offered for the note of the active pane
- * while it can be edited. Returns what the button needs.
+ * Formatting the note of an editor: the button above it and a command of
+ * the palette, offered for the note of the active pane while it can be
+ * edited. Ctrl+S formats it too, before it saves it
+ * (`formatOnSavePreference`): the button and the command show those keys
+ * while it does. Returns what the button needs.
  */
 export function useFormatNote(
   view: () => EditorView | null,
@@ -16,7 +18,7 @@ export function useFormatNote(
   readOnly: boolean,
 ): { run: () => void; shortcut: string | undefined } {
   const t = useT();
-  const shortcut = useShortcutLabel("editor.formatNote");
+  const shortcut = formatOnSavePreference.use() ? keys("Mod+S") : undefined;
   const run = useCallback(() => {
     const editor = view();
     if (editor !== null) formatNoteText(editor);
@@ -39,19 +41,6 @@ export function useFormatNote(
       [offered, t, shortcut, run],
     ),
   );
-
-  useEffect(() => {
-    if (!offered) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (!matchesShortcut(event, "editor.formatNote")) return;
-      event.preventDefault();
-      event.stopPropagation();
-      run();
-    }
-    // Capture: the shortcut is taken before the focused element sees it.
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [offered, run]);
 
   return { run, shortcut };
 }

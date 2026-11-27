@@ -72,6 +72,7 @@ import {
   useNoteStyle,
   wheelTextSizePreference,
   inlineTitlePreference,
+  formatOnSavePreference,
   lineNumbersPreference,
   listGuidesPreference,
   nameHeadingPreference,
@@ -794,6 +795,7 @@ function NoteSettings() {
   const listGuides = listGuidesPreference.use();
   const nameHeading = nameHeadingPreference.use();
   const webImages = webImagesPreference.use();
+  const formatOnSave = formatOnSavePreference.use();
   return (
     <>
       <Rows>
@@ -816,6 +818,13 @@ function NoteSettings() {
             label={t("settings.listGuides")}
             checked={listGuides}
             onChange={listGuidesPreference.set}
+          />
+        </Row>
+        <Row label={t("settings.formatOnSave")}>
+          <SettingSwitch
+            label={t("settings.formatOnSave")}
+            checked={formatOnSave}
+            onChange={formatOnSavePreference.set}
           />
         </Row>
         <Row label={t("settings.nameHeading")}>

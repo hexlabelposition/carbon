@@ -251,6 +251,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "settings.font.ui": "Интерфейс",
   "settings.fontSize": "Размер шрифта",
   "settings.fonts": "Шрифты",
+  "settings.formatOnSave": "Форматировать заметку при Ctrl+S",
   "settings.general": "Общие",
   "settings.indent": "Отступ",
   "settings.indent.spaces2": "2 пробела",

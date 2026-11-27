@@ -128,6 +128,19 @@ export const lineNumbersPreference = preference<boolean>(
 );
 
 /**
+ * Whether Ctrl+S tidies up the layout of the note before it saves it
+ * (`formatNote`), as "Format note" of the palette does. On until turned
+ * off. Only Ctrl+S: the saves made on their own while typing leave the
+ * text alone.
+ */
+export const formatOnSavePreference = preference<boolean>(
+  "carbon.note.formatOnSave",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
+/**
  * Whether nested lists show lines from an item down along the items
  * under it (`listGuides`). On until turned off.
  */

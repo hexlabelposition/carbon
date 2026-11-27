@@ -252,6 +252,7 @@ export const en = {
   "settings.font.ui": "Interface",
   "settings.fontSize": "Font size",
   "settings.fonts": "Fonts",
+  "settings.formatOnSave": "Format the note on Ctrl+S",
   "settings.general": "General",
   "settings.indent": "Indent",
   "settings.indent.spaces2": "2 spaces",
