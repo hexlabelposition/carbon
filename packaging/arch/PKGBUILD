@@ -6,8 +6,8 @@
 
 pkgname=carbon-desktop
 _appname=carbon
-pkgver=0.5.0
-pkgrel=2
+pkgver=0.6.0
+pkgrel=1
 pkgdesc='Fast, local-first notes with links'
 arch=('x86_64' 'aarch64')
 url='https://github.com/hexlabelposition/carbon'
