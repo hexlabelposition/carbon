@@ -11,6 +11,7 @@ import { useClipboard } from "./clipboard";
 import { codeAt, type CodeAt } from "./code-at";
 import { scrollParentOf } from "./glide";
 import { holdSelection } from "./held-selection";
+import { pasteIntoListItem } from "./list-paste";
 import { useOpenWebLink, webLinkAt, type WebLink } from "./web-link";
 
 interface EditorContextMenuProps {
@@ -124,7 +125,9 @@ export function EditorContextMenu({
     if (editor === null) return;
     void clipboard.readText().then((text) => {
       if (text === "") return;
-      editor.dispatch(editor.state.replaceSelection(text), {
+      // As the keys paste it: no second marker in a list item.
+      const pasted = pasteIntoListItem(text, editor.state);
+      editor.dispatch(editor.state.replaceSelection(pasted), {
         userEvent: "input.paste",
         scrollIntoView: true,
       });

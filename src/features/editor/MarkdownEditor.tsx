@@ -34,6 +34,7 @@ import { livePreview } from "./live-preview";
 import { listGuides } from "./list-guides";
 import { listHangingIndent } from "./list-hanging-indent";
 import { listContinueKeymap } from "./list-continue";
+import { listPaste } from "./list-paste";
 import { listGuidesPreference } from "../settings/note-style";
 import { codeLanguage } from "./code-languages";
 import {
@@ -257,6 +258,8 @@ export function MarkdownEditor({
             addKeymap: false,
           }),
           listContinueKeymap,
+          // "- Text" pasted after "- " makes no second marker.
+          listPaste,
           syntaxHighlighting(markdownHighlight),
           preview.current.of(
             latest.current.sourceMode ? noPreview : livePreviewExtensions,
