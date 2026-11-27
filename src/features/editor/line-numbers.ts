@@ -9,8 +9,11 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 
-/** Room between a number and the text, in pixels. */
-const GAP = 10;
+/** Room between a number and the text, in pixels, as in VS Code. */
+const GAP = 24;
+
+/** Room kept between a number and the left edge of the editor, in pixels. */
+const EDGE = 6;
 
 /** The lines each drawn line of the file took, by where it starts. */
 class LineRows {
@@ -160,7 +163,7 @@ function numbersOf(view: EditorView): readonly LayerMarker[] {
   const documentTop = view.documentTop - baseTop;
   const content = view.contentDOM.getBoundingClientRect();
   const padding = parseFloat(getComputedStyle(view.contentDOM).paddingLeft);
-  const left = content.left + padding * view.scaleX - GAP - baseLeft;
+  const textLeft = content.left + padding * view.scaleX - baseLeft;
   // A number stands in the first line-height or so of its line: in the
   // middle of a line of text or a heading, at the top beside an image.
   const most = defaultLineHeight * 1.6;
@@ -176,11 +179,11 @@ function numbersOf(view: EditorView): readonly LayerMarker[] {
     state.above = { from, count };
   }
 
-  const markers: NumberMarker[] = [];
+  const rows: { top: number; height: number }[] = [];
   let n = state.above.count;
   const add = (top: number, height: number) => {
     n++;
-    markers.push(new NumberMarker(n, left, top, Math.min(height, most)));
+    rows.push({ top, height: Math.min(height, most) });
   };
   for (const block of view.viewportLineBlocks) {
     const before = n;
@@ -198,7 +201,18 @@ function numbersOf(view: EditorView): readonly LayerMarker[] {
     }
     state.rows.set(block.from, { to: block.to, count: n - before });
   }
-  return markers;
+
+  // The right edge of the numbers, `GAP` left of the text; nearer to it
+  // where the text runs close to the left edge, as at full width, so the
+  // widest number is not cut off by the edge.
+  const digit =
+    parseFloat(getComputedStyle(view.scrollDOM).fontSize) * 0.75 * 0.62;
+  const widest = String(n).length * digit * view.scaleX;
+  const left = Math.max(textLeft - GAP, box.left - baseLeft + EDGE + widest);
+  const first = n - rows.length;
+  return rows.map(
+    (row, i) => new NumberMarker(first + i + 1, left, row.top, row.height),
+  );
 }
 
 /** Whether the numbers may have moved: the text or its layout. */
