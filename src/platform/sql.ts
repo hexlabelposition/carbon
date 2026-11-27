@@ -5,16 +5,6 @@ import { mkdir } from "@tauri-apps/plugin-fs";
 import Database from "@tauri-apps/plugin-sql";
 import { toCorePath } from "./paths";
 
-export type { Database };
-
-/**
- * Opens (and creates if needed) an SQLite database in the app config
- * directory. Raw SQL access for the measurements in the dev panel.
- */
-export function openDatabase(fileName: string): Promise<Database> {
-  return Database.load(`sqlite:${fileName}`);
-}
-
 /**
  * `SqlDatabases` on the `sql` plugin, in the app cache directory. The
  * plugin puts a relative name in the config directory, so the path given

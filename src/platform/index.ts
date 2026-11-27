@@ -12,7 +12,6 @@ export { pickVaultFolder } from "./dialog";
 export { appCacheFolder } from "./paths";
 export { openWebPage, showInFileManager } from "./opener";
 export { openLogFolder, writeLogLine } from "./log";
-export { openDatabase, type Database } from "./sql";
 export { setInterfaceZoom } from "./zoom";
 export { forwardPointerLeaves } from "./pointer";
 export { tauriWindow } from "./window";

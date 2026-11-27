@@ -68,7 +68,7 @@ This is why the core is fully testable with `bun test`: `packages/core/test/fake
 - `workers/`: the parse worker (startup indexing) and the graph layout worker (d3-force; rendering uses sigma/canvas).
 - Editor: CodeMirror 6 with live preview implemented as decorations (`features/editor/live-preview*.ts`); the document on disk is always plain Markdown. See the editor map below.
 - UI text is translated: add every string to both `features/i18n/en.ts` and `features/i18n/ru.ts`.
-- `src/dev/`: dev-build-only panels (benchmarks, dev tools).
+- `src/dev/`: the dev tools, a dialog in dev builds only.
 - `features/sandbox/`: the sandbox, opened with `session.openSandbox()` (not offered in the UI yet), sample notes in `vault/en/` and `vault/ru/` (by the UI language), copied afresh into the app cache each time it opens. Keep both languages in step.
 
 ### Editor map (`src/features/editor/`)

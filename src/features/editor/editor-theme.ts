@@ -15,7 +15,7 @@ export function noteSize(pixels: number): string {
 /**
  * How the editor looks. Colors and fonts are the design tokens of
  * `styles/tokens.css`, read as CSS variables, so the editor follows the
- * theme without knowing which one is on. Sizes match `styles/markdown.css`.
+ * theme without knowing which one is on.
  */
 export const editorTheme = EditorView.theme({
   // The editor grows with its text; the element around it scrolls, so
@@ -108,8 +108,8 @@ export const markdownHighlight = HighlightStyle.define([
     ],
     color: "var(--cb-faint)",
   },
-  // Code inside a block. Syntax highlighting stays monochrome, as in
-  // `styles/markdown.css`: three greys and the link color. Flags such as
+  // Code inside a block. Syntax highlighting stays monochrome: three
+  // greys and the link color. Flags such as
   // "-p" read as keywords, known commands such as "sudo" as bold ones,
   // numbers and literals as strings.
   { tag: tags.comment, color: "var(--cb-faint)" },

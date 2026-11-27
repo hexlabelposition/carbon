@@ -23,19 +23,11 @@ import { Tooltip } from "../features/ui/Tooltip";
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: an orange
  * bug in the top row, before the buttons of the panels, that opens a
- * dialog with how the app started, the theme, the language and the dev
- * panel. It is there on the start screen too, where the
+ * dialog with how the app started, the theme, the language and tests of
+ * notices and updates. It is there on the start screen too, where the
  * palette is not. Not translated.
  */
-function DevButton({
-  vault,
-  panelOpen,
-  onTogglePanel,
-}: {
-  vault: Vault | null;
-  panelOpen: boolean;
-  onTogglePanel(): void;
-}) {
+function DevButton({ vault }: { vault: Vault | null }) {
   const [open, setOpen] = useDialog("dev");
   const theme = themePreference.use();
   const language = languagePreference.use();
@@ -123,16 +115,6 @@ function DevButton({
         </Section>
 
         <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            className={action}
-            onClick={() => {
-              setOpen(false);
-              onTogglePanel();
-            }}
-          >
-            {panelOpen ? "Close dev panel" : "Open dev panel"}
-          </button>
           <Tooltip
             label="Sends the notice of a slow start, as if the vault took 4.2 s"
             side="left"

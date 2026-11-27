@@ -2,7 +2,6 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 @import "./tokens.css";
-@import "./markdown.css";
 
 /* `dark:` follows the resolved theme, not only the system setting. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

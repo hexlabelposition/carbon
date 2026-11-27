@@ -118,10 +118,7 @@ import { useShortcutLabel } from "../../features/shortcuts/shortcuts";
 import { errorText } from "../../features/i18n/error-text";
 
 // Dev builds only: in a release build the condition is false at build time
-// and neither is bundled.
-const DevPanel = import.meta.env.DEV
-  ? lazy(() => import("../../dev/DevPanel"))
-  : null;
+// and it is not bundled.
 const DevButton = import.meta.env.DEV
   ? lazy(() => import("../../dev/DevButton"))
   : null;
@@ -212,19 +209,17 @@ export function DesktopShell({
   // Nothing shows while the vault left open is opened again: then the
   // interface fades in whole.
   const shown = useReadyToShow(!restoring);
-  const [devOpen, setDevOpen] = useState(false);
   const leftShortcut = useShortcutLabel("shell.sidebar");
   const rightShortcut = useShortcutLabel("shell.rightPanel");
   const toolbarShortcut = useShortcutLabel("shell.toolbar");
 
-  const showDev = devOpen && DevPanel !== null;
   const sidebarView = useSidebarView();
   const { show: showSidebarView } = sidebarView;
   const { toggleView: toggleRightView } = rightPanel;
   usePanelShortcuts(
     // A dialog open too: the panels show or hide below it, as the window
     // buttons work (`AppDialog` leaves the top row out).
-    vault !== null && !showDev,
+    vault !== null,
     toggleSidebar,
     toggleRightPanel,
     toggleToolbar,
@@ -232,7 +227,7 @@ export function DesktopShell({
 
   useCommands(
     useMemo(() => {
-      if (vault === null || showDev) return [];
+      if (vault === null) return [];
       return [
         {
           id: "shell.sidebar",
@@ -312,7 +307,6 @@ export function DesktopShell({
     }, [
       t,
       vault,
-      showDev,
       toggleSidebar,
       toggleRightPanel,
       toggleRightView,
@@ -339,16 +333,12 @@ export function DesktopShell({
         dev={
           DevButton !== null ? (
             <Suspense fallback={null}>
-              <DevButton
-                vault={vault}
-                panelOpen={devOpen}
-                onTogglePanel={() => setDevOpen((open) => !open)}
-              />
+              <DevButton vault={vault} />
             </Suspense>
           ) : undefined
         }
         panels={
-          vault !== null && !showDev ? (
+          vault !== null ? (
             <>
               <PanelToggle
                 side="left"
@@ -367,16 +357,7 @@ export function DesktopShell({
         }
       />
       <div className="flex min-h-0 flex-1">
-        {showDev ? (
-          <div className="flex min-w-0 flex-1 flex-col">
-            <DragStrip room roomStart />
-            <div className="min-h-0 flex-1 overflow-auto">
-              <Suspense fallback={null}>
-                <DevPanel />
-              </Suspense>
-            </div>
-          </div>
-        ) : vault === null ? (
+        {vault === null ? (
           <main className="flex min-w-0 flex-1 flex-col">
             <DragStrip room roomStart />
             <div className="min-h-0 flex-1 overflow-auto">

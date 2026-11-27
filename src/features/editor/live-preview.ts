@@ -95,7 +95,7 @@ export const livePreview = [
       transform: "translateX(-50%)",
       color: "var(--cb-faint)",
     },
-    // As links are drawn in `styles/markdown.css`: a quiet line below,
+    // A quiet line below the link,
     // dashed for a note that does not exist yet, so not by color alone.
     ".cm-wiki-link": {
       color: "var(--cb-link)",
