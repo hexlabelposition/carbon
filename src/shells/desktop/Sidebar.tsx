@@ -42,13 +42,18 @@ export function Sidebar({
   const [resizing, setResizing] = useState(false);
 
   return (
-    <SlidePanel open={open} width={width} animate={!resizing}>
-      <aside
-        aria-label={t("shell.leftPanel")}
-        className="relative flex h-full flex-col border-r border-line bg-panel"
-      >
-        {/* Below the top row, which the tabs run along. */}
-        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+    // The handle beside the panel, not in it, which would cut it.
+    <div className="relative flex h-full shrink-0">
+      <SlidePanel open={open} width={width} animate={!resizing}>
+        <aside
+          aria-label={t("shell.leftPanel")}
+          className="flex h-full flex-col border-r border-line bg-panel"
+        >
+          {/* Below the top row, which the tabs run along. */}
+          <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+        </aside>
+      </SlidePanel>
+      {open && (
         <ResizeHandle
           side="left"
           label={t("shell.resizeLeftPanel")}
@@ -60,7 +65,7 @@ export function Sidebar({
           onClose={onClose}
           onDragging={setResizing}
         />
-      </aside>
-    </SlidePanel>
+      )}
+    </div>
   );
 }

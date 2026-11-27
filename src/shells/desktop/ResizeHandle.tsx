@@ -34,8 +34,12 @@ interface ResizeHandleProps {
 
 /**
  * The edge of a side panel that resizes it: dragged, or with the arrow
- * keys once focused. It sits on the inner edge, inside the panel, which
- * cuts what reaches past it as it slides.
+ * keys once focused. It stands beside the panel, not in it, which would
+ * cut it: it reaches as far out of the panel as into it, over the line at
+ * its edge, so it is easy to catch, and only the middle of it, a thin
+ * line, is lit: after a moment under the pointer, so not as it passes
+ * by, and all the while it is dragged. Its parent is as wide as the
+ * panel and starts where the panel does.
  *
  * The panel has no narrowest width: it follows the pointer down to the
  * edge, and a drag that ends near the edge (`panelCloseFraction`) closes
@@ -64,6 +68,8 @@ export function ResizeHandle({
   const endMotion = useRef<(() => void) | null>(null);
   /** The width as the drag started, and the last one it set. */
   const dragWidths = useRef<{ start: number; last: number } | null>(null);
+  /** Lit all the while it is dragged, even with the pointer off it. */
+  const [dragging, setDragging] = useState(false);
   /** The drag holds the panel at its usual width: the edge is lit. */
   const [snapped, setSnapped] = useState(false);
   useEffect(
@@ -128,12 +134,13 @@ export function ResizeHandle({
       aria-valuemin={0}
       aria-valuemax={percent(room())}
       tabIndex={0}
+      data-dragging={dragging || undefined}
       data-snapped={snapped || undefined}
       // The right panel has a top row of its own, which runs on into the
       // one beside it and drags the window: the handle starts below it, as
       // the line at its edge. The left panel stands below the top row.
-      className={`absolute bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong data-snapped:bg-link ${
-        side === "left" ? "top-0 right-0" : "top-bar left-0"
+      className={`group absolute bottom-0 z-10 flex w-2.5 cursor-col-resize touch-none justify-center outline-none ${
+        side === "left" ? "top-0 -right-1.25" : "top-bar -left-1.25"
       }`}
       onPointerDown={(event) => {
         // Not the start of a text selection, which the drag would stretch.
@@ -143,6 +150,7 @@ export function ResizeHandle({
         endMotion.current?.();
         endMotion.current = startLayoutMotion();
         dragWidths.current = { start: fraction, last: fraction };
+        setDragging(true);
         onDragging(true);
       }}
       onPointerMove={drag}
@@ -150,13 +158,20 @@ export function ResizeHandle({
         selectText(true);
         endMotion.current?.();
         endMotion.current = null;
+        setDragging(false);
         onDragging(false);
         setSnapped(false);
         endDrag();
       }}
       onDoubleClick={() => onResize(Math.min(usual, room()))}
       onKeyDown={onKeyDown}
-    />
+    >
+      {/*
+        The line that is lit, over the one at the edge of the panel. Lit on
+        hover after a moment, dark again at once.
+      */}
+      <div className="h-full w-0.5 transition-colors delay-0 duration-100 group-hover:bg-line-strong group-hover:delay-150 group-focus-visible:bg-line-strong group-data-dragging:bg-line-strong group-data-dragging:delay-0 group-data-snapped:bg-link motion-reduce:transition-none" />
+    </div>
   );
 }
 

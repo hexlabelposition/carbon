@@ -104,7 +104,7 @@ import {
   type RightPanelView,
 } from "./use-panels";
 import { useSidePanel } from "./use-side-panel";
-import { useSidebar, type PanelWidth } from "./use-sidebar";
+import { useSidebar } from "./use-sidebar";
 import {
   isExplorerView,
   useSidebarView,
@@ -787,33 +787,45 @@ function NoteArea({
   );
 
   const rightPanel = (
-    <SlidePanel
-      open={right.open}
-      side="right"
-      // As the sidebar: at its narrowest its edge meets the buttons in
-      // the corner above it.
-      width={rightWidth}
-      animate={!resizingRight}
-      keepMounted={false}
-    >
-      <RightPanelContent
-        width={right.width}
-        onResizing={setResizingRight}
-        onClose={right.close}
-        room={rightRoom}
-        vault={vault}
-        path={path}
-        view={right.view}
-        onShow={right.show}
-        outline={
-          <OutlinePanel
-            headings={outline.headings}
-            current={outline.current}
-            onReveal={outline.reveal}
-          />
-        }
-      />
-    </SlidePanel>
+    // The handle beside the panel, not in it, which would cut it.
+    <div className="relative flex h-full shrink-0">
+      {right.open && (
+        <ResizeHandle
+          side="right"
+          label={t("shell.resizeRightPanel")}
+          fraction={right.width.fraction}
+          usual={right.width.usual}
+          onResize={right.width.resize}
+          onNudge={right.width.nudge}
+          onClose={right.close}
+          room={rightRoom}
+          onDragging={setResizingRight}
+        />
+      )}
+      <SlidePanel
+        open={right.open}
+        side="right"
+        // As the sidebar: at its narrowest its edge meets the buttons in
+        // the corner above it.
+        width={rightWidth}
+        animate={!resizingRight}
+        keepMounted={false}
+      >
+        <RightPanelContent
+          vault={vault}
+          path={path}
+          view={right.view}
+          onShow={right.show}
+          outline={
+            <OutlinePanel
+              headings={outline.headings}
+              current={outline.current}
+              onReveal={outline.reveal}
+            />
+          }
+        />
+      </SlidePanel>
+    </div>
   );
 
   // No note open, or the graph shown: one column, the watermark or the
@@ -1026,13 +1038,6 @@ function IndexState({ vault }: { vault: Vault }) {
 }
 
 interface RightPanelProps {
-  width: PanelWidth;
-  /** Told when its edge is dragged and let go. */
-  onResizing: (resizing: boolean) => void;
-  /** Closes it: its edge dragged near the right edge of the window. */
-  onClose: () => void;
-  /** The widest it can be now, beside the sidebar (`ResizeHandle`). */
-  room: () => number;
   vault: Vault;
   /** The note it is about; `null` while none is open: it is empty then. */
   path: string | null;
@@ -1081,10 +1086,6 @@ function RightPanelForNote(props: RightPanelProps & { path: string }) {
  * row runs on from the one beside it.
  */
 function RightPanelFrame({
-  width,
-  onResizing,
-  onClose,
-  room,
   view,
   onShow,
   backlinks,
@@ -1098,21 +1099,10 @@ function RightPanelFrame({
   return (
     <aside
       aria-label={t("shell.rightPanel")}
-      className="relative flex h-full flex-col bg-panel"
+      className="flex h-full flex-col bg-panel"
       // Its own top row leaves the window buttons all their room.
       style={{ "--cb-right-panel-cover": "0px" } as CSSProperties}
     >
-      <ResizeHandle
-        side="right"
-        label={t("shell.resizeRightPanel")}
-        fraction={width.fraction}
-        usual={width.usual}
-        onResize={width.resize}
-        onNudge={width.nudge}
-        onClose={onClose}
-        room={room}
-        onDragging={onResizing}
-      />
       {/* Runs on into the top row beside it, with no line between. */}
       <div
         data-tauri-drag-region
