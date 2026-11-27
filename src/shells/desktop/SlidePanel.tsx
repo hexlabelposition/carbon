@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { startLayoutMotion } from "./layout-motion";
-
-/** How long it takes to slide, in milliseconds: `duration-200` below. */
-const SLIDE = 200;
+import { setSlideDirection, slideCloseMs } from "./slide-motion";
 
 interface SlidePanelProps {
   open: boolean;
@@ -55,12 +59,23 @@ export function SlidePanel({
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  // The way it goes sets the time and the curve of the columns of a split
+  // view beside it (`data-slide`); the panel itself takes them by `open`.
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    setSlideDirection(open);
+  }, [open]);
+
   // Whether the content is there: while open, and while sliding shut.
   const [shown, setShown] = useState(open);
   if (open && !shown) setShown(true);
   useEffect(() => {
     if (open || keepMounted) return;
-    const timer = setTimeout(() => setShown(false), SLIDE);
+    const timer = setTimeout(() => setShown(false), slideCloseMs());
     return () => clearTimeout(timer);
   }, [open, keepMounted]);
 
@@ -100,7 +115,11 @@ export function SlidePanel({
         side === "left" ? "justify-end" : "justify-start"
       } ${
         animate && settled
-          ? "transition-[width] duration-200 ease-out motion-reduce:transition-none"
+          ? `transition-[width] motion-reduce:transition-none ${
+              open
+                ? "duration-(--cb-slide-open-duration) ease-(--cb-slide-open-ease)"
+                : "duration-(--cb-slide-close-duration) ease-(--cb-slide-close-ease)"
+            }`
           : ""
       }`}
       style={{ width: open ? width : 0 }}

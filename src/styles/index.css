@@ -157,6 +157,24 @@
   }
 
   /*
+   * How the side panels and the toolbar slide, and the columns of a split
+   * view with them (`slide-motion.ts`): one time and curve to open, one to
+   * shut. `data-slide` says which way the last panel went.
+   */
+  :root {
+    --cb-slide-open-duration: 250ms;
+    --cb-slide-open-ease: cubic-bezier(0.2, 0, 0, 1);
+    --cb-slide-close-duration: 250ms;
+    --cb-slide-close-ease: cubic-bezier(0.2, 0, 0, 1);
+    --cb-slide-duration: var(--cb-slide-open-duration);
+    --cb-slide-ease: var(--cb-slide-open-ease);
+  }
+  :root[data-slide="close"] {
+    --cb-slide-duration: var(--cb-slide-close-duration);
+    --cb-slide-ease: var(--cb-slide-close-ease);
+  }
+
+  /*
    * While a side panel slides or its edge is dragged, the note column
    * changes width every frame. The text cursor of the editor is drawn a
    * frame after the text, so it would jump about: it is hidden until the

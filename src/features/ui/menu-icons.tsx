@@ -91,6 +91,10 @@ export const menuIcons = {
       <path d="M6.75 7v4.5M9.25 7v4.5" />
     </>
   ),
+  noteWidth: (
+    <path d="M2 3v10M14 3v10M4.5 8h7M6 6.5 4.5 8 6 9.5M10 6.5 11.5 8 10 9.5" />
+  ),
+  inlineTitle: <path d="M3.5 3.5h9M8 3.5v9M5.5 12.5h5" />,
 } satisfies Record<string, ReactNode>;
 
 export type MenuIcon = keyof typeof menuIcons;

@@ -6,6 +6,12 @@ import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { keys } from "../commands/commands";
 import { useT } from "../i18n/i18n";
 import { log } from "../log/log";
+import {
+  inlineTitlePreference,
+  NOTE_WIDTHS,
+  noteWidthPreference,
+  type NoteWidth,
+} from "../settings/note-style";
 import { MenuItemBody } from "../ui/MenuItemBody";
 import { useClipboard } from "./clipboard";
 import { codeAt, type CodeAt } from "./code-at";
@@ -26,6 +32,26 @@ interface EditorContextMenuProps {
 const item =
   "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise data-disabled:text-faint";
 const separator = "mx-1 my-1 h-px bg-line";
+const popup =
+  "min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none";
+
+/** A check mark, at the right of a chosen item. */
+function Check() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3.5 8.5l3 3 6-7" />
+    </svg>
+  );
+}
 
 /**
  * The menu of the right button in a note: undo and redo, cut, copy,
@@ -33,7 +59,8 @@ const separator = "mx-1 my-1 h-px bg-line";
  * inline code or a code block it also copies that code alone, without
  * its backticks or fences, and in a block the line clicked (`codeAt`).
  * On a web link or an email address it opens it in the browser or the
- * mail app, or copies it (`webLinkAt`). It
+ * mail app, or copies it (`webLinkAt`). At the end, the look of notes:
+ * the width of their content and the inline title, as in the settings. It
  * takes the place of the menu of the WebView, which the app shuts
  * (`useContextMenuGuard`).
  */
@@ -51,6 +78,8 @@ export function EditorContextMenu({
   /** The web link or email address it was opened on, if it was. */
   const [webLink, setWebLink] = useState<WebLink | null>(null);
   const openWebLink = useOpenWebLink();
+  const width = noteWidthPreference.use();
+  const inlineTitle = inlineTitlePreference.use();
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
   /** Whether the text had the focus when the menu was asked for. */
@@ -187,7 +216,7 @@ export function EditorContextMenu({
               if (!readOnly) return editor.contentDOM;
               return scrollParentOf(editor.dom) ?? false;
             }}
-            className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none"
+            className={popup}
           >
             {/* First: they are there only on a link or on code, so they
                 are seen at once. */}
@@ -302,6 +331,76 @@ export function EditorContextMenu({
                 {t("editor.selectAll")}
               </MenuItemBody>
             </ContextMenu.Item>
+            <ContextMenu.Separator className={separator} />
+            <ContextMenu.SubmenuRoot>
+              <ContextMenu.SubmenuTrigger
+                className={`${item} data-popup-open:bg-raise`}
+              >
+                <MenuItemBody icon="noteWidth">
+                  {t("settings.width")}
+                </MenuItemBody>
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  className="size-4 shrink-0 opacity-60"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 4l4 4-4 4" />
+                </svg>
+              </ContextMenu.SubmenuTrigger>
+              <ContextMenu.Portal>
+                <ContextMenu.Positioner
+                  sideOffset={-4}
+                  collisionPadding={8}
+                  className="z-50 outline-none"
+                >
+                  <ContextMenu.Popup className={`${popup} min-w-40`}>
+                    <ContextMenu.RadioGroup
+                      value={width}
+                      onValueChange={(value: NoteWidth) =>
+                        noteWidthPreference.set(value)
+                      }
+                    >
+                      {NOTE_WIDTHS.map(({ value, label }) => (
+                        <ContextMenu.RadioItem
+                          key={value}
+                          value={value}
+                          className={item}
+                        >
+                          <span className="min-w-0 flex-1 truncate">
+                            {t(label)}
+                          </span>
+                          {/* As wide whether checked or not: they line up. */}
+                          <span className="flex size-4 shrink-0 items-center justify-center">
+                            <ContextMenu.RadioItemIndicator>
+                              <Check />
+                            </ContextMenu.RadioItemIndicator>
+                          </span>
+                        </ContextMenu.RadioItem>
+                      ))}
+                    </ContextMenu.RadioGroup>
+                  </ContextMenu.Popup>
+                </ContextMenu.Positioner>
+              </ContextMenu.Portal>
+            </ContextMenu.SubmenuRoot>
+            <ContextMenu.CheckboxItem
+              className={item}
+              checked={inlineTitle}
+              onCheckedChange={inlineTitlePreference.set}
+            >
+              <MenuItemBody icon="inlineTitle">
+                {t("settings.inlineTitle")}
+              </MenuItemBody>
+              <span className="flex size-4 shrink-0 items-center justify-center">
+                <ContextMenu.CheckboxItemIndicator>
+                  <Check />
+                </ContextMenu.CheckboxItemIndicator>
+              </span>
+            </ContextMenu.CheckboxItem>
           </ContextMenu.Popup>
         </ContextMenu.Positioner>
       </ContextMenu.Portal>

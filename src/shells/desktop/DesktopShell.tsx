@@ -83,6 +83,7 @@ import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
+import { useSlideMotion } from "./slide-motion";
 import { ViewTabs } from "./ViewTabs";
 import { Toolbar, type ToolbarItem } from "./Toolbar";
 import { toolbarIcons } from "./toolbar-icons";
@@ -160,6 +161,7 @@ export function DesktopShell({
   }, []);
   useWindowShape(frame);
   useFullscreenShortcut(frame);
+  useSlideMotion();
   const t = useT();
   const { vault, close, restoring } = useVaultSession();
   const { recentVaults } = useAppSettings();
@@ -828,7 +830,7 @@ function NoteArea({
         index > 0 ? "border-l border-line" : ""
       } ${
         split
-          ? "transition-[flex-basis] duration-200 ease-out motion-reduce:transition-none"
+          ? "transition-[flex-basis] duration-(--cb-slide-duration) ease-(--cb-slide-ease) motion-reduce:transition-none"
           : ""
       }`}
       // The first column holds the sidebar too: it starts as wide as that,
