@@ -83,7 +83,6 @@ import { AppMark } from "./AppMark";
 import { PanelToggle } from "./PanelToggle";
 import { ResizeHandle } from "./ResizeHandle";
 import { SlidePanel } from "./SlidePanel";
-import { useSlideMotion } from "./slide-motion";
 import { ViewTabs } from "./ViewTabs";
 import { Toolbar, type ToolbarItem } from "./Toolbar";
 import { toolbarIcons } from "./toolbar-icons";
@@ -161,7 +160,6 @@ export function DesktopShell({
   }, []);
   useWindowShape(frame);
   useFullscreenShortcut(frame);
-  useSlideMotion();
   const t = useT();
   const { vault, close, restoring } = useVaultSession();
   const { recentVaults } = useAppSettings();

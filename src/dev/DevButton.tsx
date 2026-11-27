@@ -19,12 +19,6 @@ import {
 } from "../features/updates/update-state";
 import { useIndexStatus } from "../features/vault/use-index-status";
 import { Tooltip } from "../features/ui/Tooltip";
-import {
-  SLIDE_CURVES,
-  SLIDE_DURATIONS,
-  slideCurvePreference,
-  slideDurationPreference,
-} from "../shells/desktop/slide-motion";
 
 /**
  * The dev tools at hand, mounted by the shell in dev builds only: an orange
@@ -45,8 +39,6 @@ function DevButton({
   const [open, setOpen] = useDialog("dev");
   const theme = themePreference.use();
   const language = languagePreference.use();
-  const slideCurve = slideCurvePreference.use();
-  const slideDuration = slideDurationPreference.use();
 
   return (
     <>
@@ -127,34 +119,6 @@ function DevButton({
             value={language}
             items={LANGUAGE_SETTINGS}
             onChange={languagePreference.set}
-          />
-        </Section>
-
-        {/* To pick how the panels slide: try one, then open and shut a
-            panel with its keys, the dialog open. */}
-        <Section title="Panel slide">
-          <div className="flex flex-col gap-0.5">
-            {SLIDE_CURVES.map((curve) => (
-              <button
-                key={curve.id}
-                type="button"
-                aria-pressed={curve.id === slideCurve}
-                className="flex h-6 items-center justify-between gap-2 rounded-sm px-2 text-left outline-none hover:bg-raise focus-visible:ring-1 focus-visible:ring-line-strong aria-pressed:bg-selected aria-pressed:font-medium"
-                onClick={() => slideCurvePreference.set(curve.id)}
-              >
-                <span>{curve.label}</span>
-                <span className="truncate font-mono text-label text-faint">
-                  {curve.open === curve.close
-                    ? curve.open
-                    : `${curve.open} / ${curve.close}`}
-                </span>
-              </button>
-            ))}
-          </div>
-          <Segmented
-            value={String(slideDuration)}
-            items={SLIDE_DURATIONS.map(String)}
-            onChange={(value) => slideDurationPreference.set(Number(value))}
           />
         </Section>
 

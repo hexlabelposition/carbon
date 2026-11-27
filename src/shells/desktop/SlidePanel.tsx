@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { startLayoutMotion } from "./layout-motion";
-import { setSlideDirection, slideCloseMs } from "./slide-motion";
+import { SLIDE_CLOSE_MS, setSlideDirection } from "./slide-motion";
 
 interface SlidePanelProps {
   open: boolean;
@@ -75,7 +75,7 @@ export function SlidePanel({
   if (open && !shown) setShown(true);
   useEffect(() => {
     if (open || keepMounted) return;
-    const timer = setTimeout(() => setShown(false), slideCloseMs());
+    const timer = setTimeout(() => setShown(false), SLIDE_CLOSE_MS);
     return () => clearTimeout(timer);
   }, [open, keepMounted]);
 
