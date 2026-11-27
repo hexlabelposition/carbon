@@ -16,6 +16,8 @@ const EDGE = 6;
 /** A number as drawn: where its right edge, top and height are. */
 interface Drawn {
   n: number;
+  /** The empty line after the last line break, dimmed as in VS Code. */
+  final: boolean;
   left: number;
   top: number;
   height: number;
@@ -193,12 +195,13 @@ class LineNumbersView {
       this.above = { from, count };
     }
 
-    const rows: { top: number; height: number }[] = [];
+    const rows: { top: number; height: number; final: boolean }[] = [];
     let n = this.above.count;
-    const add = (top: number, height: number) => {
+    const add = (top: number, height: number, final = false) => {
       n++;
-      rows.push({ top, height: Math.min(height, most) });
+      rows.push({ top, height: Math.min(height, most), final });
     };
+    const { doc } = view.state;
     for (const block of view.viewportLineBlocks) {
       const before = n;
       for (const part of partsOf(block)) {
@@ -209,8 +212,11 @@ class LineNumbersView {
           add(documentTop + part.top, part.height);
           continue;
         }
+        // The text ends with a line break: the empty line after it.
+        const final =
+          doc.lines > 1 && part.from === doc.length && part.to === doc.length;
         for (const row of rowsOfLine(line)) {
-          add(row.top - baseTop, row.bottom - row.top);
+          add(row.top - baseTop, row.bottom - row.top, final);
         }
       }
       this.rows.set(block.from, { to: block.to, count: n - before });
@@ -243,6 +249,9 @@ class LineNumbersView {
       }
       const old = this.drawn[i];
       if (old?.n !== number.n) element.textContent = String(number.n);
+      if (old?.final !== number.final) {
+        element.classList.toggle("cm-line-number-final", number.final);
+      }
       if (old?.left !== number.left) element.style.left = `${number.left}px`;
       if (old?.top !== number.top) element.style.top = `${number.top}px`;
       if (old?.height !== number.height) {
@@ -288,5 +297,6 @@ export const lineNumbers: Extension = [
       userSelect: "none",
       pointerEvents: "none",
     },
+    ".cm-line-number-final": { opacity: "0.5" },
   }),
 ];
