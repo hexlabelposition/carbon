@@ -3,10 +3,10 @@
  * being dragged towards that width: past it, the panel follows the
  * pointer again.
  */
-export const SNAP_REACH = 32;
+export const SNAP_REACH = 48;
 
 /** How far from its usual width, in pixels, the panel is held right at it. */
-export const SNAP_HOLD = 8;
+export const SNAP_HOLD = 14;
 
 /**
  * Where the edge of a side panel goes, in pixels, with the pointer
