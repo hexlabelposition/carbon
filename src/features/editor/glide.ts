@@ -73,6 +73,23 @@ export function glideTo(view: EditorView, pos: number, margin: number): void {
   frame = requestAnimationFrame(step);
 }
 
+/**
+ * Scrolls the note to its very top, gliding there as `glideTo`: there the
+ * line at `pos` stands where the note puts it, below whatever room is
+ * above the text.
+ */
+export function glideToTop(view: EditorView, pos: number): void {
+  const scroller = scrollParentOf(view.dom);
+  if (scroller === null) return;
+  // How far the line is below the top of what scrolls, scrolled or not.
+  const below =
+    view.documentTop +
+    view.lineBlockAt(pos).top -
+    scroller.getBoundingClientRect().top +
+    scroller.scrollTop;
+  glideTo(view, pos, below);
+}
+
 /** The element that scrolls `element` up and down, if one does. */
 export function scrollParentOf(element: HTMLElement): HTMLElement | null {
   for (let at = element.parentElement; at !== null; at = at.parentElement) {

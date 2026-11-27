@@ -2,7 +2,7 @@ import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { Facet, type EditorState } from "@codemirror/state";
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
-import { glideTo } from "./glide";
+import { glideTo, glideToTop } from "./glide";
 import { wikiLinkLabel } from "./wiki-link";
 
 /** A heading of the note, as the outline shows it. */
@@ -99,9 +99,16 @@ export const outlineTracker = ViewPlugin.fromClass(
 
 /**
  * Puts the cursor on a heading, by its index in the outline, and scrolls it
- * to the top of the editor.
+ * to the top of the editor. A heading the note starts with, with nothing
+ * above it but room (no `titleAbove`, the name of the note shown over the
+ * text), goes to the very top: where it stands in the note not scrolled,
+ * not a little lower down the room.
  */
-export function revealHeading(view: EditorView, index: number): void {
+export function revealHeading(
+  view: EditorView,
+  index: number,
+  titleAbove: boolean,
+): void {
   const heading = headingsIn(view.state)[index];
   if (heading === undefined) return;
   const line = view.state.doc.lineAt(heading.from);
@@ -112,7 +119,9 @@ export function revealHeading(view: EditorView, index: number): void {
   view.focus();
   view.dispatch({ selection: { anchor: line.to } });
   // Gliding, as the jump to a heading far away is easier to follow so.
-  glideTo(view, line.from, 24);
+  const first = view.state.sliceDoc(0, line.from).trim() === "";
+  if (first && !titleAbove) glideToTop(view, line.from);
+  else glideTo(view, line.from, 24);
 }
 
 /** Blocks that hold no headings: the walk does not go into them. */

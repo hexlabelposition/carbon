@@ -37,6 +37,7 @@ import { listHangingIndent } from "./list-hanging-indent";
 import { listContinueKeymap } from "./list-continue";
 import { listPaste } from "./list-paste";
 import {
+  inlineTitlePreference,
   lineNumbersPreference,
   listGuidesPreference,
 } from "../settings/note-style";
@@ -432,7 +433,10 @@ export function MarkdownEditor({
     const { headings, current } = outlineOf(view.state);
     outline.headings(headings);
     outline.current(current);
-    return outline.connect((index) => revealHeading(view, index));
+    return outline.connect((index) =>
+      // Whether the name of the note is shown above the text now.
+      revealHeading(view, index, inlineTitlePreference.get()),
+    );
   }, [outline, label]);
 
   useEffect(() => {
