@@ -458,6 +458,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "theme.dark": "Тема: тёмная",
   "theme.light": "Тема: светлая",
   "theme.system": "Тема: как в системе",
+  "toolbar.resetOrder": "Сбросить порядок кнопок",
   "trash.cancel": "Отмена",
   "trash.confirmDelete":
     "Из системной корзины его ещё можно будет вернуть. Удаление навсегда отменить нельзя.",

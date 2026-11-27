@@ -433,6 +433,7 @@ export const en = {
   "theme.dark": "Theme: Dark",
   "theme.light": "Theme: Light",
   "theme.system": "Theme: Follow system",
+  "toolbar.resetOrder": "Reset button order",
   "trash.cancel": "Cancel",
   "trash.confirmDelete":
     "From the system trash it can still be got back. Deleting for good cannot be undone.",

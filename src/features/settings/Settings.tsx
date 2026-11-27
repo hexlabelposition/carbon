@@ -90,6 +90,7 @@ import {
   setToolShown,
   TOOLBAR_TOOLS,
   toolbarPreference,
+  useToolOrder,
 } from "./toolbar";
 import {
   checkAtStartPreference,
@@ -728,6 +729,11 @@ function AppearanceSettings() {
   const zoom = zoomPreference.use();
   const toolbar = toolbarPreference.use();
   const hiddenTools = hiddenToolsPreference.use();
+  // In the order they stand on the toolbar.
+  const order = useToolOrder();
+  const tools = order.flatMap((id) =>
+    TOOLBAR_TOOLS.filter((tool) => tool.id === id),
+  );
   return (
     <>
       <Rows>
@@ -763,7 +769,7 @@ function AppearanceSettings() {
       </Rows>
       {/* The same as the right-click menu of the toolbar. */}
       <Rows title={t("settings.toolbarButtons")}>
-        {TOOLBAR_TOOLS.map((tool) => (
+        {tools.map((tool) => (
           <Row key={tool.id} label={t(tool.label)}>
             <SettingSwitch
               label={t(tool.label)}

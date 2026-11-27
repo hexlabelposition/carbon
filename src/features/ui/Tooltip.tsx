@@ -35,6 +35,8 @@ interface TooltipProps {
   hoverOnly?: boolean;
   /** Told as it opens and shuts: to fetch what it says, as it opens. */
   onOpenChange?: (open: boolean) => void;
+  /** Kept shut, as while its button is dragged. */
+  disabled?: boolean;
   /** The element it is about, which takes its props and its ref. */
   children: ReactElement;
 }
@@ -51,6 +53,7 @@ export function Tooltip({
   side = "bottom",
   hoverOnly = false,
   onOpenChange,
+  disabled = false,
   children,
 }: TooltipProps) {
   const [open, setOpenState] = useState(false);
@@ -69,7 +72,7 @@ export function Tooltip({
   );
   return (
     <Base.Root
-      open={open}
+      open={open && !disabled}
       onOpenChange={(next, details) => {
         if (next && hoverOnly && details.reason === "trigger-focus") return;
         // Its delay may run out after the pointer left the window by the

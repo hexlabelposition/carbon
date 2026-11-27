@@ -61,9 +61,12 @@ import { useT } from "../../features/i18n/i18n";
 import { useAppSettings } from "../../features/settings/app-settings";
 import {
   hiddenToolsPreference,
+  setToolPlace,
   setToolShown,
   toggleToolbar,
   toolbarPreference,
+  toolOrderPreference,
+  useToolOrder,
 } from "../../features/settings/toolbar";
 import { SettingsOpener } from "../../features/settings/Settings";
 import { StartScreen } from "../../features/start/StartScreen";
@@ -672,22 +675,30 @@ function ToolbarHost({
     id: "sidebar.explorer",
   };
   const hidden = hiddenToolsPreference.use();
+  const order = useToolOrder();
+  const custom = toolOrderPreference.use().length > 0;
+  const tools = [
+    filesItem,
+    sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
+    sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
+    sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
+    sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
+    ...command("switcher.open", toolbarIcons.note),
+    ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
+    ...command(TOGGLE_GRAPH, toolbarIcons.graph),
+    ...command(OPEN_PALETTE, toolbarIcons.commands),
+  ];
+  // In the order the user put them in; a tool without a command yet stays
+  // out until it has one.
+  const items = order.flatMap((id) => tools.filter((tool) => tool.id === id));
   return (
     <Toolbar
       open={open}
       hidden={new Set(hidden)}
       onShowItem={setToolShown}
-      items={[
-        filesItem,
-        sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
-        sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
-        sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
-        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
-        ...command("switcher.open", toolbarIcons.note),
-        ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
-        ...command(TOGGLE_GRAPH, toolbarIcons.graph),
-        ...command(OPEN_PALETTE, toolbarIcons.commands),
-      ]}
+      onMoveItem={setToolPlace}
+      onResetOrder={custom ? () => toolOrderPreference.reset() : undefined}
+      items={items}
       footerStart={<NotificationsButton />}
       footer={[...command("settings.open", toolbarIcons.settings)]}
       footerEnd={<VaultMenu />}
