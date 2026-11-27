@@ -1,5 +1,6 @@
 import { useLayoutEffect } from "react";
 import type { MessageKey } from "../i18n/i18n";
+import { cssFamily, familyOf, fontValue } from "./fonts";
 import { oneOf, preference } from "./preference";
 
 /** Sizes of the note text, in pixels. */
@@ -159,11 +160,19 @@ export const lineHeightPreference = preference<LineHeight>(
   oneOf(LINE_HEIGHTS.map((height) => height.value)),
 );
 
-export const noteFontPreference = preference<NoteFont>(
+/** One of `NOTE_FONTS`, or a family of the system (`familyValue`). */
+export const noteFontPreference = preference<string>(
   "carbon.note.font",
   "inter",
-  oneOf(NOTE_FONTS.map((font) => font.value)),
+  fontValue(NOTE_FONTS.map((font) => font.value)),
 );
+
+/** The CSS font list of the note text, for a value of `noteFontPreference`. */
+function noteFont(value: string): string {
+  const family = familyOf(value);
+  if (family !== null) return `${cssFamily(family)}, ${FONT.inter}`;
+  return FONT[value as NoteFont] ?? FONT.inter;
+}
 
 /**
  * Applies the note settings as CSS variables on the root element, which
@@ -182,7 +191,7 @@ export function useNoteStyle(): void {
     const { style } = document.documentElement;
     style.setProperty("--cb-note-size", `${size}px`);
     style.setProperty("--cb-note-width", WIDTH[width]);
-    style.setProperty("--cb-note-font", FONT[font]);
+    style.setProperty("--cb-note-font", noteFont(font));
     style.setProperty("--cb-note-line-height", LINE_HEIGHT[lineHeight]);
   }, [size, width, font, lineHeight]);
 }

@@ -52,8 +52,11 @@ import {
   UI_FONTS,
   uiFontPreference,
   useFonts,
+  useSystemFonts,
   type FontChoice,
+  type SystemFont,
 } from "./fonts";
+import { FontPicker } from "./FontPicker";
 import {
   NOTE_FONTS,
   NOTE_SIZE_DEFAULT,
@@ -256,9 +259,12 @@ function SettingsIcon({
 export function Settings({
   openLogFolder,
   openWebPage,
+  listFonts,
 }: {
   openLogFolder?: () => Promise<void>;
   openWebPage?: (url: string) => Promise<void>;
+  /** The font families of the system, offered in the Fonts group. */
+  listFonts?: () => Promise<readonly SystemFont[]>;
 }) {
   useNoteStyle();
   useFonts();
@@ -358,7 +364,7 @@ export function Settings({
             </h2>
             {group === "general" && <GeneralSettings help={help} />}
             {group === "appearance" && <AppearanceSettings />}
-            {group === "fonts" && <FontSettings />}
+            {group === "fonts" && <FontSettings listFonts={listFonts} />}
             {group === "notes" && <NoteSettings />}
             {group === "editor" && <EditorSettings />}
             {group === "shortcuts" && <ShortcutSettings />}
@@ -913,11 +919,17 @@ function EditorSettings() {
  * The three fonts: of the interface, of the note text, and the monospace
  * one, for code and for note text set to monospace.
  */
-function FontSettings() {
+function FontSettings({
+  listFonts,
+}: {
+  listFonts: (() => Promise<readonly SystemFont[]>) | undefined;
+}) {
   const t = useT();
   const ui = uiFontPreference.use();
   const text = noteFontPreference.use();
   const mono = monoFontPreference.use();
+  // Listed as the group opens: it takes a moment, and only once a run.
+  const system = useSystemFonts(listFonts);
   /** The installed choices, and the one chosen even if it is gone since. */
   const choices = (fonts: readonly FontChoice[], chosen: string) => {
     const available = availableFonts(fonts);
@@ -932,29 +944,33 @@ function FontSettings() {
   return (
     <Rows>
       <Row label={t("settings.font.ui")}>
-        <SettingSelect
+        <FontPicker
           label={t("settings.font.ui")}
           value={ui}
-          items={choices(UI_FONTS, ui)}
+          named={choices(UI_FONTS, ui)}
+          system={system}
           onChange={uiFontPreference.set}
         />
       </Row>
       <Row label={t("settings.font.text")}>
-        <SettingSelect
+        <FontPicker
           label={t("settings.font.text")}
           value={text}
-          items={NOTE_FONTS.map(({ value, label }) => ({
+          named={NOTE_FONTS.map(({ value, label }) => ({
             value,
             label: t(label),
           }))}
+          system={system}
           onChange={noteFontPreference.set}
         />
       </Row>
       <Row label={t("settings.font.mono")}>
-        <SettingSelect
+        <FontPicker
           label={t("settings.font.mono")}
           value={mono}
-          items={choices(MONO_FONTS, mono)}
+          named={choices(MONO_FONTS, mono)}
+          system={system}
+          monospace
           onChange={monoFontPreference.set}
         />
       </Row>

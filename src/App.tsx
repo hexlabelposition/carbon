@@ -14,6 +14,7 @@ import {
   pickVaultFolder,
   appCacheFolder,
   forwardPointerLeaves,
+  listSystemFonts,
   setInterfaceZoom,
   showInFileManager,
   tauriClipboard,
@@ -52,6 +53,7 @@ function App() {
                 <Settings
                   openLogFolder={openLogFolder}
                   openWebPage={openWebPage}
+                  listFonts={listSystemFonts}
                 />
                 <Updates updater={tauriUpdater} dev={import.meta.env.DEV} />
                 <DesktopShell

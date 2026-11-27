@@ -1,4 +1,5 @@
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { log } from "../log/log";
 import { oneOf, preference } from "./preference";
 
 /** A font that can be chosen for the interface or for monospace text. */
@@ -69,26 +70,103 @@ export const MONO_FONTS: readonly FontChoice[] = [
   },
 ];
 
+/** A font family installed on the system, as the platform lists it. */
+export interface SystemFont {
+  family: string;
+  /** Whether a face of it is monospace. */
+  monospace: boolean;
+}
+
+/**
+ * A font of the system picked by its family, as a setting stores it:
+ * `family:` and its name, apart from the choices named above.
+ */
+const FAMILY = "family:";
+
+/** The value of a setting for the system font `family`. */
+export function familyValue(family: string): string {
+  return FAMILY + family;
+}
+
+/** The family a value of `familyValue` names; `null` for another value. */
+export function familyOf(value: string): string | null {
+  return value.startsWith(FAMILY) && value.length > FAMILY.length
+    ? value.slice(FAMILY.length)
+    : null;
+}
+
+/** `family` as a name in a CSS font list, quoted. */
+export function cssFamily(family: string): string {
+  return `"${family.replace(/["\\]/g, "\\$&")}"`;
+}
+
+/** Parses a stored font: one of `values`, or a family of the system. */
+export function fontValue<T extends string>(values: readonly T[]) {
+  const named = oneOf(values);
+  return (stored: string): T | undefined =>
+    named(stored) ?? (familyOf(stored) !== null ? (stored as T) : undefined);
+}
+
 export const uiFontPreference = preference<string>(
   "carbon.font.ui",
   "inter",
-  oneOf(UI_FONTS.map((font) => font.value)),
+  fontValue(UI_FONTS.map((font) => font.value)),
 );
 
 export const monoFontPreference = preference<string>(
   "carbon.font.mono",
   "jetbrains",
-  oneOf(MONO_FONTS.map((font) => font.value)),
+  fontValue(MONO_FONTS.map((font) => font.value)),
 );
 
 /**
- * The CSS font list of a choice: its families, then the font that comes
- * with the app (`bundled`), which stands in where they are missing.
+ * The CSS font list of a value of `fonts`: its families, or the family of
+ * the system it names, then the font that comes with the app (`bundled`),
+ * which stands in where they are missing.
  */
-function fontFamily(font: FontChoice, bundled: string, system: string): string {
+function fontFamily(
+  fonts: readonly FontChoice[],
+  value: string,
+  bundled: string,
+  system: string,
+): string {
+  const family = familyOf(value);
+  if (family !== null) return `${cssFamily(family)}, ${bundled}`;
+  const font = fonts.find((f) => f.value === value) ?? fonts[0];
   if (font.value === "system") return system;
-  return [...font.families.map((family) => `"${family}"`), bundled].join(", ");
+  return [...font.families.map(cssFamily), bundled].join(", ");
 }
+
+/** The fonts of the system, asked for once a run: listing them is slow. */
+let systemFonts: Promise<readonly SystemFont[]> | null = null;
+
+/**
+ * The font families of the system, from `list` (the platform); `null`
+ * until they are listed, and empty without a platform or if it failed.
+ */
+export function useSystemFonts(
+  list: (() => Promise<readonly SystemFont[]>) | undefined,
+): readonly SystemFont[] | null {
+  const [fonts, setFonts] = useState<readonly SystemFont[] | null>(null);
+  useEffect(() => {
+    if (list === undefined) return;
+    systemFonts ??= list().catch((reason: unknown) => {
+      log.error("Could not list the fonts of the system", reason);
+      systemFonts = null;
+      return [];
+    });
+    let live = true;
+    void systemFonts.then((found) => {
+      if (live) setFonts(found);
+    });
+    return () => {
+      live = false;
+    };
+  }, [list]);
+  return list === undefined ? NO_FONTS : fonts;
+}
+
+const NO_FONTS: readonly SystemFont[] = [];
 
 const installed = new Map<readonly FontChoice[], readonly FontChoice[]>();
 
@@ -136,15 +214,18 @@ export function useFonts(): void {
   // Before the paint, so the app never shows in the default fonts first.
   useLayoutEffect(() => {
     const { style } = document.documentElement;
-    const uiFont = UI_FONTS.find((f) => f.value === ui) ?? UI_FONTS[0];
-    const monoFont = MONO_FONTS.find((f) => f.value === mono) ?? MONO_FONTS[0];
     style.setProperty(
       "--cb-ui-font",
-      fontFamily(uiFont, "var(--font-sans)", "system-ui, sans-serif"),
+      fontFamily(UI_FONTS, ui, "var(--font-sans)", "system-ui, sans-serif"),
     );
     style.setProperty(
       "--cb-mono-font",
-      fontFamily(monoFont, "var(--font-mono)", "ui-monospace, monospace"),
+      fontFamily(
+        MONO_FONTS,
+        mono,
+        "var(--font-mono)",
+        "ui-monospace, monospace",
+      ),
     );
   }, [ui, mono]);
 }

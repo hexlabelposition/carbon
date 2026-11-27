@@ -36,6 +36,10 @@ tauri-plugin-process = "2"
 # Cut, copy and paste from the context menu of a note: the WebView
 # cannot read the clipboard by itself.
 tauri-plugin-clipboard-manager = "2"
+# The font families installed on the system, for the font settings: the
+# WebView cannot list them (`list_fonts`). Pure Rust, it reads the font
+# folders itself, those of fontconfig on Linux.
+fontdb = "0.24"
 
 # The version Tauri draws its window with: the window tells the page that
 # the pointer left it, which WebKitGTK does not on Wayland (lib.rs).

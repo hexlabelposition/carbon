@@ -182,6 +182,50 @@ fn tell_when_pointer_leaves(app: &tauri::App) {
     });
 }
 
+/// A font family installed on the system, found by `list_fonts`.
+#[derive(serde::Serialize)]
+struct SystemFont {
+    family: String,
+    /// Whether a face of it is monospace, for the monospace font setting.
+    monospace: bool,
+}
+
+/// The font families installed on the system, sorted by name, each once,
+/// for the font settings: the WebView cannot list them. Reading every font
+/// file takes a moment, so it is done off the main thread.
+#[tauri::command]
+async fn list_fonts() -> Result<Vec<SystemFont>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let mut db = fontdb::Database::new();
+        db.load_system_fonts();
+        let mut fonts: Vec<SystemFont> = Vec::new();
+        let mut seen = std::collections::HashMap::<String, usize>::new();
+        for face in db.faces() {
+            // The first name is the English one, which CSS finds it by.
+            let Some((family, _)) = face.families.first() else {
+                continue;
+            };
+            if family.is_empty() || family.starts_with('.') {
+                continue;
+            }
+            match seen.get(family) {
+                Some(&at) => fonts[at].monospace |= face.monospaced,
+                None => {
+                    seen.insert(family.clone(), fonts.len());
+                    fonts.push(SystemFont {
+                        family: family.clone(),
+                        monospace: face.monospaced,
+                    });
+                }
+            }
+        }
+        fonts.sort_by_key(|font| font.family.to_lowercase());
+        fonts
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
 pub fn run() {
     use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
@@ -238,7 +282,8 @@ pub fn run() {
             move_to_trash,
             import_file,
             list_notes,
-            sql_batch
+            sql_batch,
+            list_fonts
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

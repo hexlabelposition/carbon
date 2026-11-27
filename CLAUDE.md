@@ -85,7 +85,7 @@ The biggest feature (about 190 KB). Open only the files the task touches:
 
 ### Tauri (`tauri/`)
 
-Named `tauri/`, not `src-tauri/`. Mostly official plugins (fs, sql, dialog, opener, updater, process, log, clipboard-manager). Custom Rust is kept to a few small commands in `tauri/src/lib.rs`: `move_to_trash`, `import_file`, `list_notes`, `sql_batch`. Besides them, on Linux the GTK window tells the page that the pointer left it (event `pointer-left-window`), which WebKitGTK does not on Wayland; `features/ui/pointer-outside.ts` then sets `data-pointer-outside` on `<html>`, which turns the `hover:` variant off (`index.css`), and shuts tooltips. The project constraint is "no custom Rust beyond that"; prefer solving things in TypeScript.
+Named `tauri/`, not `src-tauri/`. Mostly official plugins (fs, sql, dialog, opener, updater, process, log, clipboard-manager). Custom Rust is kept to a few small commands in `tauri/src/lib.rs`: `move_to_trash`, `import_file`, `list_notes`, `sql_batch`, `list_fonts` (the font families of the system, for the font settings). Besides them, on Linux the GTK window tells the page that the pointer left it (event `pointer-left-window`), which WebKitGTK does not on Wayland; `features/ui/pointer-outside.ts` then sets `data-pointer-outside` on `<html>`, which turns the `hover:` variant off (`index.css`), and shuts tooltips. The project constraint is "no custom Rust beyond that"; prefer solving things in TypeScript.
 
 ### Performance budgets
 

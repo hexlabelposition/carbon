@@ -18,6 +18,7 @@ export { forwardPointerLeaves } from "./pointer";
 export { tauriWindow } from "./window";
 export { tauriUpdater } from "./updater";
 export { tauriClipboard } from "./clipboard";
+export { listSystemFonts } from "./fonts";
 
 export const tauriPlatform: Platform = {
   fs: tauriFileSystem,
