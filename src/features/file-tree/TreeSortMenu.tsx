@@ -1,4 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
+import type { ReactNode } from "react";
 import { useT, type MessageKey } from "../i18n/i18n";
 import { Tooltip } from "../ui/Tooltip";
 import { TREE_SORTS, treeSortPreference, type TreeSort } from "./tree-sort";
@@ -12,12 +13,52 @@ const labels: Record<TreeSort, MessageKey> = {
   "modified-asc": "tree.sortModifiedAsc",
 };
 
+/**
+ * The icon of each order, drawn on 16 by 16: an arrow at the left, up for
+ * the first order of a pair (A to Z, the newest first) and down for the
+ * other; at the right what is sorted by: lines for the name, a plus in a
+ * circle for the time a file was made, a pencil for the time it changed.
+ */
+const ARROW_UP = "M4.5 13.5v-11M2 5l2.5-2.5L7 5";
+const ARROW_DOWN = "M4.5 2.5v11M2 11l2.5 2.5L7 11";
+const BY: Record<"name" | "created" | "modified", ReactNode> = {
+  name: <path d="M9.5 4h5M9.5 8h3.75M9.5 12h2.5" />,
+  created: (
+    <>
+      <circle cx="12" cy="8" r="3" />
+      <path d="M12 6.5v3M10.5 8h3" />
+    </>
+  ),
+  modified: <path d="M13.25 3.5l1.5 1.5-5 5-2.25.5.5-2.25z" />,
+};
+
+function SortIcon({ sort, className }: { sort: TreeSort; className: string }) {
+  const [by, way] = sort.split("-") as [keyof typeof BY, "asc" | "desc"];
+  // The first of each pair: A to Z, or the newest first.
+  const first = by === "name" ? way === "asc" : way === "desc";
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={first ? ARROW_UP : ARROW_DOWN} />
+      {BY[by]}
+    </svg>
+  );
+}
+
 const item =
   "flex h-7 cursor-default items-center gap-2 rounded-sm px-2 whitespace-nowrap outline-none select-none data-highlighted:bg-raise";
 
 /**
- * The sort button of the file explorer: an arrow up beside lines, and a
- * menu of the orders of the file tree (`treeSortPreference`): by name,
+ * The sort button of the file explorer, with the icon of the order the
+ * tree is in (`SortIcon`), and a menu of the orders of the file tree (`treeSortPreference`): by name,
  * by the time a file was made, by the time it was last changed, each
  * either way, the pairs apart by lines. Folders are always above files.
  */
@@ -31,19 +72,7 @@ export function TreeSortMenu() {
           aria-label={`${t("tree.sort")}: ${t(labels[sort])}`}
           className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted outline-none transition-colors duration-100 hover:bg-selected hover:text-fg focus-visible:ring-1 focus-visible:ring-line-strong data-popup-open:bg-selected data-popup-open:text-fg"
         >
-          <svg
-            viewBox="0 0 16 16"
-            aria-hidden="true"
-            className="size-4.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {/* An arrow up, and lines that grow shorter beside it. */}
-            <path d="M4.5 13.5v-11M2 5l2.5-2.5L7 5M9.5 4h5M9.5 8h3.75M9.5 12h2.5" />
-          </svg>
+          <SortIcon sort={sort} className="size-4.5" />
         </Menu.Trigger>
       </Tooltip>
       <Menu.Portal>
@@ -73,6 +102,10 @@ export function TreeSortMenu() {
                   />
                 ),
                 <Menu.RadioItem key={value} value={value} className={item}>
+                  <SortIcon
+                    sort={value}
+                    className="size-4.5 shrink-0 text-muted"
+                  />
                   <span className="flex-1">{t(labels[value])}</span>
                   {/* As wide whether checked or not, so the items line up. */}
                   <span className="flex size-4 shrink-0 items-center justify-center">
