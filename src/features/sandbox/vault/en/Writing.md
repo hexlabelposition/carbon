@@ -44,9 +44,9 @@ function greet(name: string): string {
 
 | Shortcut | What it does  |
 | -------- | ------------- |
-| Ctrl+N   | A new note    |
 | Ctrl+O   | Open a note   |
 | Ctrl+P   | Every command |
+| Ctrl+E   | Reading mode  |
 
 ---
 

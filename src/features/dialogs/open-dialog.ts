@@ -4,7 +4,6 @@ import { useCallback, useSyncExternalStore } from "react";
 export type DialogId =
   | "palette"
   | "switcher"
-  | "newNote"
   | "settings"
   | "search"
   | "trashConfirm"

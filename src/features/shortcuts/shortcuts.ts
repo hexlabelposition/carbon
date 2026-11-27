@@ -11,7 +11,6 @@ export const SHORTCUTS = [
   { id: "palette.open", label: "palette.open", fallback: "Mod+P" },
   { id: "switcher.open", label: "switcher.open", fallback: "Mod+O" },
   { id: "search.open", label: "shell.searchAll", fallback: "Mod+Shift+F" },
-  { id: "note.new", label: "tree.newNote", fallback: "Mod+N" },
   { id: "workspace.closeTab", label: "workspace.closeTab", fallback: "Mod+W" },
   {
     id: "editor.readingMode",

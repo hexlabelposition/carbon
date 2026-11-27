@@ -37,9 +37,7 @@ import {
 } from "../../features/bookmarks/use-bookmarks";
 import { useTrash } from "../../features/trash/use-trash";
 import { useTags } from "../../features/tags/use-tags";
-import { OPEN_SEARCH, useSearch } from "../../features/search/use-search";
-import { NewNoteDialog } from "../../features/new-note/NewNoteDialog";
-import { NEW_NOTE, useNewNote } from "../../features/new-note/use-new-note";
+import { useSearch } from "../../features/search/use-search";
 import { QuickSwitcher } from "../../features/switcher/QuickSwitcher";
 import { useQuickSwitcher } from "../../features/switcher/use-quick-switcher";
 import {
@@ -434,7 +432,6 @@ export function DesktopShell({
             </main>
             <QuickSwitcherHost vault={vault} />
             <SearchHost vault={vault} />
-            <NewNoteHost vault={vault} />
             <StartupHost vault={vault} />
           </WorkspaceProvider>
         )}
@@ -586,8 +583,8 @@ const SHOW_TIMING =
 /**
  * The toolbar at the left edge: the file explorer and the tags, which
  * show in the sidebar and hide it when it shows them already, and a few
- * commands, the search dialog among them, each of which can be hidden
- * (`hiddenToolsPreference`); at the foot the notifications, the settings
+ * commands, each of which can be hidden (`hiddenToolsPreference`). The
+ * search of the text has no button: Ctrl+Shift+F and the palette open it; at the foot the notifications, the settings
  * and the menu of the vault.
  */
 function ToolbarHost({
@@ -667,7 +664,6 @@ function ToolbarHost({
       onShowItem={setToolShown}
       items={[
         explorerItem,
-        ...command(OPEN_SEARCH, toolbarIcons.search),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
@@ -685,12 +681,6 @@ function ToolbarHost({
 function CommandPaletteHost() {
   const palette = useCommandPalette();
   return palette.isOpen ? <CommandPalette palette={palette} /> : null;
-}
-
-/** The "New note" dialog, shown while it is open (Ctrl+N). */
-function NewNoteHost({ vault }: { vault: Vault }) {
-  const newNote = useNewNote(vault);
-  return newNote.isOpen ? <NewNoteDialog newNote={newNote} /> : null;
 }
 
 /**
@@ -1191,7 +1181,7 @@ function LocalGraphHost({ vault, path }: { vault: Vault; path: string }) {
 
 /** The commands offered below the watermark, in this order. */
 const WATERMARK_COMMANDS = [
-  NEW_NOTE,
+  // Opens a note, or makes one by the name typed.
   "switcher.open",
   OPEN_PALETTE,
   "settings.open",

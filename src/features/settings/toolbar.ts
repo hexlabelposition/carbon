@@ -25,7 +25,6 @@ export function toggleToolbar(): void {
  */
 export const TOOLBAR_TOOLS: readonly { id: string; label: MessageKey }[] = [
   { id: "sidebar.explorer", label: "shell.files" },
-  { id: "search.open", label: "shell.searchAll" },
   { id: "sidebar.tags", label: "shell.tags" },
   { id: "switcher.open", label: "switcher.open" },
   { id: "randomNote.open", label: "randomNote.open" },

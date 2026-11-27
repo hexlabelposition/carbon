@@ -6,7 +6,7 @@ import { useAppSettings } from "../settings/app-settings";
 import { useWorkspace } from "../workspace/workspace";
 import { useDialog } from "../dialogs/open-dialog";
 import { matchesShortcut, useShortcutLabel } from "../shortcuts/shortcuts";
-import { newNotePath } from "../new-note/new-note-path";
+import { newNotePath } from "./new-note-path";
 import { errorText } from "../i18n/error-text";
 
 export interface QuickSwitcher {
@@ -35,7 +35,9 @@ export interface QuickSwitcher {
 /**
  * The quick switcher: Ctrl+O (Cmd+O on a Mac) opens it with the notes
  * opened last, typing narrows the notes by title, and a note that is not
- * there can be made.
+ * there can be made, at the vault root or in the folders typed before
+ * its name. It is the one way to make a note by its name: there is no
+ * dialog of its own for that.
  */
 export function useQuickSwitcher(vault: Vault): QuickSwitcher {
   const t = useT();
