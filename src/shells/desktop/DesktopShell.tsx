@@ -399,6 +399,7 @@ export function DesktopShell({
                     <Sidebar
                       open={!sidebar.collapsed}
                       fraction={sidebar.fraction}
+                      usual={sidebar.usual}
                       width={sidebarWidth}
                       room={sidebarRoom}
                       onResize={sidebar.resize}
@@ -1092,6 +1093,7 @@ function RightPanelFrame({
         side="right"
         label={t("shell.resizeRightPanel")}
         fraction={width.fraction}
+        usual={width.usual}
         onResize={width.resize}
         onNudge={width.nudge}
         onClose={onClose}

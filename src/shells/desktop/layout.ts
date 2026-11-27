@@ -31,6 +31,18 @@ export function panelCloseFraction(): number {
 }
 
 /**
+ * How near its usual width, in pixels, a side panel being dragged stops
+ * at that width, so it is easy to find again: the pointer goes this far
+ * either way before the panel follows it. Alt held lets it go on.
+ */
+const PANEL_SNAP_DISTANCE = 20;
+
+/** `PANEL_SNAP_DISTANCE` as a share of the window width. */
+export function panelSnapFraction(): number {
+  return pixelsAsFraction(PANEL_SNAP_DISTANCE);
+}
+
+/**
  * The narrowest the notes get between the side panels, in pixels: a side
  * panel has no widest width of its own, it stops this far from the other
  * panel, the toolbar or the edge of the window. So some of the note stays

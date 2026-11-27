@@ -1,10 +1,11 @@
 import {
   useEffect,
   useRef,
+  useState,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import { panelCloseFraction } from "./layout";
+import { panelCloseFraction, panelSnapFraction } from "./layout";
 import { startLayoutMotion } from "./layout-motion";
 import { SIDEBAR_STEP } from "./use-sidebar";
 
@@ -15,6 +16,8 @@ interface ResizeHandleProps {
   label: string;
   /** Width of the panel as a share of the window width. */
   fraction: number;
+  /** Its usual width, which a drag stops at when near it. */
+  usual: number;
   /**
    * The widest it can be now, as a share of the window: what the other
    * panel or the toolbar leaves, with the narrowest notes beside it, so
@@ -38,12 +41,15 @@ interface ResizeHandleProps {
  * edge, and a drag that ends near the edge (`panelCloseFraction`) closes
  * it, at the width it had when the drag started, so it opens again at a
  * width it can be used at. An arrow key that would make it that narrow
- * closes it too.
+ * closes it too. Near its usual width it stops at that width
+ * (`panelSnapFraction`), unless Alt is held, and the edge is lit
+ * meanwhile, so it shows.
  */
 export function ResizeHandle({
   side,
   label,
   fraction,
+  usual,
   room,
   onResize,
   onNudge,
@@ -58,6 +64,8 @@ export function ResizeHandle({
   const endMotion = useRef<(() => void) | null>(null);
   /** The width as the drag started, and the last one it set. */
   const dragWidths = useRef<{ start: number; last: number } | null>(null);
+  /** The drag holds the panel at its usual width: the edge is lit. */
+  const [snapped, setSnapped] = useState(false);
   useEffect(
     () => () => {
       selectText(true);
@@ -77,7 +85,13 @@ export function ResizeHandle({
       side === "left"
         ? event.clientX - panel.left
         : panel.right - event.clientX;
-    const next = Math.max(0, Math.min(room(), x / width));
+    const wanted = x / width;
+    const snaps =
+      !event.altKey &&
+      usual <= room() &&
+      Math.abs(wanted - usual) <= panelSnapFraction();
+    setSnapped(snaps);
+    const next = Math.max(0, Math.min(room(), snaps ? usual : wanted));
     if (dragWidths.current !== null) dragWidths.current.last = next;
     onResize(next);
   }
@@ -114,10 +128,11 @@ export function ResizeHandle({
       aria-valuemin={0}
       aria-valuemax={percent(room())}
       tabIndex={0}
+      data-snapped={snapped || undefined}
       // The right panel has a top row of its own, which runs on into the
       // one beside it and drags the window: the handle starts below it, as
       // the line at its edge. The left panel stands below the top row.
-      className={`absolute bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong ${
+      className={`absolute bottom-0 z-10 w-1.5 cursor-col-resize touch-none outline-none hover:bg-line-strong/60 focus-visible:bg-line-strong data-snapped:bg-link ${
         side === "left" ? "top-0 right-0" : "top-bar left-0"
       }`}
       onPointerDown={(event) => {
@@ -136,6 +151,7 @@ export function ResizeHandle({
         endMotion.current?.();
         endMotion.current = null;
         onDragging(false);
+        setSnapped(false);
         endDrag();
       }}
       onKeyDown={onKeyDown}

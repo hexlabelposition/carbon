@@ -8,6 +8,8 @@ interface SidebarProps {
   open: boolean;
   /** Width as a share of the window width. */
   fraction: number;
+  /** Its usual width, which a drag stops at when near it. */
+  usual: number;
   /** How wide it is open, as a CSS length (`panelWidth`). */
   width: string;
   /** The widest it can be now, beside the right panel (`ResizeHandle`). */
@@ -27,6 +29,7 @@ interface SidebarProps {
 export function Sidebar({
   open,
   fraction,
+  usual,
   width,
   room,
   onResize,
@@ -50,6 +53,7 @@ export function Sidebar({
           side="left"
           label={t("shell.resizeLeftPanel")}
           fraction={fraction}
+          usual={usual}
           room={room}
           onResize={onResize}
           onNudge={onNudge}

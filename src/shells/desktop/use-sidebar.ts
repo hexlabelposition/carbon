@@ -21,6 +21,8 @@ interface SidebarState {
 }
 
 export interface Sidebar extends SidebarState {
+  /** The usual width, which a drag stops at when near it. */
+  usual: number;
   /** Sets the width, as a share of the window width. */
   resize(fraction: number): void;
   /** Makes the sidebar wider (positive) or narrower by whole steps. */
@@ -57,7 +59,7 @@ export function useSidebar(): Sidebar {
     setState((s) => ({ ...s, collapsed: true }));
   }, []);
 
-  return { ...state, resize, nudge, toggle, close };
+  return { ...state, usual: SIDEBAR_DEFAULT, resize, nudge, toggle, close };
 }
 
 function clamp(fraction: number): number {
@@ -91,6 +93,8 @@ function load(): SidebarState {
 export interface PanelWidth {
   /** Width as a share of the window width. */
   fraction: number;
+  /** The usual width, which a drag stops at when near it. */
+  usual: number;
   /** Sets the width, as a share of the window width. */
   resize(fraction: number): void;
   /** Makes the panel wider (positive) or narrower by whole steps. */
@@ -99,7 +103,8 @@ export interface PanelWidth {
 
 /**
  * The width of a side panel other than the sidebar, with the same limits,
- * remembered between app starts under `storageKey`.
+ * remembered between app starts under `storageKey`; `fallback` is its
+ * usual width.
  */
 export function usePanelWidth(
   storageKey: string,
@@ -127,5 +132,5 @@ export function usePanelWidth(
     (steps: number) => setFraction((f) => clamp(f + steps * SIDEBAR_STEP)),
     [],
   );
-  return { fraction, resize, nudge };
+  return { fraction, usual: fallback, resize, nudge };
 }
