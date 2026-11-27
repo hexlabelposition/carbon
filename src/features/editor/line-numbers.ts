@@ -6,12 +6,29 @@ import {
   type BlockInfo,
   type ViewUpdate,
 } from "@codemirror/view";
+import { scrollParentOf } from "./glide";
 
-/** Room between a number and the text, in pixels, as in VS Code. */
-const GAP = 24;
+/** Room in the strip left of the numbers, in pixels. */
+const PAD_LEFT = 16;
 
-/** Room kept between a number and the left edge of the editor, in pixels. */
-const EDGE = 6;
+/** Room in the strip right of the numbers, in pixels. */
+const PAD_RIGHT = 12;
+
+/** The fewest digits the strip makes room for, so it does not jump at 10. */
+const MIN_DIGITS = 2;
+
+/** The size of a number beside the note text. */
+const NUMBER_SIZE = 0.75;
+
+/** How wide a digit is beside its size, about, in the fonts of notes. */
+const DIGIT_WIDTH = 0.62;
+
+/** What the layer draws: the numbers, and how wide the strip is. */
+interface Measured {
+  numbers: Drawn[];
+  /** The width of the strip, in pixels. */
+  strip: number;
+}
 
 /** A number as drawn: where its right edge, top and height are. */
 interface Drawn {
@@ -92,8 +109,9 @@ function changesNumbers(update: ViewUpdate): boolean {
 }
 
 /**
- * The numbers of an editor: the counts of its lines, and the layer below
- * the text they are drawn in.
+ * The numbers of an editor: the counts of its lines, the layer below the
+ * text they are drawn in, and the strip at the left edge of the element
+ * the note scrolls in, which they stand on.
  */
 class LineNumbersView {
   /** Visual lines of a line block, by its start: with its end, to drop it. */
@@ -107,11 +125,15 @@ class LineNumbersView {
   readonly dom: HTMLElement;
   private drawn: Drawn[] = [];
   private scale = { x: 1, y: 1 };
+  /** The element the note scrolls in, which shows the strip. */
+  private host: HTMLElement | null = null;
+  /** The width of the strip on it now, in pixels. */
+  private strip = 0;
   private readonly observer: ResizeObserver;
   private readonly measureRequest = {
     key: this,
     read: () => this.measure(),
-    write: (numbers: Drawn[]) => this.draw(numbers),
+    write: (measured: Measured) => this.draw(measured),
   };
 
   constructor(readonly view: EditorView) {
@@ -161,8 +183,9 @@ class LineNumbersView {
   }
 
   /** Where the numbers go now. Reads the layout only. */
-  measure(): Drawn[] {
+  measure(): Measured {
     const { view } = this;
+    this.host ??= scrollParentOf(view.dom);
 
     const width = view.contentDOM.clientWidth;
     const { defaultLineHeight } = view;
@@ -177,9 +200,6 @@ class LineNumbersView {
     const baseLeft = box.left - view.scrollDOM.scrollLeft * view.scaleX;
     const baseTop = box.top - view.scrollDOM.scrollTop * view.scaleY;
     const documentTop = view.documentTop - baseTop;
-    const content = view.contentDOM.getBoundingClientRect();
-    const padding = parseFloat(getComputedStyle(view.contentDOM).paddingLeft);
-    const textLeft = content.left + padding * view.scaleX - baseLeft;
     // A number stands in the first line-height or so of its line: in the
     // middle of a line of text or a heading, at the top beside an image.
     const most = defaultLineHeight * 1.6;
@@ -222,23 +242,36 @@ class LineNumbersView {
       this.rows.set(block.from, { to: block.to, count: n - before });
     }
 
-    // The right edge of the numbers, `GAP` left of the text; nearer to it
-    // where the text runs close to the left edge, as at full width, so the
-    // widest number is not cut off by the edge.
-    const digit =
-      parseFloat(getComputedStyle(view.scrollDOM).fontSize) * 0.75 * 0.62;
-    const widest = String(n).length * digit * view.scaleX;
-    const left = Math.max(textLeft - GAP, box.left - baseLeft + EDGE + widest);
+    // As wide as the biggest number of the note: the last one, guessed
+    // from the height below what is drawn when that is not drawn.
+    const last = view.viewportLineBlocks.at(-1);
+    const end = view.lineBlockAt(doc.length).bottom;
+    const below =
+      last === undefined ? 0 : (end - last.bottom) / defaultLineHeight;
+    const digits = Math.max(MIN_DIGITS, String(n + Math.round(below)).length);
+    const size = parseFloat(getComputedStyle(view.scrollDOM).fontSize);
+    const strip = Math.ceil(
+      PAD_LEFT + digits * size * NUMBER_SIZE * DIGIT_WIDTH + PAD_RIGHT,
+    );
+
+    // On the strip, at the left edge of the element the note scrolls in.
+    const hostLeft = this.host?.getBoundingClientRect().left ?? box.left;
+    const left = hostLeft + (strip - PAD_RIGHT) * view.scaleX - baseLeft;
     const first = n - rows.length;
-    return rows.map((row, i) => ({ n: first + i + 1, left, ...row }));
+    const numbers = rows.map((row, i) => ({ n: first + i + 1, left, ...row }));
+    return { numbers, strip };
   }
 
   /** Puts the numbers where `measure` found them. Writes only. */
-  draw(numbers: Drawn[]) {
+  draw({ numbers, strip }: Measured) {
     const { scaleX, scaleY } = this.view;
     if (scaleX !== this.scale.x || scaleY !== this.scale.y) {
       this.scale = { x: scaleX, y: scaleY };
       this.dom.style.transform = `scale(${1 / scaleX}, ${1 / scaleY})`;
+    }
+    if (strip !== this.strip && this.host !== null) {
+      this.strip = strip;
+      showStrip(this.host, strip);
     }
     const elements = this.dom.children;
     numbers.forEach((number, i) => {
@@ -265,20 +298,43 @@ class LineNumbersView {
   destroy() {
     this.observer.disconnect();
     this.dom.remove();
+    if (this.host !== null) showStrip(this.host, 0);
   }
+}
+
+/**
+ * Shows the strip of the numbers at the left edge of the element a note
+ * scrolls in, or takes it away with a width of 0. Painted as its
+ * background, which stays put as it scrolls, so the strip runs down the
+ * whole height, the name above the text too; its padding keeps what is
+ * inside out of the strip, so the note stands in the middle of the room
+ * beside it and keeps its width. A line along its right edge, as along
+ * the panels of the app.
+ */
+function showStrip(host: HTMLElement, width: number): void {
+  if (width === 0) {
+    host.style.removeProperty("padding-left");
+    host.style.removeProperty("background-image");
+    return;
+  }
+  host.style.paddingLeft = `${width}px`;
+  host.style.backgroundImage = `linear-gradient(to right, var(--cb-panel) ${
+    width - 1
+  }px, var(--cb-line) ${width - 1}px ${width}px, transparent ${width}px)`;
 }
 
 /**
  * Numbers at the left of the text, one for each line as it is shown, not
  * as it is in the file: a paragraph that wraps onto three lines has three
  * numbers. A table or the properties block, drawn in place of their lines,
- * count as one. Drawn in a layer below the text (`LineNumbersView`), so the text keeps its
- * place, in every mode: live preview, source and reading.
+ * count as one. They stand on a strip at the left edge of the note, as in
+ * VS Code, as wide as the biggest number needs (`showStrip`); the text
+ * keeps its width. In every mode: live preview, source and reading.
  *
  * Only the lines the editor has drawn can be measured. A line drawn once
- * keeps the count measured then until it is edited or the
- * text changes width; one never drawn is counted from the height the
- * editor guesses for it, as many lines of the usual height.
+ * keeps the count measured then until it is edited or the text changes
+ * width; one never drawn is counted from the height the editor guesses
+ * for it, as many lines of the usual height.
  */
 export const lineNumbers: Extension = [
   ViewPlugin.fromClass(LineNumbersView),
@@ -289,7 +345,7 @@ export const lineNumbers: Extension = [
       alignItems: "center",
       // Its right edge where `left` puts it, however many digits.
       transform: "translateX(-100%)",
-      fontSize: "0.75em",
+      fontSize: `${NUMBER_SIZE}em`,
       lineHeight: "1",
       fontVariantNumeric: "tabular-nums",
       color: "var(--cb-faint)",
