@@ -105,12 +105,8 @@ import {
 } from "./use-panels";
 import { useSidePanel } from "./use-side-panel";
 import { useSidebar } from "./use-sidebar";
-import {
-  isExplorerView,
-  useSidebarView,
-  type SidebarViewState,
-} from "./use-sidebar-view";
-import { ExplorerTabs, SidebarToolRow } from "./ExplorerTabs";
+import { useSidebarView, type SidebarViewState } from "./use-sidebar-view";
+import { SidebarToolRow } from "./SidebarToolRow";
 import { DragStrip, WindowControls } from "./WindowControls";
 import {
   useFullscreenShortcut,
@@ -448,15 +444,15 @@ export function DesktopShell({
 }
 
 /**
- * The views of the sidebar, one at a time: the file explorer, with a row
- * of tabs for its files, bookmarks and trash, the tags and the drafts. Each
- * is shown by its button of the toolbar or from the palette. They stay
+ * The views of the sidebar, one at a time: the files, the bookmarks, the
+ * tags, the drafts and the trash. Each is shown by its button of the
+ * toolbar or from the palette. They stay
  * mounted: switching keeps the open folders and the open tags. Search is
  * a dialog of its own (`SearchHost`).
  */
 function SidebarContent({
   vault,
-  view: { view, explorer, show },
+  view: { view, show },
   reveal,
   showInFileManager,
 }: {
@@ -484,14 +480,8 @@ function SidebarContent({
   }, [reveal, show]);
   return (
     <div className="flex h-full flex-col">
-      {isExplorerView(view) && (
-        <ExplorerTabs
-          current={explorer}
-          onShow={show}
-          tools={explorer === "files" ? treeTools("vault") : undefined}
-        />
-      )}
-      {/* A view of its own, with the same buttons as the files. */}
+      {/* The two trees, with the same buttons. */}
+      {view === "files" && <SidebarToolRow groups={treeTools("vault")} />}
       {view === "drafts" && <SidebarToolRow groups={treeTools("drafts")} />}
       <div
         role="region"
@@ -602,16 +592,17 @@ const SHOW_TIMING =
   !import.meta.env.DEV && import.meta.env.VITE_CARBON_TIMING === "1";
 
 /**
- * The toolbar at the left edge: the file explorer and the tags, which
- * show in the sidebar and hide it when it shows them already, and a few
- * commands, each of which can be hidden (`hiddenToolsPreference`). The
- * search of the text has no button: Ctrl+Shift+F and the palette open it; at the foot the notifications, the settings
- * and the menu of the vault.
+ * The toolbar at the left edge: the views of the sidebar (the files, the
+ * bookmarks, the tags, the drafts and the trash), which show in the
+ * sidebar and hide it when it shows them already, and a few commands,
+ * each of which can be hidden (`hiddenToolsPreference`). The search of
+ * the text has no button: Ctrl+Shift+F and the palette open it. At the
+ * foot the notifications, the settings and the menu of the vault.
  */
 function ToolbarHost({
   open,
   sidebarOpen,
-  sidebarView: { view, explorer, show },
+  sidebarView: { view, show },
   revealSidebar,
   toggleSidebar,
 }: {
@@ -660,22 +651,11 @@ function ToolbarHost({
       },
     };
   };
-  // One button for the file explorer, whichever of its tabs it shows: it
-  // comes back to the tab shown last.
-  const explorerShown = sidebarOpen && isExplorerView(view);
-  const explorerItem: ToolbarItem = {
+  // Its id is still that of the button of the file explorer, which had
+  // the bookmarks and the trash as tabs: the tools hidden are stored by id.
+  const filesItem: ToolbarItem = {
+    ...sidebarItem("files", t("shell.files"), toolbarIcons.files),
     id: "sidebar.explorer",
-    label: t("shell.files"),
-    pressed: explorerShown,
-    icon: toolbarIcons.files,
-    run: () => {
-      if (explorerShown) {
-        toggleSidebar();
-        return;
-      }
-      revealSidebar();
-      show(explorer);
-    },
   };
   const hidden = hiddenToolsPreference.use();
   return (
@@ -684,9 +664,11 @@ function ToolbarHost({
       hidden={new Set(hidden)}
       onShowItem={setToolShown}
       items={[
-        explorerItem,
+        filesItem,
+        sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
         sidebarItem("tags", t("shell.tags"), toolbarIcons.tags),
         sidebarItem("drafts", t("shell.drafts"), toolbarIcons.drafts),
+        sidebarItem("trash", t("shell.trash"), toolbarIcons.trash),
         ...command("switcher.open", toolbarIcons.note),
         ...command(OPEN_RANDOM_NOTE, toolbarIcons.randomNote),
         ...command(TOGGLE_GRAPH, toolbarIcons.graph),

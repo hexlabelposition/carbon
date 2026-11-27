@@ -18,9 +18,8 @@ interface ViewTabsProps<View extends string> {
 
 /**
  * The row of tabs at the top of the right panel that picks what it shows:
- * icons with their names in tooltips, drawn as the tabs of the file
- * explorer (`ExplorerTabs`), and as tall as the bar above a note, so their
- * lines meet.
+ * icons with their names in tooltips, drawn as the buttons of the
+ * toolbar, and as tall as the bar above a note, so their lines meet.
  */
 export function ViewTabs<View extends string>({
   label,

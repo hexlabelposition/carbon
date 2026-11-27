@@ -6,15 +6,6 @@ export const toolbarIcons = {
   files: (
     <path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13a1.5 1.5 0 0 1 1.5 1.5v5.5A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5z" />
   ),
-  // The tree of the files: a folder at the top, two notes nested in it.
-  fileTree: (
-    <>
-      <rect x="1.5" y="1.5" width="5" height="4" rx="1" />
-      <rect x="9.5" y="6" width="5" height="3.5" rx="1" />
-      <rect x="9.5" y="11" width="5" height="3.5" rx="1" />
-      <path d="M4 5.5v7.25h5.5M4 7.75h5.5" />
-    </>
-  ),
   tags: (
     <>
       <path d="M1.5 2.5v4.6a1 1 0 0 0 .3.7l6.4 6.4a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4L7.3 2.3a1 1 0 0 0-.7-.3H2a.5.5 0 0 0-.5.5z" />
