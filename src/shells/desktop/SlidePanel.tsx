@@ -107,24 +107,32 @@ export function SlidePanel({
     };
   }, []);
 
+  /** How a change of width glides, for the panel and what is inside. */
+  const glide =
+    animate && settled
+      ? `transition-[width] motion-reduce:transition-none ${
+          open
+            ? "duration-(--cb-slide-open-duration) ease-(--cb-slide-open-ease)"
+            : "duration-(--cb-slide-close-duration) ease-(--cb-slide-close-ease)"
+        }`
+      : "";
+
   return (
     <div
       ref={panel}
       inert={!open}
       className={`flex h-full shrink-0 overflow-hidden ${
         side === "left" ? "justify-end" : "justify-start"
-      } ${
-        animate && settled
-          ? `transition-[width] motion-reduce:transition-none ${
-              open
-                ? "duration-(--cb-slide-open-duration) ease-(--cb-slide-open-ease)"
-                : "duration-(--cb-slide-close-duration) ease-(--cb-slide-close-ease)"
-            }`
-          : ""
-      }`}
+      } ${glide}`}
       style={{ width: open ? width : 0 }}
     >
-      <div className="h-full shrink-0" style={{ width }}>
+      {/*
+        Glides along with the panel when the width changes, as when it is
+        put back at its usual width: at the new width at once, it would
+        stand out past the panel, or leave a gap, at the outer side until
+        the panel caught up. Opening and shutting leave its width alone.
+      */}
+      <div className={`h-full shrink-0 ${glide}`} style={{ width }}>
         {(keepMounted || shown) && children}
       </div>
     </div>
