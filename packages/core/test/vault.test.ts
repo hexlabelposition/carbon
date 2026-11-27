@@ -283,3 +283,35 @@ describe("Vault.info", () => {
     await expect(vault.info("Missing.md")).rejects.toThrow();
   });
 });
+
+describe("Vault.fileTimes", () => {
+  test("tells when every file of the tree was changed and made", async () => {
+    const platform = createMemoryPlatform({
+      ...files,
+      "/vault/images/cat.png": "png",
+    });
+    const vault = await Vault.open("/vault", platform);
+    const times = await vault.fileTimes();
+    expect([...times.keys()].sort()).toEqual([
+      "Inbox.md",
+      "images/cat.png",
+      "projects/Carbon.md",
+    ]);
+    const stat = await platform.fs.stat("/vault/images/cat.png");
+    expect(times.get("images/cat.png")).toEqual({
+      modified: stat.mtime,
+      created: stat.birthtime!,
+    });
+  });
+
+  test("tells the drafts by their paths in the vault", async () => {
+    const platform = createMemoryPlatform({
+      ...files,
+      "/vault/.carbon/drafts/Idea.md": "idea",
+    });
+    const vault = await Vault.open("/vault", platform);
+    expect([...(await vault.fileTimes(true)).keys()]).toEqual([
+      ".carbon/drafts/Idea.md",
+    ]);
+  });
+});

@@ -64,6 +64,8 @@ export interface NoteStat {
   size: number;
   /** Last modification time, milliseconds since the Unix epoch. */
   mtime: number;
+  /** When it was made, as `Stat.birthtime`; where the system keeps it. */
+  birthtime?: number;
 }
 
 export interface Stat {

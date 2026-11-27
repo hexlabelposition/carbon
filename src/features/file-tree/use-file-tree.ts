@@ -1,4 +1,9 @@
-import { DRAFTS_FOLDER, type TreeNode, type Vault } from "@carbon/core";
+import {
+  DRAFTS_FOLDER,
+  type FileTimes,
+  type TreeNode,
+  type Vault,
+} from "@carbon/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { imageTypeOf } from "../image/image-file";
 import { deleteToPreference } from "../trash/delete-to";
@@ -6,6 +11,7 @@ import { findNode, isWithin, joinPath, parentOf, rebase } from "../vault/paths";
 import { t } from "../i18n/i18n";
 import { useWorkspace } from "../workspace/workspace";
 import { errorText } from "../i18n/error-text";
+import { sortTree, treeSortPreference } from "./tree-sort";
 
 /**
  * What a tree shows: the vault without its hidden folders, or the drafts
@@ -139,7 +145,18 @@ export function useFileTree(
 ): FileTree {
   const active = useWorkspace();
   const root = scopeRoot(scope);
-  const [tree, setTree] = useState<TreeNode[] | null>(null);
+  /** The tree as the vault lists it, by name. */
+  const [listed, setTree] = useState<TreeNode[] | null>(null);
+  const sort = treeSortPreference.use();
+  /** When the files were made and changed, for a sort by time. */
+  const [times, setTimes] = useState<ReadonlyMap<string, FileTimes>>(
+    () => new Map(),
+  );
+  /** The tree in the order picked (`treeSortPreference`), as it is shown. */
+  const tree = useMemo(
+    () => (listed === null ? null : sortTree(listed, sort, times)),
+    [listed, sort, times],
+  );
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(active.path);
   const [edit, setEdit] = useState<TreeEdit | null>(null);
@@ -203,6 +220,22 @@ export function useFileTree(
       stale = true;
     };
   }, [vault, scope, version]);
+
+  // The times, for a sort by them: asked for again as the vault changes.
+  useEffect(() => {
+    if (sort.startsWith("name")) return;
+    let stale = false;
+    vault.fileTimes(scope === "drafts").then(
+      (found) => {
+        if (!stale) setTimes(found);
+      },
+      // Without them the files keep the order of their names.
+      () => {},
+    );
+    return () => {
+      stale = true;
+    };
+  }, [vault, scope, version, sort]);
 
   /** The node at `path`, which is relative to the vault root. */
   const find = (path: string): TreeNode | undefined =>

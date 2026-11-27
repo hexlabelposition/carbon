@@ -28,6 +28,17 @@ import { scanTree, type TreeNode } from "./tree";
 import { VaultWatch, type VaultChange } from "./watch";
 import { VaultError } from "../errors";
 
+/** When a file was last changed and made, as `Vault.fileTimes` gives it. */
+export interface FileTimes {
+  /** Milliseconds since the epoch. */
+  modified: number;
+  /** `null` where the system does not keep it. */
+  created: number | null;
+}
+
+/** Files whose times are asked for at once, besides the notes. */
+const STAT_CONCURRENCY = 32;
+
 /** A file or folder of the vault, as `Vault.info` tells of it. */
 export interface EntryInfo {
   kind: "file" | "dir";
@@ -364,6 +375,55 @@ export class Vault {
       modified: stat.mtime,
       created: stat.kind === "file" ? (stat.birthtime ?? null) : null,
     };
+  }
+
+  /**
+   * When every file of the vault, or with `drafts` of the drafts, was
+   * last changed and made, by its path relative to the vault root: to
+   * sort the file tree by them. The notes come in one call
+   * (`listNotes`); the other files, as images, are asked for one by one,
+   * so they should be few. A file gone meanwhile is left out. The times
+   * are those of the file system, as for `info`.
+   */
+  async fileTimes(drafts = false): Promise<Map<string, FileTimes>> {
+    const { fs } = this.platform;
+    const times = new Map<string, FileTimes>();
+    const folder = drafts ? `${this.root}/${DRAFTS_FOLDER}` : this.root;
+    const prefix = drafts ? `${DRAFTS_FOLDER}/` : "";
+    const [tree, notes] = await Promise.all([
+      drafts ? this.drafts() : this.tree(),
+      fs.listNotes(folder).catch(() => []),
+    ]);
+    for (const note of notes) {
+      times.set(prefix + note.path, {
+        modified: note.mtime,
+        created: note.birthtime ?? null,
+      });
+    }
+    const others: string[] = [];
+    const walk = (nodes: readonly TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.kind === "folder") walk(node.children);
+        else if (!times.has(node.path)) others.push(node.path);
+      }
+    };
+    walk(tree);
+    for (let at = 0; at < others.length; at += STAT_CONCURRENCY) {
+      const batch = others.slice(at, at + STAT_CONCURRENCY);
+      const stats = await Promise.all(
+        batch.map((path) =>
+          fs.stat(resolveInVault(this.root, path)).catch(() => null),
+        ),
+      );
+      stats.forEach((stat, i) => {
+        if (stat === null) return;
+        times.set(batch[i], {
+          modified: stat.mtime,
+          created: stat.birthtime ?? null,
+        });
+      });
+    }
+    return times;
   }
 
   /**

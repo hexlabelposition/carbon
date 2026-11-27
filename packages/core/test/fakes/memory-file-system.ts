@@ -104,6 +104,7 @@ export class MemoryFileSystem implements FileSystem {
         path: below,
         size: toBytes(file.content).length,
         mtime: file.mtime,
+        birthtime: file.mtime,
       });
     }
     return notes;

@@ -26,6 +26,7 @@ import { ImageView } from "../../features/image/ImageView";
 import { imageTypeOf } from "../../features/image/image-file";
 import { useNoteMode } from "../../features/editor/use-note-mode";
 import { FileTree } from "../../features/file-tree/FileTree";
+import { TreeSortMenu } from "../../features/file-tree/TreeSortMenu";
 import { OutlinePanel } from "../../features/outline/OutlinePanel";
 import { SearchDialog } from "../../features/search/SearchDialog";
 import { TagsPanel } from "../../features/tags/TagsPanel";
@@ -485,7 +486,16 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {isExplorerView(view) && (
-        <ExplorerTabs current={explorer} onShow={show} />
+        <ExplorerTabs
+          current={explorer}
+          onShow={show}
+          end={
+            // The files and the drafts are trees, sorted the same way.
+            explorer === "files" || explorer === "drafts" ? (
+              <TreeSortMenu />
+            ) : undefined
+          }
+        />
       )}
       <div
         role="region"

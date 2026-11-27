@@ -11,6 +11,7 @@ export type { DiscardOptions, TrashItem, VaultTrash } from "./vault/trash";
 export type { Bookmarks } from "./vault/bookmarks";
 export type {
   EntryInfo,
+  FileTimes,
   IndexStatus,
   VaultEvents,
   VaultOptions,

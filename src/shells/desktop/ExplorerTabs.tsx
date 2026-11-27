@@ -21,9 +21,12 @@ const TABS: Record<ExplorerView, { label: MessageKey; icon: ReactNode }> = {
 export function ExplorerTabs({
   current,
   onShow,
+  end,
 }: {
   current: ExplorerView;
   onShow: (view: ExplorerView) => void;
+  /** At the right end of the row: buttons for the tab shown, as sorting. */
+  end?: ReactNode;
 }) {
   const t = useT();
   return (
@@ -58,6 +61,7 @@ export function ExplorerTabs({
           </Tooltip>
         );
       })}
+      {end !== undefined && <div className="ml-auto flex">{end}</div>}
     </div>
   );
 }

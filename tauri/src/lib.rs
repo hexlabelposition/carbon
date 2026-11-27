@@ -42,13 +42,16 @@ async fn import_file(app: tauri::AppHandle, source: String, target: String) -> R
 }
 
 /// A note found by `list_notes`: its path below the folder listed, `/`
-/// separated, its size in bytes and its last change in milliseconds since
-/// the Unix epoch, as the `fs` plugin gives them.
+/// separated, its size in bytes, its last change and when it was made, in
+/// milliseconds since the Unix epoch, as the `fs` plugin gives them. The
+/// time it was made is left out where the file system does not keep it.
 #[derive(serde::Serialize)]
 struct NoteStat {
     path: String,
     size: u64,
     mtime: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    birthtime: Option<u64>,
 }
 
 /// Every note under `dir`, with its size and time, in one call: the startup
@@ -88,15 +91,16 @@ async fn list_notes(app: tauri::AppHandle, dir: String) -> Result<Vec<NoteStat>,
                     folders.push((entry.path(), path));
                 } else if kind.is_file() && name.to_lowercase().ends_with(".md") {
                     let meta = entry.metadata()?;
-                    let mtime = meta
-                        .modified()
-                        .ok()
-                        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map_or(0, |since| since.as_millis() as u64);
+                    let millis = |time: std::io::Result<std::time::SystemTime>| {
+                        time.ok()
+                            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|since| since.as_millis() as u64)
+                    };
                     notes.push(NoteStat {
                         path,
                         size: meta.len(),
-                        mtime,
+                        mtime: millis(meta.modified()).unwrap_or(0),
+                        birthtime: millis(meta.created()),
                     });
                 }
             }
