@@ -23,7 +23,16 @@ import { useNoteTitle } from "./use-note-title";
 import { Tooltip } from "../ui/Tooltip";
 import { ScrollArea } from "../ui/ScrollArea";
 import { NoteStatsBar } from "./NoteStatsBar";
-import { hiddenStatsPreference } from "./stats-parts";
+import {
+  HEADER_PARTS,
+  hiddenHeaderPreference,
+  hiddenStatsPreference,
+  type HeaderPart,
+} from "./bar-parts";
+import { BarPartsMenu } from "./BarPartsMenu";
+import type { MenuIcon } from "../ui/menu-icons";
+import type { MessageKey } from "../i18n/i18n";
+import { ContextMenu } from "@base-ui/react/context-menu";
 import type { NoteStats } from "./note-stats";
 import { focusOnOpenPreference } from "../settings/editor-options";
 import {
@@ -94,6 +103,9 @@ export function NoteEditor({
   // At full width the column has no sides of its own: no lines.
   const borders = showBorders && width !== "full";
   const formatBar = formatBarPreference.use();
+  // Before the returns below: a hook is called on every render.
+  const hiddenHeader = hiddenHeaderPreference.use();
+  const shows = (part: HeaderPart) => !hiddenHeader.includes(part);
   /** The CodeMirror view, for the formatting bar. */
   const editorView = useRef<EditorView | null>(null);
   const formatNote = useFormatNote(
@@ -137,51 +149,77 @@ export function NoteEditor({
   return (
     // Ctrl and the wheel anywhere over the note change its text size.
     <div ref={wheelTextSize} className="flex h-full flex-col">
-      <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5">
-        {history}
-        <NoteNameField path={path} title={title} readOnly={readingMode} />
-        {/* Nothing is formatted while reading: the buttons wait for
+      {/* The right button shows or hides each part but the name. */}
+      <ContextMenu.Root>
+        <ContextMenu.Trigger
+          render={
+            <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-1.5" />
+          }
+        >
+          {shows("history") && history}
+          <NoteNameField
+            path={path}
+            title={title}
+            readOnly={readingMode}
+            showFolder={shows("path")}
+          />
+          {/* Nothing is formatted while reading: the buttons wait for
             editing. */}
-        <Tooltip label={t("editor.formatNote")} shortcut={formatNote.shortcut}>
-          <button
-            type="button"
-            aria-label={t("editor.formatNote")}
-            disabled={readingMode}
-            className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40"
-            onClick={formatNote.run}
-          >
-            <svg
-              viewBox="0 0 16 16"
-              aria-hidden="true"
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {shows("format") && (
+            <Tooltip
+              label={t("editor.formatNote")}
+              shortcut={formatNote.shortcut}
             >
-              {/* A wand, with sparks by its tip. */}
-              <path d="M2.5 13.5l7.25-7.25M8.5 5l2.5 2.5M11.5 1.75v2M10.5 2.75h2M13.75 5.5v2M12.75 6.5h2M5 2v1.5M4.25 2.75h1.5" />
-            </svg>
-          </button>
-        </Tooltip>
-        <Tooltip label={t("format.bar")}>
-          <button
-            type="button"
-            aria-label={t("format.bar")}
-            aria-pressed={formatBar}
-            disabled={readingMode}
-            className={
-              "flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40 " +
-              (formatBar && !readingMode ? "text-fg" : "text-muted")
-            }
-            onClick={() => formatBarPreference.set(!formatBar)}
-          >
-            <FormatBarIcon className="size-5" />
-          </button>
-        </Tooltip>
-        <NoteModeMenu mode={mode} onChange={onModeChange} />
-      </header>
+              <button
+                type="button"
+                aria-label={t("editor.formatNote")}
+                disabled={readingMode}
+                className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40"
+                onClick={formatNote.run}
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {/* A wand, with sparks by its tip. */}
+                  <path d="M2.5 13.5l7.25-7.25M8.5 5l2.5 2.5M11.5 1.75v2M10.5 2.75h2M13.75 5.5v2M12.75 6.5h2M5 2v1.5M4.25 2.75h1.5" />
+                </svg>
+              </button>
+            </Tooltip>
+          )}
+          {shows("formatBar") && (
+            <Tooltip label={t("format.bar")}>
+              <button
+                type="button"
+                aria-label={t("format.bar")}
+                aria-pressed={formatBar}
+                disabled={readingMode}
+                className={
+                  "flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-100 hover:bg-selected hover:text-fg disabled:pointer-events-none disabled:opacity-40 " +
+                  (formatBar && !readingMode ? "text-fg" : "text-muted")
+                }
+                onClick={() => formatBarPreference.set(!formatBar)}
+              >
+                <FormatBarIcon className="size-5" />
+              </button>
+            </Tooltip>
+          )}
+          {shows("mode") && (
+            <NoteModeMenu mode={mode} onChange={onModeChange} />
+          )}
+        </ContextMenu.Trigger>
+        <BarPartsMenu
+          parts={HEADER_PARTS}
+          items={HEADER_ITEMS}
+          hidden={hiddenHeaderPreference}
+        />
+      </ContextMenu.Root>
       {images.error !== null && (
         <EditorAlert message={images.error} onDismiss={images.dismissError} />
       )}
@@ -306,6 +344,16 @@ function EditorAlert({
     </div>
   );
 }
+
+/** The parts of the bar above a note, in its right-click menu. */
+const HEADER_ITEMS: Record<HeaderPart, { label: MessageKey; icon: MenuIcon }> =
+  {
+    history: { label: "header.showHistory", icon: "history" },
+    path: { label: "header.showPath", icon: "folderPath" },
+    format: { label: "header.showFormat", icon: "formatNote" },
+    formatBar: { label: "header.showFormatBar", icon: "formatBar" },
+    mode: { label: "header.showMode", icon: "noteMode" },
+  };
 
 interface SaveIndicatorProps {
   save: SaveState;

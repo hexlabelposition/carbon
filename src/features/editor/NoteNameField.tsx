@@ -14,10 +14,13 @@ export function NoteNameField({
   path,
   title,
   readOnly = false,
+  showFolder = true,
 }: {
   path: string;
   title: NoteTitle;
   readOnly?: boolean;
+  /** The folder before the name, faint; hidden from the menu of the bar. */
+  showFolder?: boolean;
 }) {
   const t = useT();
   const ref = useRef<HTMLInputElement>(null);
@@ -27,7 +30,7 @@ export function NoteNameField({
 
   return (
     <div className="flex min-w-0 flex-1 items-center px-2">
-      {folder !== "" && (
+      {showFolder && folder !== "" && (
         <Tooltip label={path}>
           {/* Shrinks first: the name stays in sight. */}
           <span className="min-w-0 shrink-[100] truncate text-faint">
