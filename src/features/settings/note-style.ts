@@ -95,6 +95,18 @@ export const inlineTitlePreference = preference<boolean>(
 );
 
 /**
+ * Whether lines run down both sides of the column of the note, the whole
+ * height of the note (`NoteEditor`). On until turned off, from the menu
+ * of the right button in a note.
+ */
+export const noteBordersPreference = preference<boolean>(
+  "carbon.note.borders",
+  true,
+  (stored) =>
+    stored === "true" ? true : stored === "false" ? false : undefined,
+);
+
+/**
  * Whether numbers stand at the left of the text, one for each line as it
  * is shown, a wrapped one counted as many (`lineNumbers`). Off until
  * turned on.

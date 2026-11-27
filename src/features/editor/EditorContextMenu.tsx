@@ -9,6 +9,7 @@ import { log } from "../log/log";
 import {
   inlineTitlePreference,
   lineNumbersPreference,
+  noteBordersPreference,
   NOTE_WIDTHS,
   noteWidthPreference,
   type NoteWidth,
@@ -61,8 +62,8 @@ function Check() {
  * its backticks or fences, and in a block the line clicked (`codeAt`).
  * On a web link or an email address it opens it in the browser or the
  * mail app, or copies it (`webLinkAt`). At the end, the look of notes:
- * the width of their content, the inline title and line numbers, as in
- * the settings. It
+ * the width of their content, the inline title, line numbers and the
+ * borders of the note. It
  * takes the place of the menu of the WebView, which the app shuts
  * (`useContextMenuGuard`).
  */
@@ -83,6 +84,7 @@ export function EditorContextMenu({
   const width = noteWidthPreference.use();
   const inlineTitle = inlineTitlePreference.use();
   const lineNumbers = lineNumbersPreference.use();
+  const borders = noteBordersPreference.use();
   /** Whether there were edits to undo and to redo then. */
   const [steps, setSteps] = useState({ undo: false, redo: false });
   /** Whether the text had the focus when the menu was asked for. */
@@ -411,6 +413,20 @@ export function EditorContextMenu({
             >
               <MenuItemBody icon="lineNumbers">
                 {t("settings.lineNumbers")}
+              </MenuItemBody>
+              <span className="flex size-4 shrink-0 items-center justify-center">
+                <ContextMenu.CheckboxItemIndicator>
+                  <Check />
+                </ContextMenu.CheckboxItemIndicator>
+              </span>
+            </ContextMenu.CheckboxItem>
+            <ContextMenu.CheckboxItem
+              className={item}
+              checked={borders}
+              onCheckedChange={noteBordersPreference.set}
+            >
+              <MenuItemBody icon="noteBorders">
+                {t("editor.noteBorders")}
               </MenuItemBody>
               <span className="flex size-4 shrink-0 items-center justify-center">
                 <ContextMenu.CheckboxItemIndicator>

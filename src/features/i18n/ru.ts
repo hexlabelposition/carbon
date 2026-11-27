@@ -57,6 +57,7 @@ export const ru: Record<keyof typeof en, Message> = {
   "editor.frontmatterEmpty": "Пустой frontmatter",
   "editor.live": "Динамический",
   "editor.mode": "Режим заметки",
+  "editor.noteBorders": "Границы заметки",
   "editor.noteName": "Название заметки",
   "editor.openLink": "Открыть ссылку в браузере",
   "editor.paste": "Вставить",

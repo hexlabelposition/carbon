@@ -28,6 +28,8 @@ import { focusOnOpenPreference } from "../settings/editor-options";
 import {
   formatBarPreference,
   inlineTitlePreference,
+  noteBordersPreference,
+  noteWidthPreference,
 } from "../settings/note-style";
 import type { EditorView } from "@codemirror/view";
 import { FormatBar, FormatBarIcon } from "./FormatBar";
@@ -86,6 +88,10 @@ export function NoteEditor({
    */
   const [focusAtOpen] = useState(() => active && focusOnOpenPreference.get());
   const inlineTitle = inlineTitlePreference.use();
+  const showBorders = noteBordersPreference.use();
+  const width = noteWidthPreference.use();
+  // At full width the column has no sides of its own: no lines.
+  const borders = showBorders && width !== "full";
   const formatBar = formatBarPreference.use();
   /** The CodeMirror view, for the formatting bar. */
   const editorView = useRef<EditorView | null>(null);
@@ -202,7 +208,7 @@ export function NoteEditor({
           // still puts the cursor in it. Grown by the text, never held to
           // the height of the view: the scrollbar watches its size, and
           // would not see the text grow with a larger text size.
-          contentClassName="flex shrink-0 grow flex-col"
+          contentClassName="relative flex shrink-0 grow flex-col"
           // To read, the scroll takes the focus on a click, so Page Up and
           // Page Down, the arrows and Space scroll it: the text cannot. The
           // editor keeps a click from focusing it, so it is focused here.
@@ -214,6 +220,14 @@ export function NoteEditor({
           }}
           className="flex flex-1 flex-col"
         >
+          {/* Lines down both sides of the column of the note, as wide as
+              its text and the whole height, the name above it too. */}
+          {borders && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-1/2 w-full max-w-(--cb-note-width) -translate-x-1/2 border-x border-line"
+            />
+          )}
           {inlineTitle ? (
             <NoteTitleField title={title} readOnly={readingMode} />
           ) : (

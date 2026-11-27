@@ -66,6 +66,7 @@ export const en = {
   "editor.frontmatterEmpty": "Empty frontmatter",
   "editor.live": "Live preview",
   "editor.mode": "Note mode",
+  "editor.noteBorders": "Note borders",
   "editor.noteName": "Note name",
   "editor.openLink": "Open link in browser",
   "editor.paste": "Paste",
