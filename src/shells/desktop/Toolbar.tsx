@@ -44,8 +44,10 @@ interface ToolbarProps {
    * or by Alt+Up and Alt+Down.
    */
   onMoveItem: (id: string, to: number) => void;
-  /** Puts the buttons back in their usual order; absent while they are. */
-  onResetOrder?: () => void;
+  /** Whether the buttons at the top stand in another order than usual. */
+  reordered: boolean;
+  /** Puts them back in their usual order: greyed out while they are. */
+  onResetOrder: () => void;
   /**
    * The buttons at the foot, such as the settings, parted from those above
    * by a line across the whole toolbar.
@@ -61,8 +63,8 @@ interface ToolbarProps {
  * The strip at the left edge of the window with small buttons, one above
  * the other, below the top row: as wide as that row is tall, so it stands
  * right under the mark in the corner. Layout only: what the buttons do
- * comes from outside. The right button opens a menu that shows or hides
- * each button at the top. Those can be dragged up and down to another
+ * comes from outside. The right button above the foot opens a menu that
+ * shows or hides each button at the top. Those can be dragged up and down to another
  * place, or moved by Alt+Up and Alt+Down while one has the focus.
  */
 export function Toolbar({
@@ -71,6 +73,7 @@ export function Toolbar({
   hidden,
   onShowItem,
   onMoveItem,
+  reordered,
   onResetOrder,
   footer,
   footerStart,
@@ -79,66 +82,65 @@ export function Toolbar({
   const t = useT();
   return (
     <SlidePanel open={open} width={TOOLBAR_WIDTH}>
-      <ContextMenu.Root>
-        <ContextMenu.Trigger
-          render={
-            <nav
-              aria-label={t("shell.toolbar")}
-              className="flex h-full flex-col border-r border-line bg-panel"
+      <nav
+        aria-label={t("shell.toolbar")}
+        className="flex h-full flex-col border-r border-line bg-panel"
+      >
+        <ContextMenu.Root>
+          {/* Only the buttons it lists and the room below them: the
+              buttons at the foot cannot be hidden, and keep out of it. */}
+          <ContextMenu.Trigger className="flex min-h-0 flex-1 flex-col">
+            <SortableGroup
+              items={items.filter((item) => !hidden.has(item.id))}
+              onMove={onMoveItem}
             />
-          }
-        >
-          <SortableGroup
-            items={items.filter((item) => !hidden.has(item.id))}
-            onMove={onMoveItem}
-          />
-          <div data-tauri-drag-region className="min-h-0 flex-1" />
-          <ToolbarGroup
-            items={footer}
-            start={footerStart}
-            end={footerEnd}
-            className="border-t border-line"
-          />
-        </ContextMenu.Trigger>
-        <ContextMenu.Portal>
-          <ContextMenu.Positioner className="z-50 outline-none">
-            <ContextMenu.Popup className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none">
-              {items.map((item) => (
-                <ContextMenu.CheckboxItem
-                  key={item.id}
-                  className="flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise"
-                  checked={!hidden.has(item.id)}
-                  onCheckedChange={(checked) => onShowItem(item.id, checked)}
-                >
-                  <span className="flex size-4 shrink-0 items-center justify-center">
-                    <ContextMenu.CheckboxItemIndicator
-                      render={<MenuIcon>{CHECK}</MenuIcon>}
-                    />
-                  </span>
-                  <MenuIcon className="opacity-80">{item.icon}</MenuIcon>
-                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                </ContextMenu.CheckboxItem>
-              ))}
-              {onResetOrder !== undefined && (
-                <>
-                  <ContextMenu.Separator className="mx-1 my-1 h-px bg-line" />
-                  <ContextMenu.Item
+            <div data-tauri-drag-region className="min-h-0 flex-1" />
+          </ContextMenu.Trigger>
+          <ContextMenu.Portal>
+            <ContextMenu.Positioner className="z-50 outline-none">
+              <ContextMenu.Popup className="min-w-56 rounded-md border border-line bg-bg p-1 text-ui text-fg shadow-dialog outline-none">
+                {items.map((item) => (
+                  <ContextMenu.CheckboxItem
+                    key={item.id}
                     className="flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-highlighted:bg-raise"
-                    onClick={onResetOrder}
+                    checked={!hidden.has(item.id)}
+                    onCheckedChange={(checked) => onShowItem(item.id, checked)}
                   >
-                    {/* As far in as the names above, past their checks. */}
-                    <span className="size-4 shrink-0" />
-                    <MenuIcon className="opacity-80">{RESET}</MenuIcon>
-                    <span className="min-w-0 flex-1 truncate">
-                      {t("toolbar.resetOrder")}
+                    <span className="flex size-4 shrink-0 items-center justify-center">
+                      <ContextMenu.CheckboxItemIndicator
+                        render={<MenuIcon>{CHECK}</MenuIcon>}
+                      />
                     </span>
-                  </ContextMenu.Item>
-                </>
-              )}
-            </ContextMenu.Popup>
-          </ContextMenu.Positioner>
-        </ContextMenu.Portal>
-      </ContextMenu.Root>
+                    <MenuIcon className="opacity-80">{item.icon}</MenuIcon>
+                    <span className="min-w-0 flex-1 truncate">
+                      {item.label}
+                    </span>
+                  </ContextMenu.CheckboxItem>
+                ))}
+                <ContextMenu.Separator className="mx-1 my-1 h-px bg-line" />
+                <ContextMenu.Item
+                  disabled={!reordered}
+                  className="flex h-7 cursor-default items-center gap-2 rounded-sm px-2 outline-none select-none data-disabled:opacity-40 data-highlighted:bg-raise"
+                  onClick={onResetOrder}
+                >
+                  {/* As far in as the names above, past their checks. */}
+                  <span className="size-4 shrink-0" />
+                  <MenuIcon className="opacity-80">{RESET}</MenuIcon>
+                  <span className="min-w-0 flex-1 truncate">
+                    {t("toolbar.resetOrder")}
+                  </span>
+                </ContextMenu.Item>
+              </ContextMenu.Popup>
+            </ContextMenu.Positioner>
+          </ContextMenu.Portal>
+        </ContextMenu.Root>
+        <ToolbarGroup
+          items={footer}
+          start={footerStart}
+          end={footerEnd}
+          className="border-t border-line"
+        />
+      </nav>
     </SlidePanel>
   );
 }

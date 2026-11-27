@@ -65,6 +65,7 @@ import {
   setToolShown,
   toggleToolbar,
   toolbarPreference,
+  TOOLBAR_TOOLS,
   toolOrderPreference,
   useToolOrder,
 } from "../../features/settings/toolbar";
@@ -676,7 +677,6 @@ function ToolbarHost({
   };
   const hidden = hiddenToolsPreference.use();
   const order = useToolOrder();
-  const custom = toolOrderPreference.use().length > 0;
   const tools = [
     filesItem,
     sidebarItem("bookmarks", t("shell.bookmarks"), toolbarIcons.bookmarks),
@@ -697,7 +697,8 @@ function ToolbarHost({
       hidden={new Set(hidden)}
       onShowItem={setToolShown}
       onMoveItem={setToolPlace}
-      onResetOrder={custom ? () => toolOrderPreference.reset() : undefined}
+      reordered={order.some((id, index) => id !== TOOLBAR_TOOLS[index]?.id)}
+      onResetOrder={() => toolOrderPreference.reset()}
       items={items}
       footerStart={<NotificationsButton />}
       footer={[...command("settings.open", toolbarIcons.settings)]}
