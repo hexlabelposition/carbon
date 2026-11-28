@@ -88,9 +88,18 @@ describe("codeAt", () => {
     });
   });
 
-  test("none for a selection of one line or none", () => {
-    expect(selectedLines("```\na[b]c\nd\n```")).toBeNull();
+  test("one line, whole, for a selection inside it", () => {
+    expect(selectedLines("```\n  a[b]c\nd\n```")).toMatchObject({
+      text: "abc",
+      count: 1,
+      from: 2,
+      to: 2,
+    });
+  });
+
+  test("none without a selection, or for only blank lines", () => {
     expect(selectedLines("```\na[]\nb\n```")).toBeNull();
+    expect(selectedLines("```\na\n[ ]\nb\n```")).toBeNull();
   });
 
   test("a selection ending at the start of a line leaves it out", () => {
@@ -98,19 +107,51 @@ describe("codeAt", () => {
       text: "a\nb",
       count: 2,
     });
-    expect(selectedLines("```\n[a\n]b\n```")).toBeNull();
+    expect(selectedLines("```\n[a\n]b\n```")).toMatchObject({
+      text: "a",
+      count: 1,
+    });
+    // A blank line there is taken, to be marked, but not copied.
+    expect(selectedLines("```\n[a\nb\n]\nc\n```")).toMatchObject({
+      text: "a\nb",
+      count: 2,
+      last: 3,
+      to: 4,
+    });
+  });
+
+  test("blank lines between the code are kept", () => {
+    expect(selectedLines("```\n[a\n\nb]\n```")).toMatchObject({
+      text: "a\n\nb",
+      count: 3,
+    });
   });
 
   test("less the indent the lines share, the rest of it kept", () => {
     expect(
       selectedLines("```\nfn() {\n  [if (x) {\n    y();\n  }]\n}\n```"),
-    ).toEqual({ text: "if (x) {\n  y();\n}", count: 3, first: 3, last: 5 });
+    ).toEqual({
+      text: "if (x) {\n  y();\n}",
+      count: 3,
+      first: 3,
+      last: 5,
+      from: 3,
+      to: 5,
+    });
   });
 
   test("without the fences or the blank lines at the ends", () => {
     expect(selectedLines("[```\n\na\nb\n```]")).toMatchObject({
       text: "a\nb",
       count: 2,
+    });
+    // The blank lines are marked all the same, the fences not.
+    expect(selectedLines("```\nx\n[\na\nb\n\n]y\n```")).toMatchObject({
+      text: "a\nb",
+      first: 4,
+      last: 5,
+      from: 3,
+      to: 6,
     });
   });
 

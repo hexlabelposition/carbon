@@ -272,7 +272,7 @@ export function EditorContextMenu({
                     {t(code.block ? "editor.copyAllCode" : "editor.copyCode")}
                   </MenuItemBody>
                 </ContextMenu.Item>
-                {code.lines !== null ? (
+                {code.lines !== null && code.lines.count > 1 ? (
                   // Lines selected: they, in place of the line clicked.
                   <ContextMenu.Item
                     className={item}
