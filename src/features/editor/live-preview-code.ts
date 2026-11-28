@@ -3,6 +3,7 @@ import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { t } from "../i18n/i18n";
 import { noteSize } from "./editor-theme";
+import { codeRows, rowsAt } from "./code-rows";
 import {
   characterCount,
   codeBadge,
@@ -154,8 +155,20 @@ export function decorateCodeBlock(
   // The fence can be indented, inside a list: so are its lines.
   const indent = opening === undefined ? 0 : opening.from - first.from;
   const lastCode = closed ? end.number - 1 : end.number;
-  const count = Math.max(0, lastCode - first.number);
-  const gutter = `--cb-code-gutter: ${String(Math.max(count, 1)).length}ch`;
+  // The numbers count the lines as they are shown: a line wrapped onto
+  // three gets three, the next one goes on after them (`codeRows`).
+  const rows = state.field(codeRows, false) ?? new Map<number, number>();
+  const numberOf = new Map<number, string>();
+  let shown = 0;
+  for (let n = first.number + 1; n <= lastCode; n++) {
+    const from = state.doc.line(n).from;
+    const count = rowsAt(rows, from);
+    const numbers: number[] = [];
+    for (let i = 0; i < count; i++) numbers.push(shown + i + 1);
+    numberOf.set(n, numbers.join("\n"));
+    shown += count;
+  }
+  const gutter = `--cb-code-gutter: ${String(Math.max(shown, 1)).length}ch`;
 
   const textOf = (line: Line) => {
     const lead = /^ */.exec(line.text)?.[0].length ?? 0;
@@ -227,7 +240,7 @@ export function decorateCodeBlock(
           (read.mark === null ? "" : MARK_CLASS[read.mark]) +
           edge,
         attributes: {
-          "data-line": String(number),
+          "data-line": numberOf.get(line.number) ?? String(number),
           "data-mark": read.mark === null ? "" : MARK_SIGN[read.mark],
           style: gutter,
         },
@@ -335,8 +348,10 @@ export const codeBlockTheme = EditorView.baseTheme({
   ".cm-line.cm-code.cm-code-line.cm-code-diff": {
     paddingLeft: "calc(var(--cb-code-gutter) + 30px + 2ch)",
   },
+  // One number for each line as it is shown, one under the other.
   ".cm-line.cm-code-line::before": {
     content: "attr(data-line)",
+    whiteSpace: "pre",
     position: "absolute",
     left: "12px",
     width: "var(--cb-code-gutter)",

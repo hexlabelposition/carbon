@@ -22,6 +22,7 @@ import {
   parseCalloutHeader,
 } from "./live-preview-callout";
 import { codeBlockTheme, decorateCodeBlock } from "./live-preview-code";
+import { codeRows, measureCodeRows, setCodeRows } from "./code-rows";
 import { holdingChanged, keepsFocus } from "./held-selection";
 
 /**
@@ -35,6 +36,9 @@ import { holdingChanged, keepsFocus } from "./held-selection";
  * when the user types or ticks a task.
  */
 export const livePreview = [
+  // How many visual lines each line of code takes, for its numbers.
+  codeRows,
+  measureCodeRows,
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -51,6 +55,10 @@ export const livePreview = [
           update.focusChanged ||
           holdingChanged(update) ||
           missingChanged(update) ||
+          // The lines of a code block were measured: its numbers change.
+          update.transactions.some((tr) =>
+            tr.effects.some((e) => e.is(setCodeRows)),
+          ) ||
           // Parsing a long note finishes in the background.
           syntaxTree(update.startState) !== syntaxTree(update.state);
         if (changed) this.decorations = decorate(update.view);

@@ -51,7 +51,7 @@ interface Row {
  * that overlap from top to bottom put together, as a word in a bigger font
  * or an image stands in the same line as the text beside it.
  */
-function rowsOfLine(line: HTMLElement): Row[] {
+export function rowsOfLine(line: HTMLElement): Row[] {
   const range = document.createRange();
   range.selectNodeContents(line);
   const boxes = [...range.getClientRects()]
