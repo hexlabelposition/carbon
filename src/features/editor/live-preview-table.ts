@@ -57,10 +57,12 @@ export const tablePreview = [
   ),
   EditorView.baseTheme({
     // A table wider than the note scrolls sideways in its box, the side
-    // with more of it fading out (`fadeStyles`).
+    // with more of it fading out (`fadeStyles`). The box is as wide as the
+    // note, not as the table: WebKitGTK took a table as a little narrower
+    // than it is drawn, and a box as wide as that cut off its right edge,
+    // with room to spare beside it.
     ".cm-table-scroll": {
-      width: "fit-content",
-      maxWidth: "100%",
+      width: "100%",
       overflowX: "auto",
       overflowY: "hidden",
       scrollbarWidth: "thin",
@@ -134,8 +136,8 @@ export const tablePreview = [
 
 /**
  * Marks which sides of a scrolled table have more of it out of sight, for
- * the fade on those sides: as it scrolls, and as it or the note changes
- * width. `TableWidget.destroy` stops it.
+ * the fade on those sides: as it scrolls, and as it, its box or the note
+ * changes width. `TableWidget.destroy` stops it.
  */
 function watchOverflow(scroll: HTMLElement): void {
   const update = () => {
@@ -147,8 +149,13 @@ function watchOverflow(scroll: HTMLElement): void {
     );
   };
   scroll.addEventListener("scroll", update, { passive: true });
+  // The table too: it may grow while its box, as wide as the note, does
+  // not, as when its font comes in. Then only the table tells.
   const observer = new ResizeObserver(update);
   observer.observe(scroll);
+  if (scroll.firstElementChild !== null) {
+    observer.observe(scroll.firstElementChild);
+  }
   observers.set(scroll, observer);
 }
 
