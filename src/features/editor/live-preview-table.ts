@@ -421,17 +421,33 @@ const HIDDEN = new Set([
   "LinkTitle",
 ]);
 
-function readInline(state: EditorState, node: SyntaxNode): Inline[] {
+/**
+ * What a cell, or an element in it, shows. "\|" is how a cell holds a
+ * "|", in code too, as GFM reads a table: the grammar finds it as an
+ * escape in text, but code is taken as it is written, so there it is
+ * read here (`code`).
+ */
+function readInline(
+  state: EditorState,
+  node: SyntaxNode,
+  code = false,
+): Inline[] {
   const content: Inline[] = [];
   const text = (from: number, to: number) => {
-    if (from < to) content.push(state.sliceDoc(from, to));
+    if (from >= to) return;
+    const written = state.sliceDoc(from, to);
+    content.push(code ? written.replaceAll("\\|", "|") : written);
   };
   let pos = node.from;
   for (let child = node.firstChild; child !== null; child = child.nextSibling) {
     text(pos, child.from);
     const tag = INLINE_TAGS[child.name];
-    if (tag) content.push({ tag, children: readInline(state, child) });
-    else if (child.name === "WikiLink") {
+    if (tag) {
+      content.push({
+        tag,
+        children: readInline(state, child, code || tag === "code"),
+      });
+    } else if (child.name === "WikiLink") {
       content.push({ tag: "a", children: [wikiLinkLabel(state, child)] });
     }
     // "\|" is how a cell holds a "|": the backslash is not shown.
